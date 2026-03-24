@@ -1,3 +1,4 @@
+import { PlusSquareIcon } from "@chakra-ui/icons";
 import { BiCalendarEvent } from "react-icons/bi";
 import {
   FaCalendarCheck,
@@ -155,6 +156,13 @@ const sidebarDatas: SidebarItem[] = [
     name: "Approvals",
     icon: <VscWorkspaceTrusted />,
     url: "/dashboard/approvals",
+    role: ["superAdmin", "admin", "user"],
+  },
+  {
+    id: 17,
+    name: "Course",
+    icon: <PlusSquareIcon />,
+    url: "/dashboard/LMS",
     role: ["superAdmin", "admin", "user"],
   },
   // {
