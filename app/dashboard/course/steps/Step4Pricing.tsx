@@ -39,7 +39,12 @@ export default function Step4Pricing({ value, onChange, onProgressChange }: Step
     <StepWrapper
       stepKey={3}
       title="Pricing & Access"
-      subtitle="Set up pricing and who gets access ðŸ’°"
+      subtitle={
+        <span className="inline-flex items-center gap-1.5">
+          Set up pricing and who gets access
+          <IndianRupee className="w-4 h-4" />
+        </span>
+      }
       icon={<IndianRupee className="w-6 h-6" />}
       accentColor="hsl(var(--step-4))"
     >
@@ -63,7 +68,7 @@ export default function Step4Pricing({ value, onChange, onProgressChange }: Step
             <div className="grid md:grid-cols-2 gap-4">
               <FormField label="Price" required helper="In INR">
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">â‚¹</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">Rs.</span>
                   <Input
                     type="number"
                     value={value.amount}

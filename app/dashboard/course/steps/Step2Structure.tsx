@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layers, Plus, Trash2, Upload, ChevronDown, ChevronUp, FolderTree } from "lucide-react";
+import { ChevronDown, ChevronUp, FolderTree, Layers, Plus, Rocket, Trash2, Upload } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { FormField } from "./component/FormField";
 import { Input } from "@/components/ui/input";
@@ -143,7 +143,12 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
     <StepWrapper
       stepKey={1}
       title="Course Structure"
-      subtitle="Build your learning path ðŸ§±"
+      subtitle={
+        <span className="inline-flex items-center gap-1.5">
+          Build your learning path
+          <Layers className="w-4 h-4" />
+        </span>
+      }
       icon={<Layers className="w-6 h-6" />}
       accentColor="hsl(var(--step-2))"
     >
@@ -377,7 +382,7 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
 
         {value.modules.length === 0 ? (
           <div className="text-center py-12 bg-card rounded-2xl border border-dashed border-border">
-            <div className="text-4xl mb-3">ðŸš€</div>
+            <Rocket className="w-10 h-10 text-step-2 mx-auto mb-3" />
             <p className="font-medium text-foreground mb-1">No modules yet</p>
             <p className="text-sm text-muted-foreground mb-4">Create a module, then add as many sections under it as you need.</p>
             <Button onClick={addModule} className="rounded-xl bg-step-2 hover:bg-step-2/90 text-primary-foreground">

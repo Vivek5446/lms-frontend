@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Eye, BookOpen, Award, Clock, Users, Layers, IndianRupee } from "lucide-react";
+import { Award, BookOpen, Clock, Eye, IndianRupee, Layers, Users } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { Badge } from "@/components/ui/badge";
 import { CourseFormState, formatInr, getFileKindLabel } from "../courseForm";
@@ -28,7 +28,12 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
     <StepWrapper
       stepKey={6}
       title="Course Preview"
-      subtitle="See how your course will look ðŸ‘€"
+      subtitle={
+        <span className="inline-flex items-center gap-1.5">
+          See how your course will look
+          <Eye className="w-4 h-4" />
+        </span>
+      }
       icon={<Eye className="w-6 h-6" />}
       accentColor="hsl(var(--step-7))"
     >
@@ -43,7 +48,7 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
           ) : (
             <div className="h-48 bg-gradient-to-br from-primary/20 via-step-7/20 to-step-2/20 flex items-center justify-center">
               <div className="text-center">
-                <div className="text-5xl mb-2">ðŸ“š</div>
+                <BookOpen className="w-12 h-12 text-step-7 mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">Course Thumbnail</p>
               </div>
             </div>

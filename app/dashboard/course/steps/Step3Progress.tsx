@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { TrendingUp, Award, Clock, Lock } from "lucide-react";
+import { Award, Clock, Lock, TrendingUp } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { FormField } from "./component/FormField";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,12 @@ export default function Step3Progress({ value, onChange, moduleNames, onProgress
     <StepWrapper
       stepKey={2}
       title="Progress & Drip Settings"
-      subtitle="Control how learners progress ðŸ“ˆ"
+      subtitle={
+        <span className="inline-flex items-center gap-1.5">
+          Control how learners progress
+          <TrendingUp className="w-4 h-4" />
+        </span>
+      }
       icon={<TrendingUp className="w-6 h-6" />}
       accentColor="hsl(var(--step-3))"
     >
@@ -78,7 +83,10 @@ export default function Step3Progress({ value, onChange, moduleNames, onProgress
           </div>
           {value.dripEnabled && (
             <div className="bg-background rounded-xl p-4 space-y-3">
-              <p className="text-sm text-muted-foreground">ðŸ“… Configure release schedule for each module in the Structure tab</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Clock className="w-4 h-4 text-step-3" />
+                Configure release schedule for each module in the Structure tab
+              </p>
               {dripSchedule.length > 0 ? (
                 <div className="flex gap-3">
                   {dripSchedule.map((item) => (

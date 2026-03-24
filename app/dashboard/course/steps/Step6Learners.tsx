@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GraduationCap, Search, Filter } from "lucide-react";
+import { Filter, GraduationCap, Search } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,12 @@ export default function Step6Learners({ learners, batches, selectedCompanies, on
     <StepWrapper
       stepKey={5}
       title="Learners Overview"
-      subtitle="See who&apos;s enrolled and their setup ðŸŽ“"
+      subtitle={
+        <span className="inline-flex items-center gap-1.5">
+          See who&apos;s enrolled and their setup
+          <GraduationCap className="w-4 h-4" />
+        </span>
+      }
       icon={<GraduationCap className="w-6 h-6" />}
       accentColor="hsl(var(--step-6))"
     >
@@ -78,7 +83,7 @@ export default function Step6Learners({ learners, batches, selectedCompanies, on
 
           {filtered.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-3xl mb-2">ðŸ”</div>
+              <Search className="w-8 h-8 text-step-6 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
                 {learners.selectedLearners.length === 0 ? "No learners selected yet" : "No learners found"}
               </p>

@@ -7,7 +7,7 @@ interface StepWrapperProps {
   children: ReactNode;
   stepKey: number;
   title: string;
-  subtitle: string;
+  subtitle: ReactNode;
   icon: ReactNode;
   accentColor: string;
 }

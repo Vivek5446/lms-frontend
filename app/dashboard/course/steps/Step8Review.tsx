@@ -1,6 +1,17 @@
 "use client";
 
-import { Rocket, Pencil, CheckCircle2, FileText, Layers, TrendingUp, IndianRupee, Users, GraduationCap, CircleDashed } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleDashed,
+  FileText,
+  GraduationCap,
+  IndianRupee,
+  Layers,
+  Pencil,
+  Rocket,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { Button } from "@/components/ui/button";
 import { CourseFormState, formatInr } from "../courseForm";
@@ -20,7 +31,7 @@ export default function Step8Review({ courseForm, onEditStep, onSaveDraft, onPub
       icon: FileText,
       label: "Basic Info",
       status: courseForm.basicInfo.courseName
-        ? `${courseForm.basicInfo.courseName} • ${courseForm.basicInfo.level}`
+        ? `${courseForm.basicInfo.courseName} - ${courseForm.basicInfo.level}`
         : "Course title is still empty",
       colorClass: "text-step-1",
       bgClass: "bg-step-1/15",
@@ -30,9 +41,9 @@ export default function Step8Review({ courseForm, onEditStep, onSaveDraft, onPub
     {
       icon: Layers,
       label: "Course Structure",
-      status: `${courseForm.structure.modules.length} module${courseForm.structure.modules.length === 1 ? "" : "s"} • ${totalSections} section${
+      status: `${courseForm.structure.modules.length} module${courseForm.structure.modules.length === 1 ? "" : "s"} - ${totalSections} section${
         totalSections === 1 ? "" : "s"
-      } • ${
+      } - ${
         courseForm.structure.quizMode === "per-module" ? "Quiz per module" : "Final quiz"
       }`,
       colorClass: "text-step-2",
@@ -54,7 +65,7 @@ export default function Step8Review({ courseForm, onEditStep, onSaveDraft, onPub
     {
       icon: IndianRupee,
       label: "Pricing",
-      status: `${courseForm.pricing.isPaid ? formatInr(courseForm.pricing.amount) : "Free"} • ${
+      status: `${courseForm.pricing.isPaid ? formatInr(courseForm.pricing.amount) : "Free"} - ${
         courseForm.pricing.selectedCompanies.length
       } compan${courseForm.pricing.selectedCompanies.length === 1 ? "y" : "ies"}`,
       colorClass: "text-step-4",
@@ -74,7 +85,7 @@ export default function Step8Review({ courseForm, onEditStep, onSaveDraft, onPub
     {
       icon: GraduationCap,
       label: "Learners",
-      status: `${courseForm.learners.selectedLearners.length} selected${courseForm.learners.csvFile ? " • CSV attached" : ""}`,
+      status: `${courseForm.learners.selectedLearners.length} selected${courseForm.learners.csvFile ? " - CSV attached" : ""}`,
       colorClass: "text-step-6",
       bgClass: "bg-step-6/15",
       complete: courseForm.learners.selectedLearners.length > 0 || Boolean(courseForm.learners.csvFile),
@@ -86,7 +97,12 @@ export default function Step8Review({ courseForm, onEditStep, onSaveDraft, onPub
     <StepWrapper
       stepKey={7}
       title="Review & Publish"
-      subtitle="Almost there! Let&apos;s review everything ðŸš€"
+      subtitle={
+        <span className="inline-flex items-center gap-1.5">
+          Almost there! Let&apos;s review everything
+          <Rocket className="w-4 h-4" />
+        </span>
+      }
       icon={<Rocket className="w-6 h-6" />}
       accentColor="hsl(var(--step-8))"
     >

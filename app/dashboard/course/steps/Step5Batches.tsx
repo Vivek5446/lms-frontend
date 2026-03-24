@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Trash2, Upload, UserPlus } from "lucide-react";
+import { Plus, Trash2, Upload, UserPlus, Users } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { FormField } from "./component/FormField";
 import { Input } from "@/components/ui/input";
@@ -81,7 +81,12 @@ export default function Step5Batches({
     <StepWrapper
       stepKey={4}
       title="Batches"
-      subtitle="Organize learners into groups ðŸ‘¥"
+      subtitle={
+        <span className="inline-flex items-center gap-1.5">
+          Organize learners into groups
+          <Users className="w-4 h-4" />
+        </span>
+      }
       icon={<Users className="w-6 h-6" />}
       accentColor="hsl(var(--step-5))"
     >
@@ -154,7 +159,7 @@ export default function Step5Batches({
 
         {batches.items.length === 0 ? (
           <div className="text-center py-12 bg-card rounded-2xl border border-dashed border-border">
-            <div className="text-4xl mb-3">ðŸ‘¥</div>
+            <Users className="w-10 h-10 text-step-5 mx-auto mb-3" />
             <p className="font-medium text-foreground mb-1">No batches created yet</p>
             <p className="text-sm text-muted-foreground mb-4">Organize your learners into batches</p>
             <Button onClick={addBatch} className="rounded-xl bg-step-5 hover:bg-step-5/90 text-primary-foreground">
