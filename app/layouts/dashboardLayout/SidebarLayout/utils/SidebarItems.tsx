@@ -162,7 +162,7 @@ const sidebarDatas: SidebarItem[] = [
     id: 17,
     name: "Course",
     icon: <PlusSquareIcon />,
-    url: "/dashboard/LMS",
+    url: "/dashboard/course",
     role: ["superAdmin", "admin", "user"],
   },
   // {
