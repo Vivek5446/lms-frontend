@@ -4,6 +4,7 @@ import { observer } from "mobx-react-lite";
 import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
 import { theme } from "./theme/theme";
 import { lato } from "./theme/theme";
+import "./globals.css";
 import MainLayout from "./layouts/mainLayout/MainLayout";
 import AuthenticationLayout from "./layouts/authenticationLayout/AuthenticationLayout";
 import DashboardLayout from "./layouts/dashboardLayout/DashboardLayout";

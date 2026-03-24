@@ -1,49 +1,51 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const HEADING_OPTIONS = [
   { label: "Normal", tag: "p" },
-  { label: "H1",     tag: "h1" },
-  { label: "H2",     tag: "h2" },
-  { label: "H3",     tag: "h3" },
+  { label: "H1", tag: "h1" },
+  { label: "H2", tag: "h2" },
+  { label: "H3", tag: "h3" },
 ] as const;
 
 const FORMAT_BTNS = [
-  { cmd: "bold",          icon: "B",  style: { fontWeight: 700 },                    title: "Bold" },
-  { cmd: "italic",        icon: "I",  style: { fontStyle: "italic" },                title: "Italic" },
-  { cmd: "underline",     icon: "U",  style: { textDecoration: "underline" },        title: "Underline" },
-  { cmd: "strikeThrough", icon: "S",  style: { textDecoration: "line-through" },     title: "Strikethrough" },
+  { cmd: "bold", icon: "B", style: { fontWeight: 700 }, title: "Bold" },
+  { cmd: "italic", icon: "I", style: { fontStyle: "italic" }, title: "Italic" },
+  { cmd: "underline", icon: "U", style: { textDecoration: "underline" }, title: "Underline" },
+  { cmd: "strikeThrough", icon: "S", style: { textDecoration: "line-through" }, title: "Strikethrough" },
 ] as const;
 
 const LIST_BTNS = [
-  { cmd: "insertUnorderedList", icon: "• List",  title: "Bullet List" },
-  { cmd: "insertOrderedList",   icon: "1. List", title: "Numbered List" },
+  { cmd: "insertUnorderedList", icon: "• List", title: "Bullet List" },
+  { cmd: "insertOrderedList", icon: "1. List", title: "Numbered List" },
 ] as const;
 
 const ALIGN_BTNS = [
-  { cmd: "justifyLeft",   icon: "≡", title: "Align Left" },
+  { cmd: "justifyLeft", icon: "≡", title: "Align Left" },
   { cmd: "justifyCenter", icon: "⊟", title: "Align Center" },
-  { cmd: "justifyRight",  icon: "⊞", title: "Align Right" },
+  { cmd: "justifyRight", icon: "⊞", title: "Align Right" },
 ] as const;
 
 interface RichTextEditorProps {
   placeholder?: string;
   minHeight?: number;
+  value?: string;
   onChange?: (html: string) => void;
 }
 
 export default function RichTextEditor({
   placeholder = "Start writing...",
   minHeight = 140,
+  value = "",
   onChange,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const [isEmpty, setIsEmpty]   = useState(true);
-  const [focused, setFocused]   = useState(false);
+  const [isEmpty, setIsEmpty] = useState(true);
+  const [focused, setFocused] = useState(false);
 
-  const exec = (cmd: string, value?: string) => {
-    document.execCommand(cmd, false, value);
+  const exec = (cmd: string, commandValue?: string) => {
+    document.execCommand(cmd, false, commandValue);
     editorRef.current?.focus();
   };
 
@@ -53,7 +55,19 @@ export default function RichTextEditor({
     onChange?.(editorRef.current?.innerHTML ?? "");
   };
 
-  /* ── style helpers ── */
+  useEffect(() => {
+    if (!editorRef.current) {
+      return;
+    }
+
+    if (editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value;
+    }
+
+    const text = editorRef.current.innerText.trim();
+    setIsEmpty(text === "");
+  }, [value]);
+
   const wrap: React.CSSProperties = {
     border: `1.5px solid ${focused ? "#6B21A8" : "#E5E7EB"}`,
     borderRadius: 10,
@@ -97,13 +111,10 @@ export default function RichTextEditor({
 
   return (
     <div style={wrap}>
-      {/* ── Toolbar ── */}
       <div style={toolbar}>
-
-        {/* Heading */}
         <select
           defaultValue="p"
-          onChange={(e) => exec("formatBlock", e.target.value)}
+          onChange={(event) => exec("formatBlock", event.target.value)}
           style={{
             padding: "4px 8px",
             borderRadius: 6,
@@ -116,72 +127,84 @@ export default function RichTextEditor({
             marginRight: 4,
           }}
         >
-          {HEADING_OPTIONS.map((h) => (
-            <option key={h.tag} value={h.tag}>{h.label}</option>
+          {HEADING_OPTIONS.map((heading) => (
+            <option key={heading.tag} value={heading.tag}>
+              {heading.label}
+            </option>
           ))}
         </select>
 
         <div style={divider} />
 
-        {/* Bold / Italic / Underline / Strike */}
-        {FORMAT_BTNS.map((b) => (
+        {FORMAT_BTNS.map((buttonConfig) => (
           <button
-            key={b.cmd}
-            title={b.title}
-            onMouseDown={(e) => { e.preventDefault(); exec(b.cmd); }}
-            style={btn(b.style)}
+            key={buttonConfig.cmd}
+            title={buttonConfig.title}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              exec(buttonConfig.cmd);
+            }}
+            style={btn(buttonConfig.style)}
           >
-            {b.icon}
+            {buttonConfig.icon}
           </button>
         ))}
 
         <div style={divider} />
 
-        {/* Lists */}
-        {LIST_BTNS.map((b) => (
+        {LIST_BTNS.map((buttonConfig) => (
           <button
-            key={b.cmd}
-            title={b.title}
-            onMouseDown={(e) => { e.preventDefault(); exec(b.cmd); }}
+            key={buttonConfig.cmd}
+            title={buttonConfig.title}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              exec(buttonConfig.cmd);
+            }}
             style={btn()}
           >
-            {b.icon}
+            {buttonConfig.icon}
           </button>
         ))}
 
         <div style={divider} />
 
-        {/* Alignment */}
-        {ALIGN_BTNS.map((b) => (
+        {ALIGN_BTNS.map((buttonConfig) => (
           <button
-            key={b.cmd}
-            title={b.title}
-            onMouseDown={(e) => { e.preventDefault(); exec(b.cmd); }}
+            key={buttonConfig.cmd}
+            title={buttonConfig.title}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              exec(buttonConfig.cmd);
+            }}
             style={btn({ fontSize: 15 })}
           >
-            {b.icon}
+            {buttonConfig.icon}
           </button>
         ))}
 
         <div style={divider} />
 
-        {/* Link */}
         <button
           title="Insert Link"
-          onMouseDown={(e) => {
-            e.preventDefault();
+          onMouseDown={(event) => {
+            event.preventDefault();
             const url = prompt("Enter URL:");
-            if (url) exec("createLink", url);
+
+            if (url) {
+              exec("createLink", url);
+            }
           }}
           style={btn()}
         >
           🔗
         </button>
 
-        {/* Unlink */}
         <button
           title="Remove Link"
-          onMouseDown={(e) => { e.preventDefault(); exec("unlink"); }}
+          onMouseDown={(event) => {
+            event.preventDefault();
+            exec("unlink");
+          }}
           style={btn({ fontSize: 11, color: "#9CA3AF" })}
         >
           Unlink
@@ -189,17 +212,18 @@ export default function RichTextEditor({
 
         <div style={divider} />
 
-        {/* Clear formatting */}
         <button
           title="Clear Formatting"
-          onMouseDown={(e) => { e.preventDefault(); exec("removeFormat"); }}
+          onMouseDown={(event) => {
+            event.preventDefault();
+            exec("removeFormat");
+          }}
           style={btn({ fontSize: 11, color: "#9CA3AF" })}
         >
-          T✕
+          T×
         </button>
       </div>
 
-      {/* ── Editable area ── */}
       <div style={{ position: "relative" }}>
         {isEmpty && (
           <div

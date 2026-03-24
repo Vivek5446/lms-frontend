@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-
 import { CourseStepper } from "./CourseStepper";
 import Step1BasicInfo from "./steps/Step1BasicInfo";
 import Step2Structure from "./steps/Step2Structure";
@@ -13,29 +12,26 @@ import Step5Batches from "./steps/Step5Batches";
 import Step6Learners from "./steps/Step6Learners";
 import Step7Preview from "./steps/Step7Preview";
 import Step8Review from "./steps/Step8Review";
+import { CourseFormState, buildCoursePayload, initialCourseFormState } from "./courseForm";
 
 const TOTAL_STEPS = 8;
-
-const STEPS = [
-  Step1BasicInfo,
-  Step2Structure,
-  Step3Progress,
-  Step4Pricing,
-  Step5Batches,
-  Step6Learners,
-  Step7Preview,
-  Step8Review,
-];
 
 export default function CourseList() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [stepProgress, setStepProgress] = useState<Record<number, number>>({});
+  const [courseForm, setCourseForm] = useState<CourseFormState>(initialCourseFormState);
   const router = useRouter();
 
-  const updateStepProgress = (step: number, progress: number) => {
-    setStepProgress((prev) => ({ ...prev, [step]: progress }));
-  };
+  const updateStepProgress = useCallback((step: number, progress: number) => {
+    setStepProgress((prev) => {
+      if (prev[step] === progress) {
+        return prev;
+      }
+
+      return { ...prev, [step]: progress };
+    });
+  }, []);
 
   const goNext = () => {
     if (currentStep < TOTAL_STEPS - 1) {
@@ -45,15 +41,93 @@ export default function CourseList() {
   };
 
   const goBack = () => {
-    if (currentStep > 0) setCurrentStep(currentStep - 1);
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
-  const CurrentStepComponent = STEPS[currentStep];
+  const handleSave = (action: "draft" | "publish") => {
+    const payload = buildCoursePayload(courseForm, action);
+    console.log(`Course ${action} payload`, payload);
+  };
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <Step1BasicInfo
+            value={courseForm.basicInfo}
+            onChange={(basicInfo) => setCourseForm((prev) => ({ ...prev, basicInfo }))}
+            onProgressChange={(progress) => updateStepProgress(0, progress)}
+          />
+        );
+      case 1:
+        return (
+          <Step2Structure
+            value={courseForm.structure}
+            onChange={(structure) => setCourseForm((prev) => ({ ...prev, structure }))}
+            onProgressChange={(progress) => updateStepProgress(1, progress)}
+          />
+        );
+      case 2:
+        return (
+          <Step3Progress
+            value={courseForm.progress}
+            onChange={(progress) => setCourseForm((prev) => ({ ...prev, progress }))}
+            moduleNames={courseForm.structure.modules.map((module) => module.name)}
+            onProgressChange={(progressValue) => updateStepProgress(2, progressValue)}
+          />
+        );
+      case 3:
+        return (
+          <Step4Pricing
+            value={courseForm.pricing}
+            onChange={(pricing) => setCourseForm((prev) => ({ ...prev, pricing }))}
+            onProgressChange={(progress) => updateStepProgress(3, progress)}
+          />
+        );
+      case 4:
+        return (
+          <Step5Batches
+            batches={courseForm.batches}
+            learners={courseForm.learners}
+            onBatchesChange={(batches) => setCourseForm((prev) => ({ ...prev, batches }))}
+            onLearnersChange={(learners) => setCourseForm((prev) => ({ ...prev, learners }))}
+            onProgressChange={(progress) => updateStepProgress(4, progress)}
+          />
+        );
+      case 5:
+        return (
+          <Step6Learners
+            learners={courseForm.learners}
+            batches={courseForm.batches.items}
+            selectedCompanies={courseForm.pricing.selectedCompanies}
+            onProgressChange={(progress) => updateStepProgress(5, progress)}
+          />
+        );
+      case 6:
+        return (
+          <Step7Preview
+            courseForm={courseForm}
+            onProgressChange={(progress) => updateStepProgress(6, progress)}
+          />
+        );
+      case 7:
+        return (
+          <Step8Review
+            courseForm={courseForm}
+            onEditStep={setCurrentStep}
+            onSaveDraft={() => handleSave("draft")}
+            onPublish={() => handleSave("publish")}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#F9FAFB" }}>
-
-      {/* ── Header ── */}
       <div
         style={{
           background: "#FFFFFF",
@@ -68,7 +142,6 @@ export default function CourseList() {
             justifyContent: "space-between",
           }}
         >
-          {/* Left: back arrow + title */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={() => router.push("/dashboard")}
@@ -84,10 +157,9 @@ export default function CourseList() {
                 cursor: "pointer",
                 flexShrink: 0,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#F3F4F6")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#FFFFFF")}
+              onMouseEnter={(event) => (event.currentTarget.style.background = "#F3F4F6")}
+              onMouseLeave={(event) => (event.currentTarget.style.background = "#FFFFFF")}
             >
-              {/* Arrow left SVG */}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
@@ -111,7 +183,6 @@ export default function CourseList() {
             </div>
           </div>
 
-          {/* Right: Save Draft button */}
           <button
             style={{
               display: "flex",
@@ -127,10 +198,10 @@ export default function CourseList() {
               cursor: "pointer",
               fontFamily: "inherit",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#FFFFFF")}
+            onMouseEnter={(event) => (event.currentTarget.style.background = "#F9FAFB")}
+            onMouseLeave={(event) => (event.currentTarget.style.background = "#FFFFFF")}
+            onClick={() => handleSave("draft")}
           >
-            {/* Save icon SVG */}
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
               <polyline points="17 21 17 13 7 13 7 21" />
@@ -141,14 +212,12 @@ export default function CourseList() {
         </div>
       </div>
 
-      {/* ── Main content ── */}
       <div
         style={{
           padding: "32px 24px",
           boxSizing: "border-box",
         }}
       >
-        {/* Stepper */}
         <CourseStepper
           currentStep={currentStep}
           onStepClick={setCurrentStep}
@@ -156,10 +225,8 @@ export default function CourseList() {
           stepProgress={stepProgress[currentStep] ?? 0}
         />
 
-        {/* Active step */}
-        <CurrentStepComponent onProgressChange={(p: number) => updateStepProgress(currentStep, p)} />
+        {renderCurrentStep()}
 
-        {/* Back / Next navigation */}
         {currentStep < TOTAL_STEPS - 1 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -174,7 +241,6 @@ export default function CourseList() {
               borderTop: "1px solid #E5E7EB",
             }}
           >
-            {/* Back */}
             <button
               onClick={goBack}
               disabled={currentStep === 0}
@@ -199,7 +265,6 @@ export default function CourseList() {
               Back
             </button>
 
-            {/* Next */}
             <button
               onClick={goNext}
               style={{
@@ -216,8 +281,8 @@ export default function CourseList() {
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#4338CA")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#4F46E5")}
+              onMouseEnter={(event) => (event.currentTarget.style.background = "#4338CA")}
+              onMouseLeave={(event) => (event.currentTarget.style.background = "#4F46E5")}
             >
               Next
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
