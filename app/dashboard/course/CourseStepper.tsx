@@ -1,16 +1,38 @@
 "use client";
 
 import { motion } from "framer-motion";
+import {
+  FileText,      // Basic Info
+  LayoutTemplate,// Structure
+  TrendingUp,    // Progress
+  CreditCard,    // Pricing
+  Users,         // Batches
+  GraduationCap, // Learners
+  Eye,           // Preview
+  Send,          // Publish
+} from "lucide-react";
 
 const STEPS = [
-  { label: "Basic Info", emoji: "📝" },
-  { label: "Structure",  emoji: "🧱" },
-  { label: "Progress",   emoji: "📈" },
-  { label: "Pricing",    emoji: "💰" },
-  { label: "Batches",    emoji: "👥" },
-  { label: "Learners",   emoji: "🎓" },
-  { label: "Preview",    emoji: "👀" },
-  { label: "Publish",    emoji: "🚀" },
+  { label: "Basic Info", icon: FileText },
+  { label: "Structure",  icon: LayoutTemplate },
+  { label: "Progress",   icon: TrendingUp },
+  { label: "Pricing",    icon: CreditCard },
+  { label: "Batches",    icon: Users },
+  { label: "Learners",   icon: GraduationCap },
+  { label: "Preview",    icon: Eye },
+  { label: "Publish",    icon: Send },
+];
+
+// One distinct color per step (Tailwind-like hues, adjust as needed)
+const STEP_COLORS = [
+  "#3B82F6", // blue
+  "#10B981", // emerald
+  "#F59E0B", // amber
+  "#EF4444", // red
+  "#8B5CF6", // violet
+  "#EC489A", // pink
+  "#06B6D4", // cyan
+  "#6B7280", // gray
 ];
 
 interface CourseStepperProps {
@@ -28,12 +50,11 @@ interface CourseStepperProps {
 const BUBBLE   = 52;   // px — must match the bubble width/height below
 const STROKE   = 3;    // ring stroke width
 const GAP      = 3;    // gap between bubble edge and ring centre
-// Ring centre sits at GAP + STROKE/2 from the bubble edge
 const SVG_SIZE = BUBBLE + 2 * (GAP + STROKE);          // 52 + 2*(3+3) = 64
 const OFFSET   = -(GAP + STROKE);                       // -6
 const RADIUS   = (BUBBLE / 2) + GAP + STROKE / 2;      // 26 + 3 + 1.5 = 30.5
 
-function ProgressRing({ progress = 0, color = "#6B21A8" }: { progress?: number; color?: string }) {
+function ProgressRing({ progress = 0, color }: { progress?: number; color: string }) {
   const circumference = 2 * Math.PI * RADIUS;
   const dashOffset    = circumference - (progress / 100) * circumference;
 
@@ -104,6 +125,8 @@ export function CourseStepper({
       {STEPS.map((step, i) => {
         const isCompleted = completedSteps.has(i);
         const isCurrent   = i === currentStep;
+        const stepColor   = STEP_COLORS[i % STEP_COLORS.length];
+        const Icon        = step.icon;
 
         return (
           <div
@@ -144,7 +167,7 @@ export function CourseStepper({
               >
                 {/* Progress ring — only on current step */}
                 {isCurrent && stepProgress > 0 && (
-                  <ProgressRing progress={stepProgress} color="#6B21A8" />
+                  <ProgressRing progress={stepProgress} color={stepColor} />
                 )}
 
                 <motion.div
@@ -158,17 +181,14 @@ export function CourseStepper({
                     alignItems: "center",
                     justifyContent: "center",
                     fontSize: 22,
-                    background: isCurrent
-                      ? "#6B21A8"
-                      : isCompleted
-                      ? "#7C3AED"
-                      : "#F3F4F6",
+                    background: isCurrent || isCompleted ? stepColor : "#F3F4F6",
                     border:
                       isCurrent || isCompleted
                         ? "none"
                         : "1.5px solid #E5E7EB",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
                     flexShrink: 0,
+                    color: "white",
                   }}
                 >
                   {isCompleted ? (
@@ -180,13 +200,11 @@ export function CourseStepper({
                       />
                     </svg>
                   ) : (
-                    <span
-                      style={{
-                        filter: isCurrent ? "none" : "grayscale(0.4) opacity(0.7)",
-                      }}
-                    >
-                      {step.emoji}
-                    </span>
+                    <Icon
+                      size={20}
+                      strokeWidth={1.5}
+                      color={isCurrent || isCompleted ? "white" : "#9CA3AF"}
+                    />
                   )}
                 </motion.div>
               </button>
@@ -197,11 +215,7 @@ export function CourseStepper({
                   fontWeight: 500,
                   textAlign: "center",
                   whiteSpace: "nowrap",
-                  color: isCurrent
-                    ? "#6B21A8"
-                    : isCompleted
-                    ? "#7C3AED"
-                    : "#9CA3AF",
+                  color: isCurrent || isCompleted ? stepColor : "#9CA3AF",
                 }}
               >
                 {step.label}
@@ -228,7 +242,7 @@ export function CourseStepper({
                     left: 0,
                     top: 0,
                     height: "100%",
-                    background: "#7C3AED",
+                    background: STEP_COLORS[i % STEP_COLORS.length],
                     borderRadius: 2,
                   }}
                   animate={{

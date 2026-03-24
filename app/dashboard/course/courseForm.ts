@@ -31,11 +31,18 @@ export interface CourseBasicInfo {
   level: string;
 }
 
+export interface CourseModuleSectionInput {
+  id: string;
+  title: string;
+  description: string;
+  contentFile: StoredFile | null;
+}
+
 export interface CourseModuleInput {
   id: string;
   name: string;
   description: string;
-  contentFile: StoredFile | null;
+  sections: CourseModuleSectionInput[];
   hasQuiz: boolean;
   hasTest: boolean;
 }
@@ -158,12 +165,21 @@ export function createStoredFile(file: File, kind: StoredFileKind, previewUrl?: 
   };
 }
 
+export function createEmptyModuleSection(): CourseModuleSectionInput {
+  return {
+    id: createClientId(),
+    title: "",
+    description: "",
+    contentFile: null,
+  };
+}
+
 export function createEmptyModule(): CourseModuleInput {
   return {
     id: createClientId(),
     name: "",
     description: "",
-    contentFile: null,
+    sections: [createEmptyModuleSection()],
     hasQuiz: false,
     hasTest: false,
   };
@@ -269,6 +285,7 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
   const amount = courseForm.pricing.isPaid ? parseNumericValue(courseForm.pricing.amount) : null;
   const accessDurationDays = parseNumericValue(courseForm.pricing.accessDurationDays);
   const completionDays = parseNumericValue(courseForm.progress.completionDays);
+  const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
 
   return {
     action,
@@ -292,11 +309,18 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
     curriculum: {
       quizStrategy: courseForm.structure.quizMode,
       totalModules: courseForm.structure.modules.length,
+      totalSections,
       modules: courseForm.structure.modules.map((module, index) => ({
         order: index + 1,
         title: module.name.trim(),
-        description: module.description.trim(),
-        content: summarizeFile(module.contentFile),
+        summary: module.description.trim(),
+        sectionCount: module.sections.length,
+        sections: module.sections.map((section, sectionIndex) => ({
+          order: sectionIndex + 1,
+          title: section.title.trim(),
+          description: section.description.trim(),
+          content: summarizeFile(section.contentFile),
+        })),
         assessments: {
           quizEnabled: module.hasQuiz,
           testEnabled: module.hasTest,
@@ -332,6 +356,7 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
     },
     meta: {
       moduleCount: courseForm.structure.modules.length,
+      sectionCount: totalSections,
       batchCount: courseForm.batches.items.length,
       learnerCount: courseForm.learners.selectedLearners.length,
       companyCount: courseForm.pricing.selectedCompanies.length,

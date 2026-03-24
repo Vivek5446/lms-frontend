@@ -13,6 +13,8 @@ interface Step8ReviewProps {
 }
 
 export default function Step8Review({ courseForm, onEditStep, onSaveDraft, onPublish }: Step8ReviewProps) {
+  const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
+
   const sections = [
     {
       icon: FileText,
@@ -28,7 +30,9 @@ export default function Step8Review({ courseForm, onEditStep, onSaveDraft, onPub
     {
       icon: Layers,
       label: "Course Structure",
-      status: `${courseForm.structure.modules.length} module${courseForm.structure.modules.length === 1 ? "" : "s"} • ${
+      status: `${courseForm.structure.modules.length} module${courseForm.structure.modules.length === 1 ? "" : "s"} • ${totalSections} section${
+        totalSections === 1 ? "" : "s"
+      } • ${
         courseForm.structure.quizMode === "per-module" ? "Quiz per module" : "Final quiz"
       }`,
       colorClass: "text-step-2",

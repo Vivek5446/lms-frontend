@@ -14,6 +14,7 @@ interface Step7PreviewProps {
 export default function Step7Preview({ courseForm, onProgressChange }: Step7PreviewProps) {
   const modules = courseForm.structure.modules;
   const learnerCount = courseForm.learners.selectedLearners.length;
+  const totalSections = modules.reduce((count, module) => count + module.sections.length, 0);
   const pricingLabel = courseForm.pricing.isPaid ? formatInr(courseForm.pricing.amount) : "Free";
   const accessLabel = courseForm.pricing.accessDurationDays.trim()
     ? `${courseForm.pricing.accessDurationDays} days`
@@ -72,7 +73,7 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border">
               {[
-                { icon: Layers, label: "Modules", value: String(modules.length) },
+                { icon: Layers, label: "Structure", value: `${modules.length}M / ${totalSections}S` },
                 { icon: Clock, label: "Access", value: accessLabel },
                 { icon: Users, label: "Learners", value: String(learnerCount) },
                 { icon: Award, label: "Certificate", value: courseForm.progress.certificateEnabled ? "Yes" : "No" },
@@ -97,27 +98,49 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
             </div>
           ) : (
             modules.map((module, index) => (
-              <div key={module.id} className="flex items-center gap-3 p-3 bg-background rounded-xl">
-                <div className="w-8 h-8 rounded-lg bg-step-7/15 flex items-center justify-center text-sm font-bold text-step-7">
-                  {index + 1}
+              <div key={module.id} className="p-4 bg-background rounded-xl space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-step-7/15 flex items-center justify-center text-sm font-bold text-step-7">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{module.name || `Module ${index + 1}`}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {module.sections.length} section{module.sections.length === 1 ? "" : "s"}
+                    </p>
+                    {module.description && (
+                      <p className="text-xs text-muted-foreground mt-1">{module.description}</p>
+                    )}
+                  </div>
+                  {courseForm.structure.quizMode === "per-module" && module.hasQuiz && (
+                    <Badge className="bg-step-2/10 text-step-2 border-0 text-xs">Quiz</Badge>
+                  )}
+                  {courseForm.structure.quizMode === "per-module" && module.hasTest && (
+                    <Badge className="bg-step-3/10 text-step-3 border-0 text-xs">Test</Badge>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{module.name || `Module ${index + 1}`}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {module.description || "Module description will appear here."}
-                  </p>
+                <div className="space-y-2">
+                  {module.sections.length === 0 ? (
+                    <div className="text-xs text-muted-foreground">No sections added yet.</div>
+                  ) : (
+                    module.sections.map((section, sectionIndex) => (
+                      <div key={section.id} className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
+                        <div className="text-xs font-semibold text-step-7">{sectionIndex + 1}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground">{section.title || `Section ${sectionIndex + 1}`}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {section.description || "Section description will appear here."}
+                          </p>
+                        </div>
+                        {section.contentFile && (
+                          <Badge className="bg-step-4/10 text-step-4 border-0 text-xs">
+                            {getFileKindLabel(section.contentFile.kind)}
+                          </Badge>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
-                {module.contentFile && (
-                  <Badge className="bg-step-4/10 text-step-4 border-0 text-xs">
-                    {getFileKindLabel(module.contentFile.kind)}
-                  </Badge>
-                )}
-                {courseForm.structure.quizMode === "per-module" && module.hasQuiz && (
-                  <Badge className="bg-step-2/10 text-step-2 border-0 text-xs">Quiz</Badge>
-                )}
-                {courseForm.structure.quizMode === "per-module" && module.hasTest && (
-                  <Badge className="bg-step-3/10 text-step-3 border-0 text-xs">Test</Badge>
-                )}
               </div>
             ))
           )}
