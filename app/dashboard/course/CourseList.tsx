@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { observer } from "mobx-react-lite";
 import { CourseStepper } from "./CourseStepper";
 import Step1BasicInfo from "./steps/Step1BasicInfo";
 import Step2Structure from "./steps/Step2Structure";
@@ -13,10 +14,16 @@ import Step6Learners from "./steps/Step6Learners";
 import Step7Preview from "./steps/Step7Preview";
 import Step8Review from "./steps/Step8Review";
 import { CourseFormState, buildCoursePayload, initialCourseFormState } from "./courseForm";
+import { courseStore } from "@/app/store/courseStore/courseStore";
 
 const TOTAL_STEPS = 8;
 
-export default function CourseList() {
+interface CourseListProps {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+function CourseList({ onSuccess, onCancel }: CourseListProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [stepProgress, setStepProgress] = useState<Record<number, number>>({});
@@ -46,9 +53,41 @@ export default function CourseList() {
     }
   };
 
-  const handleSave = (action: "draft" | "publish") => {
+  const handleSave = async (action: "draft" | "publish") => {
     const payload = buildCoursePayload(courseForm, action);
-    console.log(`Course ${action} payload`, payload);
+
+    // Build FormData to send files + JSON payload
+    const formData = new FormData();
+    formData.append("payload", JSON.stringify(payload));
+
+    // Append thumbnail file if present
+    if (courseForm.basicInfo.thumbnail?.file) {
+      formData.append("thumbnail", courseForm.basicInfo.thumbnail.file);
+    }
+
+    // Find the first SCORM/ZIP file from sections and append it
+    for (const mod of courseForm.structure.modules) {
+      for (const section of mod.sections) {
+        if (
+          section.contentFile &&
+          (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip")
+        ) {
+          formData.append("scormZip", section.contentFile.file);
+          break;
+        }
+      }
+    }
+
+    try {
+      await courseStore.createCourse(formData);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/dashboard/course");
+      }
+    } catch (err) {
+      console.error("Failed to save course:", err);
+    }
   };
 
   const renderCurrentStep = () => {
@@ -144,7 +183,7 @@ export default function CourseList() {
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => (onCancel ? onCancel() : router.push("/dashboard"))}
               style={{
                 width: 36,
                 height: 36,
@@ -183,32 +222,39 @@ export default function CourseList() {
             </div>
           </div>
 
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "9px 18px",
-              borderRadius: 10,
-              border: "1.5px solid #D1D5DB",
-              background: "#FFFFFF",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#374151",
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-            onMouseEnter={(event) => (event.currentTarget.style.background = "#F9FAFB")}
-            onMouseLeave={(event) => (event.currentTarget.style.background = "#FFFFFF")}
-            onClick={() => handleSave("draft")}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-              <polyline points="17 21 17 13 7 13 7 21" />
-              <polyline points="7 3 7 8 15 8" />
-            </svg>
-            Save Draft
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {courseStore.isSubmitting && (
+              <span style={{ fontSize: 13, color: "#6B7280" }}>Saving...</span>
+            )}
+            <button
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "9px 18px",
+                borderRadius: 10,
+                border: "1.5px solid #D1D5DB",
+                background: "#FFFFFF",
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#374151",
+                cursor: courseStore.isSubmitting ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+                opacity: courseStore.isSubmitting ? 0.6 : 1,
+              }}
+              onMouseEnter={(event) => (event.currentTarget.style.background = "#F9FAFB")}
+              onMouseLeave={(event) => (event.currentTarget.style.background = "#FFFFFF")}
+              onClick={() => handleSave("draft")}
+              disabled={courseStore.isSubmitting}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              Save Draft
+            </button>
+          </div>
         </div>
       </div>
 
@@ -295,3 +341,5 @@ export default function CourseList() {
     </div>
   );
 }
+
+export default observer(CourseList);

@@ -17,6 +17,7 @@ import { documentStore } from "./documentStore/documentStore";
 import { recallAppointmentStore } from "./recallAppointment/recallAppointmentStore";
 import { reportStore } from "./reportStore/reportStore";
 import { workflowStore } from "./workflowStore/workflowStore";
+import { courseStore } from "./courseStore/courseStore";
 const stores = {
   auth : authStore,
   dashboardStore : dashboardStore,
@@ -35,6 +36,7 @@ const stores = {
   reportStore:reportStore,
   workflowStore:workflowStore,
   documentStore:documentStore,
+  courseStore:courseStore,
 };
 
 export default stores;
