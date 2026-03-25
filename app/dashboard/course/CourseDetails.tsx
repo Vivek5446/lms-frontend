@@ -1,21 +1,55 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Container,
+  Divider,
+  Flex,
+  Grid,
+  Heading,
+  HStack,
+  Icon,
+  Image,
+  SimpleGrid,
+  Stack,
+  Tag,
+  Text,
+  useColorModeValue,
+  VStack,
+} from "@chakra-ui/react";
+import { motion } from "framer-motion";
 import {
   Award,
   BookOpen,
   Calendar,
   CheckCircle,
-  ChevronDown,
   ChevronLeft,
-  ChevronUp,
   Clock,
+  FileBox,
+  GraduationCap,
   Layers,
   MapPin,
-  Play,
-  Users
+  PlayCircle,
+  Rocket,
+  Star,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
+
+// Motion components
+const MotionBox = motion(Box);
+const MotionFlex = motion(Flex);
+const MotionButton = motion(Button);
 
 interface CourseDetailsProps {
   course: any;
@@ -24,318 +58,435 @@ interface CourseDetailsProps {
 }
 
 export default function CourseDetails({ course, onBack, onLaunchSection }: CourseDetailsProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "curriculum" | "batches">("overview");
-  const [openModules, setOpenModules] = useState<Set<number>>(new Set([1]));
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
 
-  const toggleModule = (order: number) => {
-    setOpenModules(prev => {
-      const next = new Set(prev);
-      if (next.has(order)) next.delete(order);
-      else next.add(order);
-      return next;
-    });
-  };
-
-  const tabs = [
-    { id: "overview", label: "Overview", icon: BookOpen },
-    { id: "curriculum", label: "Curriculum", icon: Layers },
-    { id: "batches", label: "Batches & Learners", icon: Users },
-  ];
+  // Colors (Chakra + Tailwind friendly)
+  const bgColor = useColorModeValue("gray.50", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const accentColor = "blue.500";
+  const accentLight = useColorModeValue("blue.50", "blue.900");
+  const textMuted = useColorModeValue("gray.500", "gray.400");
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F9FAFB" }}>
+    <Box minH="100vh" bg={bgColor}>
       {/* Sticky Header */}
-      <div style={{ 
-        position: "sticky", top: 0, zIndex: 50, 
-        background: "rgba(255, 255, 255, 0.9)", 
-        backdropFilter: "blur(12px)",
-        borderBottom: "1px solid #E5E7EB",
-        padding: "16px 24px"
-      }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto", display: "flex", alignItems: "center", gap: 16 }}>
-          <motion.button 
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onBack}
-            style={{ 
-              width: 40, height: 40, borderRadius: 12, border: "1px solid #E5E7EB", 
-              background: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", color: "#374151", boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
-            }}
-          >
-            <ChevronLeft size={20} />
-          </motion.button>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>{course.title}</h1>
-            <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
-              {course.taxonomy?.level || "Beginner"} • {course.taxonomy?.categories?.join(", ") || "General"}
-            </p>
-          </div>
-        </div>
-      </div>
+      <Box
+        position="sticky"
+        top={0}
+        zIndex="sticky"
+        borderBottomWidth="1px"
+        borderBottomColor={borderColor}
+        backdropFilter="blur(12px)"
+        bg={useColorModeValue("rgba(255, 255, 255, 0.9)", "rgba(26, 32, 44, 0.9)")}
+        px={{ base: 4, md: 6 }}
+        py={3}
+      >
+        <Container maxW="container.xl">
+          <Flex align="center" gap={4}>
+            <MotionButton
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onBack}
+              variant="ghost"
+              rounded="full"
+              p={0}
+              minW="auto"
+              aria-label="Go back"
+            >
+              <Icon as={ChevronLeft} boxSize={5} />
+            </MotionButton>
+            <Box>
+              <Heading as="h1" size="lg" fontWeight="bold">
+                {course.title}
+              </Heading>
+              <Flex gap={2} mt={1}>
+                <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
+                  {course.taxonomy?.level || "Beginner"}
+                </Badge>
+                {course.taxonomy?.categories?.slice(0, 2).map((cat: string, idx: number) => (
+                  <Badge key={idx} colorScheme="gray" variant="subtle" borderRadius="full" px={3} py={1}>
+                    {cat}
+                  </Badge>
+                ))}
+              </Flex>
+            </Box>
+          </Flex>
+        </Container>
+      </Box>
 
-      <div style={{ maxWidth: 1000, margin: "32px auto", padding: "0 24px", paddingBottom: 80 }}>
-        {/* Main Content Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 32 }}>
-          
-          <div>
-            {/* Tabs */}
-            <div style={{ display: "flex", gap: 8, background: "#F3F4F6", padding: 6, borderRadius: 20, marginBottom: 32 }}>
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  style={{
-                    flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                    padding: "12px 0", borderRadius: 16, border: "none", fontSize: 14, fontWeight: 700,
-                    cursor: "pointer", transition: "all 0.2s",
-                    background: activeTab === tab.id ? "#fff" : "transparent",
-                    color: activeTab === tab.id ? "#4F46E5" : "#6B7280",
-                    boxShadow: activeTab === tab.id ? "0 4px 12px rgba(0,0,0,0.08)" : "none",
-                  }}
-                >
-                  <tab.icon size={16} />
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Panels */}
-            <AnimatePresence mode="wait">
-              {activeTab === "overview" && (
-                <motion.div
-                  key="overview"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  style={{ background: "#fff", padding: 32, borderRadius: 28, border: "1px solid #E5E7EB", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}
-                >
-                  <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 20, color: "#111827" }}>About this Course</h2>
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: course.description?.html || course.description?.text || "No description provided." }} 
-                    style={{ color: "#4B5563", lineHeight: 1.7, fontSize: 15 }}
+      <Container maxW="container.xl" py={8}>
+        <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
+          {/* Main content */}
+          <Stack spacing={8}>
+            {/* Overview Card */}
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
+                <CardHeader pb={0}>
+                  <Flex align="center" gap={2}>
+                    <Icon as={GraduationCap} boxSize={6} color={accentColor} />
+                    <Heading size="md">About this course</Heading>
+                  </Flex>
+                </CardHeader>
+                <CardBody>
+                  <Box
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        course.description?.html ||
+                        course.description?.text ||
+                        "No description provided.",
+                    }}
+                    className="prose prose-sm max-w-none"
+                    color={useColorModeValue("gray.600", "gray.300")}
                   />
-                  
-                  <div style={{ marginTop: 40, borderTop: "1px solid #F3F4F6", paddingTop: 32, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-                    <div style={{ display: "flex", gap: 16 }}>
-                      <div style={{ width: 48, height: 48, borderRadius: 14, background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#4F46E5" }}>
-                        <Clock size={24} />
-                      </div>
-                      <div>
-                        <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Duration</p>
-                        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#111827" }}>{course.progression?.completionWindowDays || "Self-paced"} Days</p>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 16 }}>
-                      <div style={{ width: 48, height: 48, borderRadius: 14, background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", color: "#10B981" }}>
-                        <Award size={24} />
-                      </div>
-                      <div>
-                        <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Certification</p>
-                        <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#111827" }}>{course.progression?.certificateEnabled ? "Certificate Included" : "No Certificate"}</p>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={6}>
+                    <Flex align="center" gap={3} p={3} bg={accentLight} borderRadius="xl">
+                      <Icon as={Clock} boxSize={5} color={accentColor} />
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" color={textMuted}>
+                          Duration
+                        </Text>
+                        <Text fontWeight="bold">
+                          {course.progression?.completionWindowDays || "Self-paced"} days
+                        </Text>
+                      </Box>
+                    </Flex>
+                    <Flex align="center" gap={3} p={3} bg={accentLight} borderRadius="xl">
+                      <Icon as={Award} boxSize={5} color={accentColor} />
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" color={textMuted}>
+                          Certification
+                        </Text>
+                        <Text fontWeight="bold">
+                          {course.progression?.certificateEnabled
+                            ? "Certificate included"
+                            : "No certificate"}
+                        </Text>
+                      </Box>
+                    </Flex>
+                  </SimpleGrid>
+                </CardBody>
+              </Card>
+            </MotionBox>
 
-              {activeTab === "curriculum" && (
-                <motion.div
-                  key="curriculum"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                    <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827" }}>Learning Path</h2>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#4F46E5", background: "#EEF2FF", padding: "6px 16px", borderRadius: 20 }}>
-                      {course.curriculum?.totalModules} Modules • {course.curriculum?.totalSections} Lessons
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Curriculum Card - Enhanced Timeline Design */}
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
+                <CardHeader pb={0}>
+                  <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
+                    <Flex align="center" gap={2}>
+                      <Icon as={Layers} boxSize={6} color={accentColor} />
+                      <Heading size="md">Course Curriculum</Heading>
+                    </Flex>
+                    <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
+                      {course.curriculum?.totalModules} modules • {course.curriculum?.totalSections} lessons
+                    </Badge>
+                  </Flex>
+                </CardHeader>
+                <CardBody>
+                  <Accordion allowMultiple defaultIndex={[0]}>
                     {course.curriculum?.modules?.map((mod: any) => (
-                      <div key={mod.order} style={{ background: "#fff", borderRadius: 24, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
-                        <button 
-                          onClick={() => toggleModule(mod.order)}
-                          style={{ 
-                            width: "100%", padding: "24px", display: "flex", alignItems: "center", gap: 20, 
-                            border: "none", background: "none", cursor: "pointer", textAlign: "left"
-                          }}
-                        >
-                          <div style={{ 
-                            width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #4F46E5, #818CF8)", 
-                            display: "flex", alignItems: "center", justifyContent: "center", 
-                            fontSize: 16, fontWeight: 800, color: "#fff" 
-                          }}>
-                            {mod.order}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>{mod.title}</h3>
-                            <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>{mod.sections?.length} Lessons • {mod.summary ? "Overview inclusive" : "Dive in"}</p>
-                          </div>
-                          {openModules.has(mod.order) ? <ChevronUp size={24} color="#9CA3AF" /> : <ChevronDown size={24} color="#9CA3AF" />}
-                        </button>
-
-                        <AnimatePresence>
-                          {openModules.has(mod.order) && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              style={{ overflow: "hidden", borderTop: "1px solid #F3F4F6", background: "#FAFBFF" }}
+                      <AccordionItem
+                        key={mod.order}
+                        border="none"
+                        mb={4}
+                        bg={useColorModeValue("white", "gray.800")}
+                        borderRadius="2xl"
+                        borderWidth="1px"
+                        borderColor={borderColor}
+                        overflow="hidden"
+                        shadow="sm"
+                      >
+                        {({ isExpanded }) => (
+                          <>
+                            <AccordionButton
+                              px={5}
+                              py={4}
+                              _hover={{ bg: useColorModeValue("gray.50", "gray.700") }}
                             >
-                              <div style={{ padding: "12px 24px 24px" }}>
+                              <Flex align="center" gap={4} w="full">
+                                <Box
+                                  w={10}
+                                  h={10}
+                                  borderRadius="xl"
+                                  bg={isExpanded ? accentColor : useColorModeValue("gray.100", "gray.700")}
+                                  color={isExpanded ? "white" : textMuted}
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  fontWeight="bold"
+                                  transition="all 0.2s"
+                                >
+                                  {mod.order}
+                                </Box>
+                                <Box flex="1" textAlign="left">
+                                  <Text fontWeight="bold" fontSize="lg">{mod.title}</Text>
+                                  <Text fontSize="sm" color={textMuted}>
+                                    {mod.sections?.length} {mod.sections?.length === 1 ? "lesson" : "lessons"}
+                                  </Text>
+                                </Box>
+                                <AccordionIcon boxSize={6} color={textMuted} />
+                              </Flex>
+                            </AccordionButton>
+                            
+                            <AccordionPanel pb={6} pt={2} px={6}>
+                              {mod.summary && (
+                                <Text fontSize="sm" color={textMuted} mb={6} pl={14}>
+                                  {mod.summary}
+                                </Text>
+                              )}
+                              
+                              {/* Timeline Container */}
+                              <Box position="relative" pl={4}>
+                                {/* Vertical Timeline Line */}
+                                <Box
+                                  position="absolute"
+                                  left="31px"
+                                  top="20px"
+                                  bottom="30px"
+                                  width="2px"
+                                  bg={useColorModeValue("gray.100", "gray.700")}
+                                  zIndex={0}
+                                />
+
                                 {mod.sections?.map((sec: any, idx: number) => {
                                   const secId = mod.order * 100 + idx;
                                   const isPlayable = Boolean(sec.content?.previewUrl);
+                                  const isLast = idx === mod.sections.length - 1;
+
                                   return (
-                                    <div 
+                                    <MotionFlex
                                       key={sec.order}
+                                      position="relative"
+                                      zIndex={1}
+                                      align="flex-start"
+                                      gap={4}
+                                      mb={isLast ? 0 : 6}
                                       onMouseEnter={() => setHoveredSection(secId)}
                                       onMouseLeave={() => setHoveredSection(null)}
-                                      onClick={() => isPlayable && onLaunchSection(sec.content.previewUrl)}
-                                      style={{ 
-                                        display: "flex", alignItems: "center", gap: 16, padding: "16px",
-                                        borderRadius: 18, cursor: isPlayable ? "pointer" : "default",
-                                        transition: "all 0.2s ease",
-                                        background: hoveredSection === secId ? "#EEF2FF" : "transparent",
-                                        transform: hoveredSection === secId ? "translateX(4px)" : "none",
-                                      }}
+                                      cursor={isPlayable ? "pointer" : "default"}
+                                      onClick={() =>
+                                        isPlayable && onLaunchSection(sec.content.previewUrl)
+                                      }
                                     >
-                                      <div style={{ 
-                                        width: 32, height: 32, borderRadius: 10, 
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                        background: isPlayable ? (hoveredSection === secId ? "#4F46E5" : "#EEF2FF") : "#F3F4F6",
-                                        color: isPlayable ? (hoveredSection === secId ? "#fff" : "#4F46E5") : "#D1D5DB"
-                                      }}>
-                                        {isPlayable ? <Play size={16} fill="currentColor" /> : <BookOpen size={16} />}
-                                      </div>
-                                      <div style={{ flex: 1 }}>
-                                        <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#374151" }}>{sec.title}</p>
-                                        {sec.description && <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{sec.description}</p>}
-                                      </div>
-                                      {isPlayable && (
-                                        <motion.span 
-                                          initial={{ opacity: 0.6 }}
-                                          animate={{ opacity: hoveredSection === secId ? 1 : 0.6 }}
-                                          style={{ fontSize: 12, fontWeight: 800, color: "#4F46E5", textTransform: "uppercase", letterSpacing: "0.05em" }}
-                                        >
-                                          Start
-                                        </motion.span>
-                                      )}
-                                    </div>
+                                      {/* Timeline Dot */}
+                                      <Box
+                                        w={10}
+                                        h={10}
+                                        borderRadius="full"
+                                        bg={isPlayable ? useColorModeValue("white", "gray.800") : "transparent"}
+                                        border="4px solid"
+                                        borderColor={isPlayable ? accentLight : useColorModeValue("gray.50", "gray.700")}
+                                        display="flex"
+                                        alignItems="center"
+                                        justifyContent="center"
+                                        mt={1}
+                                        boxShadow={hoveredSection === secId ? "0 0 0 4px var(--chakra-colors-blue-100)" : "none"}
+                                        transition="all 0.2s"
+                                        zIndex={2}
+                                      >
+                                        <Icon
+                                          as={isPlayable ? PlayCircle : BookOpen}
+                                          boxSize={5}
+                                          color={isPlayable ? accentColor : textMuted}
+                                          fill={isPlayable && hoveredSection === secId ? accentColor : "none"}
+                                          stroke={isPlayable && hoveredSection === secId ? "white" : "currentColor"}
+                                        />
+                                      </Box>
+
+                                      {/* Section Content Card */}
+                                      <Box
+                                        flex="1"
+                                        p={4}
+                                        bg={useColorModeValue("white", "gray.800")}
+                                        borderWidth="1px"
+                                        borderColor={hoveredSection === secId ? accentColor : borderColor}
+                                        borderRadius="xl"
+                                        shadow={hoveredSection === secId ? "md" : "sm"}
+                                        transition="all 0.2s"
+                                        transform={hoveredSection === secId ? "translateX(4px)" : "translateX(0)"}
+                                      >
+                                        <Flex justify="space-between" align="flex-start" wrap="wrap" gap={2}>
+                                          <Box flex="1">
+                                            <Heading size="sm" mb={1}>{sec.title}</Heading>
+                                            {sec.description && (
+                                              <Text fontSize="sm" color={textMuted} noOfLines={2}>
+                                                {sec.description}
+                                              </Text>
+                                            )}
+                                          </Box>
+                                          
+                                          {sec.content && (
+                                            <Tag size="sm" variant="subtle" colorScheme="gray" borderRadius="md" mt={1}>
+                                              <Icon as={FileBox} boxSize={3} mr={1} />
+                                              {sec.content.kind?.toUpperCase()}
+                                            </Tag>
+                                          )}
+                                        </Flex>
+                                      </Box>
+                                    </MotionFlex>
                                   );
                                 })}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                              </Box>
+                            </AccordionPanel>
+                          </>
+                        )}
+                      </AccordionItem>
                     ))}
-                  </div>
-                </motion.div>
-              )}
+                  </Accordion>
+                </CardBody>
+              </Card>
+            </MotionBox>
 
-              {activeTab === "batches" && (
-                <motion.div
-                  key="batches"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  style={{ background: "#fff", padding: 32, borderRadius: 28, border: "1px solid #E5E7EB" }}
-                >
-                  <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24, color: "#111827" }}>Upcoming Batches</h2>
+            {/* Batches & Learners Card */}
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
+                <CardHeader pb={0}>
+                  <Flex align="center" gap={2}>
+                    <Icon as={Users} boxSize={6} color={accentColor} />
+                    <Heading size="md">Batches & Enrollment</Heading>
+                  </Flex>
+                </CardHeader>
+                <CardBody>
                   {course.enrollment?.batches?.length > 0 ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <Stack spacing={4}>
                       {course.enrollment.batches.map((batch: any, i: number) => (
-                        <div key={i} style={{ border: "1px solid #F3F4F6", borderRadius: 20, padding: 24, background: "#FCFDFF" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>{batch.name}</h3>
-                            <span style={{ fontSize: 12, color: "#4F46E5", fontWeight: 800, background: "#EEF2FF", padding: "4px 12px", borderRadius: 20 }}>
-                              {batch.seatLimit || "Open"} Seats
-                            </span>
-                          </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "#6B7280" }}>
-                              <div style={{ width: 32, height: 32, borderRadius: 8, background: "#fff", border: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Calendar size={16} />
-                              </div>
-                              {new Date(batch.startDate).toLocaleDateString()} - {new Date(batch.endDate).toLocaleDateString()}
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "#6B7280" }}>
-                              <div style={{ width: 32, height: 32, borderRadius: 8, background: "#fff", border: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <MapPin size={16} />
-                              </div>
-                              {batch.trainer || "Instructor Led"}
-                            </div>
-                          </div>
-                        </div>
+                        <Box
+                          key={i}
+                          p={4}
+                          borderWidth="1px"
+                          borderRadius="xl"
+                          borderColor={borderColor}
+                          _hover={{ shadow: "md", borderColor: accentLight }}
+                          transition="all 0.2s"
+                        >
+                          <Flex justify="space-between" align="center" wrap="wrap" gap={2} mb={3}>
+                            <Text fontWeight="bold" fontSize="lg">{batch.name}</Text>
+                            <Tag colorScheme="blue" borderRadius="full" size="md" px={3}>
+                              {batch.seatLimit || "Open"} seats limit
+                            </Tag>
+                          </Flex>
+                          <Divider mb={3} />
+                          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+                            <HStack spacing={2}>
+                              <Icon as={Calendar} boxSize={4} color={textMuted} />
+                              <Text fontSize="sm" color={textMuted}>
+                                {new Date(batch.startDate).toLocaleDateString()} -{" "}
+                                {new Date(batch.endDate).toLocaleDateString()}
+                              </Text>
+                            </HStack>
+                            <HStack spacing={2}>
+                              <Icon as={MapPin} boxSize={4} color={textMuted} />
+                              <Text fontSize="sm" color={textMuted}>{batch.trainer || "Instructor Led"}</Text>
+                            </HStack>
+                          </SimpleGrid>
+                        </Box>
                       ))}
-                    </div>
+                    </Stack>
                   ) : (
-                    <div style={{ textAlign: "center", padding: "40px 0" }}>
-                      <p style={{ fontSize: 40 }}>🗓️</p>
-                      <p style={{ fontSize: 16, color: "#9CA3AF" }}>No batches scheduled yet.</p>
-                    </div>
+                    <Flex direction="column" align="center" py={8} gap={3} bg={useColorModeValue("gray.50", "gray.800")} borderRadius="xl">
+                      <Icon as={Calendar} boxSize={10} color={useColorModeValue("gray.300", "gray.600")} />
+                      <Text color={textMuted} fontWeight="medium">No batches scheduled currently</Text>
+                    </Flex>
                   )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                </CardBody>
+              </Card>
+            </MotionBox>
+          </Stack>
 
-          {/* Right Sidebar - Info Card */}
-          <div>
-            <div style={{ position: "sticky", top: 120 }}>
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                style={{ background: "#fff", borderRadius: 32, padding: 24, border: "1px solid #E5E7EB", boxShadow: "0 20px 40px rgba(0,0,0,0.06)" }}
-              >
-                <div style={{ height: 180, borderRadius: 24, overflow: "hidden", marginBottom: 24, background: "#F3F4F6", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.05)" }}>
-                  <img src={course.thumbnailUrl} alt={course.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-                
-                <div style={{ marginBottom: 24 }}>
-                  <p style={{ margin: 0, fontSize: 14, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Price</p>
-                  <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#111827" }}>
-                    {course.commerce?.pricingModel === "paid" ? `₹${course.commerce.amountInRupees}` : "Free"}
-                  </p>
-                </div>
+          {/* Sidebar */}
+          <Box>
+            <MotionBox
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              position="sticky"
+              top="6rem"
+            >
+              <Card bg={cardBg} shadow="lg" borderRadius="2xl" borderWidth="1px" borderColor={borderColor} overflow="hidden">
+                <Box position="relative">
+                  <Image
+                    src={course.thumbnailUrl}
+                    alt={course.title}
+                    h="240px"
+                    w="full"
+                    objectFit="cover"
+                  />
+                  {course.commerce?.pricingModel === "free" && (
+                    <Badge position="absolute" top={4} right={4} colorScheme="green" fontSize="sm" px={3} py={1} borderRadius="full">
+                      Free Course
+                    </Badge>
+                  )}
+                </Box>
+                <CardBody>
+                  <VStack spacing={5} align="stretch">
+                    <Box textAlign="center" pt={2}>
+                      <Text fontSize="xs" fontWeight="bold" color={textMuted} textTransform="uppercase" letterSpacing="wide">
+                        Enrollment Price
+                      </Text>
+                      <Text fontSize="4xl" fontWeight="extrabold" color={accentColor}>
+                        {course.commerce?.pricingModel === "paid"
+                          ? `₹${course.commerce.amountInRupees}`
+                          : "Free"}
+                      </Text>
+                    </Box>
 
-                <motion.button 
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => course.scormFilePath && onLaunchSection(course.scormFilePath)}
-                  disabled={!course.scormFilePath}
-                  style={{ 
-                    width: "100%", padding: "18px 0", borderRadius: 20, border: "none", 
-                    background: "linear-gradient(135deg, #4F46E5, #6366F1)", color: "#fff", fontSize: 16, fontWeight: 800, 
-                    cursor: course.scormFilePath ? "pointer" : "not-allowed", opacity: course.scormFilePath ? 1 : 0.6,
-                    boxShadow: "0 10px 25px rgba(79,70,229,0.3)"
-                  }}
-                >
-                  Start Learning Now
-                </motion.button>
-                
-                <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#6B7280" }}>
-                    <CheckCircle size={14} color="#10B981" /> Full lifetime access
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#6B7280" }}>
-                    <CheckCircle size={14} color="#10B981" /> Interactive modules
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#6B7280" }}>
-                    <CheckCircle size={14} color="#10B981" /> Certificate of completion
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
+                    <MotionButton
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => course.scormFilePath && onLaunchSection(course.scormFilePath)}
+                      isDisabled={!course.scormFilePath}
+                      colorScheme="blue"
+                      size="lg"
+                      borderRadius="xl"
+                      w="full"
+                      leftIcon={<Icon as={Rocket} />}
+                      shadow="md"
+                    >
+                      Start Learning
+                    </MotionButton>
 
-        </div>
-      </div>
-    </div>
+                    <Divider />
+
+                    <VStack spacing={3} align="start" px={2}>
+                      <HStack>
+                        <Icon as={CheckCircle} boxSize={5} color="green.500" />
+                        <Text fontSize="sm" fontWeight="medium">Full lifetime access</Text>
+                      </HStack>
+                      <HStack>
+                        <Icon as={Layers} boxSize={5} color="blue.500" />
+                        <Text fontSize="sm" fontWeight="medium">{course.curriculum?.totalSections} Interactive modules</Text>
+                      </HStack>
+                      {course.progression?.certificateEnabled && (
+                        <HStack>
+                          <Icon as={Award} boxSize={5} color="purple.500" />
+                          <Text fontSize="sm" fontWeight="medium">Certificate of completion</Text>
+                        </HStack>
+                      )}
+                      <HStack>
+                        <Icon as={Star} boxSize={5} color="yellow.500" />
+                        <Text fontSize="sm" fontWeight="medium">Community support</Text>
+                      </HStack>
+                    </VStack>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </MotionBox>
+          </Box>
+        </Grid>
+      </Container>
+    </Box>
   );
 }

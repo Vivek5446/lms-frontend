@@ -27,6 +27,14 @@ const ALIGN_BTNS = [
   { cmd: "justifyRight", icon: "⊞", title: "Align Right" },
 ] as const;
 
+// A mix of standard, vibrant, and pastel colors for the palette
+const COLOR_SWATCHES = [
+  "#000000", "#4B5563", "#EF4444", "#F97316", "#F59E0B",
+  "#10B981", "#3B82F6", "#6366F1", "#8B5CF6", "#EC4899",
+  "#FFFFFF", "#F3F4F6", "#FECACA", "#FED7AA", "#FEF08A",
+  "#A7F3D0", "#BFDBFE", "#C7D2FE", "#DDD6FE", "#FBCFE8",
+] as const;
+
 interface RichTextEditorProps {
   placeholder?: string;
   minHeight?: number;
@@ -41,11 +49,19 @@ export default function RichTextEditor({
   onChange,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const [isEmpty, setIsEmpty] = useState(true);
   const [focused, setFocused] = useState(false);
+  const [activePicker, setActivePicker] = useState<"text" | "bg" | null>(null);
 
   const exec = (cmd: string, commandValue?: string) => {
-    document.execCommand(cmd, false, commandValue);
+    if (cmd === "hiliteColor") {
+      if (!document.execCommand("hiliteColor", false, commandValue)) {
+        document.execCommand("backColor", false, commandValue);
+      }
+    } else {
+      document.execCommand(cmd, false, commandValue);
+    }
     editorRef.current?.focus();
   };
 
@@ -56,9 +72,7 @@ export default function RichTextEditor({
   };
 
   useEffect(() => {
-    if (!editorRef.current) {
-      return;
-    }
+    if (!editorRef.current) return;
 
     if (editorRef.current.innerHTML !== value) {
       editorRef.current.innerHTML = value;
@@ -67,6 +81,17 @@ export default function RichTextEditor({
     const text = editorRef.current.innerText.trim();
     setIsEmpty(text === "");
   }, [value]);
+
+  // Handle clicking outside to close the color pickers
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
+        setActivePicker(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const wrap: React.CSSProperties = {
     border: `1.5px solid ${focused ? "#6B21A8" : "#E5E7EB"}`,
@@ -84,6 +109,7 @@ export default function RichTextEditor({
     padding: "8px 10px",
     borderBottom: "1.5px solid #E5E7EB",
     background: "#F9FAFB",
+    position: "relative",
   };
 
   const btn = (extraStyle?: React.CSSProperties): React.CSSProperties => ({
@@ -109,9 +135,78 @@ export default function RichTextEditor({
     flexShrink: 0,
   };
 
+  // Renders the dropdown palette for colors
+  const renderColorDropdown = (type: "text" | "bg") => {
+    if (activePicker !== type) return null;
+
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          marginTop: 4,
+          background: "#FFFFFF",
+          border: "1px solid #E5E7EB",
+          borderRadius: 8,
+          padding: 10,
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          zIndex: 10,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(5, 1fr)",
+            gap: 6,
+          }}
+        >
+          {COLOR_SWATCHES.map((color) => (
+            <button
+              key={color}
+              onMouseDown={(e) => {
+                e.preventDefault(); // Prevents editor from losing focus
+                exec(type === "text" ? "foreColor" : "hiliteColor", color);
+                setActivePicker(null);
+              }}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 4,
+                background: color,
+                border: "1px solid #E5E7EB",
+                cursor: "pointer",
+              }}
+              title={color}
+            />
+          ))}
+        </div>
+        
+        <div style={{ display: "flex", alignItems: "center", gap: 6, borderTop: "1px solid #E5E7EB", paddingTop: 8 }}>
+          <span style={{ fontSize: 12, color: "#6B7280", fontWeight: 500 }}>Custom:</span>
+          <input
+            type="color"
+            onChange={(e) => exec(type === "text" ? "foreColor" : "hiliteColor", e.target.value)}
+            style={{
+              width: 24,
+              height: 24,
+              padding: 0,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+            }}
+          />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={wrap}>
-      <div style={toolbar}>
+      <div style={toolbar} ref={toolbarRef}>
         <select
           defaultValue="p"
           onChange={(event) => exec("formatBlock", event.target.value)}
@@ -152,6 +247,42 @@ export default function RichTextEditor({
 
         <div style={divider} />
 
+        {/* --- TEXT COLOR BUTTON --- */}
+        <div style={{ position: "relative" }}>
+          <button
+            title="Text Color"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setActivePicker(activePicker === "text" ? null : "text");
+            }}
+            style={btn({
+              background: activePicker === "text" ? "#E5E7EB" : "transparent",
+            })}
+          >
+            A
+          </button>
+          {renderColorDropdown("text")}
+        </div>
+
+        {/* --- BACKGROUND COLOR BUTTON --- */}
+        <div style={{ position: "relative" }}>
+          <button
+            title="Highlight Color"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setActivePicker(activePicker === "bg" ? null : "bg");
+            }}
+            style={btn({
+              background: activePicker === "bg" ? "#E5E7EB" : "transparent",
+            })}
+          >
+            <span style={{ background: "#FEF08A", padding: "0 2px" }}>A</span>
+          </button>
+          {renderColorDropdown("bg")}
+        </div>
+
+        <div style={divider} />
+
         {LIST_BTNS.map((buttonConfig) => (
           <button
             key={buttonConfig.cmd}
@@ -189,7 +320,6 @@ export default function RichTextEditor({
           onMouseDown={(event) => {
             event.preventDefault();
             const url = prompt("Enter URL:");
-
             if (url) {
               exec("createLink", url);
             }

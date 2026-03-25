@@ -1,12 +1,12 @@
 "use client";
 
-import { CourseListItem, courseStore } from "@/app/store/courseStore/courseStore";
-import { AnimatePresence, motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import { observer } from "mobx-react-lite";
-import { useEffect, useState } from "react";
-import CourseDetails from "./CourseDetails";
+import { motion, AnimatePresence } from "framer-motion";
 import CourseList from "./CourseList";
+import CourseDetails from "./CourseDetails";
 import CoursePlayer from "./scorm/CoursePlayer";
+import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore";
 
 function buildScormCourseUrl(scormPath: string) {
   const normalizedPath = scormPath.startsWith("/") ? scormPath : `/${scormPath}`;
@@ -64,7 +64,7 @@ function CoursePage() {
       <CourseDetails
         course={activeCourse}
         onBack={() => setView("gallery")}
-        onLaunchSection={(path) => handleLaunchScorm(path, activeCourse)}
+        onLaunchSection={(path:any) => handleLaunchScorm(path, activeCourse)}
       />
     );
   }
@@ -193,7 +193,7 @@ function CoursePage() {
                     }}>
                       {course.status}
                     </span>
-                    {/* {course.scormFilePath && (
+                    {course.scormFilePath && (
                       <span style={{
                         position: "absolute", top: 10, left: 10,
                         background: "#fff", color: "#4F46E5", padding: "3px 10px", borderRadius: 20,
@@ -201,7 +201,7 @@ function CoursePage() {
                       }}>
                         SCORM
                       </span>
-                    )} */}
+                    )}
                   </div>
 
                   {/* Content */}

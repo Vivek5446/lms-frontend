@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { Box, IconButton, Flex, Heading } from '@chakra-ui/react';
-import { FiArrowLeft } from 'react-icons/fi';
-import { motion } from 'framer-motion';
+import { Box, Flex, Heading, IconButton, useColorModeValue } from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { FiArrowLeft, FiMaximize2, FiMinimize2 } from "react-icons/fi";
 
 interface CoursePlayerProps {
   courseUrl: string;
@@ -11,25 +11,28 @@ interface CoursePlayerProps {
 
 export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CoursePlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Ultra-subtle theme colors
+  const headerBg = useColorModeValue("white", "#0F0F0F");
+  const borderColor = useColorModeValue("gray.100", "whiteAlpha.100");
+  const textColor = useColorModeValue("gray.600", "gray.400");
+  const iconHoverBg = useColorModeValue("gray.50", "whiteAlpha.200");
+  const playerBg = useColorModeValue("white", "black");
 
+  // SCORM API attachment
   useEffect(() => {
     const scorm12Api = {
-      LMSInitialize: () => {
-        console.log("SCORM API Initialized");
-        return "true";
-      },
+      LMSInitialize: () => { console.log("SCORM API Initialized"); return "true"; },
       LMSFinish: () => "true",
       LMSGetValue: (key: string) => {
-        console.log("SCORM GET:", key);
         if (key === "cmi.core.lesson_status") return "incomplete";
         if (key === "cmi.core.student_id") return "student-001";
         if (key === "cmi.core.student_name") return "Learner, Awesome";
         return "";
       },
-      LMSSetValue: (key: string, value: string) => {
-        console.log("SCORM SET:", key, value);
-        return "true";
-      },
+      LMSSetValue: () => "true",
       LMSCommit: () => "true",
       LMSGetLastError: () => "0",
       LMSGetErrorString: () => "No error",
@@ -47,10 +50,7 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
       Initialize: () => "true",
       Terminate: () => "true",
       GetValue: (key: string) => scorm2004State[key] ?? "",
-      SetValue: (key: string, value: string) => {
-        scorm2004State[key] = value;
-        return "true";
-      },
+      SetValue: (key: string, value: string) => { scorm2004State[key] = value; return "true"; },
       Commit: () => "true",
       GetLastError: () => "0",
       GetErrorString: () => "No error",
@@ -58,10 +58,7 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
     };
 
     const attachApis = (targetWindow: Window | null | undefined) => {
-      if (!targetWindow) {
-        return;
-      }
-
+      if (!targetWindow) return;
       (targetWindow as any).API = scorm12Api;
       (targetWindow as any).API_1484_11 = scorm2004Api;
     };
@@ -79,58 +76,118 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
 
     iframeElement?.addEventListener("load", handleLoad);
 
+    // Prevent body scroll when this component mounts
+    document.body.style.overflow = "hidden";
+
     return () => {
       delete (window as any).API;
       delete (window as any).API_1484_11;
       iframeElement?.removeEventListener("load", handleLoad);
+      // Restore body scroll on unmount
+      document.body.style.overflow = "unset";
     };
   }, []);
 
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      await containerRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
   return (
-    <Box 
-      as={motion.div} 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition='0.3s ease-out'
-      bg="white" 
-      borderRadius="2xl" 
-      overflow="hidden" 
-      boxShadow="0 10px 40px rgba(0,0,0,0.1)"
-      h="calc(100vh - 100px)"
-      display="flex"
-      flexDirection="column"
+    <Flex
+      as={motion.div}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition="0.3s ease-in-out"
+      ref={containerRef}
+      direction="column"
+      w="100%"
+      h="100vh"
+      overflow="hidden" // Absolutely no scrolling
+      bg={playerBg}
     >
-      <Flex 
-        bgGradient="linear(to-r, blue.400, purple.500)" 
-        color="white" 
-        p={4} 
-        align="center" 
+      {/* Ultra-subtle Header 
+        Extremely minimal, blends into the background, thin profile 
+      */}
+      <Flex
+        h="52px"
+        bg={headerBg}
+        borderBottomWidth="1px"
+        borderBottomColor={borderColor}
+        px={4}
+        align="center"
         justify="space-between"
+        zIndex={10}
       >
-        <Flex align="center" gap={4}>
-          <IconButton 
-            aria-label="Back to gallery" 
-            icon={<FiArrowLeft />} 
+        <Flex align="center" gap={3}>
+          <IconButton
+            aria-label="Back to course"
+            icon={<FiArrowLeft size={18} />}
             onClick={onBack}
-            variant="ghost" 
-            color="white" 
-            _hover={{ bg: 'whiteAlpha.200' }}
+            variant="ghost"
+            size="sm"
+            color={textColor}
+            _hover={{ bg: iconHoverBg, color: useColorModeValue("black", "white") }}
             isRound
           />
-          <Heading size="md" noOfLines={1}>{courseTitle}</Heading>
+          <Heading 
+            size="sm" 
+            fontWeight="500" 
+            color={textColor} 
+            noOfLines={1}
+            userSelect="none"
+          >
+            {courseTitle}
+          </Heading>
         </Flex>
+        
+        <IconButton
+          aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          icon={isFullscreen ? <FiMinimize2 size={18} /> : <FiMaximize2 size={18} />}
+          onClick={toggleFullscreen}
+          variant="ghost"
+          size="sm"
+          color={textColor}
+          _hover={{ bg: iconHoverBg, color: useColorModeValue("black", "white") }}
+          isRound
+        />
       </Flex>
 
-      <Box flex="1" bg="gray.100" position="relative">
+      {/* Player Body Area - Takes exactly the remaining space */}
+      <Box 
+        flex="1" 
+        w="100%"
+        position="relative"
+        bg={playerBg}
+      >
         <iframe
           ref={iframeRef}
           src={courseUrl}
-          style={{ width: '100%', height: '100%', border: 'none' }}
+          style={{
+            width: "100%",
+            height: "100%",
+            border: "none",
+            display: "block",
+          }}
           title={courseTitle}
-          allowFullScreen
+          allow="autoplay; fullscreen"
         />
       </Box>
-    </Box>
+    </Flex>
   );
 }
