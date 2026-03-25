@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { CourseListItem, courseStore } from "@/app/store/courseStore/courseStore";
+import { AnimatePresence, motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
-import { motion, AnimatePresence } from "framer-motion";
-import CourseList from "./CourseList";
+import { useEffect, useState } from "react";
 import CourseDetails from "./CourseDetails";
+import CourseList from "./CourseList";
 import CoursePlayer from "./scorm/CoursePlayer";
-import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore";
-import { BACKEND_URL } from "@/app/config/utils/variables";
+
+function buildScormCourseUrl(scormPath: string) {
+  const normalizedPath = scormPath.startsWith("/") ? scormPath : `/${scormPath}`;
+  return `/courses${normalizedPath}`;
+}
 
 function CoursePage() {
   const [view, setView] = useState<"gallery" | "create" | "details" | "player">("gallery");
@@ -70,7 +74,7 @@ function CoursePage() {
     return (
       <CoursePlayer
         courseTitle={activeCourse.title}
-        courseUrl={`${BACKEND_URL}/courses${launchPath || activeCourse.scormFilePath}`}
+        courseUrl={buildScormCourseUrl(launchPath || activeCourse.scormFilePath)}
         onBack={handleBackFromPlayer}
       />
     );
@@ -189,7 +193,7 @@ function CoursePage() {
                     }}>
                       {course.status}
                     </span>
-                    {course.scormFilePath && (
+                    {/* {course.scormFilePath && (
                       <span style={{
                         position: "absolute", top: 10, left: 10,
                         background: "#fff", color: "#4F46E5", padding: "3px 10px", borderRadius: 20,
@@ -197,7 +201,7 @@ function CoursePage() {
                       }}>
                         SCORM
                       </span>
-                    )}
+                    )} */}
                   </div>
 
                   {/* Content */}

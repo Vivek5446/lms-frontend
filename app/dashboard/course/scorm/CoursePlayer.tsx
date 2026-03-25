@@ -13,8 +13,7 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    // Inject a dummy SCORM 1.2 API onto the window object
-    (window as any).API = {
+    const scorm12Api = {
       LMSInitialize: () => {
         console.log("SCORM API Initialized");
         return "true";
@@ -37,8 +36,53 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
       LMSGetDiagnostic: () => "Diagnostic info",
     };
 
+    const scorm2004State: Record<string, string> = {
+      "cmi.completion_status": "incomplete",
+      "cmi.success_status": "unknown",
+      "cmi.learner_id": "student-001",
+      "cmi.learner_name": "Learner, Awesome",
+    };
+
+    const scorm2004Api = {
+      Initialize: () => "true",
+      Terminate: () => "true",
+      GetValue: (key: string) => scorm2004State[key] ?? "",
+      SetValue: (key: string, value: string) => {
+        scorm2004State[key] = value;
+        return "true";
+      },
+      Commit: () => "true",
+      GetLastError: () => "0",
+      GetErrorString: () => "No error",
+      GetDiagnostic: () => "Diagnostic info",
+    };
+
+    const attachApis = (targetWindow: Window | null | undefined) => {
+      if (!targetWindow) {
+        return;
+      }
+
+      (targetWindow as any).API = scorm12Api;
+      (targetWindow as any).API_1484_11 = scorm2004Api;
+    };
+
+    attachApis(window);
+
+    const iframeElement = iframeRef.current;
+    const handleLoad = () => {
+      try {
+        attachApis(iframeElement?.contentWindow);
+      } catch (error) {
+        console.warn("Unable to attach SCORM API to iframe window.", error);
+      }
+    };
+
+    iframeElement?.addEventListener("load", handleLoad);
+
     return () => {
       delete (window as any).API;
+      delete (window as any).API_1484_11;
+      iframeElement?.removeEventListener("load", handleLoad);
     };
   }, []);
 

@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  ChevronLeft, 
-  BookOpen, 
-  Layers, 
-  Users, 
-  Play, 
-  CheckCircle, 
-  Clock, 
-  MapPin, 
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Award,
+  BookOpen,
   Calendar,
+  CheckCircle,
   ChevronDown,
+  ChevronLeft,
   ChevronUp,
-  Award
+  Clock,
+  Layers,
+  MapPin,
+  Play,
+  Users
 } from "lucide-react";
+import { useState } from "react";
 
 interface CourseDetailsProps {
   course: any;

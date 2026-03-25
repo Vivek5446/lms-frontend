@@ -65,7 +65,8 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
       formData.append("thumbnail", courseForm.basicInfo.thumbnail.file);
     }
 
-    // Find the first SCORM/ZIP file from sections and append it
+    // Append section-level SCORM/ZIP uploads in curriculum order so the backend
+    // can map extracted launch files back to the matching sections.
     for (const mod of courseForm.structure.modules) {
       for (const section of mod.sections) {
         if (
@@ -73,7 +74,6 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
           (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip")
         ) {
           formData.append("scormZip", section.contentFile.file);
-          break;
         }
       }
     }
