@@ -88,7 +88,7 @@ function CoursePage() {
   // ─── Gallery View ──────────────────────────────────────────
   return (
     <div style={{ minHeight: "100vh", background: "#F9FAFB", padding: "32px 24px" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      <div>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>

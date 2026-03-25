@@ -10,7 +10,7 @@ interface MetadataMap {
 
 export const METADATA_MAP: MetadataMap = {
   '/': {
-    title: 'Vendor Workflow',
+    title: 'LMS',
     description: 'Vendor Workflow'
   },
   '/therapist': {

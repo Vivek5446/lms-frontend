@@ -11,20 +11,18 @@ import {
   Input,
   InputGroup,
   InputRightElement,
-  Text,
-  Spinner,
-  VStack,
-  Divider,
-  useBreakpointValue,
   Select,
+  Spinner,
+  Text,
+  VStack
 } from "@chakra-ui/react";
+import { observer } from "mobx-react-lite";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { RiEyeLine, RiEyeOffLine } from "react-icons/ri";
 import CustomButton from "../../component/common/CustomButton/CustomButton";
-import { useRouter } from "next/navigation";
-import { observer } from "mobx-react-lite";
 import stores from "../../store/stores";
 
 const Login = observer(() => {
@@ -41,9 +39,6 @@ const Login = observer(() => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-
-  const headingSize = useBreakpointValue({ base: "lg", md: "xl" });
-  const cardPadding = useBreakpointValue({ base: 2, md: 3 });
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -109,36 +104,6 @@ const Login = observer(() => {
  
   return (
     <VStack spacing={0} align="stretch">
-      {/* Logo */}
-      <Flex align="center" gap={2} mb={6}>
-        {/* Replace with your actual logo image */}
-        {/* <Image
-          src="/images/logo.png"
-          alt="Logo"
-          h="28px"
-          fallback={
-            <Flex align="center" gap={2}>
-              <Box
-                w="28px"
-                h="28px"
-                bg="#D84315"
-                borderRadius="6px"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-                  <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
-                </svg>
-              </Box>
-              <Text fontSize="sm" fontWeight="600" color="gray.700" letterSpacing="0.2px">
-                logo <Box as="span" color="gray.400" fontWeight="400">ipsum™</Box>
-              </Text>
-            </Flex>
-          }
-        /> */}
-      </Flex>
- 
       {/* Heading */}
       <Box mb={5}>
         <Heading fontSize="2xl" fontWeight="600" color="gray.800" mb={1}>

@@ -73,7 +73,7 @@ export default function CourseDetails({ course, onBack, onLaunchSection }: Cours
       {/* Sticky Header */}
       <Box
         position="sticky"
-        top={0}
+        top={-4}
         zIndex="sticky"
         borderBottomWidth="1px"
         borderBottomColor={borderColor}

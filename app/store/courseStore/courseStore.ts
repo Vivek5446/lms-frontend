@@ -1,5 +1,5 @@
-import { makeAutoObservable, runInAction } from "mobx";
 import axios from "axios";
+import { makeAutoObservable, runInAction } from "mobx";
 
 export interface CourseListItem {
   _id: string;

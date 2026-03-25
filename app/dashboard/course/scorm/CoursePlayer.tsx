@@ -158,11 +158,11 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
         >
           {/* ── Header ── */}
           <div
-            className="flex items-center justify-between flex-shrink-0 px-3 bg-white dark:bg-[#0F0F0F] border-b border-gray-100 dark:border-white/10"
+            className="flex items-center justify-between flex-shrink-0 px-3 bg-black dark:bg-[#0F0F0F] border-b border-gray-100 dark:border-white/10"
             style={{ height: HEADER_H }}
           >
             {/* Title */}
-            <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate ml-1 select-none">
+            <h2 className="text-sm font-medium text-gray-100 dark:text-gray-400 truncate ml-1 select-none">
               {courseTitle}
             </h2>
 
@@ -205,12 +205,12 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
                   </div>
 
                   <div className="max-w-md">
-                    <p className="text-base font-semibold text-gray-800 dark:text-white mb-1">
+                    {/* <p className="text-base font-semibold text-gray-800 dark:text-white mb-1">
                       Preparing SCORM player
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Loading course assets and connecting the SCORM runtime.
-                    </p>
+                    </p> */}
                     {hasSlowLoad && (
                       <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
                         Taking longer than usual — large packages need extra time on first load.
