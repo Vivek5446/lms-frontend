@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, IconButton, useColorModeValue } from "@chakra-ui/react";
+import { Box, Flex, Heading, IconButton, Text, useColorModeValue } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { FiArrowLeft, FiMaximize2, FiMinimize2 } from "react-icons/fi";
@@ -13,6 +13,9 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFrameLoading, setIsFrameLoading] = useState(true);
+  const [hasSlowLoad, setHasSlowLoad] = useState(false);
+  const [playerError, setPlayerError] = useState<string | null>(null);
   
   // Ultra-subtle theme colors
   const headerBg = useColorModeValue("white", "#0F0F0F");
@@ -69,8 +72,17 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
     const handleLoad = () => {
       try {
         attachApis(iframeElement?.contentWindow);
+        const iframeDocument = iframeElement?.contentDocument;
+        if (iframeDocument?.contentType?.includes("text/plain")) {
+          setPlayerError("The SCORM launch file was returned as plain text instead of a webpage.");
+        } else {
+          setPlayerError(null);
+        }
       } catch (error) {
         console.warn("Unable to attach SCORM API to iframe window.", error);
+      } finally {
+        setIsFrameLoading(false);
+        setHasSlowLoad(false);
       }
     };
 
@@ -106,6 +118,18 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    setIsFrameLoading(true);
+    setHasSlowLoad(false);
+    setPlayerError(null);
+
+    const slowLoadTimer = window.setTimeout(() => {
+      setHasSlowLoad(true);
+    }, 6000);
+
+    return () => window.clearTimeout(slowLoadTimer);
+  }, [courseUrl]);
 
   return (
     <Flex
@@ -175,9 +199,65 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
         position="relative"
         bg={playerBg}
       >
+        {isFrameLoading && (
+          <Flex
+            position="absolute"
+            inset={0}
+            zIndex={2}
+            align="center"
+            justify="center"
+            bg={useColorModeValue("rgba(255,255,255,0.94)", "rgba(10,10,10,0.94)")}
+            direction="column"
+            gap={4}
+            textAlign="center"
+            px={6}
+          >
+            <Box
+              w="64px"
+              h="64px"
+              borderRadius="20px"
+              bg="linear-gradient(135deg, #4F46E5 0%, #0EA5E9 100%)"
+              display="grid"
+              placeItems="center"
+              boxShadow="0 18px 45px rgba(79, 70, 229, 0.25)"
+            >
+              <Box
+                w="26px"
+                h="26px"
+                borderRadius="full"
+                border="3px solid rgba(255,255,255,0.35)"
+                borderTopColor="white"
+                animation="course-player-spin 0.9s linear infinite"
+              />
+            </Box>
+            <Box maxW="520px">
+              <Heading size="md" mb={2} color={useColorModeValue("gray.800", "white")}>
+                Preparing SCORM player
+              </Heading>
+              <Text color={textColor} fontSize="sm">
+                Loading course assets and connecting the SCORM runtime.
+              </Text>
+              {hasSlowLoad && (
+                <Text mt={3} color={textColor} fontSize="sm">
+                  This package is taking a bit longer than usual. Large SCORM uploads can need extra time on first load.
+                </Text>
+              )}
+              {playerError && (
+                <Text mt={3} color="red.400" fontSize="sm">
+                  {playerError}
+                </Text>
+              )}
+            </Box>
+          </Flex>
+        )}
         <iframe
+          key={courseUrl}
           ref={iframeRef}
           src={courseUrl}
+          onError={() => {
+            setPlayerError("We couldn't load this SCORM package.");
+            setIsFrameLoading(false);
+          }}
           style={{
             width: "100%",
             height: "100%",
@@ -187,6 +267,7 @@ export default function CoursePlayer({ courseUrl, courseTitle, onBack }: CourseP
           title={courseTitle}
           allow="autoplay; fullscreen"
         />
+        <style>{`@keyframes course-player-spin { to { transform: rotate(360deg); } }`}</style>
       </Box>
     </Flex>
   );

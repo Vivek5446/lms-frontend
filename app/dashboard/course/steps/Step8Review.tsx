@@ -19,11 +19,20 @@ import { CourseFormState, formatInr } from "../courseForm";
 interface Step8ReviewProps {
   courseForm: CourseFormState;
   onEditStep: (step: number) => void;
-  onSaveDraft: () => void;
-  onPublish: () => void;
+  submitAction: "draft" | "publish";
+  onSubmitActionChange: (action: "draft" | "publish") => void;
+  onSubmit: () => void;
+  isSubmitting?: boolean;
 }
 
-export default function Step8Review({ courseForm, onEditStep, onSaveDraft, onPublish }: Step8ReviewProps) {
+export default function Step8Review({
+  courseForm,
+  onEditStep,
+  submitAction,
+  onSubmitActionChange,
+  onSubmit,
+  isSubmitting = false,
+}: Step8ReviewProps) {
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
 
   const sections = [
@@ -129,17 +138,59 @@ export default function Step8Review({ courseForm, onEditStep, onSaveDraft, onPub
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
-          <Button
-            className="flex-1 h-14 rounded-2xl text-base font-semibold"
-            style={{ background: "var(--gradient-primary)" }}
-            onClick={onPublish}
-          >
-            <Rocket className="w-5 h-5 mr-2" /> Publish Course
-          </Button>
-          <Button variant="outline" className="h-14 rounded-2xl text-base" onClick={onSaveDraft}>
-            Save as Draft
-          </Button>
+        <div className="rounded-3xl border border-border bg-card/70 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Final submission</p>
+              <p className="text-xs text-muted-foreground">
+                Pick the status first, then submit once.
+              </p>
+            </div>
+            <div className="inline-flex rounded-2xl bg-muted p-1">
+              <button
+                type="button"
+                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+                  submitAction === "draft"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground"
+                }`}
+                onClick={() => onSubmitActionChange("draft")}
+                disabled={isSubmitting}
+              >
+                Save draft
+              </button>
+              <button
+                type="button"
+                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+                  submitAction === "publish"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground"
+                }`}
+                onClick={() => onSubmitActionChange("publish")}
+                disabled={isSubmitting}
+              >
+                Publish
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <Button
+              className="h-14 w-full rounded-2xl text-base font-semibold"
+              style={{ background: "var(--gradient-primary)" }}
+              onClick={onSubmit}
+              disabled={isSubmitting}
+            >
+              <Rocket className="w-5 h-5 mr-2" />
+              {isSubmitting
+                ? submitAction === "publish"
+                  ? "Publishing Course..."
+                  : "Saving Draft..."
+                : submitAction === "publish"
+                ? "Publish Course"
+                : "Save Draft"}
+            </Button>
+          </div>
         </div>
       </div>
     </StepWrapper>

@@ -1,4 +1,5 @@
 import {
+    Box,
     Flex,
     Heading,
     IconButton,
@@ -33,6 +34,9 @@ export default function ScormPlayerModal({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFrameLoading, setIsFrameLoading] = useState(true);
+  const [hasSlowLoad, setHasSlowLoad] = useState(false);
+  const [playerError, setPlayerError] = useState<string | null>(null);
   const bgHeader = useColorModeValue("gray.50", "gray.800");
 
   // SCORM API attachment
@@ -89,8 +93,17 @@ export default function ScormPlayerModal({
     const handleLoad = () => {
       try {
         attachApis(iframeElement?.contentWindow);
+        const iframeDocument = iframeElement?.contentDocument;
+        if (iframeDocument?.contentType?.includes("text/plain")) {
+          setPlayerError("The SCORM launch file was returned as plain text instead of a webpage.");
+        } else {
+          setPlayerError(null);
+        }
       } catch (error) {
         console.warn("Unable to attach SCORM API to iframe window.", error);
+      } finally {
+        setIsFrameLoading(false);
+        setHasSlowLoad(false);
       }
     };
 
@@ -121,6 +134,18 @@ export default function ScormPlayerModal({
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    setIsFrameLoading(true);
+    setHasSlowLoad(false);
+    setPlayerError(null);
+
+    const slowLoadTimer = window.setTimeout(() => {
+      setHasSlowLoad(true);
+    }, 6000);
+
+    return () => window.clearTimeout(slowLoadTimer);
+  }, [courseUrl, isOpen]);
 
   return (
     <Modal
@@ -174,10 +199,63 @@ export default function ScormPlayerModal({
           />
         </ModalHeader>
 
-        <ModalBody p={0} flex="1" ref={contentRef}>
+        <ModalBody p={0} flex="1" ref={contentRef} position="relative">
+          {isFrameLoading && (
+            <Flex
+              position="absolute"
+              inset={0}
+              zIndex={2}
+              align="center"
+              justify="center"
+              direction="column"
+              gap={4}
+              px={6}
+              textAlign="center"
+              bg={useColorModeValue("rgba(255,255,255,0.95)", "rgba(17,24,39,0.95)")}
+            >
+              <Box
+                w="58px"
+                h="58px"
+                borderRadius="18px"
+                bg="linear-gradient(135deg, #4F46E5 0%, #0EA5E9 100%)"
+                display="grid"
+                placeItems="center"
+              >
+                <Box
+                  w="24px"
+                  h="24px"
+                  borderRadius="full"
+                  border="3px solid rgba(255,255,255,0.35)"
+                  borderTopColor="white"
+                  animation="scorm-modal-spin 0.9s linear infinite"
+                />
+              </Box>
+              <Box maxW="460px">
+                <Heading size="sm" mb={2}>Preparing lesson</Heading>
+                <Text fontSize="sm" color="gray.500">
+                  Loading course assets and connecting the SCORM player.
+                </Text>
+                {hasSlowLoad && (
+                  <Text mt={3} fontSize="sm" color="gray.500">
+                    First-time loads can take longer while the package finishes warming up.
+                  </Text>
+                )}
+                {playerError && (
+                  <Text mt={3} fontSize="sm" color="red.400">
+                    {playerError}
+                  </Text>
+                )}
+              </Box>
+            </Flex>
+          )}
           <iframe
+            key={courseUrl}
             ref={iframeRef}
             src={courseUrl}
+            onError={() => {
+              setPlayerError("We couldn't load this lesson.");
+              setIsFrameLoading(false);
+            }}
             style={{
               width: "100%",
               height: "100%",
@@ -187,6 +265,7 @@ export default function ScormPlayerModal({
             title={`${courseTitle} - ${sectionTitle || "player"}`}
             allowFullScreen
           />
+          <style>{`@keyframes scorm-modal-spin { to { transform: rotate(360deg); } }`}</style>
         </ModalBody>
       </ModalContent>
     </Modal>

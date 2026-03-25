@@ -28,6 +28,7 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [stepProgress, setStepProgress] = useState<Record<number, number>>({});
   const [courseForm, setCourseForm] = useState<CourseFormState>(initialCourseFormState);
+  const [finalAction, setFinalAction] = useState<"draft" | "publish">("publish");
   const router = useRouter();
 
   const updateStepProgress = useCallback((step: number, progress: number) => {
@@ -54,6 +55,18 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
   };
 
   const handleSave = async (action: "draft" | "publish") => {
+    let wasSuccessful = false;
+    const scormFileCount = courseForm.structure.modules.reduce((count, mod) => {
+      return (
+        count +
+        mod.sections.filter(
+          (section) =>
+            section.contentFile &&
+            (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip")
+        ).length
+      );
+    }, 0);
+
     const payload = buildCoursePayload(courseForm, action);
 
     // Build FormData to send files + JSON payload
@@ -79,7 +92,12 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
     }
 
     try {
-      await courseStore.createCourse(formData);
+      await courseStore.createCourse(formData, {
+        action,
+        fileCount:
+          scormFileCount + (courseForm.basicInfo.thumbnail?.file ? 1 : 0),
+      });
+      wasSuccessful = true;
       if (onSuccess) {
         onSuccess();
       } else {
@@ -87,6 +105,12 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
       }
     } catch (err) {
       console.error("Failed to save course:", err);
+    } finally {
+      if (wasSuccessful) {
+        setTimeout(() => {
+          courseStore.resetSubmissionState();
+        }, 250);
+      }
     }
   };
 
@@ -156,8 +180,10 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
           <Step8Review
             courseForm={courseForm}
             onEditStep={setCurrentStep}
-            onSaveDraft={() => handleSave("draft")}
-            onPublish={() => handleSave("publish")}
+            submitAction={finalAction}
+            onSubmitActionChange={setFinalAction}
+            onSubmit={() => handleSave(finalAction)}
+            isSubmitting={courseStore.isSubmitting}
           />
         );
       default:
@@ -167,6 +193,92 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
 
   return (
     <div style={{ minHeight: "100vh", background: "#F9FAFB" }}>
+      {courseStore.isSubmitting && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(17, 24, 39, 0.48)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              width: "min(520px, 100%)",
+              borderRadius: 28,
+              background: "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)",
+              boxShadow: "0 28px 90px rgba(15, 23, 42, 0.22)",
+              padding: 28,
+              border: "1px solid rgba(226, 232, 240, 0.9)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 18 }}>
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 18,
+                  background: "linear-gradient(135deg, #4F46E5 0%, #0EA5E9 100%)",
+                  display: "grid",
+                  placeItems: "center",
+                  boxShadow: "0 12px 30px rgba(79, 70, 229, 0.28)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    border: "2.5px solid rgba(255,255,255,0.35)",
+                    borderTopColor: "#FFFFFF",
+                    animation: "course-submit-spin 0.9s linear infinite",
+                  }}
+                />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0F172A" }}>
+                  {courseStore.submissionStage || "Submitting course"}
+                </h3>
+                <p style={{ margin: "6px 0 0", fontSize: 14, color: "#475569", lineHeight: 1.5 }}>
+                  {courseStore.submissionDetail || "Please keep this tab open while we finish preparing the course."}
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                width: "100%",
+                height: 12,
+                borderRadius: 999,
+                background: "#E2E8F0",
+                overflow: "hidden",
+                marginBottom: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: `${Math.max(courseStore.submissionProgress, 8)}%`,
+                  height: "100%",
+                  borderRadius: 999,
+                  background: "linear-gradient(90deg, #4F46E5 0%, #0EA5E9 100%)",
+                  transition: "width 220ms ease",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, fontSize: 13, color: "#64748B" }}>
+              <span>{Math.max(courseStore.submissionProgress, 8)}% complete</span>
+              <span>SCORM uploads can take a little longer while the package is extracted and stored.</span>
+            </div>
+          </div>
+          <style>{`@keyframes course-submit-spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
       <div
         style={{
           background: "#FFFFFF",
@@ -223,37 +335,11 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {courseStore.isSubmitting && (
-              <span style={{ fontSize: 13, color: "#6B7280" }}>Saving...</span>
-            )}
-            <button
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "9px 18px",
-                borderRadius: 10,
-                border: "1.5px solid #D1D5DB",
-                background: "#FFFFFF",
-                fontSize: 13,
-                fontWeight: 600,
-                color: "#374151",
-                cursor: courseStore.isSubmitting ? "not-allowed" : "pointer",
-                fontFamily: "inherit",
-                opacity: courseStore.isSubmitting ? 0.6 : 1,
-              }}
-              onMouseEnter={(event) => (event.currentTarget.style.background = "#F9FAFB")}
-              onMouseLeave={(event) => (event.currentTarget.style.background = "#FFFFFF")}
-              onClick={() => handleSave("draft")}
-              disabled={courseStore.isSubmitting}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                <polyline points="17 21 17 13 7 13 7 21" />
-                <polyline points="7 3 7 8 15 8" />
-              </svg>
-              Save Draft
-            </button>
+            <span style={{ fontSize: 13, color: "#64748B" }}>
+              {currentStep === TOTAL_STEPS - 1
+                ? "Choose draft or publish once and submit from the final review."
+                : "Complete the course setup to unlock the final submit action."}
+            </span>
           </div>
         </div>
       </div>
@@ -270,6 +356,24 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
           completedSteps={completedSteps}
           stepProgress={stepProgress[currentStep] ?? 0}
         />
+
+        {courseStore.error && !courseStore.isSubmitting && (
+          <div
+            style={{
+              marginTop: 20,
+              marginBottom: 20,
+              padding: "14px 16px",
+              borderRadius: 16,
+              border: "1px solid #FECACA",
+              background: "#FEF2F2",
+              color: "#991B1B",
+              fontSize: 14,
+              lineHeight: 1.5,
+            }}
+          >
+            {courseStore.error}
+          </div>
+        )}
 
         {renderCurrentStep()}
 
@@ -289,7 +393,7 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
           >
             <button
               onClick={goBack}
-              disabled={currentStep === 0}
+              disabled={currentStep === 0 || courseStore.isSubmitting}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -300,8 +404,8 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
                 background: "#FFFFFF",
                 fontSize: 14,
                 fontWeight: 600,
-                color: currentStep === 0 ? "#D1D5DB" : "#374151",
-                cursor: currentStep === 0 ? "not-allowed" : "pointer",
+                color: currentStep === 0 || courseStore.isSubmitting ? "#D1D5DB" : "#374151",
+                cursor: currentStep === 0 || courseStore.isSubmitting ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
               }}
             >
@@ -313,6 +417,7 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
 
             <button
               onClick={goNext}
+              disabled={courseStore.isSubmitting}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -324,11 +429,18 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
                 fontSize: 14,
                 fontWeight: 600,
                 color: "#FFFFFF",
-                cursor: "pointer",
+                cursor: courseStore.isSubmitting ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
+                opacity: courseStore.isSubmitting ? 0.6 : 1,
               }}
-              onMouseEnter={(event) => (event.currentTarget.style.background = "#4338CA")}
-              onMouseLeave={(event) => (event.currentTarget.style.background = "#4F46E5")}
+              onMouseEnter={(event) => {
+                if (!courseStore.isSubmitting) {
+                  event.currentTarget.style.background = "#4338CA";
+                }
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.background = "#4F46E5";
+              }}
             >
               Next
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
