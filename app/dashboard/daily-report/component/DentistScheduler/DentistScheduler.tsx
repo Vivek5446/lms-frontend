@@ -16,7 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import stores from "../../../../store/stores";
 import { SLOT_DURATION } from "../../utils/constant";
 import { format } from "date-fns";
-import AppointmentDetailsView from "../../../appointments/element/AppointmentDetailsView";
+import AppointmentDetailsView from "../../../toothTreatment/element/AppointmentDetailsView";
 import CustomDrawer from "../../../../component/common/Drawer/CustomDrawer";
 
 /* ---------------------- HELPERS ---------------------- */

@@ -15,8 +15,8 @@ import { status } from "../utils/constant";
 import RecallViewAppointment from "../RecallAppointmentForm/RecallViewAppointment";
 import DentistScheduler from "../../../daily-report/component/DentistScheduler/DentistScheduler";
 import { SLOT_DURATION } from "../../../daily-report/utils/constant";
-import EditAppointmentForm from "../../../appointments/component/EditForm";
-import AddAppointmentForm from "../../../appointments/component/AddForm";
+import EditAppointmentForm from "../../../toothTreatment/component/EditForm";
+import AddAppointmentForm from "../../../toothTreatment/component/AddForm";
 
 const RecallAppointmentList = observer(({ isPatient, patientDetails }: any) => {
   const {
