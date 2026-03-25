@@ -46,7 +46,7 @@ const Login = observer(() => {
   const cardPadding = useBreakpointValue({ base: 2, md: 3 });
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -84,152 +84,191 @@ const Login = observer(() => {
     }
   };
 
+    const inputStyles = {
+    bg: "white",
+    border: "1px solid",
+    borderColor: "gray.200",
+    borderRadius: "8px",
+    fontSize: "sm",
+    h: "44px",
+    color: "gray.700",
+    _placeholder: { color: "gray.400", fontSize: "13px" },
+    _focus: {
+      borderColor: "#D84315",
+      boxShadow: "0 0 0 2px rgba(216,67,21,0.1)",
+    },
+    _hover: { borderColor: "gray.300" },
+  };
+ 
+  const labelStyles = {
+    fontSize: "13px",
+    fontWeight: "500",
+    color: "gray.700",
+    mb: 1,
+  };
+ 
   return (
-    <Flex align="center" justify="center" minH={{ base: "90vh", md: "80vh" }}>
-      <Box w="100%" p={cardPadding} borderRadius="xl" animation="fadeIn 0.4s ease">
-        <VStack spacing={6} align="stretch">
-          {/* Heading */}
-          <Box textAlign="center">
-            <Heading size={headingSize} mb={2} color="teal.700">
-              Welcome Back
-            </Heading>
-            <Text fontSize="sm" color="gray.600">
-              Log in to continue
-            </Text>
-          </Box>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
-            <VStack spacing={4} align="stretch">
-              {/* LOGIN TYPE + USERNAME */}
-              <FormControl id="username">
-                <FormLabel fontSize="sm" fontWeight="500">
-                  Login Using
-                </FormLabel>
-
-                <Select
-                  name="loginType"
-                  value={formData.loginType}
-                  onChange={handleInputChange}
-                  size="lg"
-                  mb={2}
-                >
-                  <option value="email">Email</option>
-                  <option value="code">User Code</option>
-                </Select>
-
-                <Input
-                  type="text"
-                  name="username"
-                  placeholder={
-                    formData.loginType === "email"
-                      ? "Enter your email"
-                      : formData.loginType === "code"
-                      ? "Enter your user code"
-                      : "Enter your username"
-                  }
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  focusBorderColor="teal.500"
-                  size="lg"
-                  required
-                />
-              </FormControl>
-
-              {/* Password */}
-              <FormControl id="password">
-                <FormLabel fontSize="sm" fontWeight="500">
-                  Password
-                </FormLabel>
-                <InputGroup>
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    focusBorderColor="teal.500"
-                    size="lg"
-                    required
-                  />
-                  <InputRightElement
-                    mt={1}
-                    cursor="pointer"
-                    onClick={handleTogglePassword}
-                  >
-                    {showPassword ? (
-                      <RiEyeOffLine size={20} />
-                    ) : (
-                      <RiEyeLine size={20} />
-                    )}
-                  </InputRightElement>
-                </InputGroup>
-              </FormControl>
-
-              <Flex justify="space-between" align="center" fontSize="sm">
-                <Checkbox colorScheme="teal" size="sm">
-                  Remember me
-                </Checkbox>
-                <Link href="/forgot-password">
-                  <Text
-                    color="teal.600"
-                    fontWeight="500"
-                    _hover={{ textDecoration: "underline" }}
-                  >
-                    Forgot password?
-                  </Text>
-                </Link>
-              </Flex>
-
-              {/* Sign in button */}
-              <CustomButton
-                size="lg"
-                width="100%"
-                type="submit"
-                mt={2}
-                borderRadius="full"
-                isDisabled={
-                  !formData.username || !formData.password || isLoading
-                }
+    <VStack spacing={0} align="stretch">
+      {/* Logo */}
+      <Flex align="center" gap={2} mb={6}>
+        {/* Replace with your actual logo image */}
+        {/* <Image
+          src="/images/logo.png"
+          alt="Logo"
+          h="28px"
+          fallback={
+            <Flex align="center" gap={2}>
+              <Box
+                w="28px"
+                h="28px"
+                bg="#D84315"
+                borderRadius="6px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
               >
-                {isLoading ? (
-                  <Spinner size="sm" color="white" />
-                ) : (
-                  "Sign in"
-                )}
-              </CustomButton>
-
-              {/* OR divider */}
-              <Flex align="center" gap={2}>
-                <Divider />
-                <Text fontSize="xs" color="gray.500">
-                  OR
-                </Text>
-                <Divider />
-              </Flex>
-
-              {/* Google login */}
-              <Button
-                size="lg"
-                width="100%"
-                leftIcon={<FcGoogle size="22px" />}
-                fontSize="sm"
-                fontWeight="500"
-                bg="white"
-                color="gray.700"
-                border="1px solid"
-                borderColor="gray.300"
-                borderRadius="full"
-                _hover={{ bg: "gray.50" }}
-              >
-                Sign in with Google
-              </Button>
-            </VStack>
-          </form>
-        </VStack>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                  <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
+                </svg>
+              </Box>
+              <Text fontSize="sm" fontWeight="600" color="gray.700" letterSpacing="0.2px">
+                logo <Box as="span" color="gray.400" fontWeight="400">ipsum™</Box>
+              </Text>
+            </Flex>
+          }
+        /> */}
+      </Flex>
+ 
+      {/* Heading */}
+      <Box mb={5}>
+        <Heading fontSize="2xl" fontWeight="600" color="gray.800" mb={1}>
+          Login
+        </Heading>
+        <Text fontSize="13px" color="gray.400">
+          Enter your credentials to login to your account
+        </Text>
       </Box>
-    </Flex>
+ 
+      {/* Form */}
+      <form onSubmit={handleSubmit}>
+        <VStack spacing={4} align="stretch">
+          {/* Login Type */}
+          <FormControl>
+            <FormLabel {...labelStyles}>Login using</FormLabel>
+            <Select
+              name="loginType"
+              value={formData.loginType}
+              onChange={handleInputChange}
+              {...inputStyles}
+            >
+              <option value="email">Email</option>
+              <option value="code">User Code</option>
+            </Select>
+          </FormControl>
+ 
+          {/* Email / Code */}
+          <FormControl>
+            <FormLabel {...labelStyles}>
+              {formData.loginType === "email" ? "Email" : "User Code"}
+            </FormLabel>
+            <Input
+              type="text"
+              name="username"
+              placeholder={
+                formData.loginType === "email"
+                  ? "example.educationpro@gmail.com"
+                  : "Enter your user code"
+              }
+              value={formData.username}
+              onChange={handleInputChange}
+              required
+              {...inputStyles}
+            />
+          </FormControl>
+ 
+          {/* Password */}
+          <FormControl>
+            <FormLabel {...labelStyles}>Password</FormLabel>
+            <InputGroup>
+              <Input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                {...inputStyles}
+                pr="44px"
+              />
+              <InputRightElement h="44px" cursor="pointer" onClick={handleTogglePassword}>
+                {showPassword ? (
+                  <RiEyeOffLine size={16} color="#9CA3AF" />
+                ) : (
+                  <RiEyeLine size={16} color="#9CA3AF" />
+                )}
+              </InputRightElement>
+            </InputGroup>
+          </FormControl>
+ 
+          {/* Remember me + Forgot */}
+          <Flex justify="space-between" align="center" mt={-1}>
+            <Checkbox
+              size="sm"
+              colorScheme="orange"
+              sx={{
+                ".chakra-checkbox__label": { fontSize: "13px", color: "gray.500" },
+                ".chakra-checkbox__control": { borderRadius: "3px", borderColor: "gray.300" },
+              }}
+            >
+              Remember me
+            </Checkbox>
+            <Link href="/forgot-password">
+              <Text fontSize="13px" color="#D84315" fontWeight="500" _hover={{ textDecoration: "underline" }}>
+                Forgot Password?
+              </Text>
+            </Link>
+          </Flex>
+ 
+          {/* Sign In */}
+          <CustomButton
+            type="submit"
+            size="md"
+            width="100%"
+            mt={1}
+            borderRadius="8px"
+            bg="#D84315"
+            color="white"
+            fontWeight="500"
+            fontSize="sm"
+            h="44px"
+            _hover={{ bg: "#BF360C" }}
+            _active={{ bg: "#BF360C", transform: "scale(0.99)" }}
+            isDisabled={!formData.username || !formData.password || isLoading}
+          >
+            {isLoading ? <Spinner size="sm" color="white" /> : "Sign In"}
+          </CustomButton>
+ 
+          {/* Google */}
+          <Button
+            size="md"
+            width="100%"
+            leftIcon={<FcGoogle size="18px" />}
+            fontSize="13px"
+            fontWeight="400"
+            bg="white"
+            color="gray.600"
+            border="1px solid"
+            borderColor="gray.200"
+            borderRadius="8px"
+            h="44px"
+            _hover={{ bg: "gray.50" }}
+          >
+            Sign in with google
+          </Button>
+        </VStack>
+      </form>
+    </VStack>
   );
 });
-
+ 
 export default Login;
