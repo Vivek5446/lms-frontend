@@ -14,7 +14,7 @@ function buildScormCourseUrl(scormPath: string) {
 }
 
 function CoursePage() {
-  const [view, setView] = useState<"gallery" | "create" | "details" | "player">("gallery");
+  const [view, setView] = useState<"gallery" | "create" | "details">("gallery");
   const [activeCourse, setActiveCourse] = useState<CourseListItem | null>(null);
   const [playerPath, setPlayerPath] = useState<string | null>(null);
 
@@ -32,24 +32,15 @@ function CoursePage() {
     setView("details");
   };
 
-  const handleLaunchScorm = (path: string, course: CourseListItem) => {
+  const handleLaunchScorm = (path: string) => {
     setPlayerPath(path);
-    setActiveCourse(course);
-    setView("player");
   };
 
   const handleBackFromPlayer = () => {
-    // If we came from details, go back to details. Else gallery.
-    if (activeCourse) {
-      setView("details");
-    } else {
-      setView("gallery");
-    }
     setPlayerPath(null);
   };
 
-  // ─── Render Logic ──────────────────────────────────────────
-
+  // ─── Create View ───────────────────────────────────────────
   if (view === "create") {
     return (
       <CourseList
@@ -59,28 +50,42 @@ function CoursePage() {
     );
   }
 
+  // ─── Details View (with player overlay) ───────────────────
   if (view === "details" && activeCourse) {
     return (
-      <CourseDetails
-        course={activeCourse}
-        onBack={() => setView("gallery")}
-        onLaunchSection={(path:any) => handleLaunchScorm(path, activeCourse)}
-      />
+      <>
+        <CourseDetails
+          course={activeCourse}
+          onBack={() => setView("gallery")}
+          onLaunchSection={(path: any) => handleLaunchScorm(path)}
+        />
+
+        <AnimatePresence>
+          {playerPath && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 1400,
+              }}
+            >
+              <CoursePlayer
+                courseTitle={activeCourse.title}
+                courseUrl={buildScormCourseUrl(playerPath)}
+                onBack={handleBackFromPlayer}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </>
     );
   }
 
-  if (view === "player" && activeCourse && (playerPath || activeCourse.scormFilePath)) {
-    const launchPath = playerPath || activeCourse.scormFilePath;
-    return (
-      <CoursePlayer
-        courseTitle={activeCourse.title}
-        courseUrl={buildScormCourseUrl(launchPath || activeCourse.scormFilePath)}
-        onBack={handleBackFromPlayer}
-      />
-    );
-  }
-
-  // ─── Gallery View ──────────────────────────────────────────────
+  // ─── Gallery View ──────────────────────────────────────────
   return (
     <div style={{ minHeight: "100vh", background: "#F9FAFB", padding: "32px 24px" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
@@ -237,27 +242,6 @@ function CoursePage() {
                       >
                         Details
                       </button>
-                      {/* {course.scormFilePath && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLaunchScorm(course.scormFilePath!, course);
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: "8px 0",
-                            borderRadius: 10,
-                            border: "none",
-                            background: "#4F46E5",
-                            color: "#fff",
-                            fontWeight: 600,
-                            fontSize: 13,
-                            cursor: "pointer",
-                          }}
-                        >
-                          ▶ Launch
-                        </button>
-                      )} */}
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
@@ -276,7 +260,7 @@ function CoursePage() {
                           cursor: "pointer",
                         }}
                       >
-                         🗑️
+                        🗑️
                       </button>
                     </div>
                   </div>
