@@ -237,7 +237,7 @@ function CoursePage() {
                       >
                         Details
                       </button>
-                      {course.scormFilePath && (
+                      {/* {course.scormFilePath && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -257,7 +257,7 @@ function CoursePage() {
                         >
                           ▶ Launch
                         </button>
-                      )}
+                      )} */}
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();

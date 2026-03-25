@@ -73,7 +73,7 @@ export default function Step4Pricing({ value, onChange, onProgressChange }: Step
                     type="number"
                     value={value.amount}
                     onChange={(event) => onChange({ ...value, amount: event.target.value })}
-                    className="bg-background border-border rounded-xl h-11 pl-7"
+                    className="bg-background border-border rounded-xl h-11 pl-10"
                   />
                 </div>
               </FormField>
