@@ -36,6 +36,12 @@ interface ChunkedScormUpload {
   sizeInBytes: number;
 }
 
+const multipartRequestConfig = {
+  headers: {
+    "Content-Type": undefined,
+  },
+} as const;
+
 function createClientUploadId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -125,7 +131,7 @@ class CourseStoreClass {
         chunkFormData.append("fileName", file.name);
         chunkFormData.append("chunk", chunk, `${file.name}.part-${chunkIndex}`);
 
-        await axios.post("/course/upload-chunk", chunkFormData);
+        await axios.post("/course/upload-chunk", chunkFormData, multipartRequestConfig);
 
         uploadedBytes += chunk.size;
         const uploadRatio = totalBytes > 0 ? uploadedBytes / totalBytes : 1;
@@ -187,6 +193,7 @@ class CourseStoreClass {
       }
 
       const { data } = await axios.post("/course/create", formData, {
+        ...multipartRequestConfig,
         onUploadProgress: (progressEvent) => {
           if (!progressEvent.total) {
             runInAction(() => {
