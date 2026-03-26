@@ -56,6 +56,15 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
 
   const handleSave = async (action: "draft" | "publish") => {
     let wasSuccessful = false;
+    const scormFiles = courseForm.structure.modules.flatMap((mod) =>
+      mod.sections.flatMap((section) =>
+        section.contentFile &&
+        (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip")
+          ? [section.contentFile.file]
+          : []
+      )
+    );
+
     const scormFileCount = courseForm.structure.modules.reduce((count, mod) => {
       return (
         count +
@@ -69,30 +78,12 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
 
     const payload = buildCoursePayload(courseForm, action);
 
-    // Build FormData to send files + JSON payload
-    const formData = new FormData();
-    formData.append("payload", JSON.stringify(payload));
-
-    // Append thumbnail file if present
-    if (courseForm.basicInfo.thumbnail?.file) {
-      formData.append("thumbnail", courseForm.basicInfo.thumbnail.file);
-    }
-
-    // Append section-level SCORM/ZIP uploads in curriculum order so the backend
-    // can map extracted launch files back to the matching sections.
-    for (const mod of courseForm.structure.modules) {
-      for (const section of mod.sections) {
-        if (
-          section.contentFile &&
-          (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip")
-        ) {
-          formData.append("scormZip", section.contentFile.file);
-        }
-      }
-    }
-
     try {
-      await courseStore.createCourse(formData, {
+      await courseStore.createCourse({
+        payload,
+        thumbnailFile: courseForm.basicInfo.thumbnail?.file ?? null,
+        scormFiles,
+      }, {
         action,
         fileCount:
           scormFileCount + (courseForm.basicInfo.thumbnail?.file ? 1 : 0),
