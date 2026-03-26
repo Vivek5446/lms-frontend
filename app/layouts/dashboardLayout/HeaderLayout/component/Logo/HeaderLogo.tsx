@@ -1,4 +1,4 @@
-"use client"; // Add this for client-side component in Next.js
+"use client";
 
 import { Box, Flex, IconButton, useBreakpointValue, useColorModeValue } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
@@ -7,10 +7,11 @@ import stores from "../../../../../store/stores";
 import SearchBar from "../HeaderNavbar/SearchBar/SearchBar";
 
 const HeaderLogo = observer(() => {
-  const isLargerThanXl = useBreakpointValue({ lg: true }) ?? false; // Added default value for SSR
+  const isLargerThanXl = useBreakpointValue({ lg: true }) ?? false;
   const hoverColor = useColorModeValue("brand.500", "brand.200");
   const hoverBg = useColorModeValue("brand.50", "gray.700");
   const activeBg = useColorModeValue("brand.100", "gray.800");
+  const iconColor = useColorModeValue("gray.600", "gray.300");
 
   const {
     layout: { fullScreenMode, openDashSidebarFun, isCallapse },
@@ -24,7 +25,7 @@ const HeaderLogo = observer(() => {
             variant="ghost"
             aria-label="Arrow"
             fontSize="2xl"
-            color="white"
+            color={iconColor}
             _hover={{ color: hoverColor, bg: hoverBg }}
             _active={{ bg: activeBg }}
             icon={
@@ -59,12 +60,6 @@ const HeaderLogo = observer(() => {
       )}
       <SearchBar />
       <Box></Box>
-      {/* <Input
-        type="text"
-        value=""
-        placeholder="Search here"
-        w={isLargerThanXl ? "90%" : "95%"}
-      /> */}
     </Flex>
   );
 });

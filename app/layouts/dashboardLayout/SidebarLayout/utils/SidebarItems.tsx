@@ -158,13 +158,49 @@ const sidebarDatas: SidebarItem[] = [
   //   url: "/dashboard/approvals",
   //   role: ["superAdmin", "admin", "user"],
   // },
-  {
-    id: 17,
-    name: "Course",
-    icon: <PlusSquareIcon />,
-    url: "/dashboard/course",
-    role: ["superAdmin", "admin", "user"],
-  },
+ {
+  id: 17,
+  name: "Course",
+  icon: <PlusSquareIcon />,
+  url: "/dashboard/course",
+  role: ["superAdmin", "admin", "user"],
+  children: [
+    {
+      id: 171,
+      name: "All Courses",
+      icon: <PlusSquareIcon />,
+      url: "/dashboard/course/all",
+    },
+    {
+      id: 172,
+      name: "Create Course",
+      icon: <PlusSquareIcon />,
+      url: "/dashboard/course/create",
+    },
+
+    // ✅ Testing nested level
+    {
+      id: 173,
+      name: "Advanced",
+      icon: <PlusSquareIcon />,
+      url: "#",
+      children: [
+        {
+          id: 1731,
+          name: "Test Sub Course 1",
+          icon: <PlusSquareIcon />,
+          url: "/dashboard/course/test1",
+        },
+        {
+          id: 1732,
+          name: "Test Sub Course 2",
+          icon: <PlusSquareIcon />,
+          url: "/dashboard/course/test2",
+        },
+      ],
+    },
+  ],
+}
   // {
   //   id: 14,
   //   name: "Work Done",
