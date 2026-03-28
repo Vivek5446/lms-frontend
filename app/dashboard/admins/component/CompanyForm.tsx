@@ -94,6 +94,7 @@ export const companyInitialValues = {
   tenantSlug: "",
   customDomain: "",
   companyEmail: "",
+  managerLevels: 3,
   mobileNo: "",
   workNo: "",
   webLink: "",
@@ -129,6 +130,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading }: any) => {
     company_name: Yup.string().required(),
     companyCode: Yup.string().required(),
     companyEmail: Yup.string().email().required(),
+    managerLevels: Yup.number().min(1).max(20).required(),
     mobileNo: Yup.string().required(),
     bio: Yup.string().required(),
   });
@@ -185,11 +187,19 @@ const CompanyForm = ({ onSubmit, onClose, isLoading }: any) => {
                     value={values.customDomain}
                     onChange={handleChange}
                   />
+                  <CustomInput
+                    label="Manager Levels"
+                    name="managerLevels"
+                    type="number"
+                    value={values.managerLevels}
+                    onChange={handleChange}
+                  />
                 </SimpleGrid>
 
                 <Flex mt={4} gap={3} align="center">
                   <Text fontSize="sm">Preview:</Text>
                   <Badge colorScheme="purple">{previewUrl || "—"}</Badge>
+                  <Badge colorScheme="blue">{values.managerLevels || 3} levels</Badge>
                 </Flex>
               </SectionCard>
 

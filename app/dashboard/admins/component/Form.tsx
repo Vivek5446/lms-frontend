@@ -12,17 +12,14 @@ import {
 } from "@chakra-ui/react";
 import { Formik, Form as FormikForm } from "formik";
 import {
-  FileText,
   Image as ImageIcon,
   Lock,
-  MapPin,
   User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
 
 import CustomInput from "../../../component/config/component/customInput/CustomInput";
-import { titles } from "./utils/constant";
 import { generateIntialValues } from "./utils/function";
 
 /* ================= SECTION CARD ================= */
@@ -91,10 +88,13 @@ const Form = ({
   }, [formData?.pic?.file]);
 
   const validationSchema = Yup.object({
-    title: Yup.mixed().required("Title is required"),
     name: Yup.string().required("Name is required"),
     username: Yup.string().email().trim().lowercase().required("Email is required"),
-    bio: Yup.string().required("Bio is required"),
+    designation: Yup.string().required("Designation is required"),
+    branch: Yup.string().required("Branch is required"),
+    city: Yup.string().required("City is required"),
+    state: Yup.string().required("State is required"),
+    joiningDate: Yup.string().required("Joining date is required"),
     phoneNumber: Yup.string().required("Phone is required"),
     password: !isEdit
       ? Yup.string().min(6).required()
@@ -192,74 +192,72 @@ const Form = ({
               </SectionCard>
 
               {/* PERSONAL */}
-              <SectionCard title="Personal Information" icon={User} color="blue">
+              <SectionCard title="Employee Details" icon={User} color="blue">
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                   <CustomInput
-                    label="Title"
-                    name="title"
-                    type="select"
-                    options={titles}
-                    value={values.title}
-                    onChange={(e: any) => setFieldValue("title", e)}
-                  />
-
-                  <CustomInput
-                    label="Name"
+                    label="Employee Name"
                     name="name"
                     value={values.name}
                     onChange={handleChange}
                   />
 
                   <CustomInput
-                    label="Email"
+                    label="Email ID"
                     name="username"
                     value={values.username}
                     onChange={handleChange}
                   />
 
                   <CustomInput
-                    label="Phone"
+                    label="Contact Number"
                     name="phoneNumber"
                     value={values.phoneNumber}
                     onChange={handleChange}
                   />
 
                   <CustomInput
-                    label="Code"
+                    label="Employee Code"
                     name="code"
                     value={values.code}
                     onChange={handleChange}
                   />
 
                   <CustomInput
-                    label="Profile Link"
-                    name="link"
-                    value={values.link}
+                    label="Designation"
+                    name="designation"
+                    value={values.designation}
+                    onChange={handleChange}
+                  />
+
+                  <CustomInput
+                    label="Branch"
+                    name="branch"
+                    value={values.branch}
+                    onChange={handleChange}
+                  />
+
+                  <CustomInput
+                    label="City"
+                    name="city"
+                    value={values.city}
+                    onChange={handleChange}
+                  />
+
+                  <CustomInput
+                    label="State"
+                    name="state"
+                    value={values.state}
+                    onChange={handleChange}
+                  />
+
+                  <CustomInput
+                    label="Joining Date"
+                    name="joiningDate"
+                    type="date"
+                    value={values.joiningDate}
                     onChange={handleChange}
                   />
                 </SimpleGrid>
-              </SectionCard>
-
-              {/* BIO */}
-              <SectionCard title="Bio" icon={FileText} color="purple">
-                <CustomInput
-                  name="bio"
-                  placeholder="Enter Bio"
-                  type="textarea"
-                  value={values.bio}
-                  onChange={handleChange}
-                />
-              </SectionCard>
-
-              {/* ADDRESS */}
-              <SectionCard title="Address" icon={MapPin} color="orange">
-                <CustomInput
-                  name="address"
-                  type="textarea"
-                  placeholder="Admin Address"
-                  value={values.address}
-                  onChange={handleChange}
-                />
               </SectionCard>
 
               {/* AUTH */}

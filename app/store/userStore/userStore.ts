@@ -190,12 +190,17 @@ class UserStore {
     }
   };
 
-  previewUploadUsers = async (file: File) => {
+  previewUploadUsers = async (file: File, options: any = {}) => {
     this.uploadLoading = true;
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("dryRun", "true");
+      Object.entries(options || {}).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && `${value}` !== "") {
+          formData.append(key, String(value));
+        }
+      });
       const response = await axios.post("/admin/users/bulk", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -210,11 +215,16 @@ class UserStore {
     }
   };
 
-  uploadUsers = async (file: File) => {
+  uploadUsers = async (file: File, options: any = {}) => {
     this.uploadLoading = true;
     try {
       const formData = new FormData();
       formData.append("file", file);
+      Object.entries(options || {}).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && `${value}` !== "") {
+          formData.append(key, String(value));
+        }
+      });
       const response = await axios.post("/admin/users/bulk", formData, {
         headers: {
           "Content-Type": "multipart/form-data",

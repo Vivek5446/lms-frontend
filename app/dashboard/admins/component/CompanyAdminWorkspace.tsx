@@ -187,7 +187,7 @@ const CompanyAdminWorkspace = ({
         ...values,
         company: company._id,
         pic: formData?.pic,
-        title: formData?.title?.label || formData?.title || initialValues.title.label,
+        title: formData?.title?.label || formData?.title || "",
         profileDetails: { ...formData },
       });
 
@@ -323,7 +323,7 @@ const CompanyAdminWorkspace = ({
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
           <SummaryCard label="Company Code" value={company?.companyCode || "--"} />
           <SummaryCard label="Tenant Slug" value={company?.tenantSlug || "--"} />
-          <SummaryCard label="Tenant URL" value={company?.tenantUrl || "--"} />
+          <SummaryCard label="Manager Levels" value={company?.managerLevels || 3} />
         </SimpleGrid>
 
         <Box bg={surfaceBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" p={{ base: 4, md: 6 }}>

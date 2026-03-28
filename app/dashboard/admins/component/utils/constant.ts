@@ -6,13 +6,13 @@ export const titles = [
 ];
 
 export const initialValues = {
-  title: titles[0],
   name: "",
   username: "",
-  languages: [],
-  address: "",
-  link: "",
-  bio: "",
+  designation: "",
+  branch: "",
+  city: "",
+  state: "",
+  joiningDate: "",
   password: "",
   confirmPassword: "",
   phoneNumber: "",
