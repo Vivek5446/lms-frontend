@@ -1,25 +1,67 @@
 "use client";
 
 import {
-  Badge,
   Box,
   Button,
   Flex,
   Grid,
-  GridItem,
+  Icon,
   SimpleGrid,
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
 import { Formik, Form as FormikForm } from "formik";
+import {
+  FileText,
+  Image as ImageIcon,
+  Lock,
+  MapPin,
+  User,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
-import ShowFileUploadFile from "../../../component/common/ShowFileUploadFile/ShowFileUploadFile";
+
 import CustomInput from "../../../component/config/component/customInput/CustomInput";
-import { removeDataByIndex } from "../../../config/utils/utils";
 import { titles } from "./utils/constant";
 import { generateIntialValues } from "./utils/function";
 
+/* ================= SECTION CARD ================= */
+const SectionCard = ({ title, icon, children, color }: any) => {
+  const bg = useColorModeValue("white", "gray.800");
+
+  const colorMap: any = {
+    blue: { icon: "blue.500", text: "blue.600", bg: "blue.50" },
+    green: { icon: "green.500", text: "green.600", bg: "green.50" },
+    purple: { icon: "purple.500", text: "purple.600", bg: "purple.50" },
+    orange: { icon: "orange.500", text: "orange.600", bg: "orange.50" },
+    pink: { icon: "pink.500", text: "pink.600", bg: "pink.50" },
+  };
+
+  const theme = colorMap[color] || colorMap.blue;
+
+  return (
+    <Box
+      p={4}
+      borderRadius="xl"
+      bg={bg}
+      boxShadow="md"
+      border="1px solid"
+      borderColor="gray.200"
+    >
+      <Flex align="center" mb={3} gap={2}>
+        <Box p={2} borderRadius="md" bg={theme.bg}>
+          <Icon as={icon} color={theme.icon} />
+        </Box>
+        <Text fontSize="lg" fontWeight="bold" color={theme.text}>
+          {title}
+        </Text>
+      </Flex>
+      {children}
+    </Box>
+  );
+};
+
+/* ================= MAIN FORM ================= */
 const Form = ({
   initialData,
   onSubmit,
@@ -30,8 +72,7 @@ const Form = ({
   selectedCompany,
 }: any) => {
   const [formData, setFormData] = useState<any>(initialData);
-  const bgBox = useColorModeValue("white", "darkBrand.100");
-  const borderColor = useColorModeValue("brand.200", "darkBrand.200");
+  const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -39,27 +80,28 @@ const Form = ({
     }
   }, [initialData]);
 
+  /* ✅ SAFE IMAGE PREVIEW */
+  useEffect(() => {
+    if (formData?.pic?.file && formData.pic.file instanceof File) {
+      const url = URL.createObjectURL(formData.pic.file);
+      setPreview(url);
+
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [formData?.pic?.file]);
+
   const validationSchema = Yup.object({
     title: Yup.mixed().required("Title is required"),
-    pic: Yup.mixed(),
     name: Yup.string().required("Name is required"),
-    username: Yup.string()
-      .email("Enter a valid email")
-      .required("Email is required"),
+    username: Yup.string().email().required("Email is required"),
     bio: Yup.string().required("Bio is required"),
-    phoneNumber: Yup.string()
-      .matches(/^(?:\+?[0-9]{1,3})?[-.\s]?[0-9]{10}$/, "Phone number is not valid")
-      .required("Phone number is required"),
+    phoneNumber: Yup.string().required("Phone is required"),
     password: !isEdit
-      ? Yup.string()
-          .min(6, "Password must be at least 6 characters")
-          .required("Password is required")
+      ? Yup.string().min(6).required()
       : Yup.string().optional(),
     confirmPassword: !isEdit
-      ? Yup.string().oneOf([Yup.ref("password"), null], "Passwords must match")
+      ? Yup.string().oneOf([Yup.ref("password"), null])
       : Yup.string().optional(),
-    code: Yup.string().optional(),
-    link: Yup.string().url("Enter a valid URL").optional(),
   });
 
   if (!isOpen) return null;
@@ -68,281 +110,195 @@ const Form = ({
     <Formik
       initialValues={formData}
       validationSchema={validationSchema}
-      enableReinitialize={true}
-      onSubmit={async (values: any) => {
-        onSubmit(values);
-      }}
+      enableReinitialize
+      onSubmit={onSubmit}
     >
       {({
         values,
         handleChange,
         handleSubmit,
         setFieldValue,
-        errors,
-        touched,
       }: any) => {
+        /* 🔥 handle preview based on current formik values */
+        useEffect(() => {
+          if (values?.pic?.file && values.pic.file instanceof File) {
+            const url = URL.createObjectURL(values.pic.file);
+            setPreview(url);
+
+            return () => URL.revokeObjectURL(url);
+          } else {
+            setPreview(null);
+          }
+        }, [values?.pic?.file]);
+
         return (
           <FormikForm onSubmit={handleSubmit}>
-            <Grid
-              templateColumns={{ base: "1fr", md: "1fr 1fr" }}
-              gap={6}
-              mb={6}
-              alignItems="center"
-            >
-              <GridItem colSpan={2}>
-                <Box
-                  p={4}
-                  borderWidth={1}
-                  borderRadius="md"
-                  boxShadow="sm"
-                  bg={bgBox}
-                  borderColor={borderColor}
-                >
-                  <Flex justify="space-between" align="center" gap={4} wrap="wrap">
-                    <Box>
-                      <Text fontSize="lg" fontWeight="semibold">
-                        Company Context
-                      </Text>
-                      <Text fontSize="sm" color="gray.500" mt={1}>
-                        This admin will be created under the selected company.
-                      </Text>
-                    </Box>
-                    <Box textAlign={{ base: "left", md: "right" }}>
-                      <Text fontWeight="bold">{selectedCompany?.company_name || "No company selected"}</Text>
-                      {selectedCompany?.tenantUrl ? (
-                        <Badge mt={2} colorScheme="purple" px={3} py={1} borderRadius="full">
-                          {selectedCompany.tenantUrl}
-                        </Badge>
-                      ) : null}
-                    </Box>
-                  </Flex>
-                </Box>
-              </GridItem>
-
-              <GridItem colSpan={2}>
-                <Text fontSize="lg" fontWeight="semibold" mb={4}>
-                  Personal Information
-                </Text>
-
-                <SimpleGrid columns={{ base: 1 }} spacing={4}>
-                  <Box width="100%">
-                    {values?.pic?.file?.length === 0 ? (
-                      <CustomInput
-                        type="file-drag"
-                        name="pic"
-                        value={values.pic}
-                        isMulti={true}
-                        accept="image/*"
-                        onChange={(e: any) => {
-                          setFieldValue("pic", {
-                            ...values.pic,
-                            file: e.target.files[0],
-                            isAdd: 1,
-                          });
-                        }}
-                        error={errors.pic}
-                      />
-                    ) : (
-                      <Box mt={-5}>
-                        <ShowFileUploadFile
-                          files={values.pic?.file}
-                          removeFile={() => {
-                            setFieldValue("pic", {
-                              ...values.pic,
-                              file: removeDataByIndex(values.pic, 0),
-                              isDeleted: 1,
-                            });
-                          }}
-                          edit={isEdit}
-                        />
-                      </Box>
-                    )}
-                  </Box>
-
-                  <Grid
-                    gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }}
-                    gap={5}
-                    p={4}
-                    borderWidth={1}
-                    borderRadius="md"
-                    boxShadow="sm"
-                    bg={bgBox}
-                    mt={3}
-                    borderColor={borderColor}
-                  >
-                    <CustomInput
-                      label="Title"
-                      name="title"
-                      type="select"
-                      options={titles}
-                      value={values.title}
-                      onChange={(e: any) => setFieldValue("title", e)}
-                      error={errors.title && touched.title}
-                      showError={errors.title && touched.title}
-                    />
-
-                    <CustomInput
-                      label="Name"
-                      name="name"
-                      placeholder="Enter Name"
-                      value={values.name}
-                      onChange={handleChange}
-                      error={errors.name && touched.name}
-                      showError={errors.name && touched.name}
-                    />
-
-                    <CustomInput
-                      label="Email"
-                      name="username"
-                      placeholder="admin@company.com"
-                      value={values.username}
-                      onChange={handleChange}
-                      error={errors.username && touched.username}
-                      showError={errors.username && touched.username}
-                    />
-
-                    <CustomInput
-                      label="Phone Number"
-                      name="phoneNumber"
-                      placeholder="Enter Phone Number"
-                      value={values.phoneNumber}
-                      onChange={handleChange}
-                      error={errors.phoneNumber && touched.phoneNumber}
-                      showError={errors.phoneNumber && touched.phoneNumber}
-                    />
-
-                    <CustomInput
-                      label="Code"
-                      name="code"
-                      placeholder="Enter Code"
-                      value={values.code}
-                      onChange={handleChange}
-                      error={errors.code && touched.code}
-                      showError={errors.code && touched.code}
-                    />
-
-                    <CustomInput
-                      label="Profile Link"
-                      name="link"
-                      placeholder="https://..."
-                      value={values.link}
-                      onChange={handleChange}
-                      error={errors.link && touched.link}
-                      showError={errors.link && touched.link}
-                    />
-                  </Grid>
-
-                  <Box
-                    borderWidth={1}
-                    borderRadius="md"
-                    boxShadow="sm"
-                    bg={bgBox}
-                    mt={3}
-                    borderColor={borderColor}
-                    p={3}
-                  >
-                    <CustomInput
-                      label="Bio"
-                      name="bio"
-                      type="textarea"
-                      placeholder="Enter Bio"
-                      value={values.bio}
-                      onChange={handleChange}
-                      error={errors.bio && touched.bio}
-                      showError={errors.bio && touched.bio}
-                    />
-                  </Box>
-
-                  <Box
-                    borderWidth={1}
-                    borderRadius="md"
-                    boxShadow="sm"
-                    bg={bgBox}
-                    mt={3}
-                    borderColor={borderColor}
-                    p={3}
-                  >
-                    <CustomInput
-                      label="Address"
-                      name="address"
-                      type="textarea"
-                      placeholder="Enter Address"
-                      value={values.address}
-                      onChange={handleChange}
-                      error={errors.address && touched.address}
-                      showError={errors.address && touched.address}
-                    />
-                  </Box>
-                </SimpleGrid>
-              </GridItem>
-
-              {!isEdit && (
-                <GridItem colSpan={2}>
-                  <Box
-                    p={4}
-                    borderWidth={1}
-                    borderRadius="md"
-                    boxShadow="sm"
-                    bg={bgBox}
-                    mt={3}
-                    borderColor={borderColor}
-                  >
-                    <Text
-                      fontSize="lg"
-                      fontWeight="bold"
-                      mb={4}
-                      color="brand.600"
+            <Grid gap={6}>
+              
+              {/* IMAGE */}
+              <SectionCard title="Profile Image" icon={ImageIcon} color="pink">
+                {preview ? (
+                  <Flex direction="column" gap={4}>
+                    <Box
+                      borderRadius="lg"
+                      overflow="hidden"
+                      border="1px solid"
+                      borderColor="gray.200"
+                      maxW="200px"
                     >
-                      Authentication
-                    </Text>
+                      <img
+                        src={preview}
+                        alt="preview"
+                        style={{
+                          width: "100%",
+                          height: "150px",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </Box>
 
-                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                      <CustomInput
-                        label="Password"
-                        name="password"
-                        type="password"
-                        placeholder="Enter Password"
-                        value={values.password}
-                        onChange={handleChange}
-                        error={errors.password && touched.password}
-                        showError={errors.password && touched.password}
-                      />
-                      <CustomInput
-                        label="Confirm Password"
-                        name="confirmPassword"
-                        type="password"
-                        placeholder="Confirm Password"
-                        value={values.confirmPassword}
-                        onChange={handleChange}
-                        error={
-                          errors.confirmPassword && touched.confirmPassword
-                        }
-                        showError={
-                          errors.confirmPassword && touched.confirmPassword
-                        }
-                      />
-                    </SimpleGrid>
-                  </Box>
-                </GridItem>
+                    <Button
+                      size="sm"
+                      colorScheme="red"
+                      variant="outline"
+                      onClick={() =>
+                        setFieldValue("pic", {
+                          ...values.pic,
+                          file: null,
+                          isDeleted: 1,
+                        })
+                      }
+                    >
+                      Remove Image
+                    </Button>
+                  </Flex>
+                ) : (
+                  <CustomInput
+                    type="file-drag"
+                    name="pic"
+                    accept="image/*"
+                    onChange={(e: any) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFieldValue("pic", {
+                          ...values.pic,
+                          file,
+                          isAdd: 1,
+                        });
+                      }
+                    }}
+                  />
+                )}
+              </SectionCard>
+
+              {/* PERSONAL */}
+              <SectionCard title="Personal Information" icon={User} color="blue">
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  <CustomInput
+                    label="Title"
+                    name="title"
+                    type="select"
+                    options={titles}
+                    value={values.title}
+                    onChange={(e: any) => setFieldValue("title", e)}
+                  />
+
+                  <CustomInput
+                    label="Name"
+                    name="name"
+                    value={values.name}
+                    onChange={handleChange}
+                  />
+
+                  <CustomInput
+                    label="Email"
+                    name="username"
+                    value={values.username}
+                    onChange={handleChange}
+                  />
+
+                  <CustomInput
+                    label="Phone"
+                    name="phoneNumber"
+                    value={values.phoneNumber}
+                    onChange={handleChange}
+                  />
+
+                  <CustomInput
+                    label="Code"
+                    name="code"
+                    value={values.code}
+                    onChange={handleChange}
+                  />
+
+                  <CustomInput
+                    label="Profile Link"
+                    name="link"
+                    value={values.link}
+                    onChange={handleChange}
+                  />
+                </SimpleGrid>
+              </SectionCard>
+
+              {/* BIO */}
+              <SectionCard title="Bio" icon={FileText} color="purple">
+                <CustomInput
+                  name="bio"
+                  placeholder="Enter Bio"
+                  type="textarea"
+                  value={values.bio}
+                  onChange={handleChange}
+                />
+              </SectionCard>
+
+              {/* ADDRESS */}
+              <SectionCard title="Address" icon={MapPin} color="orange">
+                <CustomInput
+                  name="address"
+                  type="textarea"
+                  placeholder="Admin Address"
+                  value={values.address}
+                  onChange={handleChange}
+                />
+              </SectionCard>
+
+              {/* AUTH */}
+              {!isEdit && (
+                <SectionCard title="Authentication" icon={Lock} color="green">
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                    <CustomInput
+                      label="Password"
+                      name="password"
+                      type="password"
+                      value={values.password}
+                      onChange={handleChange}
+                    />
+                    <CustomInput
+                      label="Confirm Password"
+                      name="confirmPassword"
+                      type="password"
+                      value={values.confirmPassword}
+                      onChange={handleChange}
+                    />
+                  </SimpleGrid>
+                </SectionCard>
               )}
-            </Grid>
 
-            <Flex justifyContent="flex-end" mt={4}>
-              <Flex gap={4}>
-                <Button colorScheme="red" size="lg" onClick={onClose}>
-                  Close
+              {/* ACTIONS */}
+              <Flex justify="flex-end" gap={4} pt={4}>
+                <Button variant="outline" colorScheme="red" onClick={onClose}>
+                  Cancel
                 </Button>
                 <Button
                   type="submit"
                   colorScheme="brand"
                   isLoading={isLoading}
-                  size="lg"
                   isDisabled={!selectedCompany?._id}
                 >
-                  {isEdit ? "Update" : "Add"} Admin
+                  {isEdit ? "Update Admin" : "Create Admin"}
                 </Button>
               </Flex>
-            </Flex>
+            </Grid>
           </FormikForm>
         );
       }}

@@ -24,9 +24,9 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { FiArrowRight, FiBriefcase, FiGlobe, FiMail, FiPlus, FiSearch, FiShield, FiUsers } from "react-icons/fi";
-import { useRouter, useSearchParams } from "next/navigation";
 import { readFileAsBase64 } from "../../config/utils/utils";
 import stores from "../../store/stores";
 import CompanyAdminWorkspace from "./component/CompanyAdminWorkspace";
@@ -406,7 +406,7 @@ const DirectoryPage = observer(() => {
       </Stack>
 
       <Drawer
-        size="lg"
+        size="xl"
         isOpen={isCompanyDrawerOpen}
         placement="right"
         onClose={() => setIsCompanyDrawerOpen(false)}

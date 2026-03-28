@@ -361,7 +361,7 @@ const CompanyAdminWorkspace = ({
       </Stack>
 
       <Drawer
-        size="md"
+        size="xl"
         isOpen={
           drawerState.isOpen &&
           (drawerState.type === "admin-add" || drawerState.type === "admin-edit")
