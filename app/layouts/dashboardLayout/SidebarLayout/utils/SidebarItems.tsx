@@ -111,10 +111,10 @@ const sidebarDatas: SidebarItem[] = [
   // },
   {
     id: 100,
-    name: "Users",
+    name: "Users Management",
     icon: <FaUsers />,
     url: "/dashboard/users",
-    role: ["admin"],
+    role: ["admin", "superadmin"],
   },
   // {
   //   id: 11,

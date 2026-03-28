@@ -2,6 +2,17 @@ import { makeAutoObservable } from "mobx";
 import axios from "axios";
 import { authStore } from "../authStore/authStore";
 class UserStore {
+  users: any[] = [];
+  availableRoles: string[] = [];
+  pagination = {
+    page: 1,
+    totalPages: 1,
+    total: 0,
+  };
+  loading: boolean = false;
+  submitting: boolean = false;
+  uploadLoading: boolean = false;
+  bulkPreview: any[] = [];
   user: any = {
     loading : false,
     data : [],
@@ -133,6 +144,116 @@ class UserStore {
       return Promise.reject(err?.response?.data || err.message);
     } finally {
       this.user.loading = false;
+    }
+  };
+
+  fetchUsers = async (params: any = {}) => {
+    this.loading = true;
+    try {
+      const response: any = await axios.get("/admin/users", { params });
+      this.users = response?.data?.data?.users || [];
+      this.availableRoles = response?.data?.data?.availableRoles || [];
+      this.pagination = {
+        page: response?.data?.data?.page || 1,
+        totalPages: response?.data?.data?.totalPages || 1,
+        total: response?.data?.data?.total || 0,
+      };
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.loading = false;
+    }
+  };
+
+  createManagedUser = async (payload: any) => {
+    this.submitting = true;
+    try {
+      const response = await axios.post("/admin/users", payload);
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.submitting = false;
+    }
+  };
+
+  updateManagedUser = async (id: string, payload: any) => {
+    this.submitting = true;
+    try {
+      const response = await axios.put(`/admin/users/${id}`, payload);
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.submitting = false;
+    }
+  };
+
+  previewUploadUsers = async (file: File) => {
+    this.uploadLoading = true;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("dryRun", "true");
+      const response = await axios.post("/admin/users/bulk", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      this.bulkPreview = response?.data?.data?.preview || [];
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.uploadLoading = false;
+    }
+  };
+
+  uploadUsers = async (file: File) => {
+    this.uploadLoading = true;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await axios.post("/admin/users/bulk", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.uploadLoading = false;
+    }
+  };
+
+  checkManagedUserExists = async (email: string) => {
+    try {
+      const response: any = await axios.get("/admin/users", {
+        params: {
+          search: email,
+          page: 1,
+          limit: 10,
+        },
+      });
+      const users = response?.data?.data?.users || [];
+      const normalizedEmail = String(email || "").trim().toLowerCase();
+      return users.some((user: any) => String(user?.email || "").trim().toLowerCase() === normalizedEmail);
+    } catch (err: any) {
+      return false;
+    }
+  };
+
+  setPassword = async (payload: { token: string; password: string }) => {
+    this.submitting = true;
+    try {
+      const response = await axios.post("/auth/set-password", payload);
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.submitting = false;
     }
   };
 

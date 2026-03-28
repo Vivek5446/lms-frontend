@@ -63,11 +63,15 @@ const Login = observer(() => {
         duration: 3000,
       });
 
-      const userType = String(response?.data?.userType || "").toLowerCase();
+      const userType = String(
+        response?.data?.userType || response?.data?.role || ""
+      ).toLowerCase();
       if (userType === "superadmin") {
         router.push("/dashboard/admins");
-      } else {
+      } else if (userType === "admin") {
         router.push("/dashboard");
+      } else {
+        router.push("/");
       }
     } catch (error: any) {
       openNotification({

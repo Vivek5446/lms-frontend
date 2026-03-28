@@ -163,8 +163,15 @@ const CustomInput: React.FC<CustomInputProps> = ({
 
           setUserOptions(
             response.map((it: any) => ({
-              label: `${it.user.username}(${it.user.code})`,
+              label: `${it.user.name || it.user.email || it.user.username} (${it.user.email || it.user.username})`,
               value: it.user._id,
+              name: it.user.name,
+              email: it.user.email || it.user.username,
+              username: it.user.username,
+              code: it.user.code,
+              role: it.user.role || it.user.userType,
+              company: it.user.company,
+              createdBy: it.user.createdBy,
             }))
           );
         } else if (type === "real-time-search") {
@@ -774,7 +781,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
                     ? value
                     : null
                   : null
-                : userOptions.find((opt: any) => opt?.value === value?.value)
+                : userOptions.find((opt: any) => opt?.value === value?.value) || value || null
             }
             onChange={(selectedOption: any) => {
               if (isMulti) {

@@ -2,16 +2,25 @@
 
 import { Box, Center, Container, Spinner, Text, VStack } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import stores from "../store/stores";
 import AdminLMS from "./components/LMS/AdminLMS";
 import SuperAdminLMS from "./components/LMS/SuperAdminLMS";
 
 const Page = observer(() => {
   const { auth } = stores;
+  const router = useRouter();
   
   // Normalized role check
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isLoading = auth.isLoading;
+
+  useEffect(() => {
+    if (!isLoading && role && !["admin", "superadmin"].includes(role)) {
+      router.replace("/");
+    }
+  }, [isLoading, role, router]);
 
   if (isLoading) {
     return (
