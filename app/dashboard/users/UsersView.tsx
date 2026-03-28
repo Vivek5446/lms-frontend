@@ -622,12 +622,15 @@ const UsersView = observer(() => {
           : {};
 
       const response = await userStore.uploadUsers(selectedFile, bulkUploadOptions);
+      const createdCount = response?.data?.createdCount || 0;
+      const updatedCount = response?.data?.updatedCount || 0;
+      const failedCount = response?.data?.failedCount || 0;
       toast({
-        title: response?.data?.failedCount > 0 ? "Partial success" : "Bulk upload complete",
+        title: failedCount > 0 ? "Partial success" : "Bulk upload complete",
         description:
           response?.message ||
-          `${response?.data?.createdCount || 0} users created and ${response?.data?.failedCount || 0} failed.`,
-        status: response?.data?.failedCount > 0 ? "info" : "success",
+          `${createdCount} created, ${updatedCount} updated, and ${failedCount} failed.`,
+        status: failedCount > 0 ? "info" : "success",
         duration: 4500,
       });
       setIsBulkModalOpen(false);
