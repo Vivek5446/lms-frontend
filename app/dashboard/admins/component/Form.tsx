@@ -93,7 +93,7 @@ const Form = ({
   const validationSchema = Yup.object({
     title: Yup.mixed().required("Title is required"),
     name: Yup.string().required("Name is required"),
-    username: Yup.string().email().required("Email is required"),
+    username: Yup.string().email().trim().lowercase().required("Email is required"),
     bio: Yup.string().required("Bio is required"),
     phoneNumber: Yup.string().required("Phone is required"),
     password: !isEdit
