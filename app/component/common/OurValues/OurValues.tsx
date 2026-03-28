@@ -1,3 +1,6 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import {
   Accordion,
   AccordionButton,
@@ -12,167 +15,129 @@ import {
   Text,
   useBreakpointValue,
   VStack,
+  Container,
+  Circle,
+  HStack,
+  Badge,
 } from "@chakra-ui/react";
-import CustomButton from "../CustomButton/CustomButton";
+import { motion } from 'framer-motion';
 import { observer } from "mobx-react-lite";
 import stores from "../../../store/stores";
-import CustomSmallTitle from "../CustomSmallTitle/CustomSmallTitle";
-import { useEffect, useState } from "react";
+import CustomButton from "../CustomButton/CustomButton";
 import AppointmentModal from "../AppointmentModal/AppointmentModal";
 
-const OurValues = observer(() => {
-  const [isOpen, setIsOpen] = useState(false); const buttonSize = useBreakpointValue({ base: "lg", md: "xl" })
-  const buttonWidth = useBreakpointValue({ base: "10rem", md: "180px" })
-  const icon = ["/icons/icon1.svg", "/icons/icons2.svg", "/icons/icons3.svg", "/icons/icons4.svg", "/icons/icons5.svg"]
-  const [content, setContent] = useState<any>({})
-  const { companyStore: { getPageContent, companyDetails } } = stores
+const MotionBox = motion(Box);
 
+const OurValues = observer(() => {
+  const [isOpen, setIsOpen] = useState(false);
+  const buttonSize = useBreakpointValue({ base: "lg", md: "xl" });
+  const buttonWidth = useBreakpointValue({ base: "12rem", md: "240px" });
+  
+  // LMS specific icons (ensure these paths exist or use Fa icons)
+  const icons = ["/icons/training.svg", "/icons/adaptive.svg", "/icons/simulate.svg", "/icons/cert.svg", "/icons/expert.svg"];
+  
+  const [content, setContent] = useState<any>({});
+  const { companyStore: { getPageContent, companyDetails } } = stores;
 
   useEffect(() => {
-    setContent(getPageContent('home') || {})
-  }, [companyDetails, getPageContent])
+    setContent(getPageContent('home') || {});
+  }, [companyDetails, getPageContent]);
 
-  // const handleClick = () => {
-  //   router.push("/therapist");
-  // };
+  // Fallback data if companyDetails.homeFaq is empty (LMS Focused)
+  const lmsValues = companyDetails?.homeFaq?.length > 0 ? companyDetails.homeFaq : [
+    { title: "Adaptive Learning Paths", paragraph: "Our platform uses AI to identify skill gaps and customize the curriculum for every banker, ensuring no time is wasted on known concepts." },
+    { title: "Real-World Simulations", paragraph: "Go beyond theory with our 'Virtual Credit Committee' simulations where you analyze real MSME loan applications in a risk-free environment." },
+    { title: "Industry-Veteran Mentorship", paragraph: "Every module is curated and reviewed by former CXOs and Senior Bankers with over 25+ years of experience in Indian Banking & NBFC sectors." }
+  ];
 
   return (
     <Box
-      bg={"#F3F7F7"}
-      py={{ base: "3rem", md: "4rem",lg: "6rem" }}
-      px={{ base: 4 }}
+      as="section"
+      bg="white"
+      _dark={{ bg: 'gray.950' }}
+      py={{ base: "4rem", md: "6rem", lg: "8rem" }}
       position="relative"
-      borderTopLeftRadius={{ base: "50px", lg: "90px" }}
-      borderBottomRightRadius={{ base: "50px", lg: "90px" }}
       overflow="hidden"
     >
-      <Grid
-        templateColumns={{ base: "1fr", lg: "1.15fr 1fr" }}
-        alignItems={{ base: "center", md: "start" }}
-        gap={{ base: 6, md: 0 }}
-      >
-        <Box
-          display={{ base: "block", lg: "none" }}
-          textAlign={{ base: "center", lg: "start" }}
-        >
-          <Text textTransform="uppercase" color="#DF837C">
-          </Text>
-          <CustomSmallTitle> OUR VALUES</CustomSmallTitle>
-          <Heading
-            textAlign={"center"}
-            as={"h2"}
-            fontWeight={400}
-            fontSize={{ base: "30px", md: "54px" }}
-            my={{ md: 1 }}
-          >
-            What Makes {" "}
-            <Text as={"span"} fontWeight={600}>
-              Us Unique
-            </Text>
-          </Heading>
-          <Text
-            w={{ base: "100%", lg: "90%" }}
-            color={"#434343"}
-            fontSize={{ base: "14px", md: "16px" }}
-            lineHeight={{ base: "24px", md: "32px" }}
-            px={{ base: 5, md: 4, lg: 0 }}
-          >
-            {content?.ourvalues}
-          </Text>
-        </Box>
-        <Box
-          position={{ base: "relative", lg: "sticky" }}
-          top={{ lg: 8, xl: 12 }}
-          height={{ base: "auto", lg: "100%" }}
-          maxHeight={{ base: "300px", md: "620px" }}
-        >
-          <Flex justifyContent="center" alignItems="center" w="110%" mt="2.5rem">
-            <Image
-              src="images/home/sofa.png"
-              objectFit="contain"
-              height={{ base: "20rem", md: "30rem", lg: "35rem" }} // Smaller height
-              width={{ base: "85%", md: "75%", lg: "80%" }} // Reduce the width
-              ml={{ base: "0", md: "-2rem", lg: "-4rem" }} // Shift to the left for web
-              alt="psychologist in noida sector 62"
-              position={{ base: "relative", md: "unset" }} // Apply position for mobile only
-              top={{ base: "-4rem", md: "0" }} // Move it upward for mobile
-              left={{ base: "-1rem", md: "0" }} // Move it slightly to the left for mobile
-              mb={{ base: "-8rem", md: "0" }} // Reduce margin-bottom for mobile
-            />
-          </Flex>
-        </Box>
-        <Box>
-          {/* Intro Section */}
-          <Box display={{ base: "none", lg: "block" }} mb={8}>
-            <Text textTransform="uppercase" color="#DF837C" mb={2}>
+      {/* Decorative Gradient Background */}
+      <Circle
+        size="600px"
+        bg="blue.500"
+        opacity="0.04"
+        position="absolute"
+        top="-100px"
+        right="-200px"
+        filter="blur(100px)"
+        zIndex={0}
+      />
 
-            </Text>
-            <CustomSmallTitle textAlign={{ base: "center", lg: "start" }} ml={{ lg: "0.2rem" }} >OUR VALUES</CustomSmallTitle>
-            <Text fontSize={{ base: "30px", md: "48px" }} fontWeight={400} color={"#0F0F0F"}>
-              What Makes
-              <Text fontWeight={600} as={"span"}>
-                {" "} Us Unique
+      <Container maxW="1200px" position="relative" zIndex={1}>
+        <Grid
+          templateColumns={{ base: "1fr", lg: "1.1fr 1fr" }}
+          gap={{ base: 12, lg: 24 }}
+          alignItems="center"
+        >
+          {/* LEFT SIDE: CONTENT & ACCORDION */}
+          <VStack align="start" spacing={8}>
+            <Box>
+              <Badge colorScheme="blue" variant="subtle" px={3} py={1} mb={4} borderRadius="full" letterSpacing="widest">
+                WHY C.R.A.F.T. ACADEMIA
+              </Badge>
+              <Heading
+                as="h2"
+                fontSize={{ base: "3xl", md: "5xl" }}
+                fontWeight="extrabold"
+                lineHeight="1.1"
+                mb={6}
+              >
+                The Gold Standard in <br />
+                <Text as="span" color="blue.600">Banking Excellence</Text>
+              </Heading>
+              <Text fontSize="lg" color="gray.600" _dark={{ color: 'gray.400' }} maxW="500px">
+                We don't just provide videos; we build functional expertise. Our 
+                methodology is designed to transform complex financial concepts into actionable workplace skills.
               </Text>
-            </Text>
-            <Text
-              w={{ base: "100%", md: "80%", lg: "90%" }}
-              color={"#434343"}
-              fontSize={{ base: "14px", md: "16px" }}
-              lineHeight={{ base: "20px", md: "24px" }}
-              mt={4}
-            >
-              We know that seeking mental health care can be a long, frustrating journey.
-              With us, you’ll find the right support to move forward with clarity and confidence.
-              Whether you’re looking for the Best Dental in Noida or a mental health doctor
-              in Noida that offers comprehensive care.
+            </Box>
 
-            </Text>
-          </Box>
-
-          {/* Accordion Section */}
-          <Box
-            maxHeight={{ lg: "24rem" }}
-            overflowY="auto"
-            mb={8}
-            mt={4}
-            pr={2} // Add padding-right for scroll visibility
-          >
-            <Accordion w={{ base: "100%", lg: "90%" }} defaultIndex={0} allowToggle>
-              <VStack spacing={4} align="stretch">
-                {companyDetails?.homeFaq?.map((feature, index) => (
-                  <AccordionItem key={index} border="none">
+            <Accordion allowToggle w="full" defaultIndex={[0]}>
+              <VStack spacing={5} align="stretch" w="full">
+                {lmsValues.map((feature: any, index: number) => (
+                  <AccordionItem 
+                    key={index} 
+                    border="none" 
+                    bg="gray.50" 
+                    _dark={{ bg: 'gray.900' }}
+                    borderRadius="2xl"
+                    overflow="hidden"
+                  >
                     {({ isExpanded }) => (
                       <>
-                        <AccordionButton
-                          px={6}
-                          pt={isExpanded ? 4 : 3}
-                          pb={isExpanded ? 0 : 3}
-                          bg={isExpanded ? "white" : "#FFFFFF9C"}
-                          rounded={"16px"}
-                          borderBottomRadius={isExpanded ? "0px" : "16px"}
-                          boxShadow={isExpanded ? "rgba(0, 0, 0, 0.1) 0px 4px 6px" : "none"}
-                          _hover={{ bg: "white" }}
+                        <AccordionButton 
+                          p={6} 
+                          _hover={{ bg: 'blue.50', _dark: { bg: 'gray.800' } }}
                         >
-                          <Flex align="center" gap={4} flex="1">
-                            <Image
-                              src={icon[index]}
-                              alt="Best Psychiatrists In Noida"
-                              boxSize="26px"
-                              opacity={isExpanded ? 1 : 0.6}
-                            />
-                            <Text fontSize={{ base: "16px", md: "18px" }} color={isExpanded ? "#292929" : "#111111AB"}>
+                          <HStack spacing={4} flex="1" textAlign="left">
+                            <Circle 
+                                size="44px" 
+                                bg={isExpanded ? "blue.600" : "white"} 
+                                color={isExpanded ? "white" : "blue.600"}
+                                shadow="md"
+                            >
+                              <Image 
+                                src={icons[index % icons.length]} 
+                                boxSize="22px" 
+                                filter={isExpanded ? "brightness(0) invert(1)" : "none"}
+                                fallbackSrc="https://via.placeholder.com/22"
+                              />
+                            </Circle>
+                            <Text fontWeight="bold" fontSize="xl" color={isExpanded ? "blue.600" : "gray.800"}>
                               {feature.title}
                             </Text>
-                          </Flex>
-                          <AccordionIcon />
+                          </HStack>
+                          <AccordionIcon color="blue.600" />
                         </AccordionButton>
-                        <AccordionPanel
-                          pb={4}
-                          px={6}
-                          bg={isExpanded ? "white" : "#FFFFFF9C"}
-                          borderBottomRadius={"16px"}
-                        >
-                          <Text color="#292929" fontSize={{ base: "14px", md: "16px" }} lineHeight="24px">
+                        <AccordionPanel pb={6} px={6} ml="60px">
+                          <Text color="gray.600" _dark={{ color: 'gray.400' }} fontSize="md" lineHeight="tall">
                             {feature.paragraph}
                           </Text>
                         </AccordionPanel>
@@ -182,22 +147,72 @@ const OurValues = observer(() => {
                 ))}
               </VStack>
             </Accordion>
-          </Box>
 
-          {/* Button Section */}
-          <Flex justify={{ base: "center", lg: "start" }}>
-            <CustomButton
-              width={buttonWidth}
-              size={buttonSize}
-              onClick={() => setIsOpen(true)}  // Add this to open the modal
-            >
-              Book Appointment
-            </CustomButton>
-            <AppointmentModal isOpen={isOpen} onClose={() => setIsOpen(false)} pageLink="home"/>
-          </Flex>
-        </Box>
+            {/* <Box pt={2}>
+              <CustomButton
+                width={buttonWidth}
+                size={buttonSize}
+                onClick={() => setIsOpen(true)}
+              >
+                Schedule a Demo
+              </CustomButton>
+            </Box> */}
+          </VStack>
 
-      </Grid>
+          {/* RIGHT SIDE: PROFESSIONAL IMAGE */}
+          <MotionBox
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <Box position="relative">
+              <Box
+                borderRadius="full"
+                borderWidth="20px"
+                borderColor="blue.50"
+                _dark={{ borderColor: 'gray.800' }}
+                overflow="hidden"
+                boxShadow="2xl"
+              >
+                <Image
+                  src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800" // Professional workshop/meeting image
+                  alt="Corporate Training Session"
+                  w="full"
+                  h={{ base: "350px", md: "550px" }}
+                  objectFit="cover"
+                />
+              </Box>
+              
+              {/* Floating Stat Badge */}
+              <MotionBox
+                position="absolute"
+                top="15%"
+                left="-10%"
+                bg="white"
+                _dark={{ bg: 'gray.800' }}
+                p={5}
+                borderRadius="2xl"
+                boxShadow="2xl"
+                animate={{ y: [0, 15, 0] }}
+                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                display={{ base: 'none', md: 'block' }}
+              >
+                <VStack align="start" spacing={1}>
+                  <Text fontWeight="extrabold" fontSize="2xl" color="blue.600">98%</Text>
+                  <Text fontWeight="bold" fontSize="xs" color="gray.500" textTransform="uppercase">Completion Rate</Text>
+                </VStack>
+              </MotionBox>
+            </Box>
+          </MotionBox>
+        </Grid>
+      </Container>
+
+      <AppointmentModal 
+        isOpen={isOpen} 
+        onClose={() => setIsOpen(false)} 
+        pageLink="home"
+      />
     </Box>
   );
 });

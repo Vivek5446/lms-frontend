@@ -1,6 +1,7 @@
 export const navItems = [
   { title: 'Home', link: '/' },
   { title: 'About', link: '/about-us' },
+  { title: 'Course', link: '/course' },
   { title: 'Therapist', link: '/therapist' },
   {
     title: 'Services',

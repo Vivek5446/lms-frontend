@@ -4,27 +4,36 @@ import { Flex } from "@chakra-ui/react";
 import React, { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Loader from "../../component/common/Loader/Loader";
+import stores from "../../store/stores";
+
+// 👉 import your header/footer
+import Header from "../../layouts/mainLayout/component/Header/Header";   // adjust path if needed
+// import Footer from "../../layouts/mainLayout/component/Footer/Footer";   // adjust path if needed
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = () => {
+const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
 
+  const {
+    auth: { user },
+  } = stores;
+
   useEffect(() => {
-    // Only run in browser
     if (typeof window !== "undefined") {
-      if (pathname && !pathname.startsWith("/dashboard")) {
+      // protect dashboard only
+      if (!user && pathname.startsWith("/dashboard")) {
         router.replace("/login");
       }
+
       setIsChecking(false);
     }
-  }, [pathname, router]);
+  }, [pathname, router, user]);
 
-  // Show a loading spinner while checking
   if (isChecking) {
     return (
       <Flex minH="100vh" align="center" justify="center">
@@ -33,7 +42,18 @@ const MainLayout: React.FC<MainLayoutProps> = () => {
     );
   }
 
-  return null
+  return (
+    <>
+      {/* ✅ Header */}
+      <Header />
+
+      {/* ✅ Page Content */}
+      <main>{children}</main>
+
+      {/* ✅ Footer */}
+      {/* <Footer /> */}
+    </>
+  );
 };
 
 export default MainLayout;

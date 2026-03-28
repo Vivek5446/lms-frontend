@@ -58,11 +58,11 @@ const Home = observer(() => {
     <Box>
       {/* <Text fontSize="xl" fontWeight="bold">Welcome to the Home Page</Text> */}
       <HeroSection />
-      <Box my={{ base: "2rem", md: "2rem", lg: "6rem" }}>
+      {/* <Box my={{ base: "2rem", md: "2rem", lg: "6rem" }}>
         <OurValues />
-      </Box>
+      </Box> */}
 
-      <OurOfferings />
+      {/* <OurOfferings /> */}
       <Box
         maxW={{ md: "90%" }}
         mx={"auto"}
@@ -71,7 +71,7 @@ const Home = observer(() => {
         px={{ base: 4 }}
       >
         {/* <Center> */}
-        <Text
+        {/* <Text
           color={"#DF837C"}
           textTransform={"uppercase"}
           textAlign={"center"}
@@ -138,14 +138,14 @@ const Home = observer(() => {
         my={{ base: "50px", md: "4rem", lg: "80px" }}
         maxW={"95%"} mx={"auto"}>
         <KnowYourselfSection />
-      </Box>
+      </Box> */
 
       {/* <Box maxW={'60%'} mx={'auto'} my={12}>
       <TestimonialCard/>
       </Box> */}
       <FAQ data={content?.homeFaq || []} />
       <Box>
-        <ContactUs links="home" />
+        {/* <ContactUs links="home" /> */}
       </Box>
     </Box>
   );
