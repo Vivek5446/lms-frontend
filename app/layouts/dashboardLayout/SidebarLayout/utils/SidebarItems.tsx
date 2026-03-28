@@ -125,10 +125,10 @@ const sidebarDatas: SidebarItem[] = [
   // },
   {
     id: 12,
-    name: "Admins",
+    name: "Companies",
     icon: <FaUserAstronaut />,
     url: "/dashboard/admins",
-    role: ["superAdmin"],
+    role: ["superadmin"],
   },
   // {
   //   id: 13,
@@ -163,13 +163,13 @@ const sidebarDatas: SidebarItem[] = [
   name: "Course",
   icon: <PlusSquareIcon />,
   url: "/dashboard/course",
-  role: ["superAdmin", "admin", "user"],
+  role: ["superadmin", "admin", "user"],
   children: [
     {
       id: 171,
       name: "All Courses",
       icon: <PlusSquareIcon />,
-      url: "/dashboard/course/all",
+      url: "/dashboard/course",
     },
     {
       id: 172,
@@ -215,7 +215,7 @@ export const sidebarFooterData: SidebarItem[] = [
     name: "Settings",
     icon: <FaCog />,
     url: "/dashboard/profile",
-    role: ["admin", "superAdmin", "patient", "doctor"],
+    role: ["admin", "superadmin", "patient", "doctor"],
   },
 ];
 

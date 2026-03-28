@@ -216,9 +216,15 @@ class AuthStore {
         }
       );
 
-      this.user = response.data?.data;
+      const resolvedUserType =
+        response?.data?.data?.userType || response?.data?.data?.role || "patient";
+
+      this.user = {
+        ...response.data?.data,
+        userType: resolvedUserType,
+      };
       this.company = response?.data?.data?.company
-      this.userType = response?.data?.data?.userType || "patient"
+      this.userType = resolvedUserType
       this.saveUserToSessionStorage(this.user);
 
       // If there's a company field

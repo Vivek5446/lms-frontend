@@ -11,24 +11,11 @@ export const initialValues = {
   username: "",
   languages: [],
   address: "",
+  link: "",
   bio: "",
   password: "",
   confirmPassword: "",
   phoneNumber: "",
   code: "",
   pic: { file: [] },
-
-  // NEW FIELDS
-  companyName: "",
-  companyCode: "",
-  companyType: "company",
-  addressInfo: [
-    {
-      address: "",
-      country: "",
-      state: "",
-      city: "",
-      pinCode: "",
-    },
-  ],
 };

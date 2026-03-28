@@ -7,6 +7,10 @@ class CompanyStores {
     data : [],
     page : 1
   }
+  companies: any = {
+    loading: false,
+    data: [],
+  }
   companyDetails: any = {}
   userSettings: any = {};
   userPreferences: any = {};
@@ -56,6 +60,31 @@ class CompanyStores {
       return Promise.reject(err?.response?.data || err.message);
     } finally {
       this.isLoading = false;
+    }
+  };
+
+  createCompany = async (payload: any) => {
+    this.isLoading = true;
+    try {
+      const response = await axios.post("/company/manage", payload);
+      return response;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.isLoading = false;
+    }
+  };
+
+  getManagedCompanies = async (params: any = {}) => {
+    this.companies.loading = true;
+    try {
+      const response = await axios.get("/company/manage", { params });
+      this.companies.data = response.data?.data || [];
+      return response;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.companies.loading = false;
     }
   };
 

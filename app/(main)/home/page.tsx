@@ -1,16 +1,7 @@
 "use client";
-import { Box, Grid, Heading, Text } from "@chakra-ui/react";
-import BookCallComponent from "../../component/common/BookCallComponent/BookCallComponent";
+import { Box, Grid } from "@chakra-ui/react";
 import CardComponent2 from "../../component/common/CardComponent2/CardComponent2";
-import CustomSmallTitle from "../../component/common/CustomSmallTitle/CustomSmallTitle";
 import HeroSection from "../../component/common/HeroSection/HeroSection";
-import KnowYourselfSection from "../../component/common/KnowYourselfSection/KnowYourselfSection";
-import OurValues from "../../component/common/OurValues/OurValues";
-import ProvidersSection from "../../component/common/ProvidersSection/ProvidersSection";
-import ContactUs from "../../component/ContactUs/ContactUs";
-import FAQ from "../../component/FAQ/FAQ";
-import OurOfferings from "../../component/OurOfferings/OurOfferings";
-import TestimonialSection from "../../component/TestimonialSection/TestimonialSection";
 // import stores from "../../store/stores";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
@@ -64,11 +55,10 @@ const Home = observer(() => {
 
       {/* <OurOfferings /> */}
       <Box
-        maxW={{ md: "90%" }}
+        // maxW={{ md: "90%" }}
         mx={"auto"}
         my={{ base: "70px", md: "4rem", lg: "80px" }}
-        // py={{ base: "2rem", md: "3rem" }}
-        px={{ base: 4 }}
+        // px={{ base: 4 }}
       >
         {/* <Center> */}
         {/* <Text
@@ -100,7 +90,7 @@ const Home = observer(() => {
           recovery
         </Text>
         {/* </Center> */}
-        <Grid
+        {/* <Grid
           templateColumns={{ lg: "1fr 1fr 1fr" }}
           gap={{ base: 2, md: 4 }}
           mt={{ base: 4, lg: 10 }}
@@ -122,30 +112,7 @@ const Home = observer(() => {
               />
             );
           })}
-        </Grid>
-      </Box>
-      <Box
-        //  my={{base:"2rem",lg:"4rem"}}
-        my={{ base: "20px", md: "4rem", lg: "40px" }}
-        maxW={"90%"} mx={"auto"}>
-        <ProvidersSection />
-      </Box>
-      <TestimonialSection />
-      <Box>
-        <BookCallComponent showText={true}  />
-      </Box>
-      <Box
-        my={{ base: "50px", md: "4rem", lg: "80px" }}
-        maxW={"95%"} mx={"auto"}>
-        <KnowYourselfSection />
-      </Box> */
-
-      {/* <Box maxW={'60%'} mx={'auto'} my={12}>
-      <TestimonialCard/>
-      </Box> */}
-      <FAQ data={content?.homeFaq || []} />
-      <Box>
-        {/* <ContactUs links="home" /> */}
+        </Grid> */}
       </Box>
     </Box>
   );

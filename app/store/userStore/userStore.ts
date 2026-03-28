@@ -33,9 +33,10 @@ class UserStore {
   createUser = async (payload: any) => {
     this.isLoading = true;
     try {
+      const company = payload.company || payload.companyId || authStore.company;
       const response = await axios.post("/user/create", {
         ...payload,
-        company: authStore.company,
+        company,
       });
       return response;
     } catch (err: any) {
@@ -48,9 +49,10 @@ class UserStore {
   createAdmin = async (payload: any) => {
     this.isLoading = true;
     try {
+      const company = payload.company || payload.companyId || authStore.company;
       const response = await axios.post("/user/admin/create", {
         ...payload,
-        company: authStore.company,
+        company,
       });
       return response;
     } catch (err: any) {
@@ -73,9 +75,10 @@ class UserStore {
   updateUser = async (payload: any) => {
     this.isLoading = true;
     try {
+      const company = payload.company || payload.companyId || authStore.company;
       const response = await axios.put(`/user/profile/${payload._id}`, {
         ...payload,
-        company: authStore.company,
+        company,
       });
       return response;
     } catch (err: any) {
@@ -118,9 +121,10 @@ class UserStore {
   getAllUsers = async (payload: any) => {
     this.user.loading = true;
     try {
+      const company = payload.company || payload.companyId || authStore.company;
       const response : any = await axios.post("/user", {
         ...payload,
-        company: authStore.company,
+        company,
       });
       this.user.data = response?.data?.data?.data || []
       this.user.totalPages = response?.data?.data?.totalPages || 1

@@ -392,7 +392,16 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
     }, []);
 
     useEffect(() => {
-      if (user?.userType) setSidebarData(getSidebarDataByRole([user.userType]));
+      if (user?.userType || user?.role) {
+        const roles = Array.from(
+          new Set(
+            [user.userType, user.role]
+              .filter(Boolean)
+              .flatMap((item: string) => [item, String(item).toLowerCase()])
+          )
+        );
+        setSidebarData(getSidebarDataByRole(roles));
+      }
 
       const companyColors = user?.companyDetails?.sidebarColors;
       if (companyColors && Object.keys(companyColors).length > 0) {

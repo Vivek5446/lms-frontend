@@ -1,23 +1,34 @@
+"use client";
+
 import {
-  SimpleGrid,
-  Button,
+  Badge,
   Box,
+  Button,
+  Flex,
   Grid,
   GridItem,
+  SimpleGrid,
   Text,
-  Flex,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
 import { Formik, Form as FormikForm } from "formik";
+import { useEffect, useState } from "react";
 import * as Yup from "yup";
-import CustomInput from "../../../component/config/component/customInput/CustomInput";
 import ShowFileUploadFile from "../../../component/common/ShowFileUploadFile/ShowFileUploadFile";
+import CustomInput from "../../../component/config/component/customInput/CustomInput";
 import { removeDataByIndex } from "../../../config/utils/utils";
 import { titles } from "./utils/constant";
 import { generateIntialValues } from "./utils/function";
 
-const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any) => {
+const Form = ({
+  initialData,
+  onSubmit,
+  isOpen,
+  onClose,
+  isEdit,
+  isLoading,
+  selectedCompany,
+}: any) => {
   const [formData, setFormData] = useState<any>(initialData);
   const bgBox = useColorModeValue("white", "darkBrand.100");
   const borderColor = useColorModeValue("brand.200", "darkBrand.200");
@@ -28,37 +39,27 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
     }
   }, [initialData]);
 
-  // VALIDATION SCHEMA
   const validationSchema = Yup.object({
-    // Personal
     title: Yup.mixed().required("Title is required"),
     pic: Yup.mixed(),
-
     name: Yup.string().required("Name is required"),
-    username: Yup.string().required("Username is required"),
-
+    username: Yup.string()
+      .email("Enter a valid email")
+      .required("Email is required"),
     bio: Yup.string().required("Bio is required"),
-
     phoneNumber: Yup.string()
       .matches(/^(?:\+?[0-9]{1,3})?[-.\s]?[0-9]{10}$/, "Phone number is not valid")
       .required("Phone number is required"),
-
     password: !isEdit
       ? Yup.string()
-        .min(6, "Password must be at least 6 characters")
-        .required("Password is required")
+          .min(6, "Password must be at least 6 characters")
+          .required("Password is required")
       : Yup.string().optional(),
-
     confirmPassword: !isEdit
       ? Yup.string().oneOf([Yup.ref("password"), null], "Passwords must match")
       : Yup.string().optional(),
-
     code: Yup.string().optional(),
-
-    // Company Fields
-    companyName: Yup.string().required("Company name is required"),
-    companyCode: Yup.string().optional(),
-    companyType: Yup.string().optional(),
+    link: Yup.string().url("Enter a valid URL").optional(),
   });
 
   if (!isOpen) return null;
@@ -88,7 +89,36 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
               mb={6}
               alignItems="center"
             >
-              {/* PERSONAL INFORMATION */}
+              <GridItem colSpan={2}>
+                <Box
+                  p={4}
+                  borderWidth={1}
+                  borderRadius="md"
+                  boxShadow="sm"
+                  bg={bgBox}
+                  borderColor={borderColor}
+                >
+                  <Flex justify="space-between" align="center" gap={4} wrap="wrap">
+                    <Box>
+                      <Text fontSize="lg" fontWeight="semibold">
+                        Company Context
+                      </Text>
+                      <Text fontSize="sm" color="gray.500" mt={1}>
+                        This admin will be created under the selected company.
+                      </Text>
+                    </Box>
+                    <Box textAlign={{ base: "left", md: "right" }}>
+                      <Text fontWeight="bold">{selectedCompany?.company_name || "No company selected"}</Text>
+                      {selectedCompany?.tenantUrl ? (
+                        <Badge mt={2} colorScheme="purple" px={3} py={1} borderRadius="full">
+                          {selectedCompany.tenantUrl}
+                        </Badge>
+                      ) : null}
+                    </Box>
+                  </Flex>
+                </Box>
+              </GridItem>
+
               <GridItem colSpan={2}>
                 <Text fontSize="lg" fontWeight="semibold" mb={4}>
                   Personal Information
@@ -129,7 +159,6 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
                     )}
                   </Box>
 
-                  {/* Grid Fields */}
                   <Grid
                     gridTemplateColumns={{ base: "1fr", md: "1fr 1fr" }}
                     gap={5}
@@ -163,9 +192,9 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
                     />
 
                     <CustomInput
-                      label="Username"
+                      label="Email"
                       name="username"
-                      placeholder="Enter Username"
+                      placeholder="admin@company.com"
                       value={values.username}
                       onChange={handleChange}
                       error={errors.username && touched.username}
@@ -193,9 +222,9 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
                     />
 
                     <CustomInput
-                      label="Link"
+                      label="Profile Link"
                       name="link"
-                      placeholder="Enter Link"
+                      placeholder="https://..."
                       value={values.link}
                       onChange={handleChange}
                       error={errors.link && touched.link}
@@ -203,7 +232,6 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
                     />
                   </Grid>
 
-                  {/* BIO */}
                   <Box
                     borderWidth={1}
                     borderRadius="md"
@@ -225,7 +253,6 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
                     />
                   </Box>
 
-                  {/* ADDRESS */}
                   <Box
                     borderWidth={1}
                     borderRadius="md"
@@ -249,56 +276,6 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
                 </SimpleGrid>
               </GridItem>
 
-              {/* COMPANY INFORMATION */}
-              <GridItem colSpan={2}>
-                <Box
-                  p={4}
-                  borderWidth={1}
-                  borderRadius="md"
-                  boxShadow="sm"
-                  bg={bgBox}
-                  mt={3}
-                  borderColor={borderColor}
-                >
-                  <Text fontSize="lg" fontWeight="bold" mb={4} color="brand.600">
-                    Company Information
-                  </Text>
-
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                    <CustomInput
-                      label="Company Name"
-                      name="companyName"
-                      placeholder="Enter company name"
-                      value={values.companyName}
-                      onChange={handleChange}
-                      error={errors.companyName && touched.companyName}
-                      showError={errors.companyName && touched.companyName}
-                    />
-
-                    <CustomInput
-                      label="Company Code"
-                      name="companyCode"
-                      placeholder="Enter company code"
-                      value={values.companyCode}
-                      onChange={handleChange}
-                      error={errors.companyCode && touched.companyCode}
-                      showError={errors.companyCode && touched.companyCode}
-                    />
-
-                    <CustomInput
-                      label="Company Type"
-                      name="companyType"
-                      placeholder="Enter company type"
-                      value={values.companyType}
-                      onChange={handleChange}
-                      error={errors.companyType && touched.companyType}
-                      showError={errors.companyType && touched.companyType}
-                    />
-                  </SimpleGrid>
-                </Box>
-              </GridItem>
-
-              {/* PASSWORD SECTION (Only when adding) */}
               {!isEdit && (
                 <GridItem colSpan={2}>
                   <Box
@@ -350,7 +327,6 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
               )}
             </Grid>
 
-            {/* BUTTONS */}
             <Flex justifyContent="flex-end" mt={4}>
               <Flex gap={4}>
                 <Button colorScheme="red" size="lg" onClick={onClose}>
@@ -361,6 +337,7 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit, isLoading }: any
                   colorScheme="brand"
                   isLoading={isLoading}
                   size="lg"
+                  isDisabled={!selectedCompany?._id}
                 >
                   {isEdit ? "Update" : "Add"} Admin
                 </Button>

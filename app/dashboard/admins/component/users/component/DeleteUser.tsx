@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -7,8 +6,9 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
-import stores from "../../../../../store/stores";
+import { useState } from "react";
 import FormModel from "../../../../../component/common/FormModel/FormModel";
+import stores from "../../../../../store/stores";
 
 const DeleteData = ({ getData, data, isOpen, onClose }: any) => {
   const {
