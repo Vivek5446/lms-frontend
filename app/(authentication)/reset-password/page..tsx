@@ -13,6 +13,7 @@ import { useState } from 'react';
 
 const ResetPassword = () => {
   const [formData, setFormData] = useState({ newPassword: '', confirmPassword: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -20,7 +21,7 @@ const ResetPassword = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.newPassword !== formData.confirmPassword) {
@@ -34,16 +35,24 @@ const ResetPassword = () => {
       return;
     }
 
-    // Simulate password reset
-    toast({
-      title: "Password Reset Successful",
-      description: "You can now log in with your new password.",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-    });
+    try {
+      setIsSubmitting(true);
 
-    setFormData({ newPassword: '', confirmPassword: '' });
+      // Simulate password reset
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      toast({
+        title: "Password Reset Successful",
+        description: "You can now log in with your new password.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+
+      setFormData({ newPassword: '', confirmPassword: '' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -84,7 +93,9 @@ const ResetPassword = () => {
           colorScheme="teal"
           size="lg"
           w="full"
-          isDisabled={!formData.newPassword || !formData.confirmPassword}
+          isLoading={isSubmitting}
+          loadingText="Resetting Password"
+          isDisabled={!formData.newPassword || !formData.confirmPassword || isSubmitting}
         >
           Reset Password
         </Button>

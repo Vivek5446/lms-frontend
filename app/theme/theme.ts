@@ -29,18 +29,28 @@ const components = {
       },
     },
     variants: {
-      solid: {
-        bg: "brand.500",
-        color: "white",
-        _hover: {
-          bg: "brand.600",
-        },
+      solid: (props: StyleFunctionProps) => {
+        const colorScheme = props.colorScheme || "brand";
+
+        return {
+          bg: `${colorScheme}.500`,
+          color: "white",
+          _hover: {
+            bg: `${colorScheme}.600`,
+            _disabled: {
+              bg: `${colorScheme}.500`,
+            },
+          },
+          _active: {
+            bg: `${colorScheme}.700`,
+          },
+        };
       },
     },
-    Text: {
-      baseStyle: {
-        fontWeight: "300", // Might be overriding your component styles
-      },
+  },
+  Text: {
+    baseStyle: {
+      fontWeight: "300",
     },
   },
 };
@@ -48,7 +58,7 @@ const components = {
 const styles = {
   global: (props: StyleFunctionProps) => ({
     body: {
-      bg: "FFFFFA",
+      bg: "#FFFFFA",
       fontFamily: "var(--font-lato), sans-serif", // Apply Lato globally
       color: props.colorMode === "light" ? "brand.900" : "darkBrand.50", // Dynamic text color
     },

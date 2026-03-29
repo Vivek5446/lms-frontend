@@ -4,28 +4,9 @@ import {
   Badge,
   Box,
   Button,
-  Checkbox,
-  Divider,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerOverlay,
   Flex,
-  FormControl,
-  FormLabel,
   HStack,
   Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Select,
   Tab,
   TabList,
   Table,
@@ -39,14 +20,18 @@ import {
   Tr,
   VStack,
   useColorModeValue,
-  useToast,
+  useToast
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import useDebounce from "../../component/config/component/customHooks/useDebounce";
-import CustomInput from "../../component/config/component/customInput/CustomInput";
 import stores from "../../store/stores";
+import BulkUploadModal from "./components/BulkUploadModal";
+import UserDetailsModal from "./components/UserDetailsModal";
+import UserDrawer from "./components/UserDrawer";
+import UsersTable from "./components/UsersTable";
+import UsersHeader from "./components/UsersHeader";
 
 type ManagerRow = {
   level: number;
@@ -199,6 +184,7 @@ const UsersView = observer(() => {
   const [listTab, setListTab] = useState("user");
   const [isUserDrawerOpen, setIsUserDrawerOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [userForm, setUserForm] = useState<UserFormState>(initialForm());
   const [bulkForm, setBulkForm] = useState<BulkFormState>({
     companyId: "",
@@ -390,6 +376,10 @@ const UsersView = observer(() => {
       managers: reconcileManagersForRole(roleValue, mappedManagers, roleMaxLevel),
     });
     setIsUserDrawerOpen(true);
+  };
+
+  const openView = (user: any) => {
+    setSelectedUser(user);
   };
 
   const updateRole = (nextRole: string) => {
@@ -664,792 +654,83 @@ const UsersView = observer(() => {
   return (
     <Box minH="100vh" p={{ base: 4, md: 6 }}>
       <VStack align="stretch" spacing={6}>
-        <Box
-          bg="white"
-          borderRadius="2xl"
-          borderWidth="1px"
-          borderColor={borderColor}
-          p={{ base: 5, md: 6 }}
-          boxShadow="sm"
-        >
-          <Flex
-            justify="space-between"
-            align={{ base: "start", md: "center" }}
-            direction={{ base: "column", md: "row" }}
-            gap={4}
-          >
-            <Box>
-              <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold">
-                Users Management
-              </Text>
-              <Text color={muted} mt={1}>
-                Separate user and manager-level views, live hierarchy search, and password setup onboarding.
-              </Text>
-            </Box>
-            <HStack spacing={3} alignSelf={{ base: "stretch", md: "auto" }}>
-              <Button colorScheme="purple" variant="outline" onClick={() => setIsBulkModalOpen(true)}>
-                Excel Upload
-              </Button>
-              <Button colorScheme="blue" onClick={openCreate}>
-                Add User
-              </Button>
-            </HStack>
-          </Flex>
-        </Box>
 
-        <Box
-          bg="white"
-          borderRadius="2xl"
-          borderWidth="1px"
-          borderColor={borderColor}
-          p={{ base: 5, md: 6 }}
-          boxShadow="sm"
-        >
-          <Tabs
-            variant="soft-rounded"
-            colorScheme="blue"
-            index={activeTabIndex}
-            onChange={(index) => {
-              setListTab(listTabs[index]?.value || "user");
-              setPage(1);
-            }}
-          >
-            <TabList mb={5} flexWrap="wrap" gap={2}>
-              {listTabs.map((tab) => (
-                <Tab key={tab.value}>{tab.label}</Tab>
-              ))}
-            </TabList>
-          </Tabs>
+        <UsersHeader
+  onOpenBulk={() => setIsBulkModalOpen(true)}
+  onOpenCreate={openCreate}
+  borderColor={borderColor}
+  muted={muted}
+/>
 
-          <Flex
-            justify="space-between"
-            align={{ base: "stretch", md: "center" }}
-            direction={{ base: "column", md: "row" }}
-            gap={4}
-            mb={5}
-          >
-            <Input
-              maxW={{ base: "100%", md: "320px" }}
-              placeholder="Search by name, email, role, or creator"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-            />
-            <Text color={muted} fontSize="sm">
-              {userStore.pagination.total} total {activeTabLabel.toLowerCase()}
-            </Text>
-          </Flex>
-
-          <TableContainer borderWidth="1px" borderColor={borderColor} borderRadius="xl">
-            <Table variant="simple" size="sm">
-              <Thead bg={tableHeadBg}>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Email</Th>
-                  <Th>Company</Th>
-                  <Th>Created By</Th>
-                  <Th>Role</Th>
-                  <Th>Managers</Th>
-                  <Th>Status</Th>
-                  <Th>Password</Th>
-                  <Th textAlign="right">Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {userStore.loading ? (
-                  <Tr>
-                    <Td colSpan={9} py={8}>
-                      <Text textAlign="center" color={muted}>
-                        Loading users...
-                      </Text>
-                    </Td>
-                  </Tr>
-                ) : userStore.users.length === 0 ? (
-                  <Tr>
-                    <Td colSpan={9} py={8}>
-                      <Text textAlign="center" color={muted}>
-                        No users found.
-                      </Text>
-                    </Td>
-                  </Tr>
-                ) : (
-                  userStore.users.map((user: any) => (
-                    <Tr key={user._id}>
-                      <Td>
-                        <Text fontWeight="semibold">{user.name}</Text>
-                      </Td>
-                      <Td>{user.email}</Td>
-                      <Td>{user.company?.name || user.company?.company_name || "Unassigned"}</Td>
-                      <Td>
-                        <VStack align="start" spacing={0}>
-                          <Text fontSize="sm" fontWeight="medium">
-                            {user.createdBy?.name || "System"}
-                          </Text>
-                          <Text fontSize="xs" color={muted}>
-                            {user.createdBy?.email || "--"}
-                          </Text>
-                        </VStack>
-                      </Td>
-                      <Td>
-                        <Badge colorScheme="blue" textTransform="none" borderRadius="full" px={3} py={1}>
-                          {formatRoleLabel(user.role)}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <VStack align="start" spacing={2}>
-                          {(user.managers || []).length === 0 ? (
-                            <Text color={muted} fontSize="sm">
-                              No managers
-                            </Text>
-                          ) : (
-                            user.managers.map((manager: any, index: number) => (
-                              <HStack key={`${user._id}-${manager.level}`} spacing={2} wrap="wrap">
-                                <Badge
-                                  colorScheme={COLORS[index % COLORS.length]}
-                                  borderRadius="full"
-                                  px={2.5}
-                                  py={0.5}
-                                >
-                                  L{manager.level}
-                                </Badge>
-                                <Text fontSize="sm">{manager.managerEmail}</Text>
-                                <Badge
-                                  colorScheme={manager.status === "ASSIGNED" ? "green" : "orange"}
-                                  borderRadius="full"
-                                >
-                                  {manager.status}
-                                </Badge>
-                              </HStack>
-                            ))
-                          )}
-                        </VStack>
-                      </Td>
-                      <Td>
-                        <Badge colorScheme={user.isActive ? "green" : "orange"} borderRadius="full" px={3} py={1}>
-                          {user.isActive ? "Active" : "Pending"}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <Badge
-                          colorScheme={user.passwordStatus === "SET" ? "green" : "red"}
-                          borderRadius="full"
-                          px={3}
-                          py={1}
-                        >
-                          {user.passwordStatus === "SET" ? "Password Set" : "Not Set"}
-                        </Badge>
-                      </Td>
-                      <Td textAlign="right">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(user)}>
-                          Edit
-                        </Button>
-                      </Td>
-                    </Tr>
-                  ))
-                )}
-              </Tbody>
-            </Table>
-          </TableContainer>
-
-          <Flex justify="space-between" align="center" mt={5}>
-            <Text color={muted} fontSize="sm">
-              Page {userStore.pagination.page} of {userStore.pagination.totalPages}
-            </Text>
-            <HStack>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
-                isDisabled={page <= 1 || userStore.loading}
-              >
-                Previous
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  setPage((currentPage) => Math.min(userStore.pagination.totalPages, currentPage + 1))
-                }
-                isDisabled={page >= userStore.pagination.totalPages || userStore.loading}
-              >
-                Next
-              </Button>
-            </HStack>
-          </Flex>
-        </Box>
+<UsersTable
+  users={userStore.users}
+  loading={userStore.loading}
+  pagination={userStore.pagination}
+  search={search}
+  setSearch={setSearch}
+  page={page}
+  setPage={setPage}
+  listTabs={listTabs}
+  listTab={listTab}
+  setListTab={setListTab}
+  activeTabIndex={activeTabIndex}
+  activeTabLabel={activeTabLabel}
+  tableHeadBg={tableHeadBg}
+  borderColor={borderColor}
+  muted={muted}
+  onEdit={openEdit}
+  onView={openView}
+  formatRoleLabel={formatRoleLabel}
+/>
+      
       </VStack>
 
-      <Drawer isOpen={isUserDrawerOpen} placement="right" size="xl" onClose={() => setIsUserDrawerOpen(false)}>
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader borderBottom="1px solid" borderColor={borderColor}>
-            {userForm.id ? "Edit User" : "Add User"}
-          </DrawerHeader>
-          <DrawerBody>
-            <VStack align="stretch" spacing={6}>
-              <Box>
-                <Text fontWeight="bold" mb={3}>
-                  Employee Details
-                </Text>
-                <Flex gap={4} direction={{ base: "column", md: "row" }}>
-                  <FormControl isRequired>
-                    <FormLabel>Employee Code</FormLabel>
-                    <Input
-                      value={userForm.code}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({ ...prev, code: event.target.value }))
-                      }
-                      placeholder="EMP001"
-                    />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Employee Name</FormLabel>
-                    <Input
-                      value={userForm.name}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({ ...prev, name: event.target.value }))
-                      }
-                      placeholder="Enter employee name"
-                    />
-                  </FormControl>
-                </Flex>
-                <Flex gap={4} mt={4} direction={{ base: "column", md: "row" }}>
-                  <FormControl isRequired>
-                    <FormLabel>Email ID</FormLabel>
-                    <Input
-                      type="email"
-                      value={userForm.email}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({ ...prev, email: event.target.value }))
-                      }
-                      placeholder="john@company.com"
-                    />
-                  </FormControl>
-                  <FormControl>
-                    <FormLabel>Contact Number</FormLabel>
-                    <Input
-                      value={userForm.mobileNumber}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({ ...prev, mobileNumber: event.target.value }))
-                      }
-                      placeholder="9876543210"
-                    />
-                  </FormControl>
-                </Flex>
-                <Flex gap={4} mt={4} direction={{ base: "column", md: "row" }}>
-                  <FormControl>
-                    <FormLabel>Branch</FormLabel>
-                    <Input
-                      value={userForm.branch}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({ ...prev, branch: event.target.value }))
-                      }
-                      placeholder="Branch"
-                    />
-                  </FormControl>
-                  <FormControl>
-                    <FormLabel>Designation</FormLabel>
-                    <Input
-                      value={userForm.designation}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({ ...prev, designation: event.target.value }))
-                      }
-                      placeholder="Designation"
-                    />
-                  </FormControl>
-                </Flex>
-                <Flex gap={4} mt={4} direction={{ base: "column", md: "row" }}>
-                  <FormControl>
-                    <FormLabel>City</FormLabel>
-                    <Input
-                      value={userForm.city}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({ ...prev, city: event.target.value }))
-                      }
-                      placeholder="City"
-                    />
-                  </FormControl>
-                  <FormControl>
-                    <FormLabel>State</FormLabel>
-                    <Input
-                      value={userForm.state}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({ ...prev, state: event.target.value }))
-                      }
-                      placeholder="State"
-                    />
-                  </FormControl>
-                </Flex>
-                <Flex gap={4} mt={4} direction={{ base: "column", md: "row" }}>
-                  <FormControl>
-                    <FormLabel>Joining Date</FormLabel>
-                    <Input
-                      type="date"
-                      value={userForm.joiningDate}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({ ...prev, joiningDate: event.target.value }))
-                      }
-                    />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Role</FormLabel>
-                    <Select value={userForm.role} onChange={(event) => updateRole(event.target.value)}>
-                      {roleOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Flex>
-                <FormControl mt={4}>
-                  <FormLabel>Setup Email</FormLabel>
-                  <Checkbox
-                    isChecked={userForm.resendSetupEmail}
-                    onChange={(event) =>
-                      setUserForm((prev) => ({
-                        ...prev,
-                        resendSetupEmail: event.target.checked,
-                      }))
-                    }
-                  >
-                    {userForm.id ? "Resend setup email after update" : "Send password setup email"}
-                  </Checkbox>
-                </FormControl>
-              </Box>
+      <UserDrawer
+  isOpen={isUserDrawerOpen}
+  onClose={() => setIsUserDrawerOpen(false)}
+  userForm={userForm}
+  setUserForm={setUserForm}
+  roleOptions={roleOptions}
+  isSuperadmin={isSuperadmin}
+  managedCompanies={managedCompanies}
+  filteredCompanies={filteredCompanies}
+  borderColor={borderColor}
+  muted={muted}
+  currentCompanyName={currentCompanyName}
+  managerCompanyId={managerCompanyId}
+  updateRole={updateRole}
+  setManagerSelection={setManagerSelection}
+  onSubmit={submitUser}
+  loading={userStore.submitting}
+/>
 
-              <Divider />
+<BulkUploadModal
+  isOpen={isBulkModalOpen}
+  onClose={() => setIsBulkModalOpen(false)}
+  bulkForm={bulkForm}
+  setBulkForm={setBulkForm}
+  isSuperadmin={isSuperadmin}
+  managedCompanies={managedCompanies}
+  filteredCompanies={filteredCompanies}
+  borderColor={borderColor}
+  tableHeadBg={tableHeadBg}
+  muted={muted}
+  getRootProps={getRootProps}
+  getInputProps={getInputProps}
+  isDragActive={isDragActive}
+  selectedFile={selectedFile}
+  setSelectedFile={setSelectedFile}
+  preview={userStore.bulkPreview}
+  loading={userStore.uploadLoading}
+  onUpload={handleBulkUpload}
+/>
 
-              <Box>
-                <Text fontWeight="bold" mb={3}>
-                  Company
-                </Text>
-                {isSuperadmin ? (
-                  <VStack align="stretch" spacing={4}>
-                    <Checkbox
-                      isChecked={userForm.createCompany}
-                      onChange={(event) =>
-                        setUserForm((prev) => ({
-                          ...prev,
-                          createCompany: event.target.checked,
-                          companyId: event.target.checked ? "" : prev.companyId,
-                          companyManagerLevels: event.target.checked
-                            ? prev.companyManagerLevels || 3
-                            : getCompanyManagerLevels(
-                                managedCompanies.find((company: any) => company?._id === prev.companyId)
-                              ),
-                        }))
-                      }
-                    >
-                      Create company automatically if it does not exist
-                    </Checkbox>
-                    {userForm.createCompany ? (
-                      <Flex gap={4} direction={{ base: "column", md: "row" }}>
-                        <FormControl isRequired>
-                          <FormLabel>New Company Name</FormLabel>
-                          <Input
-                            value={userForm.companyName}
-                            onChange={(event) =>
-                              setUserForm((prev) => ({ ...prev, companyName: event.target.value }))
-                            }
-                            placeholder="Enter company name"
-                          />
-                        </FormControl>
-                        <FormControl isRequired>
-                          <FormLabel>Manager Levels</FormLabel>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={userForm.companyManagerLevels}
-                            onChange={(event) =>
-                              setUserForm((prev) => ({
-                                ...prev,
-                                companyManagerLevels: Number(event.target.value) || 1,
-                              }))
-                            }
-                          />
-                        </FormControl>
-                      </Flex>
-                    ) : (
-                      <FormControl isRequired>
-                        <FormLabel>Select Company</FormLabel>
-                        <Select
-                          placeholder="Choose a company"
-                          value={userForm.companyId}
-                          onChange={(event) =>
-                            setUserForm((prev) => {
-                              const nextCompany = managedCompanies.find(
-                                (company: any) => company?._id === event.target.value
-                              );
-                              return {
-                                ...prev,
-                                companyId: event.target.value,
-                                companyManagerLevels: getCompanyManagerLevels(nextCompany),
-                              };
-                            })
-                          }
-                        >
-                          {filteredCompanies.map((company: any) => (
-                            <option key={company._id} value={company._id}>
-                              {company.company_name} ({getCompanyManagerLevels(company)} levels)
-                            </option>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-                  </VStack>
-                ) : (
-                  <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4}>
-                    <Text fontSize="sm" color={muted}>
-                      Users created here will be linked to your company.
-                    </Text>
-                    <Text fontWeight="semibold" mt={2}>
-                      {currentCompanyName}
-                    </Text>
-                  </Box>
-                )}
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <Flex justify="space-between" align="start" mb={3}>
-                  <Box>
-                    <Text fontWeight="bold">Manager Hierarchy</Text>
-                    <Text fontSize="sm" color={muted}>
-                      {userForm.managers.length > 0
-                        ? "Manager searches appear automatically based on the selected role level."
-                        : "No higher-level manager selection is needed for this role."}
-                    </Text>
-                  </Box>
-                  <Badge colorScheme="blue" borderRadius="full" px={3} py={1} textTransform="none">
-                    {formatRoleLabel(userForm.role)}
-                  </Badge>
-                </Flex>
-
-                {userForm.managers.length === 0 ? (
-                  <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4}>
-                    <Text fontSize="sm" color={muted}>
-                      This role sits at the top of the configured hierarchy, so no additional manager selection is required.
-                    </Text>
-                  </Box>
-                ) : (
-                  <VStack align="stretch" spacing={4}>
-                    {userForm.managers.map((manager, index) => {
-                      const resolvedEmail = normalizeEmail(
-                        manager.selectedManager?.email || manager.selectedManager?.username
-                      );
-                      const isAssigned =
-                        Boolean(manager.selectedManager?.value) &&
-                        !String(manager.selectedManager?.value || "").startsWith("pending:");
-
-                      return (
-                        <Box
-                          key={`manager-level-${manager.level}`}
-                          borderWidth="1px"
-                          borderColor={borderColor}
-                          borderRadius="xl"
-                          p={4}
-                        >
-                          <Flex
-                            justify="space-between"
-                            align={{ base: "start", md: "center" }}
-                            direction={{ base: "column", md: "row" }}
-                            gap={3}
-                            mb={3}
-                          >
-                            <HStack spacing={3}>
-                              <Badge
-                                colorScheme={COLORS[index % COLORS.length]}
-                                borderRadius="full"
-                                px={3}
-                                py={1}
-                              >
-                                L{manager.level}
-                              </Badge>
-                              <Text fontWeight="semibold">L{manager.level} Manager</Text>
-                            </HStack>
-                            <Badge
-                              colorScheme={isAssigned ? "green" : resolvedEmail ? "orange" : "gray"}
-                              borderRadius="full"
-                              px={3}
-                              py={1}
-                            >
-                              {isAssigned ? "Assigned" : resolvedEmail ? "Pending" : "Optional"}
-                            </Badge>
-                          </Flex>
-
-                          <CustomInput
-                            label={`Search L${manager.level} Manager`}
-                            name={`manager-search-${manager.level}`}
-                            type="real-time-user-search"
-                            placeholder="Type name or email to search"
-                            query={managerCompanyId ? { companyId: managerCompanyId } : {}}
-                            value={manager.selectedManager}
-                            isSearchable
-                            isClear
-                            onChange={(selected: any) => setManagerSelection(index, selected)}
-                            disabled={!managerCompanyId && userForm.createCompany}
-                          />
-
-                          {!managerCompanyId && userForm.createCompany && (
-                            <Text fontSize="sm" color={muted} mt={3}>
-                              Manager search becomes available after selecting an existing company.
-                            </Text>
-                          )}
-
-                          {resolvedEmail && (
-                            <Text fontSize="sm" color={muted} mt={3}>
-                              Selected: {resolvedEmail}
-                            </Text>
-                          )}
-                        </Box>
-                      );
-                    })}
-                  </VStack>
-                )}
-              </Box>
-            </VStack>
-          </DrawerBody>
-          <DrawerFooter gap={3}>
-            <Button variant="ghost" onClick={() => setIsUserDrawerOpen(false)}>
-              Cancel
-            </Button>
-            <Button colorScheme="blue" onClick={submitUser} isLoading={userStore.submitting}>
-              {userForm.id ? "Save Changes" : "Create User"}
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      <Modal isOpen={isBulkModalOpen} onClose={() => setIsBulkModalOpen(false)} size="6xl">
-        <ModalOverlay backdropFilter="blur(6px)" />
-        <ModalContent mx={4} borderRadius="2xl">
-          <ModalHeader>Bulk Upload Users</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack align="stretch" spacing={5}>
-              {isSuperadmin ? (
-                <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4}>
-                  <VStack align="stretch" spacing={4}>
-                    <Checkbox
-                      isChecked={bulkForm.createCompany}
-                      onChange={(event) =>
-                        setBulkForm((prev) => ({
-                          ...prev,
-                          createCompany: event.target.checked,
-                          companyId: event.target.checked ? "" : prev.companyId,
-                        }))
-                      }
-                    >
-                      Create company automatically for this upload
-                    </Checkbox>
-                    {bulkForm.createCompany ? (
-                      <Flex gap={4} direction={{ base: "column", md: "row" }}>
-                        <FormControl isRequired>
-                          <FormLabel>New Company Name</FormLabel>
-                          <Input
-                            value={bulkForm.companyName}
-                            onChange={(event) =>
-                              setBulkForm((prev) => ({ ...prev, companyName: event.target.value }))
-                            }
-                            placeholder="Enter company name"
-                          />
-                        </FormControl>
-                        <FormControl isRequired>
-                          <FormLabel>Manager Levels</FormLabel>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={bulkForm.companyManagerLevels}
-                            onChange={(event) =>
-                              setBulkForm((prev) => ({
-                                ...prev,
-                                companyManagerLevels: Number(event.target.value) || 1,
-                              }))
-                            }
-                          />
-                        </FormControl>
-                      </Flex>
-                    ) : (
-                      <FormControl isRequired>
-                        <FormLabel>Select Company</FormLabel>
-                        <Select
-                          placeholder="Choose a company"
-                          value={bulkForm.companyId}
-                          onChange={(event) =>
-                            setBulkForm((prev) => {
-                              const nextCompany = managedCompanies.find(
-                                (company: any) => company?._id === event.target.value
-                              );
-                              return {
-                                ...prev,
-                                companyId: event.target.value,
-                                companyManagerLevels: getCompanyManagerLevels(nextCompany),
-                              };
-                            })
-                          }
-                        >
-                          {filteredCompanies.map((company: any) => (
-                            <option key={company._id} value={company._id}>
-                              {company.company_name} ({getCompanyManagerLevels(company)} levels)
-                            </option>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-                  </VStack>
-                </Box>
-              ) : null}
-              <Box
-                {...getRootProps()}
-                borderWidth="2px"
-                borderStyle="dashed"
-                borderColor={isDragActive ? "blue.400" : borderColor}
-                borderRadius="2xl"
-                p={8}
-                textAlign="center"
-                cursor="pointer"
-                bg={isDragActive ? "blue.50" : "transparent"}
-              >
-                <input {...getInputProps()} />
-                <Text fontWeight="bold">Drag & drop your Excel file here</Text>
-                <Text color={muted} mt={2}>
-                  Supported columns: Employee Code, Employee Name, Email ID, Contact Number, Branch, City, State, Designation, Joining Date, L1 Manager Email ID...
-                </Text>
-                {selectedFile && (
-                  <Text mt={3} fontSize="sm" color="blue.600">
-                    Selected file: {selectedFile.name}
-                  </Text>
-                )}
-              </Box>
-              <Box>
-                <Text fontWeight="bold" mb={3}>
-                  Preview
-                </Text>
-                <TableContainer borderWidth="1px" borderColor={borderColor} borderRadius="xl" maxH="420px" overflowY="auto">
-                  <Table size="sm">
-                    <Thead bg={tableHeadBg}>
-                      <Tr>
-                        <Th>Row</Th>
-                        <Th>Name</Th>
-                        <Th>Email</Th>
-                        <Th>Role</Th>
-                        <Th>Company</Th>
-                        <Th>Managers</Th>
-                        <Th>Action</Th>
-                        <Th>Errors</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {userStore.uploadLoading ? (
-                        <Tr>
-                          <Td colSpan={8} py={8}>
-                            <Text textAlign="center" color={muted}>
-                              Reading Excel file...
-                            </Text>
-                          </Td>
-                        </Tr>
-                      ) : userStore.bulkPreview.length === 0 ? (
-                        <Tr>
-                          <Td colSpan={8} py={8}>
-                            <Text textAlign="center" color={muted}>
-                              Drop a file to preview rows before upload.
-                            </Text>
-                          </Td>
-                        </Tr>
-                      ) : (
-                        userStore.bulkPreview.map((row: any) => (
-                          <Tr key={`preview-${row.rowNumber}`}>
-                            <Td>{row.rowNumber}</Td>
-                            <Td>{row.name}</Td>
-                            <Td>{row.email}</Td>
-                            <Td>{row.role}</Td>
-                            <Td>
-                              <VStack align="start" spacing={1}>
-                                <Text>{row.company}</Text>
-                                <Badge
-                                  colorScheme={row.companyStatus === "EXISTS" ? "green" : "purple"}
-                                  borderRadius="full"
-                                >
-                                  {row.companyStatus}
-                                </Badge>
-                              </VStack>
-                            </Td>
-                            <Td>
-                              <VStack align="start" spacing={1}>
-                                {(row.managers || []).length === 0 ? (
-                                  <Text fontSize="sm" color={muted}>
-                                    None
-                                  </Text>
-                                ) : (
-                                  row.managers.map((manager: any) => (
-                                    <HStack key={`${row.rowNumber}-${manager.level}`}>
-                                      <Badge colorScheme={COLORS[(manager.level - 1) % COLORS.length]}>
-                                        L{manager.level}
-                                      </Badge>
-                                      <Text fontSize="sm">{manager.managerEmail}</Text>
-                                      <Badge colorScheme={manager.status === "ASSIGNED" ? "green" : "orange"}>
-                                        {manager.status}
-                                      </Badge>
-                                    </HStack>
-                                  ))
-                                )}
-                              </VStack>
-                            </Td>
-                            <Td>
-                              <Badge colorScheme={row.action === "CREATE" ? "blue" : "red"} borderRadius="full">
-                                {row.action}
-                              </Badge>
-                            </Td>
-                            <Td>
-                              {(row.errors || []).length > 0 ? (
-                                <Text fontSize="sm" color="red.500">
-                                  {row.errors.join(", ")}
-                                </Text>
-                              ) : (
-                                <Text fontSize="sm" color={muted}>
-                                  No errors
-                                </Text>
-                              )}
-                            </Td>
-                          </Tr>
-                        ))
-                      )}
-                    </Tbody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            </VStack>
-          </ModalBody>
-          <ModalFooter gap={3}>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setIsBulkModalOpen(false);
-                setSelectedFile(null);
-                userStore.bulkPreview = [];
-                setBulkForm({
-                  companyId: "",
-                  companyName: "",
-                  companyManagerLevels: 3,
-                  createCompany: false,
-                });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button colorScheme="purple" onClick={handleBulkUpload} isLoading={userStore.uploadLoading}>
-              Upload Users
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+<UserDetailsModal
+  isOpen={!!selectedUser}
+  onClose={() => setSelectedUser(null)}
+  user={selectedUser}
+  formatRoleLabel={formatRoleLabel}
+/>
     </Box>
   );
 });

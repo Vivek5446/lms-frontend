@@ -21,6 +21,8 @@ const CustomButton: FC<CustomButtonProps> = ({
 }) => {
   const fontSizes = useBreakpointValue({ base: "14px", md: "16px" });
   const buttonSize = useBreakpointValue({ base: "lg", lg: "lg",xl:"xl" });
+  const shouldUseFallbackGradient =
+    !props.bg && !props.bgColor && !props.background && !props.backgroundColor && !props.colorScheme;
 
   return (
     <Button
@@ -35,7 +37,7 @@ const CustomButton: FC<CustomButtonProps> = ({
       borderRadius="8px"
       rounded={rounded}
       bg={props.bg}
-      bgGradient={props.bg ? undefined : "linear(to-r, #065F68, #065F68, #2A8A94)"}
+      bgGradient={shouldUseFallbackGradient ? "linear(to-r, #065F68, #065F68, #2A8A94)" : undefined}
       color={props.color || "#FFFFFF"}
       fontWeight="400"
       fontSize={fontSizes}
@@ -53,12 +55,10 @@ const CustomButton: FC<CustomButtonProps> = ({
       }}
       _active={{
         transform: "scale(1.015)", // Keep same scale when clicked (no blue focus)
-        backgroundColor: "transparent", // Remove blue background when clicked
         boxShadow: "none", // Remove the default focus box shadow
       }}
       _focus={{
         boxShadow: "none", // Remove default blue outline when focused
-        backgroundColor: "transparent", // Optional: removes the default focus background
       }}
       _before={{
         content: "''",
