@@ -8,7 +8,8 @@ import stores from "../../store/stores";
 
 // 👉 import your header/footer
 import Header from "../../layouts/mainLayout/component/Header/Header";   // adjust path if needed
-// import Footer from "../../layouts/mainLayout/component/Footer/Footer";   // adjust path if needed
+import FooterSection from "./component/Footer/components/FooterSection";   // adjust path if needed
+import { Footer } from "./component/Footer/Footer";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -51,7 +52,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <main>{children}</main>
 
       {/* ✅ Footer */}
-      {/* <Footer /> */}
+      <Footer />
     </>
   );
 };

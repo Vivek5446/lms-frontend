@@ -2,153 +2,257 @@
 
 import React, { useState } from 'react';
 import {
-  Box,
-  Heading,
-  Text,
-  Container,
-  SimpleGrid,
-  Stack,
-  VStack,
-  HStack,
-  Icon,
-  Input,
-  Textarea,
-  Button,
-  Circle,
-  Badge, // Added Badge to the main import list
+  Box, Heading, Text, Container, SimpleGrid, Stack, VStack, HStack, Icon,
+  Input, Textarea, Button, Circle, Badge, Flex, FormControl, FormLabel,
+  useToast, Divider, Image
 } from '@chakra-ui/react';
 import { 
-  FaEnvelope, 
-  FaPhoneAlt, 
-  FaMapMarkerAlt, 
-  FaPaperPlane 
+  FaEnvelope, FaPhoneAlt, FaMapMarkerAlt, FaPaperPlane, 
+  FaQuestionCircle, FaHeadset, FaGlobe, 
+  FaUser, FaChalkboardTeacher
 } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+
+const MotionBox = motion(Box);
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
+  const toast = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
-    // Reset after 3 seconds for demo purposes
+    toast({
+      title: "Message Sent.",
+      description: "We'll get back to you within 24 hours.",
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+      position: "top-right",
+    });
     setTimeout(() => setSubmitted(false), 3000);
   };
 
   return (
-    <Box bg="gray.50" _dark={{ bg: 'gray.950' }} minH="100vh" py={{ base: 12, md: 20 }}>
-      <Container maxW="1200px">
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={16} alignContent="center">
+    <Box bg="white" minH="100vh">
+      {/* --- TOP HEADER DECORATION --- */}
+      <Box bg="blue.600" h="350px" w="full" position="absolute" top="0" zIndex="0" />
+
+      <Container maxW="1200px" pt={{ base: 20, md: 32 }} pb={20} position="relative" zIndex="1">
+        <SimpleGrid columns={{ base: 1, lg: 12 }} spacing={{ base: 10, lg: 0 }} shadow="2xl" borderRadius="3xl" overflow="hidden">
           
-          {/* --- LEFT SIDE: CONTACT INFO --- */}
-          <Stack spacing={8}>
-            <Box>
-              <Badge colorScheme="blue" px={3} py={1} rounded="md" mb={4}>
-                Contact Us
-              </Badge>
-              <Heading size="2xl" mb={4} fontWeight="800">
-                Let’s start a <br />
-                <Text as="span" color="blue.600">Conversation</Text>
-              </Heading>
-              <Text fontSize="lg" color="gray.600" _dark={{ color: 'gray.400' }}>
-                Have questions about our MSME lending courses or technical appraisals? 
-                Our team is here to help you navigate your learning journey.
-              </Text>
-            </Box>
-
-            <VStack align="start" spacing={6}>
-              <ContactMethod 
-                icon={FaEnvelope} 
-                title="Email Support" 
-                detail="support@lms-edu.com" 
-                subDetail="Response within 24 hours"
-              />
-              <ContactMethod 
-                icon={FaPhoneAlt} 
-                title="Call Us" 
-                detail="+91 98765 43210" 
-                subDetail="Mon-Fri, 9am - 6pm IST"
-              />
-              <ContactMethod 
-                icon={FaMapMarkerAlt} 
-                title="Headquarters" 
-                detail="Financial District, BKC" 
-                subDetail="Mumbai, Maharashtra, India"
-              />
-            </VStack>
-          </Stack>
-
-          {/* --- RIGHT SIDE: FORM --- */}
+          {/* --- LEFT SIDE: INFO + IMAGE (4 Columns) --- */}
           <Box 
-            bg="white" 
-            _dark={{ bg: 'gray.900' }} 
-            p={{ base: 6, md: 10 }} 
-            borderRadius="3xl" 
-            shadow="2xl" 
-            borderWidth="1px"
+            gridColumn={{ lg: "span 5" }} 
+            bg="blue.700" 
+            p={{ base: 8, md: 16 }} 
+            color="white"
+            position="relative"
+            display="flex"
+            flexDirection="column"
           >
+            <Stack spacing={10} flex="1">
+              <Box>
+                <Badge bg="blue.500" color="white" px={4} py={1} rounded="full" mb={6}>
+                  LMS Support
+                </Badge>
+                <Heading size="2xl" fontWeight="900" letterSpacing="-1px" mb={6}>
+                  How can we <br />
+                  <Text as="span" color="blue.200">help you?</Text>
+                </Heading>
+                <Text fontSize="lg" color="blue.50" opacity="0.9">
+                  Whether you're looking for corporate training solutions or need help accessing your course portal, our team is ready to assist.
+                </Text>
+              </Box>
+
+              <VStack align="start" spacing={8}>
+                <ContactMethod 
+                  icon={FaHeadset} 
+                  title="Priority Support" 
+                  detail="support@craftlms.com" 
+                  subDetail="Available 24/7 for Enterprise"
+                />
+                <ContactMethod 
+                  icon={FaPhoneAlt} 
+                  title="Learning Advisor" 
+                  detail="+91 22 4567 8900" 
+                  subDetail="Mon - Sat, 10 AM - 7 PM"
+                />
+                <ContactMethod 
+                  icon={FaGlobe} 
+                  title="Global Office" 
+                  detail="BKC Financial Hub" 
+                  subDetail="Mumbai, MH 400051"
+                />
+              </VStack>
+
+              <Divider borderColor="whiteAlpha.300" />
+            </Stack>
+            
+            {/* Added Place Image Area */}
+            <Box mt={10} position="relative">
+                <Image 
+                    src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&auto=format&fit=crop" 
+                    alt="Corporate Training Room" 
+                    borderRadius="2xl"
+                    shadow="xl"
+                    filter="brightness(0.9)"
+                />
+                <Flex 
+                    position="absolute" 
+                    top="10px" 
+                    right="10px" 
+                    bg="whiteAlpha.200" 
+                    backdropFilter="blur(5px)" 
+                    p={3} 
+                    borderRadius="full" 
+                    color="white"
+                >
+                    <Icon as={FaChalkboardTeacher} boxSize={5} />
+                    <Text fontSize="xs" fontWeight="bold" ml={2}>Training Center</Text>
+                </Flex>
+            </Box>
+          </Box>
+
+          {/* --- RIGHT SIDE: FORM (7 Columns) --- */}
+          <Box 
+            gridColumn={{ lg: "span 7" }} 
+            bg="white" 
+            p={{ base: 8, md: 16 }}
+          >
+            <VStack align="start" spacing={8} mb={10}>
+              <Heading size="lg" color="gray.800">Send us a Message</Heading>
+              <Text color="gray.500">Fields marked with an asterisk (*) are required.</Text>
+            </VStack>
+
             <form onSubmit={handleSubmit}>
               <Stack spacing={6}>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                  <Box>
-                    <Text fontSize="sm" fontWeight="bold" mb={2}>Full Name</Text>
-                    <Input placeholder="John Doe" variant="filled" h="50px" required />
-                  </Box>
-                  <Box>
-                    <Text fontSize="sm" fontWeight="bold" mb={2}>Email Address</Text>
-                    <Input type="email" placeholder="john@example.com" variant="filled" h="50px" required />
-                  </Box>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                  <FormControl isRequired>
+                    <FormLabel fontWeight="bold" fontSize="xs" color="gray.400" textTransform="uppercase">Full Name</FormLabel>
+                    <Input 
+                      placeholder="Jane Smith" 
+                      h="55px" 
+                      bg="gray.50" 
+                      border="none" 
+                      _focus={{ bg: "white", ring: 2, ringColor: "blue.500" }} 
+                    />
+                  </FormControl>
+                  <FormControl isRequired>
+                    <FormLabel fontWeight="bold" fontSize="xs" color="gray.400" textTransform="uppercase">Work Email</FormLabel>
+                    <Input 
+                      type="email" 
+                      placeholder="jane@company.com" 
+                      h="55px" 
+                      bg="gray.50" 
+                      border="none" 
+                      _focus={{ bg: "white", ring: 2, ringColor: "blue.500" }} 
+                    />
+                  </FormControl>
                 </SimpleGrid>
 
-                <Box>
-                  <Text fontSize="sm" fontWeight="bold" mb={2}>Subject</Text>
-                  <Input placeholder="Course Inquiry" variant="filled" h="50px" />
-                </Box>
-
-                <Box>
-                  <Text fontSize="sm" fontWeight="bold" mb={2}>Message</Text>
-                  <Textarea 
-                    placeholder="Tell us how we can help..." 
-                    variant="filled" 
-                    rows={5} 
-                    required 
+                <FormControl>
+                  <FormLabel fontWeight="bold" fontSize="xs" color="gray.400" textTransform="uppercase">Inquiry Type</FormLabel>
+                  <Input 
+                    placeholder="e.g. Corporate Enrollment, Login Issue" 
+                    h="55px" 
+                    bg="gray.50" 
+                    border="none" 
+                    _focus={{ bg: "white", ring: 2, ringColor: "blue.500" }} 
                   />
-                </Box>
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel fontWeight="bold" fontSize="xs" color="gray.400" textTransform="uppercase">Your Message</FormLabel>
+                  <Textarea 
+                    placeholder="Describe your request in detail..." 
+                    bg="gray.50" 
+                    border="none" 
+                    rows={6} 
+                    _focus={{ bg: "white", ring: 2, ringColor: "blue.500" }} 
+                  />
+                </FormControl>
 
                 <Button 
                   type="submit" 
-                  colorScheme={submitted ? "green" : "blue"} 
+                  colorScheme="blue" 
                   size="lg" 
-                  h="60px" 
-                  fontSize="lg"
+                  h="65px" 
+                  w="full"
+                  fontSize="md"
+                  fontWeight="bold"
+                  rounded="xl"
+                  shadow="lg"
+                  isLoading={submitted}
                   rightIcon={<Icon as={FaPaperPlane} />}
-                  transition="all 0.2s"
+                  _hover={{ transform: "translateY(-2px)", shadow: "xl" }}
                 >
-                  {submitted ? "Message Sent!" : "Send Message"}
+                  Submit Request
                 </Button>
-                
-                <Text fontSize="xs" color="gray.500" textAlign="center">
-                  By clicking send, you agree to our privacy policy.
-                </Text>
               </Stack>
             </form>
           </Box>
+        </SimpleGrid>
+
+        {/* --- BOTTOM SECTION: FAQ QUICK LINKS --- */}
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} mt={20}>
+          <QuickLinkCard 
+            icon={FaQuestionCircle} 
+            title="General FAQ" 
+            desc="Find quick answers about certifications and course access." 
+          />
+          <QuickLinkCard 
+            icon={FaMapMarkerAlt} 
+            title="Office Locations" 
+            desc="Visit our regional learning centers across India." 
+          />
+          <QuickLinkCard 
+            icon={FaUser} 
+            title="Corporate Training" 
+            desc="Looking to train your team? Get a custom quote." 
+          />
         </SimpleGrid>
       </Container>
     </Box>
   );
 }
 
-// Reusable Contact Info Component
 function ContactMethod({ icon, title, detail, subDetail }: any) {
   return (
-    <HStack spacing={5} align="start">
-      <Circle size="50px" bg="blue.50" _dark={{ bg: 'blue.950' }} color="blue.600">
-        <Icon as={icon} />
+    <HStack spacing={6} align="start">
+      <Circle size="48px" bg="whiteAlpha.200" color="blue.200">
+        <Icon as={icon} boxSize={5} />
+      </Circle>
+      <VStack align="start" spacing={0}>
+        <Text fontSize="xs" fontWeight="bold" color="blue.300" textTransform="uppercase" letterSpacing="widest">
+          {title}
+        </Text>
+        <Text fontSize="lg" fontWeight="bold">{detail}</Text>
+        <Text fontSize="xs" color="blue.100" opacity="0.7">{subDetail}</Text>
+      </VStack>
+    </HStack>
+  );
+}
+
+function QuickLinkCard({ icon, title, desc }: any) {
+  return (
+    <HStack 
+      p={6} 
+      bg="white" 
+      borderRadius="2xl" 
+      borderWidth="1px" 
+      borderColor="gray.100" 
+      shadow="sm"
+      _hover={{ transform: "translateY(-5px)", shadow: "md", borderColor: "blue.200" }}
+      transition="all 0.3s"
+      cursor="pointer"
+    >
+      <Circle size="50px" bg="blue.50" color="blue.600">
+        <Icon as={icon} boxSize={5} />
       </Circle>
       <Box>
-        <Text fontWeight="bold" fontSize="md">{title}</Text>
-        <Text fontSize="lg" fontWeight="semibold">{detail}</Text>
-        <Text fontSize="sm" color="gray.500">{subDetail}</Text>
+        <Text fontWeight="bold" fontSize="md" color="gray.800">{title}</Text>
+        <Text fontSize="sm" color="gray.500">{desc}</Text>
       </Box>
     </HStack>
   );

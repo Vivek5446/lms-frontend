@@ -317,6 +317,119 @@ export default function LMSLandingPage() {
           </SimpleGrid>
         </Container>
       </Box>
+
+      {/* --- LEARNING EXPERIENCE / DASHBOARD PREVIEW --- */}
+      <Box as="section" py={20} bg="white" _dark={{ bg: 'gray.900' }}>
+        <Container maxW="1200px">
+          <VStack spacing={4} mb={16} textAlign="center">
+            <Badge colorScheme="purple" variant="subtle" px={4} py={1} borderRadius="full">
+              Seamless Experience
+            </Badge>
+            <Heading size="2xl">Learning That Fits Your Lifestyle</Heading>
+            <Text color="gray.600" maxW="2xl" fontSize="lg">
+              Our intuitive dashboard keeps you motivated with real-time analytics, 
+              interactive quizzes, and seamless progress syncing across all your devices.
+            </Text>
+          </VStack>
+
+          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={12} alignContent={ "center" }>
+            {/* Left: Feature List */}
+            <VStack align="start" spacing={6}>
+              <HStack spacing={4}>
+                <Circle size="50px" bg="blue.50" color="blue.600">
+                  <Icon as={FaClock} boxSize={5} />
+                </Circle>
+                <Box>
+                  <Text fontWeight="bold" fontSize="xl">Bite-Sized Learning</Text>
+                  <Text color="gray.500">10-15 minute modules designed for the busy professional.</Text>
+                </Box>
+              </HStack>
+
+              <HStack spacing={4}>
+                <Circle size="50px" bg="purple.50" color="purple.600">
+                  <Icon as={FaStar} boxSize={5} />
+                </Circle>
+                <Box>
+                  <Text fontWeight="bold" fontSize="xl">Gamified Rewards</Text>
+                  <Text color="gray.500">Earn badges and certificates as you master new financial skills.</Text>
+                </Box>
+              </HStack>
+
+              <HStack spacing={4}>
+                <Circle size="50px" bg="green.50" color="green.600">
+                  <Icon as={FaCheckCircle} boxSize={5} />
+                </Circle>
+                <Box>
+                  <Text fontWeight="bold" fontSize="xl">Offline Access</Text>
+                  <Text color="gray.500">Download resources and watch videos even without an internet connection.</Text>
+                </Box>
+              </HStack>
+              
+              <Button 
+                mt={4} 
+                variant="link" 
+                colorScheme="blue" 
+                rightIcon={<FaArrowRight />}
+                fontSize="lg"
+              >
+                Explore all LMS features
+              </Button>
+            </VStack>
+
+            {/* Right: Mockup Image with Motion */}
+            <MotionBox
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.5 }}
+              position="relative"
+            >
+              <Box
+                borderRadius="2xl"
+                overflow="hidden"
+                boxShadow="2xl"
+                borderWidth="1px"
+                borderColor="gray.200"
+                bg="gray.800"
+                p={2}
+              >
+                {/* Mimicking a Browser/App UI */}
+                <Box bg="gray.700" p={2} borderTopRadius="xl" display="flex" gap={1}>
+                  <Circle size="8px" bg="red.400" />
+                  <Circle size="8px" bg="yellow.400" />
+                  <Circle size="8px" bg="green.400" />
+                </Box>
+                <Image 
+                  src="https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=800" 
+                  alt="LMS Dashboard Preview"
+                  filter="grayscale(20%)"
+                />
+              </Box>
+              
+              {/* Floating Stat Badge */}
+              <MotionBox
+                position="absolute"
+                bottom="-20px"
+                right="-20px"
+                bg="white"
+                p={4}
+                borderRadius="xl"
+                shadow="2xl"
+                borderWidth="1px"
+                initial={{ y: 20 }}
+                whileInView={{ y: 0 }}
+                display={{ base: 'none', md: 'block' }}
+              >
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="xs" color="gray.500" fontWeight="bold">COURSE COMPLETION</Text>
+                  <Text fontSize="2xl" fontWeight="extrabold" color="blue.600">84%</Text>
+                  <Box w="100px" h="6px" bg="gray.100" borderRadius="full" mt={2}>
+                    <Box w="84%" h="full" bg="blue.500" borderRadius="full" />
+                  </Box>
+                </VStack>
+              </MotionBox>
+            </MotionBox>
+          </SimpleGrid>
+        </Container>
+      </Box>
     </Box>
   );
 }

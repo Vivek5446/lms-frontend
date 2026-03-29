@@ -1,155 +1,166 @@
+'use client'
+
+import React from "react";
 import {
   Box,
   Container,
-  Divider,
-  Grid,
-  Icon,
-  Link,
   SimpleGrid,
   Stack,
   Text,
-  useColorModeValue,
+  Link as ChakraLink,
+  Image,
+  Divider,
+  HStack,
+  Icon,
+  Flex,
 } from "@chakra-ui/react";
-import React from "react";
-import Conditions from "./components/Conditions";
-import ContactSection from "./components/ContactSection";
-import FooterSection from "./components/FooterSection";
-import { footerData } from "./components/footerData";
+import NextLink from "next/link";
+// Assuming you use react-icons for social consistency
+import { FaLinkedin, FaTwitter, FaInstagram, FaYoutube } from "react-icons/fa";
 
-// Removed empty interface
 export const Footer: React.FC = () => {
-  const textColor = useColorModeValue("white", "white");
+  const currentYear = new Date().getFullYear();
+
+  const footerLinks = {
+    platform: [
+      { name: "Home", href: "/" },
+      { name: "All Courses", href: "/course" },
+      { name: "Learning Paths", href: "/paths" },
+      { name: "Certifications", href: "/certifications" },
+    ],
+    company: [
+      { name: "About Us", href: "/about-us" },
+      { name: "Contact Us", href: "/contact-us" },
+      { name: "Careers", href: "/careers" },
+      { name: "Instructor Portal", href: "/instructor" },
+    ],
+    legal: [
+      { name: "Privacy Policy", href: "/privacy" },
+      { name: "Terms of Service", href: "/terms" },
+      { name: "Cookie Policy", href: "/cookies" },
+    ],
+  };
 
   return (
-    <Box bg={"#065F68"} color={textColor} borderTopRadius={{ base: "24px", md: "40px" }} py={{ base: "8", md: 7 }}>
-      <Container as={Stack} maxW={{ lg: "90%" }} px={{ base: 4, md: 8 }}>
-        <Box mb={6} >
-          <Text
-            textAlign="center"
-            fontSize={{ base: "sm", md: "md" }}
-            lineHeight="1.6"
-            noOfLines={{ base: undefined, lg: 2 }}
-          >
-            We’re not a crisis service. For immediate help, call <strong> Lifeline at 1800-891-4416 </strong> (TeleMANAS- mental health crisis service)/ <strong>Call 112</strong>  (National emergency number)/ <strong>Call 1098</strong> (Child Helpline)/ <strong>Call 1091</strong>  (Women Helpline)/ Go to the nearest emergency room of your choice.
-          </Text>
-        </Box>
-        <SimpleGrid
-          templateColumns={{
-            base: "1fr", // Stacks items on small screens
-            sm: "1fr 1fr", // Two columns on small screens
-            md: "1fr 1.25fr 1fr", // Standard grid layout on medium and larger screens
-            lg: "1fr 1fr 1fr 1fr", // Standard grid layout on medium and larger screens
-          }}
-          spacing={{ base: 3, md: 4 }}
-        >
-          {/* Sections */}
-          {footerData.sections.map((section) => (
-            <FooterSection key={section.title} section={section} />
-          ))}
-
-          <Box>
-            <Conditions />
-          </Box>
-          {/* Contact Info */}
-          <Box>
-            <ContactSection contactInfo={footerData.contactInfo} />
-            <Stack
-              direction="row"
-              spacing={4}
-              ml={{ base: -3, md: 5 }}
-              mt={2}
-              justify={{ base: "center", md: "flex-start" }}
-            >
-              {footerData.companyInfo.socialLinks.map((social) => (
-                <Link key={social.name} href={social.url}>
-                  <Box
-                    boxSize={7}
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    rounded="full"
-                    bg="#FFFFFF1C"
-                    _hover={{ color: "gray.300" }}
-                  >
-                    <Icon as={social.icon} boxSize="60%" />
-                  </Box>
-                </Link>
-              ))}
-            </Stack>
-          </Box>
-
-        </SimpleGrid>
-
-        {/* Crisis Notice */}
-        {/* <Box pt={{ base: 4, md: 10 }} pb={2} textAlign={{ base: "center", md: "left" }} w={{ base: "100%", md: "80%", lg: "70%" }} mx="auto">
-          <Text textAlign="center" fontSize={{ base: "sm", md: "lg" }} lineHeight="1.6">
-            We’re not a crisis service. For immediate help, call Lifeline at <strong>1800-891-4416</strong> (TeleMANAS – mental health crisis service) or call <strong>112</strong> (National emergency number), <strong>1098</strong> (Child Helpline), <strong>1091</strong> (Women Helpline), or go to the nearest emergency room of your choice.
-            <br />
-            {footerData.companyInfo.crisisNumber}.
-          </Text>
-        </Box> */}
-
-      </Container>
-
-      <Box>
-        <Divider borderColor={"#FFFFFF33"} />
-        <Grid
-          pt={6}
-          gap={4}
-          templateColumns={{
-            base: "1fr", // Single column on small screens
-            lg: "1fr 1fr 1fr", // Three columns on medium and larger screens
-          }}
-          textAlign={{ base: "center", lg: "left" }}
-          alignItems={"center"}
-        >
-          <Box display={{ base: "none", sm: "block" }}>
-            {/* <Image
-              position={"absolute"}
-              h={"260px"}
-              bottom={0}
-              left={0}
-              src="/images/footerImage.png"
-              alt="Who are some good psychiatrists in Noida?"
-              mixBlendMode={"multiply"}
-            /> */}
-          </Box>
-          <Text fontSize={{ base: "xs", sm: "sm" }} textAlign={'center'}>
-            © {new Date().getFullYear()}{" "}
-            <Text as={"span"} color={"#DF837C"}>
-              {footerData.companyInfo.name}
-            </Text>{" "}
-            . All rights reserved.
-          </Text>
-          <Stack
-            direction="row" // Always a horizontal row
-            spacing={2} // Small spacing between items
-            justify={{ base: "center", lg: "flex-end" }} // Align to the right
-            align="center" // Vertically center items
-            wrap="wrap" // Wrap items if needed on very small screens
-            pr={{ md: 8 }}
-          >
-            {footerData.legalLinks.map((link, index) => (
-              <React.Fragment key={link.name}>
-                <Link
-                  href={link.href}
-                  _hover={{ color: "gray.300" }}
-                  fontSize={{ base: "xs", sm: "sm" }} // Smaller font size for better scaling
+    <Box as="footer" bg="white" borderTop="1px solid" borderColor="gray.100" pt={16} pb={8}>
+      <Container maxW="1400px">
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={12} mb={12}>
+          {/* Brand Section */}
+          <Stack spacing={6}>
+            <NextLink href="/" passHref legacyBehavior>
+              <ChakraLink _hover={{ textDecoration: 'none' }} display="flex" alignItems="center" gap={3}>
+                <Image
+                  src="https://www.lmscert.com/Logo%20LMS%20-1-.svg"
+                  alt="CRAFT LMS Logo"
+                  h="40px"
+                  objectFit="contain"
+                />
+                <Text
+                  fontWeight="900"
+                  fontSize="xl"
+                  letterSpacing="-1px"
+                  bgGradient="linear(to-tr, blue.600, blue.400)"
+                  bgClip="text"
                 >
+                  CRAFT
+                </Text>
+              </ChakraLink>
+            </NextLink>
+            <Text color="gray.600" fontSize="sm" lineHeight="tall">
+              Empowering learners worldwide with industry-standard certifications and expert-led courses. Elevate your craft today.
+            </Text>
+            <HStack spacing={4}>
+              {[FaTwitter, FaLinkedin, FaInstagram, FaYoutube].map((socialIcon, index) => (
+                <ChakraLink
+                  key={index}
+                  href="#"
+                  color="gray.400"
+                  _hover={{ color: "blue.500", transform: "translateY(-2px)" }}
+                  transition="all 0.3s"
+                >
+                  <Icon as={socialIcon} boxSize={5} />
+                </ChakraLink>
+              ))}
+            </HStack>
+          </Stack>
+
+          {/* Platform Links */}
+          <Stack spacing={4}>
+            <Text fontWeight="bold" fontSize="md" color="gray.800">Platform</Text>
+            {footerLinks.platform.map((link) => (
+              <NextLink key={link.name} href={link.href} passHref legacyBehavior>
+                <ChakraLink fontSize="sm" color="gray.600" _hover={{ color: "blue.600", textDecoration: "none" }}>
                   {link.name}
-                </Link>
-                {index < footerData.legalLinks.length - 1 && (
-                  <Text
-                    fontSize={{ base: "xs", sm: "sm" }} // Match separator size with links
-                  >
-                    /
-                  </Text>
-                )}
-              </React.Fragment>
+                </ChakraLink>
+              </NextLink>
             ))}
           </Stack>
-        </Grid>
-      </Box>
+
+          {/* Company Links */}
+          <Stack spacing={4}>
+            <Text fontWeight="bold" fontSize="md" color="gray.800">Company</Text>
+            {footerLinks.company.map((link) => (
+              <NextLink key={link.name} href={link.href} passHref legacyBehavior>
+                <ChakraLink fontSize="sm" color="gray.600" _hover={{ color: "blue.600", textDecoration: "none" }}>
+                  {link.name}
+                </ChakraLink>
+              </NextLink>
+            ))}
+          </Stack>
+
+          {/* Newsletter/Contact Small */}
+          <Stack spacing={4}>
+            <Text fontWeight="bold" fontSize="md" color="gray.800">Support</Text>
+            <Text fontSize="sm" color="gray.600">
+              Have questions? Reach out to our learning advisors.
+            </Text>
+            <NextLink href="/contact-us" passHref legacyBehavior>
+              <ChakraLink
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                bg="blue.50"
+                color="blue.600"
+                fontWeight="bold"
+                px={4}
+                py={2}
+                rounded="lg"
+                fontSize="sm"
+                _hover={{ bg: "blue.600", color: "white", textDecoration: "none" }}
+                transition="all 0.2s"
+              >
+                Contact Support
+              </ChakraLink>
+            </NextLink>
+          </Stack>
+        </SimpleGrid>
+
+        <Divider borderColor="gray.100" />
+
+        <Flex
+          direction={{ base: "column", md: "row" }}
+          justify="space-between"
+          align="center"
+          pt={8}
+          gap={4}
+        >
+          <Text fontSize="xs" color="gray.500">
+            © {currentYear} <Box as="span" fontWeight="bold">CRAFT LMS</Box>. All rights reserved.
+          </Text>
+          
+          <HStack spacing={6}>
+            {footerLinks.legal.map((link) => (
+              <NextLink key={link.name} href={link.href} passHref legacyBehavior>
+                <ChakraLink fontSize="xs" color="gray.500" _hover={{ color: "blue.600" }}>
+                  {link.name}
+                </ChakraLink>
+              </NextLink>
+            ))}
+          </HStack>
+        </Flex>
+      </Container>
     </Box>
   );
 };
+
+export default Footer;
