@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Box, Tooltip } from "@chakra-ui/react";
+import { Badge, Box, Tooltip, Text } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useState } from "react";
 import useDebounce from "../../../../component/config/component/customHooks/useDebounce";
@@ -16,6 +16,9 @@ const UserTable = observer(({
   onEdit,
   onDelete,
   showAddButton = true,
+  filterRole = "admin",
+  filterType = "admin",
+  title = "Organization Members",
 }: any) => {
   const {
     userStore: { getAllUsers, user },
@@ -37,8 +40,8 @@ const UserTable = observer(({
         limit,
         company: companyId,
         includeInactive: true,
-        role: "admin",
-        type: "admin",
+        role: filterRole,
+        type: filterType,
       };
 
       if (debouncedSearchQuery?.trim()) {
@@ -109,6 +112,46 @@ const UserTable = observer(({
       key: "username",
     },
     {
+      headerName: "Role",
+      key: "role",
+      type: "component",
+      metaData: {
+        component: (dt: any) => {
+          let color = "blue";
+          let label = "Admin";
+
+          if (dt.role === "departmenthead") {
+            color = "purple";
+            label = "Department Head";
+          } else if (dt.role === "user") {
+            color = "green";
+            label = "User";
+          } else if (dt.role?.includes("manager")) {
+            color = "orange";
+            label = dt.role;
+          }
+
+          return (
+            <Badge colorScheme={color}>
+              {label}
+            </Badge>
+          );
+        },
+      },
+    },
+    {
+      headerName: "Department",
+      key: "department",
+      type: "component",
+      metaData: {
+        component: (dt: any) => (
+          <Box as="span" fontSize="sm" color="gray.600" fontWeight="500">
+            {dt.department || "-"}
+          </Box>
+        ),
+      },
+    },
+    {
       headerName: "Status",
       key: "is_active",
       type: "component",
@@ -155,7 +198,7 @@ const UserTable = observer(({
   return (
     <Box p={4}>
       <CustomTable
-        title={companyName ? `${companyName} Admins` : "Admins"}
+        title={title}
         data={
           user.data?.map((admin: any, index: number) => ({
             ...admin,

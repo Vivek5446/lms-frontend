@@ -21,6 +21,7 @@ import * as Yup from "yup";
 
 import CustomInput from "../../../component/config/component/customInput/CustomInput";
 import { generateIntialValues } from "./utils/function";
+import stores from "../../../store/stores";
 
 /* ================= SECTION CARD ================= */
 const SectionCard = ({ title, icon, children, color }: any) => {
@@ -68,6 +69,7 @@ const Form = ({
   isLoading,
   selectedCompany,
 }: any) => {
+  const { auth: { user: currentUser } } = stores;
   const [formData, setFormData] = useState<any>(initialData);
   const [preview, setPreview] = useState<string | null>(null);
 
@@ -91,7 +93,6 @@ const Form = ({
     name: Yup.string().required("Name is required"),
     username: Yup.string().email().trim().lowercase().required("Email is required"),
     designation: Yup.string().required("Designation is required"),
-    branch: Yup.string().required("Branch is required"),
     city: Yup.string().required("City is required"),
     state: Yup.string().required("State is required"),
     joiningDate: Yup.string().required("Joining date is required"),
@@ -102,6 +103,12 @@ const Form = ({
     confirmPassword: !isEdit
       ? Yup.string().oneOf([Yup.ref("password"), null])
       : Yup.string().optional(),
+    role: Yup.string().required("Role is required"),
+    department: Yup.string().when('role', {
+      is: 'departmenthead',
+      then: (schema: any) => schema.required("Department is required"),
+      otherwise: (schema: any) => schema.optional()
+    }),
   });
 
   if (!isOpen) return null;
@@ -120,6 +127,28 @@ const Form = ({
         setFieldValue,
       }: any) => {
         /* 🔥 handle preview based on current formik values */
+        const isDeptHead = currentUser?.role === "departmenthead";
+        const isSuperadmin = currentUser?.role === "superadmin";
+        const roleOptions = isDeptHead
+          ? [{ label: "User", value: "user" }]
+          : isSuperadmin
+            ? [
+                { label: "Admin", value: "admin" },
+                { label: "Department Head", value: "departmenthead" },
+              ]
+            : [
+                { label: "Admin", value: "admin" },
+                { label: "Department Head", value: "departmenthead" },
+                { label: "User", value: "user" },
+              ];
+
+        useEffect(() => {
+          if (isDeptHead && !values.department) {
+            setFieldValue("department", currentUser?.department);
+            setFieldValue("role", "user");
+          }
+        }, [isDeptHead, setFieldValue, currentUser]);
+
         useEffect(() => {
           if (values?.pic?.file && values.pic.file instanceof File) {
             const url = URL.createObjectURL(values.pic.file);
@@ -230,13 +259,6 @@ const Form = ({
                   />
 
                   <CustomInput
-                    label="Branch"
-                    name="branch"
-                    value={values.branch}
-                    onChange={handleChange}
-                  />
-
-                  <CustomInput
                     label="City"
                     name="city"
                     value={values.city}
@@ -257,6 +279,46 @@ const Form = ({
                     value={values.joiningDate}
                     onChange={handleChange}
                   />
+
+                  <CustomInput
+                    type="select"
+                    label="Role"
+                    name="role"
+                    disabled={isDeptHead}
+                    value={
+                      roleOptions.find((r: any) => r.value === values.role) || null
+                    }
+                    onChange={(opt: any) => {
+                       const role = opt?.value || "";
+                       setFieldValue("role", role);
+                       setFieldValue("userType", role === "user" ? "user" : "admin");
+                       if (role !== "departmenthead") {
+                          setFieldValue("department", "");
+                       }
+                    }}
+                    options={roleOptions}
+                  />
+
+                  {((!isDeptHead && values.role === "departmenthead") || values.role === "user") && (
+                    <CustomInput
+                      type={values.role === "departmenthead" ? "creatable-select" : "select"}
+                      label="Department"
+                      name="department"
+                      disabled={isDeptHead}
+                      value={
+                         values.department
+                           ? { label: values.department, value: values.department }
+                           : null
+                      }
+                      onChange={(opt: any) => setFieldValue("department", opt?.value || opt?.label || "")}
+                      options={
+                         selectedCompany?.departments?.map((dep: string) => ({
+                           label: dep,
+                           value: dep,
+                         })) || []
+                      }
+                    />
+                  )}
                 </SimpleGrid>
               </SectionCard>
 
@@ -293,7 +355,7 @@ const Form = ({
                   isLoading={isLoading}
                   isDisabled={!selectedCompany?._id}
                 >
-                  {isEdit ? "Update Admin" : "Create Admin"}
+                  {isEdit ? "Update Member" : "Create Member"}
                 </Button>
               </Flex>
             </Grid>

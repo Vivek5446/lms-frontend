@@ -9,7 +9,6 @@ export const initialValues = {
   name: "",
   username: "",
   designation: "",
-  branch: "",
   city: "",
   state: "",
   joiningDate: "",
@@ -17,5 +16,8 @@ export const initialValues = {
   confirmPassword: "",
   phoneNumber: "",
   code: "",
+  role: "admin",
+  userType: "admin",
+  department: "",
   pic: { file: [] },
 };

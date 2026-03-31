@@ -114,7 +114,7 @@ const sidebarDatas: SidebarItem[] = [
     name: "Users Management",
     icon: <FaUsers />,
     url: "/dashboard/users",
-    role: ["admin", "superadmin"],
+    role: ["admin", "superadmin", "departmenthead"],
   },
   // {
   //   id: 11,

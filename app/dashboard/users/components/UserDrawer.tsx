@@ -23,7 +23,7 @@ import {
     VStack,
     useColorModeValue,
 } from "@chakra-ui/react";
-import { Layers, User } from "lucide-react";
+import { Building2, Layers, User } from "lucide-react";
 import ManagerHierarchy from "./ManagerHierarchy";
 
 /* ================= SECTION CARD ================= */
@@ -70,6 +70,7 @@ const UserDrawer = ({
   roleOptions,
   isSuperadmin,
   filteredCompanies,
+  currentCompanyDepartments,
   borderColor,
   muted,
   currentCompanyName,
@@ -79,6 +80,10 @@ const UserDrawer = ({
   onSubmit,
   loading,
 }: any) => {
+  const availableDepartments = isSuperadmin
+    ? filteredCompanies.find((company: any) => company?._id === userForm.companyId)?.departments || []
+    : currentCompanyDepartments || [];
+
   return (
     <Drawer isOpen={isOpen} placement="right" size="xl" onClose={onClose}>
       <DrawerOverlay />
@@ -171,17 +176,23 @@ const UserDrawer = ({
                   </Select>
                 </FormControl>
                 <FormControl>
-                  <FormLabel>Branch</FormLabel>
-                  <Input
-                    placeholder="Enter branch"
-                    value={userForm.branch}
+                  <FormLabel>Department</FormLabel>
+                  <Select
+                    placeholder="Select department"
+                    value={userForm.department}
                     onChange={(e) =>
                       setUserForm((p: any) => ({
                         ...p,
-                        branch: e.target.value,
+                        department: e.target.value,
                       }))
                     }
-                  />
+                  >
+                    {availableDepartments.map((department: string) => (
+                      <option key={department} value={department}>
+                        {department}
+                      </option>
+                    ))}
+                  </Select>
                 </FormControl>
                 <FormControl>
                   <FormLabel>City</FormLabel>
@@ -226,34 +237,11 @@ const UserDrawer = ({
             </SectionCard>
 
             {/* COMPANY */}
-            {/* <SectionCard title="Company" icon={Building2} color="purple">
+            <SectionCard title="Company" icon={Building2} color="purple">
               {isSuperadmin ? (
                 <VStack align="stretch" spacing={4}>
-                  <Checkbox
-                    isChecked={userForm.createCompany}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({
-                        ...p,
-                        createCompany: e.target.checked,
-                        companyId: "",
-                      }))
-                    }
-                  >
-                    Create new company
-                  </Checkbox>
-
-                  {userForm.createCompany ? (
-                    <Input
-                      placeholder="Company name"
-                      value={userForm.companyName}
-                      onChange={(e) =>
-                        setUserForm((p: any) => ({
-                          ...p,
-                          companyName: e.target.value,
-                        }))
-                      }
-                    />
-                  ) : (
+                  <FormControl isRequired>
+                    <FormLabel>Select company</FormLabel>
                     <Select
                       placeholder="Select company"
                       value={userForm.companyId}
@@ -261,6 +249,7 @@ const UserDrawer = ({
                         setUserForm((p: any) => ({
                           ...p,
                           companyId: e.target.value,
+                          department: "",
                         }))
                       }
                     >
@@ -270,14 +259,14 @@ const UserDrawer = ({
                         </option>
                       ))}
                     </Select>
-                  )}
+                  </FormControl>
                 </VStack>
               ) : (
                 <Box p={3} borderRadius="md" bg="gray.100">
                   {currentCompanyName}
                 </Box>
               )}
-            </SectionCard> */}
+            </SectionCard>
 
             {/* HIERARCHY */}
             <SectionCard title="Manager Hierarchy" icon={Layers} color="orange">

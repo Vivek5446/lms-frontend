@@ -68,8 +68,8 @@ const Login = observer(() => {
       ).toLowerCase();
       if (userType === "superadmin") {
         router.push("/dashboard/admins");
-      } else if (userType === "admin") {
-        router.push("/dashboard");
+      } else if (userType === "admin" || userType === "departmenthead") {
+        router.push("/dashboard/users");
       } else {
         router.push("/");
       }

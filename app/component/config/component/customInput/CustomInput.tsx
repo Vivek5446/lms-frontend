@@ -35,6 +35,7 @@ import { RiEyeLine, RiEyeOffLine } from "react-icons/ri";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import Select from "react-select";
+import CreatableSelect from 'react-select/creatable';
 import stores from "../../../../store/stores";
 
 interface CustomInputProps {
@@ -48,6 +49,7 @@ interface CustomInputProps {
   | "switch"
   | "textarea"
   | "select"
+  | "creatable-select"
   | "date"
   | "time"
   | "checkbox"
@@ -741,6 +743,30 @@ const CustomInput: React.FC<CustomInputProps> = ({
             isSearchable={isSearchable}
             getOptionLabel={getOptionLabel}
             getOptionValue={getOptionValue}
+            isDisabled={disabled}
+            styles={getSelectStyles()}
+            components={{
+              IndicatorSeparator: null,
+              DropdownIndicator: () => (
+                <div className="chakra-select__dropdown-indicator" />
+              ),
+            }}
+            menuPosition={isPortal ? "fixed" : undefined}
+            menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+          />
+        );
+
+      case "creatable-select":
+        return (
+          <CreatableSelect
+            options={options}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            isClearable={isClear ? true : undefined}
+            className={`chakra-select ${theme ? theme.components.Select.baseStyle : ""
+              }`}
+            isMulti={isMulti}
             isDisabled={disabled}
             styles={getSelectStyles()}
             components={{

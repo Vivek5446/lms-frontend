@@ -14,10 +14,16 @@ import {
   HStack,
   SimpleGrid,
   Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
   Text,
   useColorModeValue,
   useToast,
 } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FiArrowLeft, FiGlobe, FiMail, FiMapPin, FiPlus, FiShield, FiUsers } from "react-icons/fi";
 import { replaceLabelValueObjects } from "../../../config/utils/function";
@@ -28,6 +34,7 @@ import UserTable from "./users/UserTable";
 import DeleteData from "./users/component/DeleteUser";
 import { initialValues } from "./utils/constant";
 
+// Compact summary card with smaller font sizes and reduced padding
 const SummaryCard = ({
   label,
   value,
@@ -35,43 +42,52 @@ const SummaryCard = ({
   label: string;
   value: string | number;
 }) => {
-  const surfaceBg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("blue.100", "gray.700");
-  const mutedText = useColorModeValue("gray.600", "gray.400");
+  const mutedText = useColorModeValue("gray.500", "gray.400");
+  const borderColor = useColorModeValue("gray.100", "gray.700");
 
   return (
-    <Box bg={surfaceBg} border="1px solid" borderColor={borderColor} borderRadius="xl" p={4}>
-      <Text fontSize="xs" fontWeight="700" color={mutedText} textTransform="uppercase" letterSpacing="0.08em">
+    <Box
+      border="1px solid"
+      borderColor={borderColor}
+      borderRadius="lg"
+      px={4}
+      py={3}
+      transition="all 0.2s"
+      _hover={{ borderColor: "blue.200" }}
+    >
+      <Text fontSize="xs" fontWeight="500" color={mutedText} textTransform="uppercase" letterSpacing="0.05em">
         {label}
       </Text>
-      <Text mt={2} fontSize="2xl" fontWeight="800">
+      <Text mt={1} fontSize="xl" fontWeight="600" lineHeight="1.2">
         {value}
       </Text>
     </Box>
   );
 };
 
+// Compact detail item with smaller icon and text
 const DetailItem = ({
   label,
   value,
-  icon,
+  icon: Icon,
 }: {
   label: string;
   value: string;
   icon: any;
 }) => {
-  const mutedText = useColorModeValue("gray.600", "gray.400");
+  const mutedText = useColorModeValue("gray.500", "gray.400");
+  const iconColor = useColorModeValue("blue.400", "blue.300");
 
   return (
     <HStack align="start" spacing={3}>
-      <Box color={mutedText} mt={0.5}>
-        {icon}
+      <Box color={iconColor} mt={0.5}>
+        <Icon size={14} />
       </Box>
       <Box>
-        <Text fontSize="xs" fontWeight="700" color={mutedText} textTransform="uppercase" letterSpacing="0.08em">
+        <Text fontSize="xs" fontWeight="500" color={mutedText} textTransform="uppercase" letterSpacing="0.05em">
           {label}
         </Text>
-        <Text mt={1} fontSize="sm" fontWeight="500">
+        <Text mt={0.5} fontSize="sm" fontWeight="500">
           {value || "--"}
         </Text>
       </Box>
@@ -88,15 +104,16 @@ const CompanyAdminWorkspace = ({
   onBack: () => void;
   onCompanyRefresh: () => Promise<any>;
 }) => {
+  const router = useRouter();
   const toast = useToast();
-  const pageBg = useColorModeValue("#f4f8ff", "gray.900");
+  const pageBg = useColorModeValue("gray.50", "gray.900");
   const surfaceBg = useColorModeValue("white", "gray.800");
-  const subtleBg = useColorModeValue("blue.50", "whiteAlpha.50");
-  const borderColor = useColorModeValue("blue.100", "gray.700");
-  const mutedText = useColorModeValue("gray.600", "gray.400");
+  const borderColor = useColorModeValue("gray.100", "gray.700");
+  const mutedText = useColorModeValue("gray.500", "gray.400");
 
   const {
     userStore: { createAdmin, updateUser },
+    auth: { user: currentUser },
   } = stores;
 
   const [adminRefreshKey, setAdminRefreshKey] = useState(0);
@@ -106,6 +123,7 @@ const CompanyAdminWorkspace = ({
     isOpen: false,
     data: null,
   });
+  const [activeTab, setActiveTab] = useState(0);
 
   const refreshAll = async () => {
     await onCompanyRefresh();
@@ -218,6 +236,10 @@ const CompanyAdminWorkspace = ({
     refreshAll().catch(() => null);
   };
 
+  const openUsersManagement = () => {
+    router.push(`/dashboard/users?company=${company._id}`);
+  };
+
   const addressText = company?.addressInfo?.[0]
     ? [
         company.addressInfo[0].address,
@@ -231,135 +253,212 @@ const CompanyAdminWorkspace = ({
     : "--";
 
   return (
-    <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
-      <Stack spacing={6} maxW="1400px" mx="auto">
-        <Box bg={surfaceBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" p={{ base: 5, md: 6 }}>
+    <Box minH="100vh" bg={pageBg} py={{ base: 4, md: 6 }}>
+      <Stack spacing={6} maxW="1400px" mx="auto" px={{ base: 4, md: 6 }}>
+        {/* Header Section - compact and clean */}
+        <Box>
           <Flex justify="space-between" align={{ base: "start", md: "center" }} gap={4} wrap="wrap">
             <Box>
               <Button
                 variant="ghost"
                 colorScheme="blue"
                 leftIcon={<FiArrowLeft />}
+                size="sm"
                 px={0}
-                mb={3}
+                mb={2}
                 onClick={onBack}
                 _hover={{ bg: "transparent", textDecoration: "underline" }}
               >
                 Back to Companies
               </Button>
-              <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="800">
+              <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="700" lineHeight="1.2">
                 {company?.company_name}
               </Text>
-              <Text mt={2} color={mutedText}>
-                Manage admins for this company in one focused workspace.
+              <Text mt={1} fontSize="sm" color={mutedText}>
+                Manage your organization’s admins, department heads, and users.
               </Text>
             </Box>
 
-            <HStack spacing={3} wrap="wrap">
-              <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={3} py={1}>
+            <HStack spacing={3}>
+              <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={3} py={1} fontSize="xs">
                 {company?.companyType || "Company"}
               </Badge>
               <Button
                 colorScheme="blue"
+                size="sm"
                 borderRadius="full"
-                leftIcon={<FiPlus />}
-                onClick={() => setDrawerState({ type: "admin-add", isOpen: true, data: null })}
+                leftIcon={<FiPlus size={14} />}
+                onClick={() =>
+                  activeTab === (currentUser?.role === "departmenthead" ? 0 : 2)
+                    ? openUsersManagement()
+                    : setDrawerState({ type: "admin-add", isOpen: true, data: null })
+                }
               >
-                Add Admin
+                {activeTab === (currentUser?.role === "departmenthead" ? 0 : 2)
+                  ? "Manage Users"
+                  : "Add Member"}
               </Button>
             </HStack>
           </Flex>
         </Box>
 
-        <Box bg={surfaceBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" overflow="hidden">
-          <Flex
-            px={{ base: 4, md: 6 }}
-            py={4}
-            justify="space-between"
-            align={{ base: "start", md: "center" }}
-            gap={4}
-            wrap="wrap"
-            borderBottom="1px solid"
-            borderColor={borderColor}
-            bg={subtleBg}
+        {/* Tabs and Tables - no background/shadow on tables */}
+        <Box>
+          <Tabs
+            variant="soft-rounded"
+            colorScheme="blue"
+            index={activeTab}
+            onChange={(index) => setActiveTab(index)}
+            size="sm"
           >
-            <Box>
-              <Text fontSize="xl" fontWeight="700">
-                Admins
-              </Text>
-              <Text mt={1} color={mutedText}>
-                Create, edit, and review all admins under this company.
-              </Text>
-            </Box>
-            <HStack spacing={3}>
-              <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
-                {company?.adminCount || 0} total
-              </Badge>
-              <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
-                {company?.activeAdminCount || 0} active
-              </Badge>
-            </HStack>
-          </Flex>
+            <TabList mb={4} gap={2}>
+              {currentUser?.role !== "departmenthead" && (
+                <Tab fontSize="sm" fontWeight="500">
+                  Admins
+                </Tab>
+              )}
+              {currentUser?.role !== "departmenthead" && (
+                <Tab fontSize="sm" fontWeight="500">
+                  Dept Heads
+                </Tab>
+              )}
+              <Tab fontSize="sm" fontWeight="500">
+                Users
+              </Tab>
+            </TabList>
 
-          <UserTable
-            key={`${company._id}-${adminRefreshKey}`}
-            companyId={company._id}
-            companyName={company.company_name}
-            onAdd={() => setDrawerState({ type: "admin-add", isOpen: true, data: null })}
-            onEdit={(entry: any) =>
-              setDrawerState({
-                type: "admin-edit",
-                isOpen: true,
-                data: { ...entry, ...entry?.profileDetails?.personalInfo },
-              })
-            }
-            onDelete={(entry: any) =>
-              setDrawerState({ type: "delete", isOpen: true, data: entry })
-            }
-            showAddButton={false}
-          />
+            <TabPanels>
+              {currentUser?.role !== "departmenthead" && (
+                <TabPanel p={0}>
+                  {activeTab === 0 && (
+                    <Box bg="transparent" boxShadow="none">
+                      <UserTable
+                        key={`admin-${company._id}-${adminRefreshKey}`}
+                        companyId={company._id}
+                        companyName={company.company_name}
+                        title={`${company.company_name} - Admins`}
+                        filterRole="admin"
+                        filterType="admin"
+                        onAdd={() => setDrawerState({ type: "admin-add", isOpen: true, data: null })}
+                        onEdit={(entry: any) =>
+                          setDrawerState({
+                            type: "admin-edit",
+                            isOpen: true,
+                            data: { ...entry, ...entry?.profileDetails?.personalInfo },
+                          })
+                        }
+                        onDelete={(entry: any) =>
+                          setDrawerState({ type: "delete", isOpen: true, data: entry })
+                        }
+                        showAddButton={false}
+                        // Assuming UserTable supports `variant="simple"` or similar; if not, remove the line
+                        variant="simple"
+                      />
+                    </Box>
+                  )}
+                </TabPanel>
+              )}
+              {currentUser?.role !== "departmenthead" && (
+                <TabPanel p={0}>
+                  {activeTab === 1 && (
+                    <Box bg="transparent" boxShadow="none">
+                      <UserTable
+                        key={`depthead-${company._id}-${adminRefreshKey}`}
+                        companyId={company._id}
+                        companyName={company.company_name}
+                        title={`${company.company_name} - Dept Heads`}
+                        filterRole="departmenthead"
+                        filterType="admin"
+                        onAdd={() => setDrawerState({ type: "admin-add", isOpen: true, data: null })}
+                        onEdit={(entry: any) =>
+                          setDrawerState({
+                            type: "admin-edit",
+                            isOpen: true,
+                            data: { ...entry, ...entry?.profileDetails?.personalInfo },
+                          })
+                        }
+                        onDelete={(entry: any) =>
+                          setDrawerState({ type: "delete", isOpen: true, data: entry })
+                        }
+                        showAddButton={false}
+                        variant="simple"
+                      />
+                    </Box>
+                  )}
+                </TabPanel>
+              )}
+              <TabPanel p={0}>
+                {(activeTab === (currentUser?.role === "departmenthead" ? 0 : 2)) && (
+                  <Box
+                    bg={surfaceBg}
+                    border="1px solid"
+                    borderColor={borderColor}
+                    borderRadius="xl"
+                    p={6}
+                  >
+                    <Stack spacing={3}>
+                      <Text fontSize="md" fontWeight="600">
+                        Users and managers now use the shared user-management flow.
+                      </Text>
+                      <Text fontSize="sm" color={mutedText}>
+                        This opens the newer form with setup-email handling, manager hierarchy, and scoped company filtering.
+                      </Text>
+                      <Flex>
+                        <Button colorScheme="blue" onClick={openUsersManagement}>
+                          Open Users Management
+                        </Button>
+                      </Flex>
+                    </Stack>
+                  </Box>
+                )}
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
         </Box>
 
+        {/* Compact company stats */}
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
           <SummaryCard label="Company Code" value={company?.companyCode || "--"} />
           <SummaryCard label="Tenant Slug" value={company?.tenantSlug || "--"} />
           <SummaryCard label="Manager Levels" value={company?.managerLevels || 3} />
         </SimpleGrid>
 
-        <Box bg={surfaceBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" p={{ base: 4, md: 6 }}>
-          <Text fontSize="lg" fontWeight="700">
+        {/* Company details - minimal card style */}
+        <Box border="1px solid" borderColor={borderColor} borderRadius="lg" p={4}>
+          <Text fontSize="sm" fontWeight="600" mb={4}>
             Company Details
           </Text>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={5} mt={5}>
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={5}>
             <DetailItem
               label="Primary Contact"
               value={company?.companyEmail || company?.mobileNo || "--"}
-              icon={<FiMail size={16} />}
+              icon={FiMail}
             />
             <DetailItem
               label="Address"
               value={addressText}
-              icon={<FiMapPin size={16} />}
+              icon={FiMapPin}
             />
             <DetailItem
               label="Website"
               value={company?.webLink || "--"}
-              icon={<FiGlobe size={16} />}
+              icon={FiGlobe}
             />
             <DetailItem
               label="Status"
-              value={`${company?.activeAdminCount || 0} active admins out of ${company?.adminCount || 0}`}
-              icon={<FiUsers size={16} />}
+              value={`${company?.activeAdminCount || 0} / ${company?.adminCount || 0} admins active`}
+              icon={FiUsers}
             />
             <DetailItem
               label="Tenant Access"
               value={company?.tenantUrl || company?.tenantSlug || "--"}
-              icon={<FiShield size={16} />}
+              icon={FiShield}
             />
           </SimpleGrid>
         </Box>
       </Stack>
 
+      {/* Drawer for add/edit */}
       <Drawer
         size="xl"
         isOpen={
@@ -372,8 +471,8 @@ const CompanyAdminWorkspace = ({
         <DrawerOverlay />
         <DrawerContent bg={surfaceBg}>
           <DrawerCloseButton />
-          <DrawerHeader borderBottom="1px solid" borderColor={borderColor}>
-            {drawerState.type === "admin-edit" ? "Edit Admin" : "Add Admin"}
+          <DrawerHeader borderBottom="1px solid" borderColor={borderColor} fontSize="lg" py={4}>
+            {drawerState.type === "admin-edit" ? "Edit Member" : "Add New Member"}
           </DrawerHeader>
           <DrawerBody p={6}>
             <Form
@@ -393,6 +492,7 @@ const CompanyAdminWorkspace = ({
         </DrawerContent>
       </Drawer>
 
+      {/* Delete confirmation modal */}
       {drawerState.type === "delete" && drawerState.isOpen ? (
         <DeleteData
           getData={handleDeleteRefresh}
@@ -406,4 +506,3 @@ const CompanyAdminWorkspace = ({
 };
 
 export default CompanyAdminWorkspace;
- 

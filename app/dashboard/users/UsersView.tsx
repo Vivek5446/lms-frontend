@@ -1,28 +1,13 @@
 "use client";
 
 import {
-  Badge,
   Box,
-  Button,
-  Flex,
-  HStack,
-  Input,
-  Tab,
-  TabList,
-  Table,
-  TableContainer,
-  Tabs,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
   VStack,
   useColorModeValue,
   useToast
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import useDebounce from "../../component/config/component/customHooks/useDebounce";
@@ -30,8 +15,8 @@ import stores from "../../store/stores";
 import BulkUploadModal from "./components/BulkUploadModal";
 import UserDetailsModal from "./components/UserDetailsModal";
 import UserDrawer from "./components/UserDrawer";
-import UsersTable from "./components/UsersTable";
 import UsersHeader from "./components/UsersHeader";
+import UsersTable from "./components/UsersTable";
 
 type ManagerRow = {
   level: number;
@@ -44,7 +29,7 @@ type UserFormState = {
   name: string;
   email: string;
   mobileNumber: string;
-  branch: string;
+  department: string;
   city: string;
   state: string;
   designation: string;
@@ -161,7 +146,7 @@ const initialForm = (): UserFormState => ({
   name: "",
   email: "",
   mobileNumber: "",
-  branch: "",
+  department: "",
   city: "",
   state: "",
   designation: "",
@@ -176,6 +161,7 @@ const initialForm = (): UserFormState => ({
 });
 
 const UsersView = observer(() => {
+  const router = useRouter();
   const toast = useToast();
   const { userStore, companyStore, auth } = stores;
   const [search, setSearch] = useState("");
@@ -193,12 +179,16 @@ const UsersView = observer(() => {
     createCompany: false,
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
 
   const muted = useColorModeValue("gray.600", "gray.400");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const tableHeadBg = useColorModeValue("gray.50", "gray.900");
+  const searchParams = useSearchParams();
   const role = normalizeRole(auth.userType || auth.user?.role);
   const isSuperadmin = role === "superadmin";
+  const isDepartmentHead = role === "departmenthead";
+  const scopedCompanyId = searchParams.get("company") || "";
   const managedCompanies = companyStore.companies.data || [];
   const currentCompanyName =
     auth.user?.companyDetails?.company_name ||
@@ -208,6 +198,10 @@ const UsersView = observer(() => {
     auth.user?.companyDetails ||
       managedCompanies.find((company: any) => company?._id === auth.company)
   );
+  const currentCompanyDepartments =
+    auth.user?.companyDetails?.departments ||
+    managedCompanies.find((company: any) => company?._id === auth.company)?.departments ||
+    [];
   const managerCompanyId = isSuperadmin ? userForm.companyId : auth.company;
   const selectedUserCompany = isSuperadmin
     ? managedCompanies.find((company: any) => company?._id === userForm.companyId)
@@ -238,31 +232,22 @@ const UsersView = observer(() => {
 
   const roleOptions = useMemo(() => {
     const baseRoles = ["user", ...Array.from({ length: selectedUserManagerLevels }, (_, index) => `l${index + 1}-manager`)];
-    if (isSuperadmin) {
-      baseRoles.push("admin");
-    }
 
     return baseRoles.map((item) => ({
       value: item,
       label: formatRoleLabel(item),
     }));
-  }, [isSuperadmin, selectedUserManagerLevels]);
+  }, [selectedUserManagerLevels]);
 
   const listTabs = useMemo(() => {
-    const tabs = [
+    return [
       { label: "Users", value: "user" },
       ...visibleManagerLevels.map((level) => ({
         label: `L${level} Managers`,
         value: `l${level}-manager`,
       })),
     ];
-
-    if (isSuperadmin) {
-      tabs.push({ label: "Admins", value: "admin" });
-    }
-
-    return tabs;
-  }, [isSuperadmin, visibleManagerLevels]);
+  }, [visibleManagerLevels]);
 
   const activeTabIndex = Math.max(0, listTabs.findIndex((item) => item.value === listTab));
 
@@ -273,6 +258,7 @@ const UsersView = observer(() => {
         limit: 10,
         search: debouncedSearch,
         role: listTab,
+        ...(isSuperadmin && selectedCompanyId ? { companyId: selectedCompanyId } : {}),
       });
     } catch (err: any) {
       toast({
@@ -282,7 +268,7 @@ const UsersView = observer(() => {
         duration: 3500,
       });
     }
-  }, [debouncedSearch, listTab, page, toast, userStore]);
+  }, [debouncedSearch, isSuperadmin, listTab, page, selectedCompanyId, toast, userStore]);
 
   useEffect(() => {
     fetchUsers();
@@ -293,6 +279,17 @@ const UsersView = observer(() => {
       companyStore.getManagedCompanies().catch(() => undefined);
     }
   }, [companyStore, isSuperadmin]);
+
+  useEffect(() => {
+    if (!isSuperadmin) {
+      return;
+    }
+
+    setSelectedCompanyId(scopedCompanyId);
+    setBulkForm((prev) =>
+      prev.companyId === scopedCompanyId ? prev : { ...prev, companyId: scopedCompanyId }
+    );
+  }, [isSuperadmin, scopedCompanyId]);
 
   useEffect(() => {
     if (!isUserDrawerOpen) {
@@ -335,12 +332,22 @@ const UsersView = observer(() => {
   const resetForm = () =>
     setUserForm({
       ...initialForm(),
-      companyId: isSuperadmin ? "" : auth.company || "",
+      companyId: isSuperadmin ? selectedCompanyId : auth.company || "",
       companyManagerLevels: isSuperadmin ? 3 : currentCompanyManagerLevels,
       managers: reconcileManagersForRole("user", [], isSuperadmin ? 3 : currentCompanyManagerLevels),
     });
 
   const openCreate = () => {
+    if (isSuperadmin && !selectedCompanyId) {
+      toast({
+        title: "Company is required",
+        description: "Select a company before creating a user or manager.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
     resetForm();
     setIsUserDrawerOpen(true);
   };
@@ -362,7 +369,7 @@ const UsersView = observer(() => {
       name: user.name || "",
       email: user.email || user.username || "",
       mobileNumber: user.mobileNumber || "",
-      branch: user.branch || "",
+      department: user.department || "",
       city: user.city || "",
       state: user.state || "",
       designation: user.designation || "",
@@ -404,7 +411,7 @@ const UsersView = observer(() => {
     const email = normalizeEmail(userForm.email);
     const roleValue = normalizeRole(userForm.role);
     const mobileNumber = userForm.mobileNumber.trim();
-    const branch = userForm.branch.trim();
+    const department = userForm.department.trim();
     const city = userForm.city.trim();
     const state = userForm.state.trim();
     const designation = userForm.designation.trim();
@@ -418,10 +425,10 @@ const UsersView = observer(() => {
       }))
       .filter((manager) => manager.managerEmail);
 
-    if (!code || !name || !email || !roleValue || !designation) {
+    if (!code || !name || !email || !roleValue || !designation || !department) {
       toast({
         title: "Missing details",
-        description: "Employee code, name, email, designation, and role are required.",
+        description: "Employee code, name, email, designation, department, and role are required.",
         status: "warning",
         duration: 3000,
       });
@@ -443,7 +450,7 @@ const UsersView = observer(() => {
       name,
       email,
       mobileNumber,
-      branch,
+      department,
       city,
       state,
       designation,
@@ -479,6 +486,10 @@ const UsersView = observer(() => {
       }
     } else {
       payload.companyId = auth.company;
+    }
+
+    if (isDepartmentHead) {
+      payload.department = auth.user?.department || "";
     }
 
     try {
@@ -627,7 +638,7 @@ const UsersView = observer(() => {
       setSelectedFile(null);
       userStore.bulkPreview = [];
       setBulkForm({
-        companyId: "",
+        companyId: selectedCompanyId,
         companyName: "",
         companyManagerLevels: 3,
         createCompany: false,
@@ -651,6 +662,22 @@ const UsersView = observer(() => {
   const activeTabLabel =
     listTabs.find((item) => item.value === listTab)?.label || "Users";
 
+  const handleSuperadminCompanyChange = (companyId: string) => {
+    setSelectedCompanyId(companyId);
+    setPage(1);
+    setListTab("user");
+    setBulkForm((prev) => ({
+      ...prev,
+      companyId,
+    }));
+    setUserForm((prev) => ({
+      ...prev,
+      companyId,
+      managers: reconcileManagersForRole(prev.role, prev.managers, selectedUserManagerLevels),
+    }));
+    router.replace(companyId ? `/dashboard/users?company=${companyId}` : "/dashboard/users");
+  };
+
   return (
     <Box minH="100vh" p={{ base: 4, md: 6 }}>
       <VStack align="stretch" spacing={6}>
@@ -660,6 +687,10 @@ const UsersView = observer(() => {
   onOpenCreate={openCreate}
   borderColor={borderColor}
   muted={muted}
+  isSuperadmin={isSuperadmin}
+  selectedCompanyId={selectedCompanyId}
+  onCompanyChange={handleSuperadminCompanyChange}
+  companies={managedCompanies}
 />
 
 <UsersTable
@@ -697,6 +728,7 @@ const UsersView = observer(() => {
   borderColor={borderColor}
   muted={muted}
   currentCompanyName={currentCompanyName}
+  currentCompanyDepartments={currentCompanyDepartments}
   managerCompanyId={managerCompanyId}
   updateRole={updateRole}
   setManagerSelection={setManagerSelection}

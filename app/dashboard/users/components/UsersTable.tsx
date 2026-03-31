@@ -90,15 +90,15 @@ const UsersTable = ({
       },
     },
     {
-      headerName: "Location",
-      key: "location",
+      headerName: "Department",
+      key: "department",
       type: "component",
       metaData: {
         component: (user: any) => (
           <VStack align="start" spacing={0.5}>
             <HStack fontSize="sm">
               <FiMapPin color="#718096" />
-              <Text>{user.branch || "--"}</Text>
+              <Text>{user.department || "--"}</Text>
             </HStack>
             <Text fontSize="xs" color={muted}>
               {[user.city, user.state].filter(Boolean).join(", ") || "No location"}
@@ -246,6 +246,7 @@ const UsersTable = ({
         <Tabs
           variant="soft-rounded"
           colorScheme="blue"
+          size={'sm'}
           index={activeTabIndex}
           onChange={(index) => {
             setListTab(listTabs[index]?.value || "user");

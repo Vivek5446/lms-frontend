@@ -94,7 +94,7 @@ const UserDetailsModal = ({
                 <DetailCard label="Employee Code" value={user?.code} />
                 <DetailCard label="Mobile" value={user?.mobileNumber} />
                 <DetailCard label="Designation" value={user?.designation} />
-                <DetailCard label="Branch" value={user?.branch} />
+                <DetailCard label="Department" value={user?.department} />
                 <DetailCard label="City" value={user?.city} />
                 <DetailCard label="State" value={user?.state} />
                 <DetailCard

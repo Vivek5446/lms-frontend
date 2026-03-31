@@ -1,42 +1,40 @@
 "use client";
-import React from "react";
 import {
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
   Box,
-  useBreakpointValue,
-  Tooltip,
+  Button,
   Flex,
   Heading,
   IconButton,
-  Button,
+  Input,
   Menu,
   MenuButton,
-  MenuList,
   MenuItem,
-  Input,
-  useColorModeValue,
+  MenuList,
+  Table,
+  Tbody,
+  Td,
   Text,
+  Th,
+  Thead,
+  Tooltip,
+  Tr,
+  useBreakpointValue,
+  useColorModeValue,
+  ScaleFade,
+  HStack,
 } from "@chakra-ui/react";
 import dynamic from "next/dynamic";
-import TableLoader from "./TableLoader";
-import Pagination from "../pagination/Pagination";
-const MultiDropdown = dynamic(() => import("../multiDropdown/MultiDropdown"), {
-  ssr: false,
-});
+import React from "react";
 import { FaEdit, FaEye } from "react-icons/fa";
+import { FcClearFilters } from "react-icons/fc";
 import { IoMdAdd, IoMdInformationCircle } from "react-icons/io";
 import { MdDelete } from "react-icons/md";
-import { FcClearFilters } from "react-icons/fc";
 import { formatDate } from "../../utils/dateUtils";
-const CustomDateRange = dynamic(
-  () => import("../CustomDateRange/CustomDateRange"),
-  { ssr: false }
-);
+import Pagination from "../pagination/Pagination";
+import TableLoader from "./TableLoader";
+
+const MultiDropdown = dynamic(() => import("../multiDropdown/MultiDropdown"), { ssr: false });
+const CustomDateRange = dynamic(() => import("../CustomDateRange/CustomDateRange"), { ssr: false });
 
 interface Column {
   headerName?: string;
@@ -46,15 +44,10 @@ interface Column {
   addkey?: any;
   props?: any;
   actions?: any;
-  metaData?: {
-    component?: any;
-    function?: any;
-  };
+  metaData?: { component?: any; function?: any };
 }
 
-interface RowData {
-  [key: string]: any;
-}
+interface RowData { [key: string]: any; }
 
 interface CustomTableProps {
   title?: string;
@@ -66,225 +59,167 @@ interface CustomTableProps {
   actions?: any;
   cells?: boolean;
   tableProps?: any;
-  subTitle?: any
+  subTitle?: any;
 }
 
-interface TableActionsProps {
-  actions: any;
-  column: any;
-  row: any;
-  cells: boolean;
-}
-
-const TableActions: React.FC<TableActionsProps> = ({
-  actions,
-  column,
-  row,
-  // cells,
-}) => {
-  if (!actions) {
-    actions = {};
-  }
-  const { actionBtn } = actions;
-  // const cellProps = cells ? { border: "1px groove gray" } : {};
-
-  const iconColor = useColorModeValue("brand.700", "gray.200");
-  const deleteColor = useColorModeValue("red.500", "red.300");
+const TableActions: React.FC<any> = ({ actions, column, row }) => {
+  const { actionBtn } = actions || {};
+  const iconColor = useColorModeValue("gray.600", "gray.300");
 
   return (
     <Td
-      // position="sticky" right={0} bg="white" zIndex={9999}
-      {...column?.props?.row}
-      // {...cellProps}
       position={column?.props?.isSticky ? "sticky" : "relative"}
       right={column?.props?.isSticky ? "0" : undefined}
+      zIndex={column?.props?.isSticky ? 10 : undefined}
+      bg={useColorModeValue("white", "gray.900")}
       p={1}
-      zIndex={column?.props?.isSticky ? "5" : undefined}
-      bgColor={column?.props?.isSticky ? "white" : undefined}
+      textAlign="center"
     >
-      <Flex columnGap={0} justifyContent={"center"}>
+      <HStack gap={1} justify="center">
         {actionBtn?.editKey?.showEditButton && (
-          <IconButton
-            size="lg"
-            bgColor="transparent"
-            color={iconColor}
-            onClick={() => {
-              if (actionBtn?.editKey?.function)
-                actionBtn?.editKey.function(row);
-            }}
-            aria-label=""
-            title={actionBtn?.editKey?.title || "Edit Data"}
-          >
-            <FaEdit />
-          </IconButton>
+          <Tooltip label={actionBtn?.editKey?.title || "Edit"} hasArrow placement="top">
+            <IconButton
+              aria-label="edit"
+              icon={<FaEdit />}
+              size="sm"
+              variant="ghost"
+              color={iconColor}
+              _hover={{
+                bg: "blue.50",
+                color: "blue.600",
+                transform: "scale(1.12) rotate(8deg)",
+              }}
+              transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+              onClick={(e) => {
+                e.stopPropagation();
+                actionBtn?.editKey?.function?.(row);
+              }}
+            />
+          </Tooltip>
         )}
+
         {actionBtn?.viewKey?.showViewButton && (
-          <IconButton
-            size="lg"
-            bgColor="transparent"
-            color={iconColor}
-            onClick={() => {
-              if (actionBtn?.viewKey?.function)
-                actionBtn?.viewKey.function(row);
-            }}
-            aria-label=""
-            title={actionBtn?.viewKey?.title || "View Data"}
-          >
-            <FaEye />
-          </IconButton>
+          <Tooltip label={actionBtn?.viewKey?.title || "View"} hasArrow placement="top">
+            <IconButton
+              aria-label="view"
+              icon={<FaEye />}
+              size="sm"
+              variant="ghost"
+              color={iconColor}
+              _hover={{
+                bg: "purple.50",
+                color: "purple.600",
+                transform: "scale(1.12)",
+              }}
+              transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+              onClick={(e) => {
+                e.stopPropagation();
+                actionBtn?.viewKey?.function?.(row);
+              }}
+            />
+          </Tooltip>
         )}
+
         {actionBtn?.deleteKey?.showDeleteButton && (
-          <IconButton
-            size="lg"
-            bgColor="transparent"
-            color={deleteColor}
-            onClick={() => {
-              if (actionBtn?.deleteKey?.function)
-                actionBtn?.deleteKey.function(row);
-            }}
-            aria-label=""
-            title={actionBtn?.deleteKey?.title || "Delete Data"}
-          >
-            <MdDelete />
-          </IconButton>
+          <Tooltip label={actionBtn?.deleteKey?.title || "Delete"} hasArrow placement="top">
+            <IconButton
+              aria-label="delete"
+              icon={<MdDelete />}
+              size="sm"
+              variant="ghost"
+              color={useColorModeValue("red.500", "red.400")}
+              _hover={{
+                bg: "red.50",
+                color: "red.600",
+                transform: "scale(1.12)",
+              }}
+              transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+              onClick={(e) => {
+                e.stopPropagation();
+                actionBtn?.deleteKey?.function?.(row);
+              }}
+            />
+          </Tooltip>
         )}
-      </Flex>
+      </HStack>
     </Td>
   );
 };
 
-const GenerateRows: React.FC<{
-  column: Column;
-  row: RowData;
-  action: any;
-  cells: boolean;
-}> = ({ column, row, action, cells }: any) => {
-  // Define cell border color based on color mode
-  const cellBorder = useColorModeValue("brand.200", "darkBrand.200");
-  const cellTextColor = useColorModeValue("brand.900", "white");
-  const cellProps = cells
-    ? { border: `1px solid ${cellBorder}` } // Conditional border only if cells prop is true
-    : {};
+const GenerateRows: React.FC<any> = ({ column, row, action, cells }) => {
+  const borderColor = useColorModeValue("gray.100", "gray.700");
+  const textColor = useColorModeValue("gray.800", "gray.100");
+
+  const baseCellProps = {
+    py: 3,
+    px: 5,
+    fontSize: "sm",
+    color: textColor,
+    borderBottom: `1px solid ${borderColor}`,
+    transition: "background 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+    _hover: { bg: useColorModeValue("blue.50", "gray.800") },
+    whiteSpace: "nowrap" as const,
+  };
 
   switch (column.type) {
     case "date":
       return (
-        <Td
-          whiteSpace="normal"
-          cursor="pointer"
-          fontSize="sm"
-          {...column?.props?.row}
-          {...cellProps}
-          color={cellTextColor}
-        >
+        <Td {...baseCellProps}>
           {row[column.key] ? formatDate(row[column.key]) : "--"}
         </Td>
       );
+
     case "link":
       return (
         <Td
-          whiteSpace="normal"
+          {...baseCellProps}
+          color="blue.500"
+          fontWeight="medium"
           cursor="pointer"
-          fontSize="sm"
-          color="blue.400"
-          textDecoration="underline"
-          {...column?.props?.row}
-          {...cellProps}
-          onClick={() => {
-            if (column?.function) {
-              column?.function(row);
-            }
-          }}
+          _hover={{ color: "blue.600", textDecoration: "underline" }}
+          onClick={() => column?.function?.(row)}
         >
           {row[column.key] || "--"}
         </Td>
       );
+
     case "tooltip":
       return (
-        <Td
-          whiteSpace="normal"
-          cursor="pointer"
-          fontSize="sm"
-          {...column?.props?.row}
-          {...cellProps}
-          color={cellTextColor}
-        >
-          <Tooltip label={row[column.key]}>
-            {typeof row[column.key] === "string"
-              ? row[column.key].substring(0, 15) || "--"
-              : "-"}
+        <Td {...baseCellProps}>
+          <Tooltip label={row[column.key]} hasArrow placement="top">
+            <Text isTruncated maxW="180px" fontWeight="medium">
+              {typeof row[column.key] === "string" ? row[column.key].substring(0, 28) : "--"}
+            </Text>
           </Tooltip>
         </Td>
       );
+
     case "array":
       return (
-        <Td
-          whiteSpace="normal"
-          cursor="pointer"
-          fontSize="sm"
-          {...column?.props?.row}
-          {...cellProps}
-          color={cellTextColor}
-        >
-          <Tooltip label={JSON.stringify(row[column.key])}>
+        <Td {...baseCellProps} textAlign="center">
+          <Tooltip label={JSON.stringify(row[column.key], null, 2)} hasArrow>
             <IconButton
-              aria-label="array info"
-              size="lg"
-              bgColor="transparent"
-              color="gray.700"
-            >
-              <IoMdInformationCircle />
-            </IconButton>
+              aria-label="info"
+              icon={<IoMdInformationCircle />}
+              size="sm"
+              variant="ghost"
+              color="gray.500"
+              _hover={{ color: "blue.500", transform: "rotate(12deg)" }}
+              transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+            />
           </Tooltip>
         </Td>
       );
+
     case "table-actions":
-      return (
-        <TableActions
-          actions={action}
-          column={column}
-          row={row}
-          cells={cells}
-        />
-      );
-    case "combineKey":
-      return (
-        <Td
-          whiteSpace="normal"
-          cursor="pointer"
-          fontSize="sm"
-          {...column?.props?.row}
-          {...cellProps}
-          isTruncated={true}
-          color={cellTextColor}
-        >
-          {row[column.key] || "--"}
-        </Td>
-      );
+      return <TableActions actions={action} column={column} row={row} />;
+
     case "component":
-      return (
-        <Td
-          whiteSpace="normal"
-          cursor="pointer"
-          fontSize="sm"
-          {...column?.props?.row}
-          {...cellProps}
-          color={cellTextColor}
-        >
-          {column.metaData?.component ? column.metaData.component(row) : null}
-        </Td>
-      );
+      return <Td {...baseCellProps}>{column.metaData?.component ? column.metaData.component(row) : null}</Td>;
+
     default:
       return (
-        <Td
-          whiteSpace="normal"
-          cursor="pointer"
-          fontSize="sm"
-          {...column?.props?.row}
-          {...cellProps}
-          isTruncated={true}
-          color={cellTextColor}
-        >
+        <Td {...baseCellProps} isTruncated maxW="220px" fontWeight="medium">
           {row[column.key] || "--"}
         </Td>
       );
@@ -297,358 +232,265 @@ const CustomTable: React.FC<CustomTableProps> = ({
   data,
   serial,
   loading,
-  subTitle,
   actions,
   cells = false,
   tableProps = {},
-  // isActions = false,
+  subTitle,
 }) => {
   const isMobile = useBreakpointValue({ base: true, md: false });
-  // const cellProps = cells ? { border: "1px solid gray" } : {};
-  const headerBg = useColorModeValue("brand.100", "darkBrand.200");
-  // const borderColor = useColorModeValue("gray.300", "gray.600");
 
-  const bodyBg = useColorModeValue("white", "darkBrand.50");
-
-  const hoverBg = useColorModeValue("brand.50", "darkBrand.200");
-  const menuItemHover = useColorModeValue("brand.50", "darkBrand.200");
-  const menuListBg = useColorModeValue("white", "darkBrand.100");
-  const titleColor = useColorModeValue("brand.500", "white");
-
-  const boxBorder = useColorModeValue("brand.200", "darkBrand.200");
-  const mainBox = useColorModeValue("white", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.900");
+  const headerBg = useColorModeValue("gray.50", "gray.800");
+  const accent = useColorModeValue("blue.600", "blue.400");
+  const borderColor = useColorModeValue("gray.100", "gray.700");
+  const rowHover = useColorModeValue("blue.50", "gray.800");
 
   return (
     <Box
-      rounded={12}
-      bg={mainBox}
-      boxShadow="rgb(0 0 0 / 20%) 0px 0px 8px"
-      border={"1px solid"}
-      borderColor={boxBorder}
+      bg={cardBg}
+      borderRadius="3xl"
+      boxShadow="0 10px 40px -15px rgba(0, 0, 0, 0.15)"
+      border="1px solid"
+      borderColor={borderColor}
+      overflow="hidden"
+      transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+      // _hover={{ boxShadow: "0 25px 50px -15px rgba(0, 0, 0, 0.18)" }}
     >
+      {/* HEADER */}
       <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        p={title ? 3 : 0}
+        justify="space-between"
+        align="center"
+        px={6}
+        py={5}
+        bg={headerBg}
+        borderBottom="1px solid"
+        borderColor={borderColor}
       >
-        {(title || subTitle) && (
-          <Flex direction="column" gap={1}>
-            {title && (
-              <Heading
-                color={titleColor}
-                fontSize={isMobile ? "sm" : "xl"}
-                lineHeight="short"
-              >
-                {title}
-              </Heading>
-            )}
+        <Flex direction="column" gap={0.5}>
+          {title && (
+            <Heading
+              size="md"
+              color={accent}
+              fontWeight="600"
+              letterSpacing="-0.02em"
+            >
+              {title}
+            </Heading>
+          )}
+          {subTitle && (
+            <Text fontSize="sm" color="gray.500" noOfLines={1}>
+              {subTitle}
+            </Text>
+          )}
+        </Flex>
 
-            {subTitle && (
-              <Text
-                fontSize={isMobile ? "xs" : "sm"}
-                color="blue.700"
-                noOfLines={2}
-                bg="blue.100"
-                px={2}
-                py={1}
-                border="1px solid"
-                borderColor="blue.200"
-                borderRadius="md"
-              >
-                {subTitle}
-              </Text>
-            )}
-
-          </Flex>
-        )}
-
-        <Flex alignItems="center" columnGap={2} ml="auto">
-          {!isMobile && actions?.search && actions?.search?.show && (
+        <Flex align="center" gap={3} ml="auto" flexWrap="wrap">
+          {!isMobile && actions?.search?.show && (
             <Input
-              placeholder={actions?.search?.placeholder || "Search"}
+              placeholder={actions?.search?.placeholder || "Search..."}
               value={actions?.search?.searchValue}
               onChange={actions?.search?.onSearchChange}
-              borderRadius="5rem"
-              // bg="white"
-              borderColor={boxBorder}
-              _focus={{ borderColor: "brand.500", boxShadow: "outline" }}
-              maxW="25rem"
+              size="md"
+              width="260px"
+              borderRadius="full"
+              bg={useColorModeValue("white", "gray.800")}
+              borderColor={borderColor}
+              _focus={{
+                borderColor: accent,
+                boxShadow: "0 0 0 4px rgba(49, 130, 206, 0.15)",
+              }}
+              transition="all 0.2s ease"
             />
           )}
-          {actions?.datePicker?.show && actions?.datePicker?.date && (
-            <Box display={isMobile ? "none" : undefined}>
-              <CustomDateRange
-                isMobile={actions?.datePicker?.isMobile}
-                startDate={actions?.datePicker?.date.startDate}
-                endDate={actions?.datePicker?.date.endDate}
-                onStartDateChange={(e) => {
-                  if (actions?.datePicker?.onDateChange) {
-                    actions?.datePicker?.onDateChange(e, "startDate");
-                  }
-                }}
-                onEndDateChange={(e) => {
-                  if (actions?.datePicker?.onDateChange) {
-                    actions?.datePicker?.onDateChange(e, "endDate");
-                  }
-                }}
-              />
-            </Box>
+
+          {actions?.datePicker?.show && !isMobile && (
+            <CustomDateRange
+              startDate={actions?.datePicker?.date?.startDate}
+              endDate={actions?.datePicker?.date?.endDate}
+              onStartDateChange={(e: any) => actions?.datePicker?.onDateChange?.(e, "startDate")}
+              onEndDateChange={(e: any) => actions?.datePicker?.onDateChange?.(e, "endDate")}
+            />
           )}
-          {actions?.multidropdown?.show && (
-            <Box display={isMobile ? "block" : undefined}>
-              <MultiDropdown
-                title={actions?.multidropdown?.title}
-                dropdowns={actions?.multidropdown?.dropdowns || []}
-                onDropdownChange={actions?.multidropdown?.onDropdownChange}
-                selectedOptions={actions?.multidropdown?.selectedOptions}
-                onApply={actions?.multidropdown?.onApply}
-                search={{
-                  visible: actions?.multidropdown?.search?.visible,
-                  placeholder: actions?.multidropdown?.search?.placeholder,
-                  searchValue: actions?.multidropdown?.search?.searchValue,
-                  onSearchChange:
-                    actions?.multidropdown?.search?.onSearchChange,
-                }}
-                actions={actions}
-              />
-            </Box>
-          )}
-          {(actions?.actionBtn?.addKey?.showAddButton ||
-            actions?.resetData?.show) && (
-              <>
-                {/* Case 1: Both present → show Menu */}
-                {actions?.actionBtn?.addKey?.showAddButton &&
-                  actions?.resetData?.show ? (
-                  <Menu>
-                    <MenuButton
-                      as={Button}
+
+          {actions?.multidropdown?.show && <MultiDropdown {...actions?.multidropdown} />}
+
+          {(actions?.actionBtn?.addKey?.showAddButton || actions?.resetData?.show) && (
+            <>
+              {actions?.actionBtn?.addKey?.showAddButton && actions?.resetData?.show ? (
+                <Menu>
+                  <MenuButton
+                    as={Button}
+                    colorScheme="blue"
+                    borderRadius="full"
+                    leftIcon={<IoMdAdd />}
+                    size="md"
+                    _hover={{ transform: "translateY(-1px)", shadow: "lg" }}
+                    transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+                  >
+                    Actions
+                  </MenuButton>
+                  <MenuList borderRadius="2xl" py={2} shadow="xl">
+                    <MenuItem
+                      onClick={() => actions?.actionBtn?.addKey?.function?.("add")}
+                      icon={<IoMdAdd />}
+                      fontWeight="medium"
+                    >
+                      Add New
+                    </MenuItem>
+                    <MenuItem
+                      onClick={actions?.resetData?.function}
+                      icon={<FcClearFilters />}
+                      fontWeight="medium"
+                    >
+                      {actions?.resetData?.text || "Reset Filters"}
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              ) : (
+                <>
+                  {actions?.actionBtn?.addKey?.showAddButton && (
+                    <Button
+                      colorScheme="blue"
+                      borderRadius="full"
+                      leftIcon={<IoMdAdd />}
+                      size="md"
+                      _hover={{ transform: "translateY(-1px)", shadow: "lg" }}
+                      transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+                      onClick={() => actions?.actionBtn?.addKey?.function?.("add")}
+                    >
+                      Add New
+                    </Button>
+                  )}
+                  {actions?.resetData?.show && (
+                    <Button
                       variant="outline"
-                      borderColor={boxBorder}
-                      color={titleColor}
-                      minW={{ base: "6rem", md: "10rem" }}
-                      fontSize="sm"
-                      px={4}
-                      py={2}
-                      textAlign="center"
-                      transition="all 0.2s ease-in-out"
+                      borderRadius="full"
+                      leftIcon={<FcClearFilters />}
+                      size="md"
+                      onClick={actions?.resetData?.function}
                     >
-                      Add
-                    </MenuButton>
-                    <MenuList
-                      zIndex={15}
-                      bg={menuListBg}
-                      border="1px solid"
-                      boxShadow="lg"
-                      borderRadius="md"
-                      minW="10rem"
-                      py={0}
-                    >
-                      {actions?.actionBtn?.addKey?.showAddButton && (
-                        <MenuItem
-                          onClick={() =>
-                            actions?.actionBtn?.addKey?.function?.("add")
-                          }
-                          _hover={{
-                            bg: hoverBg,
-                            transition: "background 0.2s ease-in-out",
-                          }}
-                          icon={
-                            <IoMdAdd
-                              fontSize="20px"
-                            />
-                          }
-                          p="0.7rem"
-                          fontSize="sm"
-                        >
-                          Add
-                        </MenuItem>
-                      )}
-                      {actions?.resetData?.show && (
-                        <MenuItem
-                          onClick={actions?.resetData?.function}
-                          _hover={{
-                            bg: menuItemHover,
-                            transition: "background 0.2s ease-in-out",
-                          }}
-                          icon={<FcClearFilters fontSize="20px" />}
-                          p="0.7rem"
-                          fontSize="sm"
-                        >
-                          {actions?.resetData?.text || "Reset"}
-                        </MenuItem>
-                      )}
-                    </MenuList>
-                  </Menu>
-                ) : (
-                  /* Case 2: Only one present → show Button directly */
-                  <>
-                    {actions?.actionBtn?.addKey?.showAddButton && (
-                      <Button
-                        variant="solid"
-                        bg={headerBg}
-                        color="white"
-                        fontSize="sm"
-                        fontWeight="semibold"
-                        px={5}
-                        py={2}
-                        w="160px"
-                        borderRadius="lg"
-                        boxShadow="sm"
-                        transition="all 0.2s ease-in-out"
-                        _hover={{
-                          boxShadow: "md",
-                        }}
-                        _active={{
-                          transform: "scale(0.98)",
-                        }}
-                        leftIcon={<IoMdAdd fontSize="18px" />}
-                        onClick={() =>
-                          actions?.actionBtn?.addKey?.function?.("add")
-                        }
-                      >
-                        Add
-                      </Button>
-                    )}
-                    {actions?.resetData?.show && (
-                      <Button
-                        variant="outline"
-                        borderColor={boxBorder}
-                        color={titleColor}
-                        fontSize="sm"
-                        fontWeight="medium"
-                        px={5}
-                        py={2}
-                        w="180px"
-                        borderRadius="lg"
-                        boxShadow="sm"
-                        transition="all 0.2s ease-in-out"
-                        _hover={{
-                          boxShadow: "md",
-                        }}
-                        _active={{
-                          transform: "scale(0.98)",
-                        }}
-                        leftIcon={<FcClearFilters fontSize="18px" />}
-                        onClick={actions?.resetData?.function}
-                      >
-                        {actions?.resetData?.text || "Reset"}
-                      </Button>
-                    )}
-                  </>
-                )}
-              </>
-            )}
+                      Reset
+                    </Button>
+                  )}
+                </>
+              )}
+            </>
+          )}
         </Flex>
       </Flex>
 
+      {/* TABLE */}
       <Box
         overflow="auto"
+        maxH="64vh"
         className="customScrollBar"
-        minH={"65vh"}
-        maxH={"65vh"}
-        rounded={2}
-        px={2}
+        px={3}
+        py={1}
         {...tableProps.tableBox}
       >
-        <Table
-          size={isMobile ? "xs" : "sm"}
-          variant="striped"
-          {...tableProps.table}
-          bg={bodyBg}
-          borderRadius="md"
-          overflow="hidden"
-        >
-          <Thead
-            bg={headerBg}
-            position="sticky"
-            top="0"
-            zIndex="9"
-            height="50px"
+        <ScaleFade in={!loading} initialScale={0.98}>
+          <Table
+            size="sm"
+            variant="simple"
+            bg={cardBg}
+            {...tableProps.table}
           >
-            <Tr>
-              {serial?.show && (
-                <Th
-                  color="white"
-                  w={serial?.width || undefined}
-                  border="none"
-                  textTransform="uppercase"
-                  letterSpacing="wider"
-                  fontSize="xs"
-                >
-                  {serial?.text || "S.No."}
-                </Th>
-              )}
-              {columns.map((column, colIndex) => (
-                <Th
-                  key={colIndex}
-                  textAlign="center"
-                  position={column?.props?.isSticky ? "sticky" : "relative"}
-                  right={column?.props?.isSticky ? "0" : undefined}
-                  bg={headerBg}
-                  fontSize="xs"
-                  textTransform="uppercase"
-                  letterSpacing="wider"
-                  color="white"
-                  fontWeight="bold"
-                  border="none" // No borders on header cells
-                  {...column?.props?.column}
-                >
-                  {column.headerName}
-                </Th>
-              ))}
-            </Tr>
-          </Thead>
+            <Thead bg={headerBg} position="sticky" top={0} zIndex={20}>
+              <Tr>
+                {serial?.show && (
+                  <Th
+                    fontSize="xs"
+                    textTransform="uppercase"
+                    letterSpacing="wider"
+                    color="gray.500"
+                    fontWeight="600"
+                    py={4}
+                    px={5}
+                  >
+                    {serial?.text || "#"}
+                  </Th>
+                )}
 
-          <TableLoader loader={loading} show={data.length}>
-            <Tbody>
-              {data.map((row, rowIndex) => (
-                <Tr
-                  key={rowIndex}
-                  _hover={{
-                    bg: hoverBg,
-                    cursor: "pointer",
-                    transition: "0.3s",
-                  }}
-                >
-                  {serial?.show && (
-                    <Td
-                      fontWeight="bold"
-                      w={serial?.width || undefined}
-                      textAlign="center"
-                      p={2}
-                      fontSize="sm"
-                      border="none" // No border on cells
-                    >
-                      {rowIndex + 1}
-                    </Td>
-                  )}
-                  {columns.map((column, colIndex) => (
-                    <GenerateRows
-                      key={colIndex}
-                      column={column}
-                      row={row}
-                      action={actions}
-                      cells={cells}
-                    // border="none" // No border on cells
-                    />
-                  ))}
-                </Tr>
-              ))}
-            </Tbody>
-          </TableLoader>
-        </Table>
+                {columns.map((col, idx) => (
+                  <Th
+                    key={idx}
+                    textAlign="left"
+                    fontSize="xs"
+                    textTransform="uppercase"
+                    letterSpacing="wider"
+                    color="gray.500"
+                    fontWeight="600"
+                    py={4}
+                    px={5}
+                    position={col?.props?.isSticky ? "sticky" : undefined}
+                    right={col?.props?.isSticky ? 0 : undefined}
+                    bg={headerBg}
+                    zIndex={col?.props?.isSticky ? 10 : undefined}
+                    borderBottom="2px solid"
+                    borderColor={useColorModeValue("blue.200", "gray.700")}
+                  >
+                    {col.headerName}
+                  </Th>
+                ))}
+              </Tr>
+            </Thead>
+
+            <TableLoader loader={loading} show={data.length}>
+              <Tbody>
+                {data.map((row, rowIndex) => (
+                  <Tr
+                    key={rowIndex}
+                    _hover={{
+                      bg: rowHover,
+                      transform: "scale(1.008)",
+                    }}
+                    transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+                    cursor="pointer"
+                  >
+                    {serial?.show && (
+                      <Td
+                        fontWeight="600"
+                        color="gray.400"
+                        py={3}
+                        px={5}
+                        fontSize="sm"
+                      >
+                        {rowIndex + 1}
+                      </Td>
+                    )}
+
+                    {columns.map((column, colIndex) => (
+                      <GenerateRows
+                        key={colIndex}
+                        column={column}
+                        row={row}
+                        action={actions}
+                        cells={cells}
+                      />
+                    ))}
+                  </Tr>
+                ))}
+              </Tbody>
+            </TableLoader>
+          </Table>
+        </ScaleFade>
       </Box>
+
+      {/* PAGINATION */}
       {actions?.pagination?.show && (
-        <Pagination
-          currentPage={actions?.pagination?.currentPage || 1}
-          onPageChange={(e) => {
-            if (actions?.pagination?.onClick) {
-              actions?.pagination?.onClick(e);
-            }
-          }}
-          totalPages={actions?.pagination?.totalPages || 1}
-          props={{ style: { marginTop: "15px" } }}
-        />
+        <Box
+          px={6}
+          py={4}
+          borderTop="1px solid"
+          borderColor={borderColor}
+          bg={headerBg}
+        >
+          <Pagination
+            currentPage={actions?.pagination?.currentPage || 1}
+            totalPages={actions?.pagination?.totalPages || 1}
+            onPageChange={actions?.pagination?.onClick}
+          />
+        </Box>
       )}
     </Box>
   );

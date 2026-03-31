@@ -177,7 +177,7 @@ const BulkUploadModal = ({
               </Text>
 
               <Text fontSize="sm" color={muted} mt={2}>
-                Upload `.xlsx` / `.xls` with columns like Employee Code, Employee Name, Email ID, Branch, City, State, Designation and manager email fields.
+                Upload `.xlsx` / `.xls` with columns like Employee Code, Employee Name, Email ID, Department, City, State, Designation and manager email fields.
               </Text>
 
               {selectedFile && (
@@ -206,7 +206,7 @@ const BulkUploadModal = ({
                       <Th>Row</Th>
                       <Th>Name</Th>
                       <Th>Email</Th>
-                      <Th>Branch</Th>
+                      <Th>Department</Th>
                       <Th>City</Th>
                       <Th>State</Th>
                       <Th>Role</Th>
@@ -236,7 +236,7 @@ const BulkUploadModal = ({
                           <Td>{row.rowNumber}</Td>
                           <Td>{row.name}</Td>
                           <Td>{row.email}</Td>
-                          <Td>{row.branch || "--"}</Td>
+                          <Td>{row.department || "--"}</Td>
                           <Td>{row.city || "--"}</Td>
                           <Td>{row.state || "--"}</Td>
                           <Td>{row.role}</Td>
