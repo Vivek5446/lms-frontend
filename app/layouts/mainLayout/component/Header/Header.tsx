@@ -10,10 +10,13 @@ import {
   Stack,
   HStack,
   Text,
-  Container
+  Container,
+  useColorMode,
+  IconButton
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
+import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 
 interface NavLink {
   href: string;
@@ -24,6 +27,7 @@ const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [scrolled, setScrolled] = useState<boolean>(false);
   const pathname = usePathname();
+  const { colorMode, toggleColorMode } = useColorMode();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -44,10 +48,10 @@ const Header: React.FC = () => {
       position="sticky" 
       top="0" 
       zIndex="1000" 
-      bg={scrolled ? 'rgba(255, 255, 255, 0.7)' : 'white'}
+      bg={scrolled ? (colorMode === 'light' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(26, 32, 44, 0.8)') : (colorMode === 'light' ? 'white' : 'gray.900')}
       backdropFilter={scrolled ? 'blur(15px)' : 'none'}
       borderBottom="1px solid"
-      borderColor={scrolled ? 'gray.100' : 'transparent'}
+      borderColor={scrolled ? (colorMode === 'light' ? 'gray.100' : 'gray.700') : 'transparent'}
       transition="all 0.4s ease-in-out"
       py={scrolled ? 2 : 4}
     >
@@ -72,7 +76,7 @@ const Header: React.FC = () => {
                 fontWeight="900" 
                 fontSize="2xl" 
                 letterSpacing="-1px"
-                bgGradient="linear(to-tr, blue.600, blue.400)" 
+                bgGradient={colorMode === 'light' ? "linear(to-tr, blue.600, blue.400)" : "linear(to-tr, blue.400, blue.200)"}
                 bgClip="text"
                 display={{ base: 'none', lg: 'block' }}
               >
@@ -85,7 +89,7 @@ const Header: React.FC = () => {
           <HStack 
             gap={1} 
             display={{ base: 'none', md: 'flex' }}
-            bg="gray.50"
+            bg={colorMode === 'light' ? 'gray.50' : 'gray.800'}
             p={1}
             borderRadius="full"
           >
@@ -99,13 +103,13 @@ const Header: React.FC = () => {
                     fontSize="sm"
                     fontWeight="600"
                     borderRadius="full"
-                    color={isActive ? 'blue.700' : 'gray.600'}
-                    bg={isActive ? 'rgba(66, 153, 225, 0.2)' : 'transparent'}
+                    color={isActive ? (colorMode === 'light' ? 'blue.700' : 'blue.300') : (colorMode === 'light' ? 'gray.600' : 'gray.300')}
+                    bg={isActive ? (colorMode === 'light' ? 'rgba(66, 153, 225, 0.2)' : 'rgba(66, 153, 225, 0.3)') : 'transparent'}
                     boxShadow={isActive ? 'sm' : 'none'}
                     transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                     _hover={{ 
-                      color: 'blue.700', 
-                      bg: 'white',
+                      color: colorMode === 'light' ? 'blue.700' : 'blue.300',
+                      bg: colorMode === 'light' ? 'white' : 'gray.700',
                       textDecoration: 'none',
                       transform: 'translateY(-1px)'
                     }}
@@ -118,34 +122,55 @@ const Header: React.FC = () => {
           </HStack>
 
           {/* Premium Login Button */}
-          <HStack gap={4}>
-      {/* Login Button */}
-      <ChakraLink
-        as={NextLink}
-        href="/login"
-        display={{ base: 'none', sm: 'flex' }}
-        bg="white"
-        border="1px solid"
-        borderColor="blue.600"
-        color="blue.600"
-        px={7}
-        py={2.5}
-        borderRadius="full"
-        fontWeight="bold"
-        fontSize="sm"
-        boxShadow="0 10px 20px -10px rgba(49, 130, 206, 0.25)"
-        _hover={{
-          bg: 'blue.600',
-          color: 'white',
-          boxShadow: '0 12px 24px -12px rgba(49, 130, 206, 0.35)',
-          transform: 'translateY(-1px)',
-          textDecoration: 'none',
-        }}
-        _active={{ transform: 'translateY(0)' }}
-        transition="all 0.2s"
-      >
-        Login
-      </ChakraLink>
+          <HStack gap={3}>
+            {/* Dark Mode Toggle */}
+            <IconButton
+              aria-label={colorMode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+              onClick={toggleColorMode}
+              variant="outline"
+              size="md"
+              borderColor={colorMode === 'light' ? 'blue.200' : 'blue.600'}
+              color={colorMode === 'light' ? 'blue.600' : 'blue.400'}
+              bg={colorMode === 'light' ? 'white' : 'gray.800'}
+              _hover={{
+                bg: colorMode === 'light' ? 'blue.50' : 'gray.700',
+                borderColor: 'blue.500',
+                transform: 'scale(1.05)'
+              }}
+              _active={{ transform: 'scale(0.95)' }}
+              transition="all 0.2s"
+              display={{ base: 'none', sm: 'flex' }}
+              borderRadius="full"
+            />
+
+            {/* Login Button */}
+            <ChakraLink
+              as={NextLink}
+              href="/login"
+              display={{ base: 'none', sm: 'flex' }}
+              bg={colorMode === 'light' ? 'white' : 'gray.800'}
+              border="1px solid"
+              borderColor={colorMode === 'light' ? 'blue.600' : 'blue.400'}
+              color={colorMode === 'light' ? 'blue.600' : 'blue.400'}
+              px={7}
+              py={2.5}
+              borderRadius="full"
+              fontWeight="bold"
+              fontSize="sm"
+              boxShadow={colorMode === 'light' ? '0 10px 20px -10px rgba(49, 130, 206, 0.25)' : '0 10px 20px -10px rgba(0, 0, 0, 0.25)'}
+              _hover={{
+                bg: colorMode === 'light' ? 'blue.600' : 'blue.500',
+                color: 'white',
+                boxShadow: colorMode === 'light' ? '0 12px 24px -12px rgba(49, 130, 206, 0.35)' : '0 12px 24px -12px rgba(0, 0, 0, 0.35)',
+                transform: 'translateY(-1px)',
+                textDecoration: 'none',
+              }}
+              _active={{ transform: 'translateY(0)' }}
+              transition="all 0.2s"
+            >
+              Login
+            </ChakraLink>
 
       {/* Mobile Menu Toggle */}
       <Button
@@ -188,13 +213,13 @@ const Header: React.FC = () => {
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
         <Box 
-          bg="white" 
+          bg={colorMode === 'light' ? 'white' : 'gray.800'} 
           mx={4}
           mt={2}
           shadow="2xl"
           borderRadius="2xl"
           border="1px solid"
-          borderColor="gray.50"
+          borderColor={colorMode === 'light' ? 'gray.50' : 'gray.700'}
           display={{ base: 'block', md: 'none' }}
           overflow="hidden"
         >
@@ -205,9 +230,9 @@ const Header: React.FC = () => {
                   p={4}
                   borderRadius="xl"
                   fontWeight="600"
-                  color={pathname === link.href ? 'blue.600' : 'gray.600'}
-                  bg={pathname === link.href ? 'blue.50' : 'transparent'}
-                  _hover={{ bg: 'gray.50', textDecoration: 'none' }}
+                  color={pathname === link.href ? (colorMode === 'light' ? 'blue.600' : 'blue.300') : (colorMode === 'light' ? 'gray.600' : 'gray.300')}
+                  bg={pathname === link.href ? (colorMode === 'light' ? 'blue.50' : 'blue.800') : 'transparent'}
+                  _hover={{ bg: colorMode === 'light' ? 'gray.50' : 'gray.700', textDecoration: 'none' }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {link.label}
@@ -215,16 +240,31 @@ const Header: React.FC = () => {
               </NextLink>
             ))}
 
+            {/* Dark Mode Toggle for Mobile */}
+            <Button
+              onClick={toggleColorMode}
+              variant="ghost"
+              leftIcon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+              justifyContent="flex-start"
+              p={4}
+              borderRadius="xl"
+              fontWeight="600"
+              color={colorMode === 'light' ? 'gray.600' : 'gray.300'}
+              _hover={{ bg: colorMode === 'light' ? 'gray.50' : 'gray.700' }}
+            >
+              {colorMode === 'light' ? 'Dark Mode' : 'Light Mode'}
+            </Button>
+
             <NextLink href="/login">
               <ChakraLink
                 p={4}
                 borderRadius="xl"
                 fontWeight="bold"
                 color="white"
-                bg="blue.600"
+                bg={colorMode === 'light' ? 'blue.600' : 'blue.500'}
                 textAlign="center"
                 onClick={() => setMobileMenuOpen(false)}
-                _hover={{ textDecoration: 'none', bg: 'blue.700' }}
+                _hover={{ textDecoration: 'none', bg: colorMode === 'light' ? 'blue.700' : 'blue.600' }}
               >
                 Login
               </ChakraLink>

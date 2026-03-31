@@ -5,7 +5,7 @@ import {
   Box, Heading, Text, Button, SimpleGrid, Container, Badge, Icon, HStack,
   Stack, Image, VStack, Circle, Flex, Input, Checkbox, Drawer, DrawerBody,
   DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton, IconButton,
-  useDisclosure, AspectRatio, Tag, TagLabel, TagLeftIcon,
+  useDisclosure, useColorModeValue, AspectRatio, Tag, TagLabel, TagLeftIcon,
   Divider
 } from '@chakra-ui/react';
 import {
@@ -96,7 +96,7 @@ export default function CoursesPage() {
               onClick={() => { setActiveCategory(cat); onClose(); }}
             >
               {cat}
-              {activeCategory === cat && <Circle size="6px" bg="white" />}
+              {activeCategory === cat && <Circle size="6px" bg={useColorModeValue('white','gray.600')} />}
             </Button>
           ))}
         </VStack>
@@ -113,8 +113,14 @@ export default function CoursesPage() {
     </VStack>
   );
 
+  const pageBg = useColorModeValue('#F8FAFC', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const cardBorder = useColorModeValue('gray.100', 'gray.700');
+  const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
+  const subtitleColor = useColorModeValue('gray.500', 'gray.300');
+
   return (
-    <Box minH="100vh" bg="#F8FAFC" py={{ base: 4, md: 10 }}>
+    <Box minH="100vh" bg={pageBg} py={{ base: 4, md: 10 }}>
       <Container maxW="1440px">
         <AnimatePresence mode="wait">
           {!selectedCourse ? (
@@ -123,7 +129,7 @@ export default function CoursesPage() {
               <Flex gap={6} direction={{ base: 'column', md: 'row' }}>
                 {/* Fixed Sidebar Design */}
                 <Box display={{ base: 'none', md: 'block' }} w="240px" position="sticky" top="100px" h="fit-content">
-                  <VStack align="start" p={6} bg="white" borderRadius="2xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
+                  <VStack align="start" p={6} bg={cardBg} borderRadius="2xl" shadow="sm" borderWidth="1px" borderColor={cardBorder}>
                     <HStack mb={4}><Icon as={FaFilter} color="blue.500" /><Heading size="xs" textTransform="uppercase">Filters</Heading></HStack>
                     <FilterContent />
                   </VStack>
@@ -141,10 +147,10 @@ export default function CoursesPage() {
                 <Box flex="1">
                   <Flex justify="space-between" align="flex-end" mb={8} px={2}>
                     <Box>
-                      <Heading size="xl" mb={1} letterSpacing="-0.5px">Course Catalog</Heading>
-                      <Text fontSize="md" color="gray.500" fontWeight="medium">Explore {filteredCourses.length} professional programs</Text>
+                      <Heading size="xl" mb={1} letterSpacing="-0.5px" color={textColor}>Course Catalog</Heading>
+                      <Text fontSize="md" color={subtitleColor} fontWeight="medium">Explore {filteredCourses.length} professional programs</Text>
                     </Box>
-                    <HStack bg="gray.100" p={1} borderRadius="lg">
+                    <HStack bg={useColorModeValue('gray.100','gray.700')} p={1} borderRadius="lg">
                       <Button size="sm" variant={sortBy === 'rating' ? 'white' : 'ghost'} shadow={sortBy === 'rating' ? 'sm' : 'none'} onClick={() => setSortBy('rating')}>Top Rated</Button>
                       <Button size="sm" variant={sortBy === 'price' ? 'white' : 'ghost'} shadow={sortBy === 'price' ? 'sm' : 'none'} onClick={() => setSortBy('price')}>Price</Button>
                     </HStack>
@@ -157,8 +163,8 @@ export default function CoursesPage() {
                         layout
                         whileHover={{ y: -8 }}
                         onClick={() => setSelectedCourse(course)}
-                        cursor="pointer" bg="white"
-                        borderRadius="2xl" shadow="sm" borderWidth="1px" borderColor="gray.100" overflow="hidden"
+                        cursor="pointer" bg={cardBg}
+                        borderRadius="2xl" shadow={useColorModeValue('sm','md')} borderWidth="1px" borderColor={cardBorder} overflow="hidden"
                         transition={{ duration: 0.2 }}
                       >
                         <AspectRatio ratio={16 / 9}>
@@ -172,13 +178,13 @@ export default function CoursesPage() {
                               <Text fontSize="sm">{course.rating}</Text>
                             </HStack>
                           </HStack>
-                          <Heading size="sm" mb={4} minH="40px" lineHeight="shorter" noOfLines={2}>{course.title}</Heading>
-                          <Divider mb={4} />
+                          <Heading size="sm" mb={4} minH="40px" lineHeight="shorter" noOfLines={2} color={textColor}>{course.title}</Heading>
+                          <Divider mb={4} borderColor={useColorModeValue('gray.200', 'gray.700')} />
                           <Flex justify="space-between" align="center">
                             <VStack align="start" spacing={0}>
-                              <Text fontSize="20px" fontWeight="900" color="blue.600">₹{course.price.toLocaleString()}</Text>
+                              <Text fontSize="20px" fontWeight="900" color={useColorModeValue('blue.600', 'blue.300')}>₹{course.price.toLocaleString()}</Text>
                             </VStack>
-                            <HStack color="gray.400" fontSize="xs">
+                            <HStack color={useColorModeValue('gray.500', 'gray.400')} fontSize="xs">
                                <Icon as={FaClock} />
                                <Text>{course.duration}</Text>
                             </HStack>
@@ -213,11 +219,11 @@ export default function CoursesPage() {
                         <Heading size="md" mb={6}>What you'll learn</Heading>
                         <SimpleGrid columns={{base: 1, md: 2}} spacing={4} w="full">
                             {selectedCourse.modules.map((m, i) => (
-                                <HStack key={i} p={5} bg="white" borderRadius="xl" borderWidth="1px" borderColor="gray.100" shadow="sm">
-                                    <Circle size="32px" bg="blue.50" color="blue.600" fontWeight="bold" fontSize="sm">{i+1}</Circle>
-                                    <Text fontWeight="600" color="gray.700">{m}</Text>
+                                <HStack key={i} p={5} bg={cardBg} borderRadius="xl" borderWidth="1px" borderColor={cardBorder} shadow="sm">
+                                    <Circle size="32px" bg={useColorModeValue('blue.50','blue.900')} color={useColorModeValue('blue.600','blue.200')} fontWeight="bold" fontSize="sm">{i+1}</Circle>
+                                    <Text fontWeight="600" color={useColorModeValue('gray.700','gray.200')}>{m}</Text>
                                     <Spacer />
-                                    <Icon as={i === 0 ? FaPlayCircle : FaLock} color={i === 0 ? "blue.500" : "gray.300"} />
+                                    <Icon as={i === 0 ? FaPlayCircle : FaLock} color={i === 0 ? "blue.500" : useColorModeValue('gray.300','gray.500')} />
                                 </HStack>
                             ))}
                         </SimpleGrid>
@@ -226,7 +232,7 @@ export default function CoursesPage() {
                 </Box>
 
                 <Box flex="1">
-                  <VStack p={8} bg="white" borderRadius="3xl" shadow="2xl" borderWidth="1px" borderColor="gray.50" position="sticky" top="100px" spacing={6}>
+                  <VStack p={8} bg={cardBg} borderRadius="3xl" shadow={useColorModeValue('2xl','2xl')} borderWidth="1px" borderColor={useColorModeValue('gray.50','gray.700')} position="sticky" top="100px" spacing={6}>
                     <AspectRatio ratio={16/9} w="full">
                         <Image src={selectedCourse.image} borderRadius="2xl" alt={selectedCourse.title} />
                     </AspectRatio>

@@ -58,9 +58,9 @@ const components = {
 const styles = {
   global: (props: StyleFunctionProps) => ({
     body: {
-      bg: "#FFFFFA",
+      bg: props.colorMode === "dark" ? "gray.900" : "#FFFFFA",
       fontFamily: "var(--font-lato), sans-serif", // Apply Lato globally
-      color: props.colorMode === "light" ? "brand.900" : "darkBrand.50", // Dynamic text color
+      color: props.colorMode === "dark" ? "white" : "brand.900", // Dynamic text color
     },
   }),
 };
@@ -95,6 +95,11 @@ const colors = {
 }
 
 
+const config = {
+  initialColorMode: "light",
+  useSystemColorMode: false,
+};
+
 const fonts = {
   heading: "Montserrat, sans-serif",
   body: "var(--font-lato), sans-serif", // Set Lato as body font globally
@@ -102,22 +107,18 @@ const fonts = {
 
 
 
-// const theme = extendTheme({
-//   colors,
-//   fonts,
-//   breakpoints,
-//   components,
-//   styles,
-//   config,
-// });
-
-// export { theme, lato };
-
-
 const {
   themeStore: { themeConfig },
 } = stores;
 
-const theme = extendTheme({...themeConfig,colors, fonts,breakpoints,components,styles});
+const theme = extendTheme({
+  config,
+  colors,
+  fonts,
+  breakpoints,
+  components,
+  styles,
+  ...themeConfig // Spread themeConfig last to allow overrides
+});
 export { theme, lato };
 export default theme;
