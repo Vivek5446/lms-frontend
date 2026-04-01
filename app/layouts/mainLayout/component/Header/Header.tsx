@@ -55,12 +55,12 @@ const Header: React.FC = () => {
       transition="all 0.4s ease-in-out"
       py={scrolled ? 2 : 4}
     >
-      <Container maxW="1400px">
+      <Container maxW="1400px" px={{ base: 3, md: 6 }}>
         <Flex align="center" justify="space-between">
           
           {/* Logo with Smooth Interaction */}
           <NextLink href="/">
-            <ChakraLink _hover={{ textDecoration: 'none' }} display="flex" alignItems="center" gap={3}>
+            <ChakraLink _hover={{ textDecoration: 'none' }} display="flex" alignItems="center" gap={{ base: 1, md: 3 }}>
               <Box
                 transition="transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)"
                 _hover={{ transform: 'scale(1.1) rotate(-3deg)' }}
@@ -68,13 +68,13 @@ const Header: React.FC = () => {
                 <Image
                   src="https://www.lmscert.com/Logo%20LMS%20-1-.svg"
                   alt="CRAFT LMS Logo"
-                  h={{ base: '38px', md: '48px' }}
+                  h={{ base: '32px', md: '48px' }}
                   objectFit="contain"
                 />
               </Box>
               <Text 
                 fontWeight="900" 
-                fontSize="2xl" 
+                fontSize={{ base: 'md', lg: '2xl' }} 
                 letterSpacing="-1px"
                 bgGradient={colorMode === 'light' ? "linear(to-tr, blue.600, blue.400)" : "linear(to-tr, blue.400, blue.200)"}
                 bgClip="text"
@@ -178,12 +178,13 @@ const Header: React.FC = () => {
         variant="ghost"
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         aria-label="Toggle Menu"
-        rounded="xl"
-        _hover={{ bg: 'blue.50' }}
-        p={2}
-        minW="auto"
+        rounded="lg"
+        minH="44px"
+        minW="44px"
+        p={0}
+        _hover={{ bg: colorMode === 'light' ? 'blue.50' : 'gray.700' }}
       >
-        <Box w="20px" h="20px" position="relative">
+        <Box w="22px" h="22px" position="relative">
           <Box
             position="absolute"
             h="2px"
@@ -191,7 +192,7 @@ const Header: React.FC = () => {
             bg="blue.600"
             borderRadius="full"
             transition="0.3s"
-            top={mobileMenuOpen ? '50%' : '30%'}
+            top={mobileMenuOpen ? '50%' : '25%'}
             transform={mobileMenuOpen ? 'rotate(45deg)' : 'none'}
           />
           <Box
@@ -201,7 +202,7 @@ const Header: React.FC = () => {
             bg="blue.600"
             borderRadius="full"
             transition="0.3s"
-            bottom={mobileMenuOpen ? '50%' : '30%'}
+            bottom={mobileMenuOpen ? '50%' : '25%'}
             transform={mobileMenuOpen ? 'rotate(-45deg)' : 'none'}
           />
         </Box>
@@ -214,25 +215,35 @@ const Header: React.FC = () => {
       {mobileMenuOpen && (
         <Box 
           bg={colorMode === 'light' ? 'white' : 'gray.800'} 
-          mx={4}
-          mt={2}
-          shadow="2xl"
-          borderRadius="2xl"
+          mx={{ base: 2, sm: 4 }}
+          mt={3}
+          shadow="lg"
+          borderRadius="xl"
           border="1px solid"
-          borderColor={colorMode === 'light' ? 'gray.50' : 'gray.700'}
+          borderColor={colorMode === 'light' ? 'gray.100' : 'gray.700'}
           display={{ base: 'block', md: 'none' }}
           overflow="hidden"
+          animation="slideDown 0.2s ease-out"
         >
-          <Stack p={4} gap={2}>
+          <Stack p={{ base: 3, sm: 4 }} gap={{ base: 2, sm: 3 }}>
             {navLinks.map((link) => (
               <NextLink key={link.href} href={link.href}>
                 <ChakraLink
-                  p={4}
-                  borderRadius="xl"
+                  p={{ base: '12px 14px', sm: '14px 16px' }}
+                  borderRadius="lg"
                   fontWeight="600"
-                  color={pathname === link.href ? (colorMode === 'light' ? 'blue.600' : 'blue.300') : (colorMode === 'light' ? 'gray.600' : 'gray.300')}
-                  bg={pathname === link.href ? (colorMode === 'light' ? 'blue.50' : 'blue.800') : 'transparent'}
-                  _hover={{ bg: colorMode === 'light' ? 'gray.50' : 'gray.700', textDecoration: 'none' }}
+                  fontSize={{ base: 'sm', sm: 'md' }}
+                  color={pathname === link.href ? (colorMode === 'light' ? 'blue.600' : 'blue.300') : (colorMode === 'light' ? 'gray.700' : 'gray.200')}
+                  bg={pathname === link.href ? (colorMode === 'light' ? 'blue.50' : 'blue.900') : 'transparent'}
+                  _hover={{ 
+                    bg: colorMode === 'light' ? 'gray.100' : 'gray.700', 
+                    textDecoration: 'none',
+                    transform: 'translateX(4px)'
+                  }}
+                  transition="all 0.2s"
+                  minH="44px"
+                  display="flex"
+                  alignItems="center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {link.label}
@@ -240,31 +251,47 @@ const Header: React.FC = () => {
               </NextLink>
             ))}
 
+            {/* Divider */}
+            <Box h="1px" bg={colorMode === 'light' ? 'gray.100' : 'gray.700'} my={2} />
+
             {/* Dark Mode Toggle for Mobile */}
             <Button
               onClick={toggleColorMode}
               variant="ghost"
               leftIcon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
               justifyContent="flex-start"
-              p={4}
-              borderRadius="xl"
+              p={{ base: '12px 14px', sm: '14px 16px' }}
+              borderRadius="lg"
+              fontSize={{ base: 'sm', sm: 'md' }}
               fontWeight="600"
-              color={colorMode === 'light' ? 'gray.600' : 'gray.300'}
-              _hover={{ bg: colorMode === 'light' ? 'gray.50' : 'gray.700' }}
+              color={colorMode === 'light' ? 'gray.700' : 'gray.200'}
+              minH="44px"
+              _hover={{ bg: colorMode === 'light' ? 'gray.100' : 'gray.700' }}
+              w="100%"
             >
               {colorMode === 'light' ? 'Dark Mode' : 'Light Mode'}
             </Button>
 
             <NextLink href="/login">
               <ChakraLink
-                p={4}
-                borderRadius="xl"
+                p={{ base: '14px', sm: '16px' }}
+                borderRadius="lg"
                 fontWeight="bold"
+                fontSize={{ base: 'sm', sm: 'md' }}
                 color="white"
                 bg={colorMode === 'light' ? 'blue.600' : 'blue.500'}
                 textAlign="center"
+                minH="48px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
                 onClick={() => setMobileMenuOpen(false)}
-                _hover={{ textDecoration: 'none', bg: colorMode === 'light' ? 'blue.700' : 'blue.600' }}
+                _hover={{ 
+                  textDecoration: 'none', 
+                  bg: colorMode === 'light' ? 'blue.700' : 'blue.600',
+                  transform: 'translateY(-2px)'
+                }}
+                transition="all 0.2s"
               >
                 Login
               </ChakraLink>

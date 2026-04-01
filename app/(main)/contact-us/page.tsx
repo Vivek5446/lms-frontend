@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import {
   Box, Heading, Text, Container, SimpleGrid, Stack, VStack, HStack, Icon,
   Input, Textarea, Button, Circle, Badge, Flex, FormControl, FormLabel,
-  useToast, Divider, Image
+  useToast, Divider, Image, useColorModeValue
 } from '@chakra-ui/react';
 import { 
   FaEnvelope, FaPhoneAlt, FaMapMarkerAlt, FaPaperPlane, 
@@ -18,6 +18,14 @@ const MotionBox = motion(Box);
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const toast = useToast();
+
+  // ✅ Dark mode variables (same pattern as your footer)
+  const bgMain = useColorModeValue("white", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.800");
+  const textPrimary = useColorModeValue("gray.800", "whiteAlpha.900");
+  const textSecondary = useColorModeValue("gray.500", "gray.400");
+  const inputBg = useColorModeValue("gray.50", "gray.700");
+  const borderColor = useColorModeValue("gray.100", "gray.700");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,14 +42,14 @@ export default function Contact() {
   };
 
   return (
-    <Box bg="white" minH="100vh">
+    <Box bg={bgMain} minH="100vh">
       {/* --- TOP HEADER DECORATION --- */}
       <Box bg="blue.600" h="350px" w="full" position="absolute" top="0" zIndex="0" />
 
       <Container maxW="1200px" pt={{ base: 20, md: 32 }} pb={20} position="relative" zIndex="1">
         <SimpleGrid columns={{ base: 1, lg: 12 }} spacing={{ base: 10, lg: 0 }} shadow="2xl" borderRadius="3xl" overflow="hidden">
           
-          {/* --- LEFT SIDE: INFO + IMAGE (4 Columns) --- */}
+          {/* --- LEFT SIDE --- */}
           <Box 
             gridColumn={{ lg: "span 5" }} 
             bg="blue.700" 
@@ -89,87 +97,86 @@ export default function Contact() {
               <Divider borderColor="whiteAlpha.300" />
             </Stack>
             
-            {/* Added Place Image Area */}
             <Box mt={10} position="relative">
-                <Image 
-                    src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&auto=format&fit=crop" 
-                    alt="Corporate Training Room" 
-                    borderRadius="2xl"
-                    shadow="xl"
-                    filter="brightness(0.9)"
-                />
-                <Flex 
-                    position="absolute" 
-                    top="10px" 
-                    right="10px" 
-                    bg="whiteAlpha.200" 
-                    backdropFilter="blur(5px)" 
-                    p={3} 
-                    borderRadius="full" 
-                    color="white"
-                >
-                    <Icon as={FaChalkboardTeacher} boxSize={5} />
-                    <Text fontSize="xs" fontWeight="bold" ml={2}>Training Center</Text>
-                </Flex>
+              <Image 
+                src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&auto=format&fit=crop" 
+                alt="Corporate Training Room" 
+                borderRadius="2xl"
+                shadow="xl"
+                filter="brightness(0.9)"
+              />
+              <Flex 
+                position="absolute" 
+                top="10px" 
+                right="10px" 
+                bg="whiteAlpha.200" 
+                backdropFilter="blur(5px)" 
+                p={3} 
+                borderRadius="full" 
+                color="white"
+              >
+                <Icon as={FaChalkboardTeacher} boxSize={5} />
+                <Text fontSize="xs" fontWeight="bold" ml={2}>Training Center</Text>
+              </Flex>
             </Box>
           </Box>
 
-          {/* --- RIGHT SIDE: FORM (7 Columns) --- */}
+          {/* --- RIGHT SIDE --- */}
           <Box 
             gridColumn={{ lg: "span 7" }} 
-            bg="white" 
+            bg={cardBg} 
             p={{ base: 8, md: 16 }}
           >
             <VStack align="start" spacing={8} mb={10}>
-              <Heading size="lg" color="gray.800">Send us a Message</Heading>
-              <Text color="gray.500">Fields marked with an asterisk (*) are required.</Text>
+              <Heading size="lg" color={textPrimary}>Send us a Message</Heading>
+              <Text color={textSecondary}>Fields marked with an asterisk (*) are required.</Text>
             </VStack>
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={6}>
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
                   <FormControl isRequired>
-                    <FormLabel fontWeight="bold" fontSize="xs" color="gray.400" textTransform="uppercase">Full Name</FormLabel>
+                    <FormLabel fontWeight="bold" fontSize="xs" color={textSecondary} textTransform="uppercase">Full Name</FormLabel>
                     <Input 
                       placeholder="Jane Smith" 
                       h="55px" 
-                      bg="gray.50" 
+                      bg={inputBg}
                       border="none" 
-                      _focus={{ bg: "white", ring: 2, ringColor: "blue.500" }} 
+                      _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }} 
                     />
                   </FormControl>
                   <FormControl isRequired>
-                    <FormLabel fontWeight="bold" fontSize="xs" color="gray.400" textTransform="uppercase">Work Email</FormLabel>
+                    <FormLabel fontWeight="bold" fontSize="xs" color={textSecondary} textTransform="uppercase">Work Email</FormLabel>
                     <Input 
                       type="email" 
                       placeholder="jane@company.com" 
                       h="55px" 
-                      bg="gray.50" 
+                      bg={inputBg}
                       border="none" 
-                      _focus={{ bg: "white", ring: 2, ringColor: "blue.500" }} 
+                      _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }} 
                     />
                   </FormControl>
                 </SimpleGrid>
 
                 <FormControl>
-                  <FormLabel fontWeight="bold" fontSize="xs" color="gray.400" textTransform="uppercase">Inquiry Type</FormLabel>
+                  <FormLabel fontWeight="bold" fontSize="xs" color={textSecondary} textTransform="uppercase">Inquiry Type</FormLabel>
                   <Input 
                     placeholder="e.g. Corporate Enrollment, Login Issue" 
                     h="55px" 
-                    bg="gray.50" 
+                    bg={inputBg}
                     border="none" 
-                    _focus={{ bg: "white", ring: 2, ringColor: "blue.500" }} 
+                    _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }} 
                   />
                 </FormControl>
 
                 <FormControl isRequired>
-                  <FormLabel fontWeight="bold" fontSize="xs" color="gray.400" textTransform="uppercase">Your Message</FormLabel>
+                  <FormLabel fontWeight="bold" fontSize="xs" color={textSecondary} textTransform="uppercase">Your Message</FormLabel>
                   <Textarea 
                     placeholder="Describe your request in detail..." 
-                    bg="gray.50" 
+                    bg={inputBg}
                     border="none" 
                     rows={6} 
-                    _focus={{ bg: "white", ring: 2, ringColor: "blue.500" }} 
+                    _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }} 
                   />
                 </FormControl>
 
@@ -194,7 +201,7 @@ export default function Contact() {
           </Box>
         </SimpleGrid>
 
-        {/* --- BOTTOM SECTION: FAQ QUICK LINKS --- */}
+        {/* --- BOTTOM --- */}
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} mt={20}>
           <QuickLinkCard 
             icon={FaQuestionCircle} 
@@ -235,13 +242,18 @@ function ContactMethod({ icon, title, detail, subDetail }: any) {
 }
 
 function QuickLinkCard({ icon, title, desc }: any) {
+  const bg = useColorModeValue("white", "gray.800");
+  const border = useColorModeValue("gray.100", "gray.700");
+  const titleColor = useColorModeValue("gray.800", "whiteAlpha.900");
+  const descColor = useColorModeValue("gray.500", "gray.400");
+
   return (
     <HStack 
       p={6} 
-      bg="white" 
+      bg={bg}
       borderRadius="2xl" 
       borderWidth="1px" 
-      borderColor="gray.100" 
+      borderColor={border}
       shadow="sm"
       _hover={{ transform: "translateY(-5px)", shadow: "md", borderColor: "blue.200" }}
       transition="all 0.3s"
@@ -251,8 +263,8 @@ function QuickLinkCard({ icon, title, desc }: any) {
         <Icon as={icon} boxSize={5} />
       </Circle>
       <Box>
-        <Text fontWeight="bold" fontSize="md" color="gray.800">{title}</Text>
-        <Text fontSize="sm" color="gray.500">{desc}</Text>
+        <Text fontWeight="bold" fontSize="md" color={titleColor}>{title}</Text>
+        <Text fontSize="sm" color={descColor}>{desc}</Text>
       </Box>
     </HStack>
   );

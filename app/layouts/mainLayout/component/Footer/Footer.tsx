@@ -13,6 +13,7 @@ import {
   HStack,
   Icon,
   Flex,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import NextLink from "next/link";
 // Assuming you use react-icons for social consistency
@@ -41,8 +42,13 @@ export const Footer: React.FC = () => {
     ],
   };
 
+  const footerBg = useColorModeValue('white','gray.900');
+  const footerBorder = useColorModeValue('gray.100','gray.700');
+  const textColor = useColorModeValue('gray.600','gray.300');
+  const headingColor = useColorModeValue('gray.800','whiteAlpha.900');
+
   return (
-    <Box as="footer" bg="white" borderTop="1px solid" borderColor="gray.100" pt={16} pb={8}>
+    <Box as="footer" bg={footerBg} borderTop="1px solid" borderColor={footerBorder} pt={16} pb={8}>
       <Container maxW="1400px">
         <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={12} mb={12}>
           {/* Brand Section */}
@@ -86,11 +92,10 @@ export const Footer: React.FC = () => {
 
           {/* Platform Links */}
           <Stack spacing={4}>
-            <Text fontWeight="bold" fontSize="md" color="gray.800">Platform</Text>
+            <Text fontWeight="bold" fontSize="md" color={headingColor}>Platform</Text>
             {footerLinks.platform.map((link) => (
               <NextLink key={link.name} href={link.href} passHref legacyBehavior>
-                <ChakraLink fontSize="sm" color="gray.600" _hover={{ color: "blue.600", textDecoration: "none" }}>
-                  {link.name}
+                <ChakraLink fontSize="sm" color={textColor} _hover={{ color: "blue.500", textDecoration: "none" }}>
                 </ChakraLink>
               </NextLink>
             ))}
@@ -98,10 +103,10 @@ export const Footer: React.FC = () => {
 
           {/* Company Links */}
           <Stack spacing={4}>
-            <Text fontWeight="bold" fontSize="md" color="gray.800">Company</Text>
+            <Text fontWeight="bold" fontSize="md" color={headingColor}>Company</Text>
             {footerLinks.company.map((link) => (
               <NextLink key={link.name} href={link.href} passHref legacyBehavior>
-                <ChakraLink fontSize="sm" color="gray.600" _hover={{ color: "blue.600", textDecoration: "none" }}>
+                <ChakraLink fontSize="sm" color={textColor} _hover={{ color: "blue.500", textDecoration: "none" }}>
                   {link.name}
                 </ChakraLink>
               </NextLink>
@@ -110,8 +115,8 @@ export const Footer: React.FC = () => {
 
           {/* Newsletter/Contact Small */}
           <Stack spacing={4}>
-            <Text fontWeight="bold" fontSize="md" color="gray.800">Support</Text>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontWeight="bold" fontSize="md" color={headingColor}>Support</Text>
+            <Text fontSize="sm" color={textColor}>
               Have questions? Reach out to our learning advisors.
             </Text>
             <NextLink href="/contact-us" passHref legacyBehavior>
@@ -144,7 +149,7 @@ export const Footer: React.FC = () => {
           pt={8}
           gap={4}
         >
-          <Text fontSize="xs" color="gray.500">
+          <Text fontSize="xs" color={textColor}>
             © {currentYear} <Box as="span" fontWeight="bold">CRAFT LMS</Box>. All rights reserved.
           </Text>
           

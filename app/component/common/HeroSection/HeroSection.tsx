@@ -17,7 +17,8 @@ import {
   HStack,
   Circle,
   VStack,
-  Divider, // Replaced Separator with v2 Divider
+  Divider,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { 
   FaUserGraduate, 
@@ -31,7 +32,6 @@ import {
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
-// Chakra v2 integration with Framer Motion
 const MotionBox = motion(Box);
 
 const FEATURED_COURSES = [
@@ -70,8 +70,17 @@ const FEATURED_COURSES = [
 ];
 
 export default function LMSLandingPage() {
+  // ✅ Dark mode variables from reference
+  const bgMain = useColorModeValue('white', 'gray.900');
+  const heroBg = useColorModeValue('#F8FAFC', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const mutedBg = useColorModeValue('gray.50', 'gray.900');
+  const borderColor = useColorModeValue('gray.100', 'gray.700');
+  const textPrimary = useColorModeValue('gray.800', 'whiteAlpha.900');
+  const textSecondary = useColorModeValue('gray.600', 'gray.400');
+
   return (
-    <Box minH="100vh" bg="gray.50" _dark={{ bg: 'gray.950' }}>
+    <Box minH="100vh" bg={bgMain}>
       
       {/* --- HERO SECTION --- */}
       <Box 
@@ -80,6 +89,7 @@ export default function LMSLandingPage() {
         overflow="hidden"
         pt={{ base: '40px', md: '80px' }}
         pb={{ base: '60px', md: '100px' }}
+        bg={heroBg}
       >
         <Circle
           size="600px"
@@ -105,7 +115,7 @@ export default function LMSLandingPage() {
                 transition={{ duration: 0.6 }}
               >
                 <Badge 
-                  colorScheme="blue" // Fixed: colorPalette -> colorScheme
+                  colorScheme="blue" 
                   variant="subtle" 
                   px={3} 
                   py={1} 
@@ -126,18 +136,18 @@ export default function LMSLandingPage() {
                   lineHeight="1.1"
                   mb={6}
                   letterSpacing="tight"
+                  color={textPrimary}
                 >
                   Elevate Your <Text as="span" color="blue.600">Career</Text> with C.R.A.F.T. Academia
                 </Heading>
 
-                <Text fontSize="xl" color="gray.600" _dark={{ color: 'gray.400' }} mb={10}>
+                <Text fontSize="xl" color={textSecondary} mb={10}>
                   Master Banking, NBFC, and MSME Lending through our unique 
                   Adaptive Learning and Simulation-based video courses.
                 </Text>
 
                 <Stack direction={{ base: 'column', sm: 'row' }} spacing={5}>
-                  {/* Fixed: Removed asChild and used NextLink directly or via 'as' prop */}
-                  <NextLink href="/courses" passHref>
+                  <NextLink href="/courses" passHref legacyBehavior>
                     <Button
                       as="a" 
                       size="lg"
@@ -155,6 +165,7 @@ export default function LMSLandingPage() {
                     size="lg"
                     variant="outline"
                     colorScheme="gray"
+                    color={textPrimary}
                     px={8}
                     rounded="lg"
                     leftIcon={<Icon as={FaPlayCircle} />}
@@ -163,20 +174,20 @@ export default function LMSLandingPage() {
                   </Button>
                 </Stack>
 
-                <SimpleGrid columns={3} spacing={4} mt={12} pt={8} borderTopWidth="1px">
+                <SimpleGrid columns={3} spacing={4} mt={12} pt={8} borderTopWidth="1px" borderColor={borderColor}>
                   <Box>
-                    <Text fontSize="2xl" fontWeight="bold">150+</Text>
-                    <Text fontSize="sm" color="gray.500">Video Modules</Text>
+                    <Text fontSize="2xl" fontWeight="bold" color={textPrimary}>150+</Text>
+                    <Text fontSize="sm" color={textSecondary}>Video Modules</Text>
                   </Box>
                   <Box>
-                    <Text fontSize="2xl" fontWeight="bold">50k+</Text>
-                    <Text fontSize="sm" color="gray.500">Professionals</Text>
+                    <Text fontSize="2xl" fontWeight="bold" color={textPrimary}>50k+</Text>
+                    <Text fontSize="sm" color={textSecondary}>Professionals</Text>
                   </Box>
                   <Box>
-                    <Text fontSize="2xl" fontWeight="bold">4.9</Text>
+                    <Text fontSize="2xl" fontWeight="bold" color={textPrimary}>4.9</Text>
                     <HStack spacing={1}>
                       <Icon as={FaStar} color="orange.400" />
-                      <Text fontSize="sm" color="gray.500">Rating</Text>
+                      <Text fontSize="sm" color={textSecondary}>Rating</Text>
                     </HStack>
                   </Box>
                 </SimpleGrid>
@@ -195,8 +206,7 @@ export default function LMSLandingPage() {
                   overflow="hidden"
                   boxShadow="2xl"
                   borderWidth="8px"
-                  borderColor="white"
-                  _dark={{ borderColor: 'gray.800' }}
+                  borderColor={cardBg}
                 >
                   <Image
                     src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800"
@@ -211,11 +221,12 @@ export default function LMSLandingPage() {
                   position="absolute"
                   top="10%"
                   left="-5%"
-                  bg="white"
-                  _dark={{ bg: 'gray.800' }}
+                  bg={cardBg}
                   p={4}
                   borderRadius="xl"
                   boxShadow="xl"
+                  borderWidth="1px"
+                  borderColor={borderColor}
                   animate={{ y: [0, -10, 0] }}
                   transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
                   display={{ base: 'none', md: 'block' }}
@@ -223,8 +234,8 @@ export default function LMSLandingPage() {
                   <HStack spacing={3}>
                     <Icon as={FaUserGraduate} color="blue.500" boxSize={6} />
                     <Box>
-                      <Text fontWeight="bold" fontSize="sm">Corporate Expert</Text>
-                      <Text fontSize="xs" color="gray.500">Live Mentorship</Text>
+                      <Text fontWeight="bold" fontSize="sm" color={textPrimary}>Corporate Expert</Text>
+                      <Text fontSize="xs" color={textSecondary}>Live Mentorship</Text>
                     </Box>
                   </HStack>
                 </MotionBox>
@@ -235,7 +246,7 @@ export default function LMSLandingPage() {
       </Box>
 
       {/* --- METHODOLOGY SECTION --- */}
-      <Box as="section" py={20} bg="white" _dark={{ bg: 'gray.900' }} borderTopWidth="1px">
+      <Box as="section" py={20} bg={bgMain} borderTopWidth="1px" borderColor={borderColor}>
         <Container maxW="1200px">
           <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={16}>
             <MotionBox
@@ -273,13 +284,13 @@ export default function LMSLandingPage() {
 
             <Box>
               <Badge colorScheme="blue" px={3} py={1} mb={4} borderRadius="md" variant="solid">Since 2018</Badge>
-              <Heading as="h2" size="xl" mb={6}>Pioneering Functional Training</Heading>
-              <Text fontSize="lg" color="gray.600" mb={6}>Custom L&D projects for the Financial Sector.</Text>
+              <Heading as="h2" size="xl" mb={6} color={textPrimary}>Pioneering Functional Training</Heading>
+              <Text fontSize="lg" color={textSecondary} mb={6}>Custom L&D projects for the Financial Sector.</Text>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                <Box p={5} bg="gray.50" borderRadius="xl" borderLeft="4px solid" borderColor="blue.500">
+                <Box p={5} bg={mutedBg} borderRadius="xl" borderLeft="4px solid" borderColor="blue.500">
                   <Text fontWeight="bold" color="blue.600">60+ Institutions</Text>
                 </Box>
-                <Box p={5} bg="gray.50" borderRadius="xl" borderLeft="4px solid" borderColor="purple.500">
+                <Box p={5} bg={mutedBg} borderRadius="xl" borderLeft="4px solid" borderColor="purple.500">
                   <Text fontWeight="bold" color="purple.600">Expert Content</Text>
                 </Box>
               </SimpleGrid>
@@ -289,27 +300,36 @@ export default function LMSLandingPage() {
       </Box>
 
       {/* --- FEATURED COURSES --- */}
-      <Box as="section" py={20} bg="gray.50">
+      <Box as="section" py={20} bg={mutedBg}>
         <Container maxW="1200px">
           <Flex justify="space-between" align="flex-end" mb={10}>
             <VStack align="start" spacing={2}>
               <Badge colorScheme="blue" variant="subtle">Top Enrollment</Badge>
-              <Heading size="xl">Explore Our Catalog</Heading>
+              <Heading size="xl" color={textPrimary}>Explore Our Catalog</Heading>
             </VStack>
-            <NextLink href="/course" passHref>
+            <NextLink href="/course" passHref legacyBehavior>
               <Button as="a" variant="ghost" colorScheme="blue" rightIcon={<FaArrowRight />}>View All</Button>
             </NextLink>
           </Flex>
 
           <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
             {FEATURED_COURSES.map((course) => (
-              <MotionBox key={course.id} whileHover={{ y: -10 }} bg="white" borderRadius="2xl" overflow="hidden" shadow="sm" borderWidth="1px">
+              <MotionBox 
+                key={course.id} 
+                whileHover={{ y: -10 }} 
+                bg={cardBg} 
+                borderRadius="2xl" 
+                overflow="hidden" 
+                shadow="sm" 
+                borderWidth="1px" 
+                borderColor={borderColor}
+              >
                 <Box position="relative">
                   <Image src={course.image} h="160px" w="full" objectFit="cover" />
                   <Badge position="absolute" top={3} left={3} colorScheme="blue" variant="solid">{course.category}</Badge>
                 </Box>
                 <Box p={5}>
-                  <Heading size="sm" mb={4} minH="40px">{course.title}</Heading>
+                  <Heading size="sm" mb={4} minH="40px" color={textPrimary}>{course.title}</Heading>
                   <Button w="full" size="sm" colorScheme="blue" variant="outline">Course Details</Button>
                 </Box>
               </MotionBox>
@@ -318,30 +338,29 @@ export default function LMSLandingPage() {
         </Container>
       </Box>
 
-      {/* --- LEARNING EXPERIENCE / DASHBOARD PREVIEW --- */}
-      <Box as="section" py={20} bg="white" _dark={{ bg: 'gray.900' }}>
+      {/* --- LEARNING EXPERIENCE --- */}
+      <Box as="section" py={20} bg={bgMain}>
         <Container maxW="1200px">
           <VStack spacing={4} mb={16} textAlign="center">
             <Badge colorScheme="purple" variant="subtle" px={4} py={1} borderRadius="full">
               Seamless Experience
             </Badge>
-            <Heading size="2xl">Learning That Fits Your Lifestyle</Heading>
-            <Text color="gray.600" maxW="2xl" fontSize="lg">
+            <Heading size="2xl" color={textPrimary}>Learning That Fits Your Lifestyle</Heading>
+            <Text color={textSecondary} maxW="2xl" fontSize="lg">
               Our intuitive dashboard keeps you motivated with real-time analytics, 
               interactive quizzes, and seamless progress syncing across all your devices.
             </Text>
           </VStack>
 
-          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={12} alignContent={ "center" }>
-            {/* Left: Feature List */}
+          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={12} alignContent="center">
             <VStack align="start" spacing={6}>
               <HStack spacing={4}>
                 <Circle size="50px" bg="blue.50" color="blue.600">
                   <Icon as={FaClock} boxSize={5} />
                 </Circle>
                 <Box>
-                  <Text fontWeight="bold" fontSize="xl">Bite-Sized Learning</Text>
-                  <Text color="gray.500">10-15 minute modules designed for the busy professional.</Text>
+                  <Text fontWeight="bold" fontSize="xl" color={textPrimary}>Bite-Sized Learning</Text>
+                  <Text color={textSecondary}>10-15 minute modules designed for the busy professional.</Text>
                 </Box>
               </HStack>
 
@@ -350,8 +369,8 @@ export default function LMSLandingPage() {
                   <Icon as={FaStar} boxSize={5} />
                 </Circle>
                 <Box>
-                  <Text fontWeight="bold" fontSize="xl">Gamified Rewards</Text>
-                  <Text color="gray.500">Earn badges and certificates as you master new financial skills.</Text>
+                  <Text fontWeight="bold" fontSize="xl" color={textPrimary}>Gamified Rewards</Text>
+                  <Text color={textSecondary}>Earn badges and certificates as you master new skills.</Text>
                 </Box>
               </HStack>
 
@@ -360,8 +379,8 @@ export default function LMSLandingPage() {
                   <Icon as={FaCheckCircle} boxSize={5} />
                 </Circle>
                 <Box>
-                  <Text fontWeight="bold" fontSize="xl">Offline Access</Text>
-                  <Text color="gray.500">Download resources and watch videos even without an internet connection.</Text>
+                  <Text fontWeight="bold" fontSize="xl" color={textPrimary}>Offline Access</Text>
+                  <Text color={textSecondary}>Download resources and watch videos anywhere.</Text>
                 </Box>
               </HStack>
               
@@ -376,7 +395,6 @@ export default function LMSLandingPage() {
               </Button>
             </VStack>
 
-            {/* Right: Mockup Image with Motion */}
             <MotionBox
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.5 }}
@@ -387,11 +405,10 @@ export default function LMSLandingPage() {
                 overflow="hidden"
                 boxShadow="2xl"
                 borderWidth="1px"
-                borderColor="gray.200"
+                borderColor={borderColor}
                 bg="gray.800"
                 p={2}
               >
-                {/* Mimicking a Browser/App UI */}
                 <Box bg="gray.700" p={2} borderTopRadius="xl" display="flex" gap={1}>
                   <Circle size="8px" bg="red.400" />
                   <Circle size="8px" bg="yellow.400" />
@@ -400,28 +417,28 @@ export default function LMSLandingPage() {
                 <Image 
                   src="https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=800" 
                   alt="LMS Dashboard Preview"
-                  filter="grayscale(20%)"
+                  filter={useColorModeValue('none', 'grayscale(20%)')}
                 />
               </Box>
               
-              {/* Floating Stat Badge */}
               <MotionBox
                 position="absolute"
                 bottom="-20px"
                 right="-20px"
-                bg="white"
+                bg={cardBg}
                 p={4}
                 borderRadius="xl"
                 shadow="2xl"
                 borderWidth="1px"
+                borderColor={borderColor}
                 initial={{ y: 20 }}
                 whileInView={{ y: 0 }}
                 display={{ base: 'none', md: 'block' }}
               >
                 <VStack align="start" spacing={0}>
-                  <Text fontSize="xs" color="gray.500" fontWeight="bold">COURSE COMPLETION</Text>
+                  <Text fontSize="xs" color={textSecondary} fontWeight="bold">COURSE COMPLETION</Text>
                   <Text fontSize="2xl" fontWeight="extrabold" color="blue.600">84%</Text>
-                  <Box w="100px" h="6px" bg="gray.100" borderRadius="full" mt={2}>
+                  <Box w="100px" h="6px" bg={mutedBg} borderRadius="full" mt={2}>
                     <Box w="84%" h="full" bg="blue.500" borderRadius="full" />
                   </Box>
                 </VStack>
