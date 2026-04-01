@@ -3,10 +3,13 @@
 import { useState, useEffect } from "react";
 import { observer } from "mobx-react-lite";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import CourseList from "./CourseList";
 import CourseDetails from "./CourseDetails";
+import AssignCourseModal from "./components/AssignCourseModal";
 import CoursePlayer from "./scorm/CoursePlayer";
 import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore";
+import stores from "@/app/store/stores";
 
 function buildScormCourseUrl(scormPath: string) {
   const normalizedPath = scormPath.startsWith("/") ? scormPath : `/${scormPath}`;
@@ -17,6 +20,9 @@ function CoursePage() {
   const [view, setView] = useState<"gallery" | "create" | "details">("gallery");
   const [activeCourse, setActiveCourse] = useState<CourseListItem | null>(null);
   const [playerPath, setPlayerPath] = useState<string | null>(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const router = useRouter();
+  const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
 
   useEffect(() => {
     courseStore.fetchCourses();
@@ -58,6 +64,7 @@ function CoursePage() {
           course={activeCourse}
           onBack={() => setView("gallery")}
           onLaunchSection={(path: any) => handleLaunchScorm(path)}
+          onAssignCourse={role === "superadmin" ? () => setIsAssignModalOpen(true) : undefined}
         />
 
         <AnimatePresence>
@@ -81,6 +88,17 @@ function CoursePage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <AssignCourseModal
+          isOpen={isAssignModalOpen}
+          onClose={() => setIsAssignModalOpen(false)}
+          defaultCourseId={activeCourse._id}
+          onAssigned={async () => {
+            await courseStore.fetchAssignedCourseAccesses({
+              companyId: stores.companyStore.getActiveCompanyId() || undefined,
+            });
+          }}
+        />
       </>
     );
   }
@@ -100,31 +118,60 @@ function CoursePage() {
               Manage your interactive learning adventures
             </p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={() => setView("create")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "12px 24px",
-              borderRadius: 14,
-              border: "none",
-              background: "#4F46E5",
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              boxShadow: "0 4px 14px rgba(79,70,229,0.35)",
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Add New Course
-          </motion.button>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() =>
+                router.push(role === "user" ? "/dashboard/course/access-management" : "/dashboard/course/assigned")
+              }
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "12px 18px",
+                borderRadius: 14,
+                border: "1px solid #CBD5E1",
+                background: "#FFFFFF",
+                color: "#1E293B",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {role === "superadmin"
+                ? "Assigned Courses"
+                : role === "user"
+                  ? "My Assignments"
+                  : "Assignments"}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => setView("create")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "12px 24px",
+                borderRadius: 14,
+                border: "none",
+                background: "#4F46E5",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(79,70,229,0.35)",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add New Course
+            </motion.button>
+          </div>
         </div>
 
         {/* Course Grid */}

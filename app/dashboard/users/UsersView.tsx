@@ -7,7 +7,6 @@ import {
   useToast
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import useDebounce from "../../component/config/component/customHooks/useDebounce";
@@ -161,7 +160,6 @@ const initialForm = (): UserFormState => ({
 });
 
 const UsersView = observer(() => {
-  const router = useRouter();
   const toast = useToast();
   const { userStore, companyStore, auth } = stores;
   const [search, setSearch] = useState("");
@@ -184,11 +182,10 @@ const UsersView = observer(() => {
   const muted = useColorModeValue("gray.600", "gray.400");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const tableHeadBg = useColorModeValue("gray.50", "gray.900");
-  const searchParams = useSearchParams();
   const role = normalizeRole(auth.userType || auth.user?.role);
   const isSuperadmin = role === "superadmin";
   const isDepartmentHead = role === "departmenthead";
-  const scopedCompanyId = searchParams.get("company") || "";
+  const scopedCompanyId = companyStore.getActiveCompanyId();
   const managedCompanies = companyStore.companies.data || [];
   const currentCompanyName =
     auth.user?.companyDetails?.company_name ||
@@ -663,6 +660,7 @@ const UsersView = observer(() => {
     listTabs.find((item) => item.value === listTab)?.label || "Users";
 
   const handleSuperadminCompanyChange = (companyId: string) => {
+    companyStore.setSelectedCompanyId(companyId);
     setSelectedCompanyId(companyId);
     setPage(1);
     setListTab("user");
@@ -675,7 +673,6 @@ const UsersView = observer(() => {
       companyId,
       managers: reconcileManagersForRole(prev.role, prev.managers, selectedUserManagerLevels),
     }));
-    router.replace(companyId ? `/dashboard/users?company=${companyId}` : "/dashboard/users");
   };
 
   return (

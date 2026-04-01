@@ -55,9 +55,10 @@ interface CourseDetailsProps {
   course: any;
   onBack: () => void;
   onLaunchSection: (scormPath: string) => void;
+  onAssignCourse?: (course: any) => void;
 }
 
-export default function CourseDetails({ course, onBack, onLaunchSection }: CourseDetailsProps) {
+export default function CourseDetails({ course, onBack, onLaunchSection, onAssignCourse }: CourseDetailsProps) {
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
 
   // Colors (Chakra + Tailwind friendly)
@@ -111,6 +112,17 @@ export default function CourseDetails({ course, onBack, onLaunchSection }: Cours
                 ))}
               </Flex>
             </Box>
+            {onAssignCourse ? (
+              <Button
+                ml="auto"
+                colorScheme="blue"
+                variant="outline"
+                borderRadius="full"
+                onClick={() => onAssignCourse(course)}
+              >
+                Assign Course
+              </Button>
+            ) : null}
           </Flex>
         </Container>
       </Box>

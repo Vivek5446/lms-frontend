@@ -114,6 +114,7 @@ const CompanyAdminWorkspace = ({
   const {
     userStore: { createAdmin, updateUser },
     auth: { user: currentUser },
+    companyStore,
   } = stores;
 
   const [adminRefreshKey, setAdminRefreshKey] = useState(0);
@@ -237,7 +238,13 @@ const CompanyAdminWorkspace = ({
   };
 
   const openUsersManagement = () => {
-    router.push(`/dashboard/users?company=${company._id}`);
+    companyStore.setSelectedCompanyId(company._id);
+    router.push("/dashboard/users");
+  };
+
+  const openAssignedCourses = () => {
+    companyStore.setSelectedCompanyId(company._id);
+    router.push("/dashboard/course/assigned");
   };
 
   const addressText = company?.addressInfo?.[0]
@@ -283,6 +290,14 @@ const CompanyAdminWorkspace = ({
               <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={3} py={1} fontSize="xs">
                 {company?.companyType || "Company"}
               </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                borderRadius="full"
+                onClick={openAssignedCourses}
+              >
+                Assigned Courses
+              </Button>
               <Button
                 colorScheme="blue"
                 size="sm"

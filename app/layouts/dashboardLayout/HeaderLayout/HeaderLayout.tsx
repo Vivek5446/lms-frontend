@@ -4,6 +4,7 @@ import { Flex } from "@chakra-ui/react";
 import { useMediaQuery } from "@chakra-ui/react";
 import HeaderNavbar from "./component/HeaderNavbar/HeaderNavbar";
 import HeaderLogo from "./component/Logo/HeaderLogo";
+import HeaderCompanySelector from "./component/CompanySelector/HeaderCompanySelector";
 import HeaderWorkflowSelector from "./component/WorkflowSelector/HeaderWorkflowSelector";
 import { observer } from "mobx-react-lite";
 import { headerHeight, headerPadding } from "../../../component/config/utils/variable";
@@ -23,6 +24,7 @@ const HeaderLayout = observer(() => {
     >
       <Flex width={isLargerThan1020 ? "85%" : "95%"} align="center">
         <HeaderLogo />
+        <HeaderCompanySelector />
         <HeaderWorkflowSelector />
       </Flex>
       <HeaderNavbar />
