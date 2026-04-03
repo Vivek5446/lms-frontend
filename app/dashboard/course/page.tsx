@@ -123,7 +123,13 @@ function CoursePage() {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() =>
-                router.push(role === "user" ? "/dashboard/course/access-management" : "/dashboard/course/assigned")
+                router.push(
+                  role === "user"
+                    ? "/dashboard/course/my-courses"
+                    : role === "superadmin"
+                      ? "/dashboard/course/assigned"
+                      : "/dashboard/course/access-management"
+                )
               }
               style={{
                 display: "flex",
@@ -142,35 +148,37 @@ function CoursePage() {
               {role === "superadmin"
                 ? "Assigned Courses"
                 : role === "user"
-                  ? "My Assignments"
-                  : "Assignments"}
+                  ? "My Courses"
+                  : "Assign Courses"}
             </motion.button>
 
-            <motion.button
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              onClick={() => setView("create")}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "12px 24px",
-                borderRadius: 14,
-                border: "none",
-                background: "#4F46E5",
-                color: "#fff",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: "0 4px 14px rgba(79,70,229,0.35)",
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Add New Course
-            </motion.button>
+            {role !== "user" ? (
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setView("create")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "12px 24px",
+                  borderRadius: 14,
+                  border: "none",
+                  background: "#4F46E5",
+                  color: "#fff",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(79,70,229,0.35)",
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Add New Course
+              </motion.button>
+            ) : null}
           </div>
         </div>
 

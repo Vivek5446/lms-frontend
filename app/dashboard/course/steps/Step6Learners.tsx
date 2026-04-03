@@ -5,16 +5,15 @@ import { Filter, GraduationCap, Search } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { CourseBatchInput, CourseLearnersState } from "../courseForm";
+import { CourseLearnersState } from "../courseForm";
 
 interface Step6LearnersProps {
   learners: CourseLearnersState;
-  batches: CourseBatchInput[];
   selectedCompanies: string[];
   onProgressChange?: (progress: number) => void;
 }
 
-export default function Step6Learners({ learners, batches, selectedCompanies, onProgressChange }: Step6LearnersProps) {
+export default function Step6Learners({ learners, selectedCompanies, onProgressChange }: Step6LearnersProps) {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -26,12 +25,11 @@ export default function Step6Learners({ learners, batches, selectedCompanies, on
     learnerName.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const batchLabel = batches.length > 0 ? `${batches.length} batch${batches.length > 1 ? "es" : ""}` : "No batches";
   const companyLabel = selectedCompanies.length > 0 ? selectedCompanies.join(", ") : "All companies";
 
   return (
     <StepWrapper
-      stepKey={5}
+      stepKey={4}
       title="Learners Overview"
       subtitle={
         <span className="inline-flex items-center gap-1.5">
@@ -49,8 +47,8 @@ export default function Step6Learners({ learners, batches, selectedCompanies, on
             <p className="text-2xl font-semibold text-foreground mt-2">{learners.selectedLearners.length}</p>
           </div>
           <div className="bg-card rounded-2xl border border-border p-4">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Batch Coverage</p>
-            <p className="text-sm font-semibold text-foreground mt-2">{batchLabel}</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Company Access</p>
+            <p className="text-sm font-semibold text-foreground mt-2">{companyLabel}</p>
           </div>
           <div className="bg-card rounded-2xl border border-border p-4">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">CSV Import</p>
@@ -74,11 +72,10 @@ export default function Step6Learners({ learners, batches, selectedCompanies, on
         </div>
 
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
-          <div className="hidden md:grid grid-cols-[1fr_180px_180px_140px] gap-4 px-5 py-3 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <div className="hidden md:grid grid-cols-[1fr_180px_220px] gap-4 px-5 py-3 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             <span>Learner</span>
             <span>Enrollment Source</span>
             <span>Company Access</span>
-            <span>Batch Status</span>
           </div>
 
           {filtered.length === 0 ? (
@@ -90,7 +87,7 @@ export default function Step6Learners({ learners, batches, selectedCompanies, on
             </div>
           ) : (
             filtered.map((learner) => (
-              <div key={learner} className="grid md:grid-cols-[1fr_180px_180px_140px] gap-4 px-5 py-4 border-b last:border-b-0 border-border items-center hover:bg-muted/30 transition-colors">
+              <div key={learner} className="grid md:grid-cols-[1fr_180px_220px] gap-4 px-5 py-4 border-b last:border-b-0 border-border items-center hover:bg-muted/30 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-step-6/15 flex items-center justify-center text-xs font-bold text-step-6">
                     {learner.split(" ").map((name) => name[0]).join("")}
@@ -101,7 +98,6 @@ export default function Step6Learners({ learners, batches, selectedCompanies, on
                   Manual selection
                 </Badge>
                 <span className="text-sm text-muted-foreground">{companyLabel}</span>
-                <span className="text-sm text-muted-foreground">{batchLabel}</span>
               </div>
             ))
           )}

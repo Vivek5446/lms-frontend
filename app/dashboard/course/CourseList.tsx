@@ -9,14 +9,13 @@ import Step1BasicInfo from "./steps/Step1BasicInfo";
 import Step2Structure from "./steps/Step2Structure";
 import Step3Progress from "./steps/Step3Progress";
 import Step4Pricing from "./steps/Step4Pricing";
-import Step5Batches from "./steps/Step5Batches";
 import Step6Learners from "./steps/Step6Learners";
 import Step7Preview from "./steps/Step7Preview";
 import Step8Review from "./steps/Step8Review";
 import { CourseFormState, buildCoursePayload, initialCourseFormState } from "./courseForm";
 import { courseStore } from "@/app/store/courseStore/courseStore";
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 7;
 
 interface CourseListProps {
   onSuccess?: () => void;
@@ -142,31 +141,20 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
         );
       case 4:
         return (
-          <Step5Batches
-            batches={courseForm.batches}
+          <Step6Learners
             learners={courseForm.learners}
-            onBatchesChange={(batches) => setCourseForm((prev) => ({ ...prev, batches }))}
-            onLearnersChange={(learners) => setCourseForm((prev) => ({ ...prev, learners }))}
+            selectedCompanies={courseForm.pricing.selectedCompanies}
             onProgressChange={(progress) => updateStepProgress(4, progress)}
           />
         );
       case 5:
         return (
-          <Step6Learners
-            learners={courseForm.learners}
-            batches={courseForm.batches.items}
-            selectedCompanies={courseForm.pricing.selectedCompanies}
+          <Step7Preview
+            courseForm={courseForm}
             onProgressChange={(progress) => updateStepProgress(5, progress)}
           />
         );
       case 6:
-        return (
-          <Step7Preview
-            courseForm={courseForm}
-            onProgressChange={(progress) => updateStepProgress(6, progress)}
-          />
-        );
-      case 7:
         return (
           <Step8Review
             courseForm={courseForm}

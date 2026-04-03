@@ -3,6 +3,7 @@ import { appointmentStore } from "./appointmentsStore/appointmentStore";
 import { authStore } from "./authStore/authStore";
 import { blogStore } from "./blogStore/blogStore";
 import { bookingStore } from "./bookingStore/bookingStore";
+import { batchStore } from "./batchStore/batchStore";
 import { CompanyStore } from "./companyStore/companyStore";
 import { chairsStore } from "./chairsStore/chairsStore";
 import { contactStore } from "./contactStore/contactStore";
@@ -28,6 +29,7 @@ const stores = {
   userStore : userStore,
   appointmentStore : appointmentStore,
   bookingStore : bookingStore,
+  batchStore: batchStore,
   themeStore : themeStore,
   layout : layoutStore,
   chairsStore : chairsStore,

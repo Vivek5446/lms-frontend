@@ -10,7 +10,6 @@ import {
   Pencil,
   Rocket,
   TrendingUp,
-  Users,
 } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { Button } from "@/components/ui/button";
@@ -83,28 +82,19 @@ export default function Step8Review({
       stepIndex: 3,
     },
     {
-      icon: Users,
-      label: "Batches",
-      status: `${courseForm.batches.items.length} batch${courseForm.batches.items.length === 1 ? "" : "es"} configured`,
-      colorClass: "text-step-5",
-      bgClass: "bg-step-5/15",
-      complete: courseForm.batches.items.length > 0,
-      stepIndex: 4,
-    },
-    {
       icon: GraduationCap,
       label: "Learners",
       status: `${courseForm.learners.selectedLearners.length} selected${courseForm.learners.csvFile ? " - CSV attached" : ""}`,
       colorClass: "text-step-6",
       bgClass: "bg-step-6/15",
       complete: courseForm.learners.selectedLearners.length > 0 || Boolean(courseForm.learners.csvFile),
-      stepIndex: 5,
+      stepIndex: 4,
     },
   ];
 
   return (
     <StepWrapper
-      stepKey={7}
+      stepKey={6}
       title="Review & Publish"
       subtitle={
         <span className="inline-flex items-center gap-1.5">

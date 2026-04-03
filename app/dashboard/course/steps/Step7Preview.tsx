@@ -26,7 +26,7 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
 
   return (
     <StepWrapper
-      stepKey={6}
+      stepKey={5}
       title="Course Preview"
       subtitle={
         <span className="inline-flex items-center gap-1.5">

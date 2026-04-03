@@ -358,7 +358,7 @@ export default function CourseDetails({ course, onBack, onLaunchSection, onAssig
               </Card>
             </MotionBox>
 
-            {/* Batches & Learners Card */}
+            {/* Batch Management Card */}
             <MotionBox
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -368,51 +368,34 @@ export default function CourseDetails({ course, onBack, onLaunchSection, onAssig
                 <CardHeader pb={0}>
                   <Flex align="center" gap={2}>
                     <Icon as={Users} boxSize={6} color={accentColor} />
-                    <Heading size="md">Batches & Enrollment</Heading>
+                    <Heading size="md">Batch Delivery</Heading>
                   </Flex>
                 </CardHeader>
                 <CardBody>
-                  {course.enrollment?.batches?.length > 0 ? (
-                    <Stack spacing={4}>
-                      {course.enrollment.batches.map((batch: any, i: number) => (
-                        <Box
-                          key={i}
-                          p={4}
-                          borderWidth="1px"
-                          borderRadius="xl"
-                          borderColor={borderColor}
-                          _hover={{ shadow: "md", borderColor: accentLight }}
-                          transition="all 0.2s"
-                        >
-                          <Flex justify="space-between" align="center" wrap="wrap" gap={2} mb={3}>
-                            <Text fontWeight="bold" fontSize="lg">{batch.name}</Text>
-                            <Tag colorScheme="blue" borderRadius="full" size="md" px={3}>
-                              {batch.seatLimit || "Open"} seats limit
-                            </Tag>
-                          </Flex>
-                          <Divider mb={3} />
-                          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
-                            <HStack spacing={2}>
-                              <Icon as={Calendar} boxSize={4} color={textMuted} />
-                              <Text fontSize="sm" color={textMuted}>
-                                {new Date(batch.startDate).toLocaleDateString()} -{" "}
-                                {new Date(batch.endDate).toLocaleDateString()}
-                              </Text>
-                            </HStack>
-                            <HStack spacing={2}>
-                              <Icon as={MapPin} boxSize={4} color={textMuted} />
-                              <Text fontSize="sm" color={textMuted}>{batch.trainer || "Instructor Led"}</Text>
-                            </HStack>
-                          </SimpleGrid>
+                  <Stack spacing={4}>
+                    <Text color={textMuted}>
+                      Courses are now delivered through the dedicated batch module. Create and manage batches from the
+                      Batches workspace, then learners will see course access marked with the batch they came from.
+                    </Text>
+                    <Box
+                      p={4}
+                      borderWidth="1px"
+                      borderRadius="xl"
+                      borderColor={borderColor}
+                      bg={useColorModeValue("gray.50", "gray.800")}
+                    >
+                      <HStack spacing={3} align="start">
+                        <Icon as={Calendar} boxSize={5} color={accentColor} mt={0.5} />
+                        <Box>
+                          <Text fontWeight="semibold">Standalone batch management</Text>
+                          <Text mt={1} fontSize="sm" color={textMuted}>
+                            Use the new batch screens to group users, attach multiple courses, define dates, and track
+                            learner progress without mixing batch logic into course setup.
+                          </Text>
                         </Box>
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Flex direction="column" align="center" py={8} gap={3} bg={useColorModeValue("gray.50", "gray.800")} borderRadius="xl">
-                      <Icon as={Calendar} boxSize={10} color={useColorModeValue("gray.300", "gray.600")} />
-                      <Text color={textMuted} fontWeight="medium">No batches scheduled currently</Text>
-                    </Flex>
-                  )}
+                      </HStack>
+                    </Box>
+                  </Stack>
                 </CardBody>
               </Card>
             </MotionBox>

@@ -67,19 +67,6 @@ export interface CoursePricingState {
   selectedCompanies: string[];
 }
 
-export interface CourseBatchInput {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  seatLimit: string;
-  trainer: string;
-}
-
-export interface CourseBatchesState {
-  items: CourseBatchInput[];
-}
-
 export interface CourseLearnersState {
   selectedLearners: string[];
   csvFile: StoredFile | null;
@@ -90,7 +77,6 @@ export interface CourseFormState {
   structure: CourseStructureState;
   progress: CourseProgressState;
   pricing: CoursePricingState;
-  batches: CourseBatchesState;
   learners: CourseLearnersState;
 }
 
@@ -185,17 +171,6 @@ export function createEmptyModule(): CourseModuleInput {
   };
 }
 
-export function createEmptyBatch(): CourseBatchInput {
-  return {
-    id: createClientId(),
-    name: "",
-    startDate: "",
-    endDate: "",
-    seatLimit: "",
-    trainer: "",
-  };
-}
-
 export const initialCourseFormState: CourseFormState = {
   basicInfo: {
     courseName: "",
@@ -223,9 +198,6 @@ export const initialCourseFormState: CourseFormState = {
     currency: "INR",
     accessDurationDays: "",
     selectedCompanies: [],
-  },
-  batches: {
-    items: [],
   },
   learners: {
     selectedLearners: [],
@@ -341,13 +313,6 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
       companyAccess: courseForm.pricing.selectedCompanies,
     },
     enrollment: {
-      batches: courseForm.batches.items.map((batch) => ({
-        name: batch.name.trim(),
-        startDate: batch.startDate || null,
-        endDate: batch.endDate || null,
-        seatLimit: parseNumericValue(batch.seatLimit),
-        trainer: batch.trainer.trim() || null,
-      })),
       learnerSelection: {
         totalSelected: courseForm.learners.selectedLearners.length,
         selectedLearners: courseForm.learners.selectedLearners,
@@ -357,7 +322,6 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
     meta: {
       moduleCount: courseForm.structure.modules.length,
       sectionCount: totalSections,
-      batchCount: courseForm.batches.items.length,
       learnerCount: courseForm.learners.selectedLearners.length,
       companyCount: courseForm.pricing.selectedCompanies.length,
     },

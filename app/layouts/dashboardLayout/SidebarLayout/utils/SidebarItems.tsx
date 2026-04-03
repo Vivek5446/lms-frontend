@@ -51,14 +51,37 @@ const sidebarDatas: SidebarItem[] = [
         name: "All Courses",
         icon: <PlusSquareIcon />,
         url: "/dashboard/course",
+        role: ["superadmin", "admin", "departmenthead"],
       },
       {
         id: 172,
         name: "Assigned Courses",
         icon: <PlusSquareIcon />,
         url: "/dashboard/course/assigned",
+        role: ["superadmin", "admin", "departmenthead"],
+      },
+      {
+        id: 174,
+        name: "Assignments Audit",
+        icon: <PlusSquareIcon />,
+        url: "/dashboard/course/assignments",
+        role: ["superadmin", "admin", "departmenthead"],
+      },
+      {
+        id: 173,
+        name: "My Courses",
+        icon: <PlusSquareIcon />,
+        url: "/dashboard/course/my-courses",
+        role: ["user"],
       },
     ],
+  },
+  {
+    id: 18,
+    name: "Batches",
+    icon: <PlusSquareIcon />,
+    url: "/dashboard/batches",
+    role: ["superadmin", "admin", "departmenthead", "user"],
   },
 ];
 

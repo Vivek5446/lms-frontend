@@ -113,6 +113,73 @@ export interface AssignedCourseAccessItem {
   } | null;
 }
 
+export interface MyCourseSourceItem {
+  type: "direct" | "batch";
+  batchId?: string | null;
+  batchName?: string | null;
+  label: string;
+  validFrom?: string | null;
+  validTill?: string | null;
+  dueDate?: string | null;
+  assignedAt?: string | null;
+  isExpired?: boolean;
+  status?: "active" | "expired" | "expiring_soon";
+}
+
+export interface MyCourseItem {
+  courseId: string;
+  title: string;
+  description?: {
+    text?: string;
+    html?: string;
+  };
+  thumbnailUrl?: string;
+  curriculum?: {
+    totalModules?: number;
+    totalSections?: number;
+  };
+  commerce?: {
+    pricingModel?: string;
+    amountInRupees?: number | null;
+  };
+  progress: number;
+  sources: MyCourseSourceItem[];
+  status: "not_started" | "in_progress" | "completed";
+  validTill?: string | null;
+  isExpired: boolean;
+  visibilityStatus: "active" | "expired" | "expiring_soon";
+}
+
+export interface CourseAssignmentAuditItem {
+  _id: string;
+  user?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    username?: string;
+    department?: string;
+  } | null;
+  course?: {
+    _id?: string;
+    title?: string;
+    status?: string;
+  } | null;
+  source: "direct" | "batch";
+  batchId?: string | null;
+  batchName?: string | null;
+  assignedBy?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    username?: string;
+    role?: string;
+  } | null;
+  validTill?: string | null;
+  isExpired: boolean;
+  status: "active" | "expired" | "expiring_soon";
+  courseStatus?: "not_started" | "in_progress" | "completed";
+}
+
 interface CreateCourseInput {
   payload: Record<string, unknown>;
   thumbnailFile?: File | null;
@@ -145,10 +212,14 @@ class CourseStoreClass {
   courses: CourseListItem[] = [];
   accessibleCourses: AccessibleCourseItem[] = [];
   assignedCourseAccesses: AssignedCourseAccessItem[] = [];
+  myCourses: MyCourseItem[] = [];
+  courseAssignmentAudit: CourseAssignmentAuditItem[] = [];
   currentCourse: any = null;
   isLoading: boolean = false;
   isAccessLoading: boolean = false;
   isAssignedCoursesLoading: boolean = false;
+  isMyCoursesLoading: boolean = false;
+  isCourseAssignmentAuditLoading: boolean = false;
   isSubmitting: boolean = false;
   isAccessSubmitting: boolean = false;
   isAssignmentSubmitting: boolean = false;
@@ -332,6 +403,52 @@ class CourseStoreClass {
     }
   };
 
+  fetchMyCourses = async () => {
+    this.isMyCoursesLoading = true;
+    this.accessError = null;
+    try {
+      const { data } = await axios.get("/my-courses");
+      runInAction(() => {
+        this.myCourses = data.data || [];
+      });
+      return data.data || [];
+    } catch (err: any) {
+      runInAction(() => {
+        this.accessError = err?.response?.data?.message || err?.response?.data?.error || "Failed to fetch my courses";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isMyCoursesLoading = false;
+      });
+    }
+  };
+
+  fetchCourseAssignmentAudit = async (params: {
+    courseId?: string;
+    userId?: string;
+    companyId?: string;
+  } = {}) => {
+    this.isCourseAssignmentAuditLoading = true;
+    this.accessError = null;
+    try {
+      const { data } = await axios.get("/course-assignments", { params });
+      runInAction(() => {
+        this.courseAssignmentAudit = data.data || [];
+      });
+      return data.data || [];
+    } catch (err: any) {
+      runInAction(() => {
+        this.accessError = err?.response?.data?.message || err?.response?.data?.error || "Failed to fetch course assignment audit";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isCourseAssignmentAuditLoading = false;
+      });
+    }
+  };
+
   assignCourseAccess = async (payload: {
     courseId: string;
     assignmentType: "company" | "department" | "users";
@@ -351,6 +468,71 @@ class CourseStoreClass {
     } catch (err: any) {
       runInAction(() => {
         this.accessError = err?.response?.data?.message || err?.response?.data?.error || "Failed to save course assignment";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isAssignmentSubmitting = false;
+      });
+    }
+  };
+
+  assignMultipleCourses = async (payload: {
+    courseIds: string[];
+    assignmentType: "company" | "department" | "users" | "csv";
+    companyId?: string;
+    departmentId?: string;
+    departmentName?: string;
+    userIds?: string[];
+    validFrom?: string | null;
+    validTill?: string | null;
+    dueDate?: string | null;
+    file?: File | null;
+    allowFurtherAssignment?: boolean;
+  }) => {
+    this.isAssignmentSubmitting = true;
+    this.accessError = null;
+    try {
+      const hasFile = Boolean(payload.file);
+      const body = hasFile ? new FormData() : ({} as any);
+
+      const appendValue = (key: string, value: any) => {
+        if (value === undefined || value === null || value === "") {
+          return;
+        }
+
+        if (hasFile) {
+          body.append(key, Array.isArray(value) ? JSON.stringify(value) : String(value));
+          return;
+        }
+
+        body[key] = value;
+      };
+
+      appendValue("courseIds", payload.courseIds);
+      appendValue("assignmentType", payload.assignmentType);
+      appendValue("companyId", payload.companyId);
+      appendValue("departmentId", payload.departmentId);
+      appendValue("departmentName", payload.departmentName);
+      appendValue("userIds", payload.userIds || []);
+      appendValue("validFrom", payload.validFrom);
+      appendValue("validTill", payload.validTill);
+      appendValue("dueDate", payload.dueDate);
+      appendValue("allowFurtherAssignment", payload.allowFurtherAssignment);
+
+      if (hasFile && payload.file) {
+        body.append("file", payload.file);
+      }
+
+      const { data } = await axios.post(
+        "/course-assign",
+        body,
+        hasFile ? multipartRequestConfig : undefined
+      );
+      return data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.accessError = err?.response?.data?.message || err?.response?.data?.error || "Failed to assign courses";
       });
       return Promise.reject(err?.response?.data || err);
     } finally {

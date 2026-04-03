@@ -1,5 +1,8 @@
 "use client";
 
+import CustomInput from "@/app/component/config/component/customInput/CustomInput";
+import { courseStore } from "@/app/store/courseStore/courseStore";
+import stores from "@/app/store/stores";
 import {
   Alert,
   AlertDescription,
@@ -28,22 +31,22 @@ import {
   StepDescription,
   StepIndicator,
   StepNumber,
+  Stepper,
   StepSeparator,
   StepStatus,
   StepTitle,
-  Stepper,
   Switch,
   Text,
   useToast,
   VStack,
+  Wrap,
+  WrapItem,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo, useState } from "react";
-import stores from "@/app/store/stores";
-import { courseStore } from "@/app/store/courseStore/courseStore";
 
 const STEPS = [
-  { title: "Target", description: "Choose course and audience" },
+  { title: "Target", description: "Choose courses and audience" },
   { title: "Duration", description: "Configure validity" },
   { title: "Rules", description: "Control downstream assignment" },
   { title: "Review", description: "Confirm before saving" },
@@ -66,7 +69,7 @@ const AssignCourseModal = observer(
     const role = String(auth.userType || auth.user?.role || "").toLowerCase();
     const isSuperadmin = role === "superadmin";
     const [step, setStep] = useState(0);
-    const [courseId, setCourseId] = useState(defaultCourseId);
+    const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>(defaultCourseId ? [defaultCourseId] : []);
     const [assignmentTarget, setAssignmentTarget] = useState<AssignmentTarget>("company");
     const [companyId, setCompanyId] = useState(fixedCompanyId || companyStore.getActiveCompanyId());
     const [departmentName, setDepartmentName] = useState("");
@@ -80,7 +83,22 @@ const AssignCourseModal = observer(
     const companies = companyStore.companies.data || [];
     const selectedCompany = companies.find((company: any) => company._id === companyId);
     const departments = selectedCompany?.departments || auth.user?.companyDetails?.departments || [];
-    const selectedCourse = courseStore.courses.find((course) => course._id === courseId);
+    const courseOptions = useMemo(
+      () =>
+        courseStore.courses.map((course) => ({
+          label: course.title,
+          value: course._id,
+        })),
+      [courseStore.courses]
+    );
+    const selectedCourseOptions = useMemo(
+      () => courseOptions.filter((course) => selectedCourseIds.includes(course.value)),
+      [courseOptions, selectedCourseIds]
+    );
+    const selectedCourses = useMemo(
+      () => courseStore.courses.filter((course) => selectedCourseIds.includes(course._id)),
+      [courseStore.courses, selectedCourseIds]
+    );
 
     useEffect(() => {
       if (!isOpen) {
@@ -98,7 +116,7 @@ const AssignCourseModal = observer(
         return;
       }
 
-      setCourseId(defaultCourseId || "");
+      setSelectedCourseIds(defaultCourseId ? [defaultCourseId] : []);
       setCompanyId(fixedCompanyId || companyStore.getActiveCompanyId());
       setAssignmentTarget("company");
       setDepartmentName("");
@@ -139,7 +157,7 @@ const AssignCourseModal = observer(
 
     const canContinue = useMemo(() => {
       if (step === 0) {
-        if (!courseId || !companyId) {
+        if (!selectedCourseIds.length || !companyId) {
           return false;
         }
 
@@ -159,7 +177,7 @@ const AssignCourseModal = observer(
       }
 
       return true;
-    }, [assignmentTarget, companyId, courseId, departmentName, noExpiry, selectedUsers.length, step, validTill]);
+    }, [assignmentTarget, companyId, departmentName, noExpiry, selectedCourseIds.length, selectedUsers.length, step, validTill]);
 
     const toggleSelectedUser = (user: any) => {
       setSelectedUsers((current) => {
@@ -173,13 +191,13 @@ const AssignCourseModal = observer(
     };
 
     const handleSubmit = async () => {
-      if (!courseId || !companyId) {
+      if (!selectedCourseIds.length || !companyId) {
         return;
       }
 
       try {
-        const response = await courseStore.assignCourseAccess({
-          courseId,
+        const response = await courseStore.assignMultipleCourses({
+          courseIds: selectedCourseIds,
           assignmentType: assignmentTarget,
           companyId,
           departmentName: assignmentTarget === "department" ? departmentName : undefined,
@@ -203,7 +221,7 @@ const AssignCourseModal = observer(
         onClose();
       } catch (err: any) {
         toast({
-          title: "Unable to assign course",
+          title: "Unable to assign courses",
           description: err?.message || err?.error || "Please try again.",
           status: "error",
           duration: 4500,
@@ -216,7 +234,7 @@ const AssignCourseModal = observer(
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
-          <DrawerHeader>Assign Course</DrawerHeader>
+          <DrawerHeader>Assign Courses</DrawerHeader>
 
           <DrawerBody>
             {!isSuperadmin ? (
@@ -248,17 +266,20 @@ const AssignCourseModal = observer(
 
                 {step === 0 ? (
                   <Stack spacing={5}>
-                    <FormControl isRequired isDisabled={Boolean(defaultCourseId)}>
-                      <FormLabel>Course</FormLabel>
-                      <Select value={courseId} onChange={(event) => setCourseId(event.target.value)}>
-                        <option value="">Select course</option>
-                        {courseStore.courses.map((course) => (
-                          <option key={course._id} value={course._id}>
-                            {course.title}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <CustomInput
+                      type="select"
+                      name="courseIds"
+                      label="Courses"
+                      placeholder="Search and select courses"
+                      value={selectedCourseOptions}
+                      options={courseOptions}
+                      onChange={(value: Array<{ label: string; value: string }> | null) =>
+                        setSelectedCourseIds((value || []).map((option) => option.value))
+                      }
+                      isSearchable
+                      isMulti
+                      isClear
+                    />
 
                     <FormControl isRequired isDisabled={Boolean(fixedCompanyId)}>
                       <FormLabel>Company</FormLabel>
@@ -401,9 +422,11 @@ const AssignCourseModal = observer(
                       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
                         <Box>
                           <Text fontSize="sm" color="gray.500">
-                            Course
+                            Courses
                           </Text>
-                          <Text fontWeight="medium">{selectedCourse?.title || "Not selected"}</Text>
+                          <Text fontWeight="medium">
+                            {selectedCourses.length ? `${selectedCourses.length} selected` : "Not selected"}
+                          </Text>
                         </Box>
                         <Box>
                           <Text fontSize="sm" color="gray.500">
@@ -430,6 +453,18 @@ const AssignCourseModal = observer(
                           <Text fontWeight="medium">{noExpiry ? "No expiry" : validTill || "Not selected"}</Text>
                         </Box>
                       </SimpleGrid>
+
+                      {selectedCourses.length ? (
+                        <Wrap spacing={2} mt={4}>
+                          {selectedCourses.map((course) => (
+                            <WrapItem key={course._id}>
+                              <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
+                                {course.title}
+                              </Badge>
+                            </WrapItem>
+                          ))}
+                        </Wrap>
+                      ) : null}
                     </Box>
 
                     <HStack spacing={3} flexWrap="wrap">
