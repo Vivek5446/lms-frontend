@@ -25,9 +25,8 @@ export const Footer: React.FC = () => {
   const footerLinks = {
     platform: [
       { name: "Home", href: "/" },
-      { name: "All Courses", href: "/course" },
-      { name: "Learning Paths", href: "/paths" },
-      { name: "Certifications", href: "/certifications" },
+      { name: "Courses", href: "/course" },
+      { name: "Batches", href: "/batches" },
     ],
     company: [
       { name: "About Us", href: "/about-us" },
@@ -96,6 +95,7 @@ export const Footer: React.FC = () => {
             {footerLinks.platform.map((link) => (
               <NextLink key={link.name} href={link.href} passHref legacyBehavior>
                 <ChakraLink fontSize="sm" color={textColor} _hover={{ color: "blue.500", textDecoration: "none" }}>
+                  {link.name}
                 </ChakraLink>
               </NextLink>
             ))}

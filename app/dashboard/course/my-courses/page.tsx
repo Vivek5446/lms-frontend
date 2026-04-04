@@ -1,5 +1,5 @@
-import MyCoursesBoard from "../components/MyCoursesBoard";
+import { redirect } from "next/navigation";
 
-export default function MyCoursesPage() {
-  return <MyCoursesBoard />;
+export default function DashboardMyCoursesPage() {
+  redirect("/course");
 }

@@ -262,10 +262,12 @@ class AuthStore {
   logout = () => {
     this.token = null;
     this.user = null;
+    this.userType = null;
+    this.company = undefined;
     this.error = null;
 
     if (typeof window !== "undefined") {
-      localStorage.removeItem(AUTH_TOKEN);
+      this.clearLocalStorage();
     }
   };
 }

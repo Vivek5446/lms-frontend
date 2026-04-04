@@ -150,6 +150,29 @@ export interface MyCourseItem {
   visibilityStatus: "active" | "expired" | "expiring_soon";
 }
 
+export interface MyCourseDetailItem extends CourseListItem {
+  description?: {
+    text?: string;
+    html?: string;
+  };
+  taxonomy?: {
+    categories?: string[];
+    languages?: string[];
+    level?: string;
+  };
+  progression?: {
+    completionWindowDays?: number | null;
+    dripEnabled?: boolean;
+    certificateEnabled?: boolean;
+    mandatoryModules?: boolean;
+  };
+  sources: MyCourseSourceItem[];
+  progress: number;
+  validTill?: string | null;
+  isExpired: boolean;
+  visibilityStatus: "active" | "expired" | "expiring_soon";
+}
+
 export interface CourseAssignmentAuditItem {
   _id: string;
   user?: {
@@ -219,6 +242,7 @@ class CourseStoreClass {
   isAccessLoading: boolean = false;
   isAssignedCoursesLoading: boolean = false;
   isMyCoursesLoading: boolean = false;
+  isMyCourseDetailLoading: boolean = false;
   isCourseAssignmentAuditLoading: boolean = false;
   isSubmitting: boolean = false;
   isAccessSubmitting: boolean = false;
@@ -422,6 +446,32 @@ class CourseStoreClass {
         this.isMyCoursesLoading = false;
       });
     }
+  };
+
+  fetchMyCourseDetail = async (courseId: string) => {
+    this.isMyCourseDetailLoading = true;
+    this.accessError = null;
+    try {
+      const { data } = await axios.get(`/my-courses/${courseId}`);
+      runInAction(() => {
+        this.currentCourse = data.data || null;
+      });
+      return data.data || null;
+    } catch (err: any) {
+      runInAction(() => {
+        this.currentCourse = null;
+        this.accessError = err?.response?.data?.message || err?.response?.data?.error || "Failed to fetch course details";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isMyCourseDetailLoading = false;
+      });
+    }
+  };
+
+  clearCurrentCourse = () => {
+    this.currentCourse = null;
   };
 
   fetchCourseAssignmentAudit = async (params: {

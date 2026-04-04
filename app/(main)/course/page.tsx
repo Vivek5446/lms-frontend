@@ -1,17 +1,45 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import MyCoursesBoard from '@/app/(main)/course/component/MyCoursesBoard';
+import { isLearnerRole } from '@/app/config/utils/roleAccess';
+import stores from '@/app/store/stores';
 import {
-  Box, Heading, Text, Button, SimpleGrid, Container, Badge, Icon, HStack,
-  Stack, Image, VStack, Circle, Flex, Input, Checkbox, Drawer, DrawerBody,
-  DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton, IconButton,
-  useDisclosure, useColorModeValue, AspectRatio, Tag, TagLabel, TagLeftIcon,
-  Divider
+  AspectRatio,
+  Box,
+  Button,
+  Checkbox,
+  Circle,
+  Drawer, DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerHeader, DrawerOverlay,
+  Flex,
+  Heading,
+  HStack,
+  Icon,
+  Image,
+  Input,
+  SimpleGrid,
+  Stack,
+  Tag, TagLabel,
+  Text,
+  useColorModeValue,
+  useDisclosure,
+  VStack
 } from '@chakra-ui/react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { observer } from 'mobx-react-lite';
+import { useMemo, useState } from 'react';
 import {
-  FaStar, FaArrowLeft, FaPlayCircle, FaLock, FaFilter, FaClock, FaUserGraduate, FaCertificate
+  FaArrowLeft,
+  FaCertificate,
+  FaClock,
+  FaFilter,
+  FaLock,
+  FaPlayCircle,
+  FaUserGraduate
 } from 'react-icons/fa';
-import { motion, AnimatePresence } from 'framer-motion';
+import { CourseCard } from './component/CourseCard';
 
 const MotionBox = motion(Box);
 
@@ -46,7 +74,9 @@ const COURSES: Course[] = [
 
 const CATEGORIES = ['All', 'Banking', 'NBFC', 'Risk', 'Technology'];
 
-export default function CoursesPage() {
+const CoursesPage = observer(function CoursesPage() {
+  const role = String(stores.auth.userType || stores.auth.user?.role || '').toLowerCase();
+  const isLearner = Boolean(stores.auth.user) && isLearnerRole(role);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -119,9 +149,13 @@ export default function CoursesPage() {
   const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
   const subtitleColor = useColorModeValue('gray.500', 'gray.300');
 
+  if (isLearner) {
+    return <MyCoursesBoard basePath="/course" />;
+  }
+
   return (
     <Box minH="100vh" bg={pageBg} py={{ base: 4, md: 10 }}>
-      <Container maxW="1440px">
+    <Box>
         <AnimatePresence mode="wait">
           {!selectedCourse ? (
             <MotionBox key="catalog" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -156,43 +190,15 @@ export default function CoursesPage() {
                     </HStack>
                   </Flex>
 
-                  <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing={6}>
-                    {filteredCourses.map((course) => (
-                      <MotionBox
-                        key={course.id}
-                        layout
-                        whileHover={{ y: -8 }}
-                        onClick={() => setSelectedCourse(course)}
-                        cursor="pointer" bg={cardBg}
-                        borderRadius="2xl" shadow={useColorModeValue('sm','md')} borderWidth="1px" borderColor={cardBorder} overflow="hidden"
-                        transition={{ duration: 0.2 }}
-                      >
-                        <AspectRatio ratio={16 / 9}>
-                          <Image src={course.image} objectFit="cover" alt={course.title} />
-                        </AspectRatio>
-                        <Box p={5}>
-                          <HStack justify="space-between" mb={3}>
-                            <Badge colorScheme="blue" variant="subtle" px={2} borderRadius="md" textTransform="capitalize">{course.level}</Badge>
-                            <HStack spacing={1} color="orange.400" fontWeight="bold">
-                              <Icon as={FaStar} />
-                              <Text fontSize="sm">{course.rating}</Text>
-                            </HStack>
-                          </HStack>
-                          <Heading size="sm" mb={4} minH="40px" lineHeight="shorter" noOfLines={2} color={textColor}>{course.title}</Heading>
-                          <Divider mb={4} borderColor={useColorModeValue('gray.200', 'gray.700')} />
-                          <Flex justify="space-between" align="center">
-                            <VStack align="start" spacing={0}>
-                              <Text fontSize="20px" fontWeight="900" color={useColorModeValue('blue.600', 'blue.300')}>₹{course.price.toLocaleString()}</Text>
-                            </VStack>
-                            <HStack color={useColorModeValue('gray.500', 'gray.400')} fontSize="xs">
-                               <Icon as={FaClock} />
-                               <Text>{course.duration}</Text>
-                            </HStack>
-                          </Flex>
-                        </Box>
-                      </MotionBox>
-                    ))}
-                  </SimpleGrid>
+              <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing={8}>
+  {filteredCourses.map((course) => (
+    <CourseCard
+      key={course.id}
+      course={course}
+      onClick={() => setSelectedCourse(course)}
+    />
+  ))}
+</SimpleGrid>
                 </Box>
               </Flex>
             </MotionBox>
@@ -254,7 +260,7 @@ export default function CoursesPage() {
             </MotionBox>
           )}
         </AnimatePresence>
-      </Container>
+      </Box>
 
       {/* Drawer for Mobile (Simplified) */}
       <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
@@ -269,7 +275,9 @@ export default function CoursesPage() {
       </Drawer>
     </Box>
   );
-}
+});
+
+export default CoursesPage;
 
 // Small helper for detail view
 const Spacer = () => <Box flex="1" />;

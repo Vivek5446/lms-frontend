@@ -1,5 +1,6 @@
 import { PlusSquareIcon } from "@chakra-ui/icons";
 import { FaChartPie, FaCog, FaUserAstronaut, FaUsers, FaUserTie } from "react-icons/fa";
+import { expandRoleAliases } from "@/app/config/utils/roleAccess";
 
 interface SidebarItem {
   id: number;
@@ -16,7 +17,7 @@ const sidebarDatas: SidebarItem[] = [
     name: "Dashboard",
     icon: <FaChartPie />,
     url: "/dashboard",
-    role: ["patient", "user", "admin", "superadmin", "departmenthead"],
+    role: ["patient", "admin", "superadmin", "departmenthead"],
   },
   {
     id: 100,
@@ -44,7 +45,7 @@ const sidebarDatas: SidebarItem[] = [
     name: "Courses",
     icon: <PlusSquareIcon />,
     url: "/dashboard/course",
-    role: ["superadmin", "admin", "departmenthead", "user"],
+    role: ["superadmin", "admin", "departmenthead"],
     children: [
       {
         id: 171,
@@ -67,13 +68,6 @@ const sidebarDatas: SidebarItem[] = [
         url: "/dashboard/course/assignments",
         role: ["superadmin", "admin", "departmenthead"],
       },
-      {
-        id: 173,
-        name: "My Courses",
-        icon: <PlusSquareIcon />,
-        url: "/dashboard/course/my-courses",
-        role: ["user"],
-      },
     ],
   },
   {
@@ -81,7 +75,7 @@ const sidebarDatas: SidebarItem[] = [
     name: "Batches",
     icon: <PlusSquareIcon />,
     url: "/dashboard/batches",
-    role: ["superadmin", "admin", "departmenthead", "user"],
+    role: ["superadmin", "admin", "departmenthead"],
   },
 ];
 
@@ -91,14 +85,16 @@ export const sidebarFooterData: SidebarItem[] = [
     name: "Settings",
     icon: <FaCog />,
     url: "/dashboard/profile",
-    role: ["admin", "superadmin", "patient", "doctor", "departmenthead", "user"],
+    role: ["admin", "superadmin", "patient", "doctor", "departmenthead"],
   },
 ];
 
 const getSidebarDataByRole = (role: string[] = ["admin"]): SidebarItem[] => {
+  const effectiveRoles = expandRoleAliases(role);
+
   const filterByRole = (items: SidebarItem[]): SidebarItem[] => {
     return items
-      .filter((item) => !item.role || item.role.some((r) => role.includes(r)))
+      .filter((item) => !item.role || item.role.some((r) => effectiveRoles.includes(r)))
       .map((item) => ({
         ...item,
         children: item.children ? filterByRole(item.children) : undefined,

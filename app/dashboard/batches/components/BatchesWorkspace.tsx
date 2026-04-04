@@ -20,18 +20,25 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { FiSearch } from "react-icons/fi";
 import stores from "@/app/store/stores";
 import { batchStore } from "@/app/store/batchStore/batchStore";
+import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import BatchCard from "./BatchCard";
 import BatchCreationModal from "./BatchCreationModal";
 import BatchDetailsDrawer from "./BatchDetailsDrawer";
 
-const BatchesWorkspace = observer(() => {
+type BatchesWorkspaceProps = {
+  courseBasePath?: string;
+};
+
+const BatchesWorkspace = observer(({ courseBasePath = "/dashboard/course/my-courses" }: BatchesWorkspaceProps) => {
   const { auth, companyStore } = stores;
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
-  const isUser = role === "user";
+  const router = useRouter();
+  const isLearner = isLearnerRole(role);
   const isSuperadmin = role === "superadmin";
   const canCreate = ["superadmin", "admin", "departmenthead"].includes(role);
   const canManage = ["superadmin", "admin", "departmenthead"].includes(role);
@@ -53,7 +60,7 @@ const BatchesWorkspace = observer(() => {
   }, [companyStore, isSuperadmin]);
 
   useEffect(() => {
-    if (isUser) {
+    if (isLearner) {
       batchStore.fetchMyBatches().catch(() => undefined);
       return;
     }
@@ -63,10 +70,10 @@ const BatchesWorkspace = observer(() => {
     }
 
     batchStore.fetchBatches({ companyId: companyId || undefined }).catch(() => undefined);
-  }, [companyId, isSuperadmin, isUser]);
+  }, [companyId, isSuperadmin, isLearner]);
 
-  const items = isUser ? batchStore.myBatches : batchStore.batches;
-  const isLoading = isUser ? batchStore.isMyBatchesLoading : batchStore.isLoading;
+  const items = isLearner ? batchStore.myBatches : batchStore.batches;
+  const isLoading = isLearner ? batchStore.isMyBatchesLoading : batchStore.isLoading;
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -97,7 +104,7 @@ const BatchesWorkspace = observer(() => {
   }, [items, searchQuery]);
 
   const refreshBatches = async () => {
-    if (isUser) {
+    if (isLearner) {
       await batchStore.fetchMyBatches();
       return;
     }
@@ -117,24 +124,29 @@ const BatchesWorkspace = observer(() => {
   };
 
   return (
-    <Box minH="100vh" bg="gray.50" p={{ base: 4, md: 6 }}>
+    <Box minH="100vh" bg={isLearner ? "transparent" : "gray.50"} p={{ base: 4, md: 6 }}>
       <Stack spacing={6}>
         <Box
           borderRadius="3xl"
           px={{ base: 5, md: 7 }}
           py={{ base: 6, md: 7 }}
-          bg="linear-gradient(135deg, #ffffff 0%, #eff6ff 45%, #f8fafc 100%)"
+          bg={
+            isLearner
+              ? "linear-gradient(135deg, #0f172a 0%, #1d4ed8 52%, #dbeafe 100%)"
+              : "linear-gradient(135deg, #ffffff 0%, #eff6ff 45%, #f8fafc 100%)"
+          }
           borderWidth="1px"
-          borderColor="blue.100"
+          borderColor={isLearner ? "transparent" : "blue.100"}
           boxShadow="sm"
+          color={isLearner ? "white" : "inherit"}
         >
           <Stack spacing={4}>
             <HStack justify="space-between" align={{ base: "start", md: "center" }} flexWrap="wrap">
               <Box maxW="3xl">
-                <Heading size="md">{isUser ? "My Batches" : "Batch Workspace"}</Heading>
-                <Text mt={2} color="gray.600">
-                  {isUser
-                    ? "Review the batches assigned to you and inspect the course bundle inside each one."
+                <Heading size="md">{isLearner ? "My Batches" : "Batch Workspace"}</Heading>
+                <Text mt={2} color={isLearner ? "whiteAlpha.900" : "gray.600"}>
+                  {isLearner
+                    ? "Open your learning groups, track what is already completed, and launch the courses bundled inside each batch."
                     : `Manage multi-course learning cohorts for ${activeCompany?.company_name || "the selected company"} with clearer cards, quick drill-in, and smoother member updates.`}
                 </Text>
               </Box>
@@ -148,7 +160,7 @@ const BatchesWorkspace = observer(() => {
           </Stack>
         </Box>
 
-        {!companyId && isSuperadmin && !isUser ? (
+        {!companyId && isSuperadmin && !isLearner ? (
           <Alert status="info" borderRadius="2xl">
             <AlertIcon />
             <Box>
@@ -167,7 +179,7 @@ const BatchesWorkspace = observer(() => {
           <Box bg="white" borderWidth="1px" borderRadius="3xl" p={8}>
             <Text fontWeight="semibold">No batches yet</Text>
             <Text mt={2} color="gray.600">
-              {isUser
+              {isLearner
                 ? "You have not been added to a batch yet."
                 : "Create your first batch to assign multiple courses to a group of learners in one flow."}
             </Text>
@@ -198,7 +210,7 @@ const BatchesWorkspace = observer(() => {
             ) : (
               <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={5}>
                 {filteredItems.map((batch) => (
-                  <BatchCard key={batch._id} batch={batch} onClick={() => handleBatchClick(batch._id)} />
+                  <BatchCard key={batch._id} batch={batch} onClick={() => handleBatchClick(batch._id)} isLearner={isLearner} />
                 ))}
               </SimpleGrid>
             )}
@@ -214,9 +226,11 @@ const BatchesWorkspace = observer(() => {
         }}
         batch={batchStore.activeBatch}
         isLoading={batchStore.isDetailsLoading}
-        canManage={canManage && !isUser}
+        canManage={canManage && !isLearner}
+        isLearner={isLearner}
         onEditBatch={() => handleEditOpen(0)}
         onManageUsers={() => handleEditOpen(2)}
+        onOpenCourse={isLearner ? (courseId) => router.push(`${courseBasePath}?courseId=${courseId}`) : undefined}
       />
 
       <BatchCreationModal

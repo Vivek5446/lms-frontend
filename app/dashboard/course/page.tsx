@@ -10,6 +10,7 @@ import AssignCourseModal from "./components/AssignCourseModal";
 import CoursePlayer from "./scorm/CoursePlayer";
 import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore";
 import stores from "@/app/store/stores";
+import { isLearnerRole } from "@/app/config/utils/roleAccess";
 
 function buildScormCourseUrl(scormPath: string) {
   const normalizedPath = scormPath.startsWith("/") ? scormPath : `/${scormPath}`;
@@ -23,10 +24,16 @@ function CoursePage() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const router = useRouter();
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
+  const isLearner = isLearnerRole(role);
 
   useEffect(() => {
+    if (isLearner) {
+      router.replace("/course");
+      return;
+    }
+
     courseStore.fetchCourses();
-  }, []);
+  }, [isLearner, router]);
 
   const handleCreateSuccess = () => {
     courseStore.fetchCourses();
@@ -45,6 +52,10 @@ function CoursePage() {
   const handleBackFromPlayer = () => {
     setPlayerPath(null);
   };
+
+  if (isLearner) {
+    return null;
+  }
 
   // ─── Create View ───────────────────────────────────────────
   if (view === "create") {
@@ -124,8 +135,8 @@ function CoursePage() {
               whileTap={{ scale: 0.97 }}
               onClick={() =>
                 router.push(
-                  role === "user"
-                    ? "/dashboard/course/my-courses"
+                  isLearner
+                    ? "/course"
                     : role === "superadmin"
                       ? "/dashboard/course/assigned"
                       : "/dashboard/course/access-management"
@@ -147,12 +158,12 @@ function CoursePage() {
             >
               {role === "superadmin"
                 ? "Assigned Courses"
-                : role === "user"
+                : isLearner
                   ? "My Courses"
                   : "Assign Courses"}
             </motion.button>
 
-            {role !== "user" ? (
+            {!isLearner ? (
               <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
