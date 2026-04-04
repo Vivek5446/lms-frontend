@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Flex, IconButton, useBreakpointValue, useColorModeValue } from "@chakra-ui/react";
+import { Box, Flex, IconButton, useBreakpointValue } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { BiLeftArrowAlt, BiRightArrowAlt } from "react-icons/bi";
 import stores from "../../../../../store/stores";
@@ -8,10 +8,6 @@ import SearchBar from "../HeaderNavbar/SearchBar/SearchBar";
 
 const HeaderLogo = observer(() => {
   const isLargerThanXl = useBreakpointValue({ lg: true }) ?? false;
-  const hoverColor = useColorModeValue("brand.500", "brand.200");
-  const hoverBg = useColorModeValue("brand.50", "gray.700");
-  const activeBg = useColorModeValue("brand.100", "gray.800");
-  const iconColor = useColorModeValue("gray.600", "gray.300");
 
   const {
     layout: { fullScreenMode, openDashSidebarFun, isCallapse },
@@ -21,45 +17,58 @@ const HeaderLogo = observer(() => {
     <Flex width="100%" alignItems="center" justifyContent="space-between" display="flex" ml={2}>
       {isLargerThanXl && (
         <Flex alignItems="center">
+          {/* Sidebar collapse/expand toggle */}
           <IconButton
-            variant="ghost"
-            aria-label="Arrow"
-            fontSize="2xl"
-            color={iconColor}
-            _hover={{ color: hoverColor, bg: hoverBg }}
-            _active={{ bg: activeBg }}
+            aria-label="Toggle sidebar"
             icon={
               isCallapse ? (
-                <BiRightArrowAlt fontSize={25} />
+                <BiRightArrowAlt fontSize={20} />
               ) : (
-                <BiLeftArrowAlt fontSize={25} />
-              )
-            }
-            size="lg"
-            sx={{ marginRight: "1rem", marginTop: "2px" }}
-            onClick={() => {
-              openDashSidebarFun();
-            }}
-          />
-          <IconButton
-            icon={
-              fullScreenMode ? (
-                <BiRightArrowAlt fontSize={25} />
-              ) : (
-                <BiLeftArrowAlt fontSize={25} />
+                <BiLeftArrowAlt fontSize={20} />
               )
             }
             onClick={() => openDashSidebarFun()}
-            variant="ghost"
-            size="lg"
+            isRound
+            bg="gray.700"
+            color="white"
+            fontSize="xl"
+            w="40px"
+            h="40px"
+            minW="40px"
+            _hover={{ bg: "blue.500", transform: "scale(1.05)" }}
+            _active={{ bg: "blue.600", transform: "scale(0.97)" }}
+            transition="all 0.2s ease"
             sx={{ marginRight: "1rem", marginTop: "2px" }}
+          />
+
+          {/* Fullscreen toggle — kept hidden as per original */}
+          <IconButton
             aria-label="open the drawer button"
+            icon={
+              fullScreenMode ? (
+                <BiRightArrowAlt fontSize={20} />
+              ) : (
+                <BiLeftArrowAlt fontSize={20} />
+              )
+            }
+            onClick={() => openDashSidebarFun()}
+            isRound
+            bg="gray.700"
+            color="white"
+            fontSize="xl"
+            w="40px"
+            h="40px"
+            minW="40px"
+            _hover={{ bg: "blue.500", transform: "scale(1.05)" }}
+            _active={{ bg: "blue.600", transform: "scale(0.97)" }}
+            transition="all 0.2s ease"
+            sx={{ marginRight: "1rem", marginTop: "2px" }}
             display="none"
           />
         </Flex>
       )}
       <SearchBar />
-      <Box></Box>
+      <Box />
     </Flex>
   );
 });

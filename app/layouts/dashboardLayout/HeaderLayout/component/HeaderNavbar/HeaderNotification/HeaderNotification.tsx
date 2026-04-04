@@ -44,7 +44,7 @@ const NotificationComponent = observer(() => {
   const [loadingId, setLoadingId] = useState<any>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchNotifications = useCallback( async (pageNumber: number, reset: boolean = false) => {
+  const fetchNotifications = useCallback(async (pageNumber: number, reset: boolean = false) => {
     const lists = {
       Unread: false,
       Read: true,
@@ -60,13 +60,11 @@ const NotificationComponent = observer(() => {
       setNotificationsList((prev) => [...prev, ...(result?.data || [])]);
       setPage(pageNumber);
     }
-  },[getNotifications]);
+  }, [getNotifications]);
 
   useEffect(() => {
-    fetchNotifications(1, true); // On dropdown open/reset
+    fetchNotifications(1, true);
   }, [selectedItem, fetchNotifications]);
-
-
 
   const handleLoadMore = async () => {
     setLoadingMore(true);
@@ -85,7 +83,7 @@ const NotificationComponent = observer(() => {
     try {
       setLoadingId(id);
       await markAsReadNotifications(id);
-      await fetchNotifications(1, true); // Refresh list after marking as read
+      await fetchNotifications(1, true);
     } finally {
       setLoadingId(null);
     }
@@ -147,12 +145,15 @@ const NotificationComponent = observer(() => {
           as={IconButton}
           icon={<BellIcon />}
           isRound
-          bg="transparent"
-          variant="ghost"
-          fontSize="2xl"
+          bg="gray.700"          
+          fontSize="xl"           
           color="white"
-          _hover={{ color: "blue.400", bg: "gray.700" }}
-          _active={{ bg: "gray.800" }}
+          w="40px"                
+          h="40px"
+          minW="40px"
+          _hover={{ bg: "blue.500", transform: "scale(1.05)" }}
+          _active={{ bg: "blue.600", transform: "scale(0.97)" }}
+          transition="all 0.2s ease"
           aria-label="notifications"
           onClick={() => setDropdownOpen(!dropdownOpen)}
         />
@@ -226,7 +227,6 @@ const NotificationComponent = observer(() => {
                     renderNotificationItem(notification, index)
                   )}
 
-                  {/* Load More Button */}
                   {notification?.totalPages > page && (
                     <Flex justify="center" my={2}>
                       <Button

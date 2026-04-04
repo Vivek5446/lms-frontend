@@ -70,8 +70,7 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
   }
 
   return user ? (
-    <Box
-    >
+    <Box>
       <MainContainer $isMobile={isMobile}>
         <Box ref={sidebarRef}>
           <SidebarLayout
@@ -103,9 +102,8 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
     </Box>
   ) : (
     <PageLoader loading={true}>
-    <Spinner />
+      <Spinner />
     </PageLoader>
-    // <RedirectComponent />
   );
 });
 
@@ -124,6 +122,7 @@ const Container = styled.div`
   transition: all 0.3s ease-in-out;
 `;
 
+/* ── Only this component changed ── */
 const HeaderContainer = styled.div<{
   $backgroundColor: string;
   $isMobile: boolean;
@@ -133,9 +132,31 @@ const HeaderContainer = styled.div<{
   position: fixed;
   top: 0;
   right: 0;
-  background-color: ${(props) => props.$backgroundColor};
   left: ${(props) => (props.$isMobile ? '0px' : mediumSidebarWidth)};
   transition: all 0.3s ease-in-out;
+
+  /* White gradient with subtle slide-down animation on mount */
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #f8f9ff 30%,
+    #f0f2ff 80%
+  );
+  border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+  box-shadow: 0 1px 3px rgba(30, 40, 100, 0.06), 0 4px 16px rgba(99, 102, 241, 0.07);
+
+  animation: navbarSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes navbarSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 `;
 
 const ContentContainer = styled.div<{ $isMobile: boolean }>`

@@ -9,11 +9,6 @@ import { dashboard } from "../../../../config/utils/routes";
 import { headerHeight } from "../../../../component/config/utils/variable";
 
 /* ── animations ── */
-const shimmer = keyframes`
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
-`;
-
 const fadeSlide = keyframes`
   from { opacity: 0; transform: translateX(-8px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -30,7 +25,6 @@ const SidebarLogo: React.FC = observer(() => {
   const companyName = user?.companyDetails?.company_name ?? "Dashboard";
   const logoUrl = user?.companyDetails?.logo?.url;
 
-  /* Two-letter monogram when no logo */
   const initials = companyName
     .split(" ")
     .slice(0, 2)
@@ -44,7 +38,7 @@ const SidebarLogo: React.FC = observer(() => {
       role="button"
       aria-label="Go to home"
     >
-      {/* Avatar / logo mark */}
+      {/* Avatar / logo */}
       <AvatarRing>
         {logoUrl ? (
           <Avatar
@@ -59,7 +53,7 @@ const SidebarLogo: React.FC = observer(() => {
         )}
       </AvatarRing>
 
-      {/* Brand text — hidden when collapsed */}
+      {/* Brand text */}
       {!isCallapse && (
         <BrandText>
           <CompanyName>{companyName}</CompanyName>
@@ -67,7 +61,6 @@ const SidebarLogo: React.FC = observer(() => {
         </BrandText>
       )}
 
-      {/* Decorative accent line at the bottom */}
       <AccentLine />
     </LogoWrapper>
   );
@@ -88,18 +81,21 @@ const LogoWrapper = styled.div<{ $height: string }>`
   overflow: hidden;
   flex-shrink: 0;
 
-  /* Subtle top-gradient band */
+  /* ✅ Better contrast background */
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    transparent 100%
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.1) 100%
   );
 
+  backdrop-filter: blur(6px);
+
   &:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(2px);
   }
 
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
 `;
 
 const AvatarRing = styled.div`
@@ -110,70 +106,60 @@ const AvatarRing = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35),
-              0 4px 14px rgba(99, 102, 241, 0.4);
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
+
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #6366f1 100%);
+
+  box-shadow:
+    0 0 0 2px rgba(124, 58, 237, 0.25),
+    0 4px 12px rgba(168, 85, 247, 0.3);
+
+  transition: all 0.25s ease;
 
   ${LogoWrapper}:hover & {
-    transform: scale(1.06);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5),
-                0 6px 20px rgba(99, 102, 241, 0.5);
+    transform: scale(1.08);
+    box-shadow:
+      0 0 0 3px rgba(168, 85, 247, 0.4),
+      0 10px 24px rgba(168, 85, 247, 0.5);
   }
 `;
 
 const Monogram = styled.span`
-  font-family: 'Sora', 'DM Sans', sans-serif;
+  font-family: "Sora", "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.5px;
-  user-select: none;
+  color: #ffffff;
 `;
 
 const BrandText = styled.div`
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   animation: ${fadeSlide} 0.25s ease both;
 `;
 
 const CompanyName = styled.span`
-  font-family: 'Sora', 'DM Sans', sans-serif;
+  font-family: "Sora", "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.2px;
+
+  /* ✅ Premium readable white */
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 160px;
-
-  /* Shimmer gradient text */
-  background: linear-gradient(
-    90deg,
-    #f1f5f9 0%,
-    #ffffff 40%,
-    #94a3b8 60%,
-    #f1f5f9 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-
-  ${LogoWrapper}:hover & {
-    animation: ${shimmer} 1.8s linear infinite;
-  }
 `;
 
 const TagLine = styled.span`
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 10.5px;
   font-weight: 500;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: #475569;
-  white-space: nowrap;
+
+  /* ✅ Fixed visibility */
+  color: rgba(255, 255, 255, 0.6);
 `;
 
 const AccentLine = styled.div`
@@ -182,11 +168,12 @@ const AccentLine = styled.div`
   left: 18px;
   right: 18px;
   height: 1px;
+
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(99, 102, 241, 0.4) 30%,
-    rgba(139, 92, 246, 0.4) 70%,
+    rgba(168, 85, 247, 0.6) 30%,
+    rgba(99, 102, 241, 0.6) 70%,
     transparent
   );
 `;
