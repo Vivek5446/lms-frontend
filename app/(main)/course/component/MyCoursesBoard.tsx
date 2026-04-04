@@ -3,6 +3,7 @@
 import CourseDetails from "@/app/dashboard/course/CourseDetails";
 import CoursePlayer from "@/app/dashboard/course/scorm/CoursePlayer";
 import { courseStore } from "@/app/store/courseStore/courseStore";
+import stores from "@/app/store/stores";
 import {
   AspectRatio,
   Badge,
@@ -205,6 +206,9 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
               <CoursePlayer
                 courseTitle={activeCourse.title}
                 courseUrl={buildScormCourseUrl(playerPath)}
+                courseId={activeCourse._id || activeCourse.courseId}
+                userId={stores.auth.user?._id}
+                learnerName={stores.auth.user?.name || stores.auth.user?.username || stores.auth.user?.email}
                 onBack={() => setPlayerPath(null)}
               />
             </motion.div>
