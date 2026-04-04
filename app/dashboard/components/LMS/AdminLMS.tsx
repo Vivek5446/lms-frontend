@@ -28,6 +28,7 @@ import {
   LinearScale,
   Title,
   Tooltip,
+  ArcElement,
 } from "chart.js";
 import { motion } from "framer-motion";
 import {
@@ -36,9 +37,11 @@ import {
   MoreVertical,
   Star,
   TrendingUp,
-  Users
+  Users,
+  PieChart,
+  Award,
 } from "lucide-react";
-import { Bar } from "react-chartjs-2";
+import { Bar, Pie } from "react-chartjs-2";
 
 // Register ChartJS components
 ChartJS.register(
@@ -47,7 +50,8 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement,
 );
 
 const MotionBox = motion(Box);
@@ -169,6 +173,76 @@ const AdminLMS = () => {
       progress: 30,
       status: "Struggling",
       avatar: "https://bit.ly/prosper-baba",
+    },
+  ];
+
+  const pieData = {
+    labels: ["Web Development", "Design", "Data Science", "Marketing", "Business"],
+    datasets: [
+      {
+        data: [35, 25, 20, 15, 5],
+        backgroundColor: [
+          "rgba(124, 58, 237, 0.8)",
+          "rgba(59, 130, 246, 0.8)",
+          "rgba(16, 185, 129, 0.8)",
+          "rgba(245, 158, 11, 0.8)",
+          "rgba(239, 68, 68, 0.8)",
+        ],
+        borderWidth: 2,
+        borderColor: "#ffffff",
+      },
+    ],
+  };
+
+  const pieOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom" as const,
+        labels: {
+          padding: 20,
+          usePointStyle: true,
+        },
+      },
+      tooltip: {
+        backgroundColor: "#1e293b",
+        padding: 12,
+        cornerRadius: 10,
+      },
+    },
+  };
+
+  const topCourses = [
+    {
+      title: "Next.js Masterclass",
+      enrollments: 245,
+      rating: 4.9,
+      revenue: "$12,450",
+    },
+    {
+      title: "UI Design Patterns",
+      enrollments: 189,
+      rating: 4.7,
+      revenue: "$9,230",
+    },
+    {
+      title: "Node.js Backend",
+      enrollments: 156,
+      rating: 4.8,
+      revenue: "$8,750",
+    },
+    {
+      title: "TypeScript Essentials",
+      enrollments: 134,
+      rating: 4.6,
+      revenue: "$6,890",
+    },
+    {
+      title: "React Advanced",
+      enrollments: 98,
+      rating: 4.5,
+      revenue: "$5,200",
     },
   ];
 
@@ -357,6 +431,81 @@ const AdminLMS = () => {
             </Table>
           </TableContainer>
         </Box>
+
+        {/* Additional Analytics Section */}
+        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8}>
+          {/* Course Category Distribution */}
+          <Box
+            bg={sectionBg}
+            p={6}
+            rounded="2xl"
+            borderWidth="1px"
+            borderColor={borderColor}
+            shadow="sm"
+          >
+            <Flex justify="space-between" align="center" mb={6}>
+              <Box>
+                <Text fontWeight="bold" fontSize="lg">
+                  Course Categories
+                </Text>
+                <Text fontSize="sm" color="gray.500">
+                  Distribution of courses by category
+                </Text>
+              </Box>
+              <Icon as={PieChart} color="purple.500" />
+            </Flex>
+            <Box h="300px">
+              <Pie data={pieData} options={pieOptions} />
+            </Box>
+          </Box>
+
+          {/* Top Performing Courses */}
+          <Box
+            bg={sectionBg}
+            p={6}
+            rounded="2xl"
+            borderWidth="1px"
+            borderColor={borderColor}
+            shadow="sm"
+          >
+            <Flex justify="space-between" align="center" mb={6}>
+              <Box>
+                <Text fontWeight="bold" fontSize="lg">
+                  Top Performing Courses
+                </Text>
+                <Text fontSize="sm" color="gray.500">
+                  Based on enrollments and ratings
+                </Text>
+              </Box>
+              <Icon as={Award} color="yellow.500" />
+            </Flex>
+            <VStack spacing={4} align="stretch">
+              {topCourses.map((course, idx) => (
+                <HStack key={idx} justify="space-between" p={4} bg="gray.50" rounded="xl">
+                  <VStack align="start" spacing={1}>
+                    <Text fontWeight="bold" fontSize="sm">
+                      {course.title}
+                    </Text>
+                    <HStack spacing={4}>
+                      <Text fontSize="xs" color="gray.500">
+                        {course.enrollments} students
+                      </Text>
+                      <HStack spacing={1}>
+                        <Icon as={Star} color="yellow.400" boxSize={3} />
+                        <Text fontSize="xs" color="gray.500">
+                          {course.rating}
+                        </Text>
+                      </HStack>
+                    </HStack>
+                  </VStack>
+                  <Text fontWeight="bold" color="green.500">
+                    {course.revenue}
+                  </Text>
+                </HStack>
+              ))}
+            </VStack>
+          </Box>
+        </SimpleGrid>
       </VStack>
     </Box>
   );

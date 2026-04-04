@@ -28,6 +28,7 @@ import {
   Globe,
   Award,
   ArrowUpRight,
+  Star,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -170,6 +171,39 @@ const SuperAdminLMS = () => {
     { type: "Course", name: "Premium bundle published", time: "1 hour ago", status: "Active" },
     { type: "Payment", name: "Payout processed: $12k", time: "3 hours ago", status: "Completed" },
     { type: "System", name: "Weekly backup completed", time: "5 hours ago", status: "Success" },
+  ];
+
+  const topCourses = [
+    {
+      title: "Advanced React Patterns",
+      enrollments: 1250,
+      rating: 4.9,
+      revenue: "$45,200",
+    },
+    {
+      title: "Full-Stack Development Bootcamp",
+      enrollments: 980,
+      rating: 4.8,
+      revenue: "$38,500",
+    },
+    {
+      title: "Data Science Fundamentals",
+      enrollments: 875,
+      rating: 4.7,
+      revenue: "$32,100",
+    },
+    {
+      title: "UI/UX Design Mastery",
+      enrollments: 742,
+      rating: 4.6,
+      revenue: "$28,900",
+    },
+    {
+      title: "Machine Learning Essentials",
+      enrollments: 654,
+      rating: 4.5,
+      revenue: "$25,400",
+    },
   ];
 
   return (
@@ -319,6 +353,53 @@ const SuperAdminLMS = () => {
               </Tbody>
             </Table>
           </TableContainer>
+        </Box>
+
+        {/* Top Performing Courses */}
+        <Box
+          bg={sectionBg}
+          p={8}
+          rounded="3xl"
+          borderWidth="1px"
+          borderColor={borderColor}
+          shadow="sm"
+        >
+          <Flex justify="space-between" align="center" mb={6}>
+            <Box>
+              <Text fontWeight="bold" fontSize="xl">
+                Top Performing Courses
+              </Text>
+              <Text fontSize="sm" color="gray.500">
+                Highest revenue generating courses platform-wide
+              </Text>
+            </Box>
+            <Icon as={Award} color="yellow.500" boxSize={6} />
+          </Flex>
+          <VStack spacing={4} align="stretch">
+            {topCourses.map((course, idx) => (
+              <HStack key={idx} justify="space-between" p={4} bg="gray.50" rounded="xl">
+                <VStack align="start" spacing={1}>
+                  <Text fontWeight="bold" fontSize="sm">
+                    {course.title}
+                  </Text>
+                  <HStack spacing={4}>
+                    <Text fontSize="xs" color="gray.500">
+                      {course.enrollments} students
+                    </Text>
+                    <HStack spacing={1}>
+                      <Icon as={Star} color="yellow.400" boxSize={3} />
+                      <Text fontSize="xs" color="gray.500">
+                        {course.rating}
+                      </Text>
+                    </HStack>
+                  </HStack>
+                </VStack>
+                <Text fontWeight="bold" color="green.500" fontSize="lg">
+                  {course.revenue}
+                </Text>
+              </HStack>
+            ))}
+          </VStack>
         </Box>
       </VStack>
     </Box>
