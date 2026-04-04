@@ -8,6 +8,8 @@ import {
   FormControl,
   FormLabel,
   Heading,
+  HStack,
+  Icon,
   Input,
   InputGroup,
   InputRightElement,
@@ -21,7 +23,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { RiEyeLine, RiEyeOffLine } from "react-icons/ri";
+import { RiArrowLeftLine, RiEyeLine, RiEyeOffLine } from "react-icons/ri";
 import CustomButton from "../../component/common/CustomButton/CustomButton";
 import stores from "../../store/stores";
 
@@ -40,9 +42,7 @@ const Login = observer(() => {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
@@ -63,9 +63,7 @@ const Login = observer(() => {
         duration: 3000,
       });
 
-      const userType = String(
-        response?.data?.userType || response?.data?.role || ""
-      ).toLowerCase();
+      const userType = String(response?.data?.userType || response?.data?.role || "").toLowerCase();
       if (userType === "superadmin") {
         router.push("/dashboard/admins");
       } else if (userType === "admin" || userType === "departmenthead") {
@@ -84,7 +82,7 @@ const Login = observer(() => {
     }
   };
 
-    const inputStyles = {
+  const inputStyles = {
     bg: "white",
     border: "1px solid",
     borderColor: "gray.200",
@@ -99,16 +97,33 @@ const Login = observer(() => {
     },
     _hover: { borderColor: "gray.300" },
   };
- 
+
   const labelStyles = {
     fontSize: "13px",
     fontWeight: "500",
     color: "gray.700",
     mb: 1,
   };
- 
+
   return (
     <VStack spacing={0} align="stretch">
+      {/* --- Added Back to Home Link --- */}
+      <Box mb={6}>
+        <Link href="/">
+          <HStack 
+            spacing={1} 
+            color="gray.500" 
+            cursor="pointer" 
+            _hover={{ color: "#D84315" }} 
+            transition="all 0.2s"
+            w="fit-content"
+          >
+            <Icon as={RiArrowLeftLine} />
+            <Text fontSize="13px" fontWeight="500">Back to home</Text>
+          </HStack>
+        </Link>
+      </Box>
+
       {/* Heading */}
       <Box mb={5}>
         <Heading fontSize="2xl" fontWeight="600" color="gray.800" mb={1}>
@@ -118,7 +133,7 @@ const Login = observer(() => {
           Enter your credentials to login to your account
         </Text>
       </Box>
- 
+
       {/* Form */}
       <form onSubmit={handleSubmit}>
         <VStack spacing={4} align="stretch">
@@ -135,7 +150,7 @@ const Login = observer(() => {
               <option value="code">User Code</option>
             </Select>
           </FormControl>
- 
+
           {/* Email / Code */}
           <FormControl>
             <FormLabel {...labelStyles}>
@@ -155,7 +170,7 @@ const Login = observer(() => {
               {...inputStyles}
             />
           </FormControl>
- 
+
           {/* Password */}
           <FormControl>
             <FormLabel {...labelStyles}>Password</FormLabel>
@@ -179,7 +194,7 @@ const Login = observer(() => {
               </InputRightElement>
             </InputGroup>
           </FormControl>
- 
+
           {/* Remember me + Forgot */}
           <Flex justify="space-between" align="center" mt={-1}>
             <Checkbox
@@ -198,7 +213,7 @@ const Login = observer(() => {
               </Text>
             </Link>
           </Flex>
- 
+
           {/* Sign In */}
           <CustomButton
             type="submit"
@@ -217,7 +232,7 @@ const Login = observer(() => {
           >
             {isLoading ? <Spinner size="sm" color="white" /> : "Sign In"}
           </CustomButton>
- 
+
           {/* Google */}
           <Button
             size="md"
@@ -240,5 +255,5 @@ const Login = observer(() => {
     </VStack>
   );
 });
- 
+
 export default Login;
