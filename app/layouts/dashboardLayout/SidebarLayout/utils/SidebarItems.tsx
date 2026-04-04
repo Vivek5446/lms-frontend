@@ -71,12 +71,28 @@ const sidebarDatas: SidebarItem[] = [
     ],
   },
   {
-    id: 18,
-    name: "Batches",
-    icon: <PlusSquareIcon />,
-    url: "/dashboard/batches",
-    role: ["superadmin", "admin", "departmenthead"],
-  },
+  id: 18,
+  name: "Batches",
+  icon: <PlusSquareIcon />,
+  url: "/dashboard/batches",
+  role: ["superadmin", "admin", "departmenthead"],
+  children: [
+    {
+      id: 181,
+      name: "All Batches",
+      icon: <PlusSquareIcon />,
+      url: "/dashboard/batches",
+      role: ["superadmin", "admin", "departmenthead"],
+    },
+    {
+      id: 182,
+      name: "Batch Reports",
+      icon: <PlusSquareIcon />,
+      url: "/dashboard/batches/reports",
+      role: ["superadmin", "admin", "departmenthead"],
+    },
+  ],
+},
 ];
 
 export const sidebarFooterData: SidebarItem[] = [
