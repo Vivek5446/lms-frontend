@@ -33,9 +33,9 @@ const HeaderCompanySelector = observer(() => {
         <FiBriefcase size={18} />
       </Box>
       <Box minW="260px">
-        <Text fontSize="xs" color="gray.500" mb={1}>
+        {/* <Text fontSize="xs" color="gray.500" mb={1}>
           Company context
-        </Text>
+        </Text> */}
         <Select
           size="sm"
           rounded="full"

@@ -29,233 +29,244 @@ import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import BatchCard from "./BatchCard";
 import BatchCreationModal from "./BatchCreationModal";
 import BatchDetailsDrawer from "./BatchDetailsDrawer";
+import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
 
 type BatchesWorkspaceProps = {
   courseBasePath?: string;
 };
 
-const BatchesWorkspace = observer(({ courseBasePath = "/dashboard/course/my-courses" }: BatchesWorkspaceProps) => {
-  const { auth, companyStore } = stores;
-  const role = String(auth.userType || auth.user?.role || "").toLowerCase();
-  const router = useRouter();
-  const isLearner = isLearnerRole(role);
-  const isSuperadmin = role === "superadmin";
-  const canCreate = ["superadmin", "admin", "departmenthead"].includes(role);
-  const canManage = ["superadmin", "admin", "departmenthead"].includes(role);
-  const creationDisclosure = useDisclosure();
-  const detailsDisclosure = useDisclosure();
-  const editDisclosure = useDisclosure();
-  const [editStep, setEditStep] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
+const BatchesWorkspace = observer(
+  ({
+    courseBasePath = "/dashboard/course/my-courses",
+  }: BatchesWorkspaceProps) => {
+    const { auth, companyStore } = stores;
+    const role = String(auth.userType || auth.user?.role || "").toLowerCase();
+    const router = useRouter();
+    const isLearner = isLearnerRole(role);
+    const isSuperadmin = role === "superadmin";
+    const canCreate = ["superadmin", "admin", "departmenthead"].includes(role);
+    const canManage = ["superadmin", "admin", "departmenthead"].includes(role);
+    const creationDisclosure = useDisclosure();
+    const detailsDisclosure = useDisclosure();
+    const editDisclosure = useDisclosure();
+    const [editStep, setEditStep] = useState(0);
+    const [searchQuery, setSearchQuery] = useState("");
 
-  const companyId = isSuperadmin ? companyStore.getActiveCompanyId() : auth.company;
-  const companies = companyStore.companies.data || [];
-  const activeCompany =
-    companies.find((company: any) => company._id === companyId) || auth.user?.companyDetails || null;
+    const companyId = isSuperadmin
+      ? companyStore.getActiveCompanyId()
+      : auth.company;
+    const companies = companyStore.companies.data || [];
+    const activeCompany =
+      companies.find((company: any) => company._id === companyId) ||
+      auth.user?.companyDetails ||
+      null;
 
-  useEffect(() => {
-    if (isSuperadmin) {
-      companyStore.getManagedCompanies().catch(() => undefined);
-    }
-  }, [companyStore, isSuperadmin]);
+    useEffect(() => {
+      if (isSuperadmin) {
+        companyStore.getManagedCompanies().catch(() => undefined);
+      }
+    }, [companyStore, isSuperadmin]);
 
-  useEffect(() => {
-    if (isLearner) {
-      batchStore.fetchMyBatches().catch(() => undefined);
-      return;
-    }
+    useEffect(() => {
+      if (isLearner) {
+        batchStore.fetchMyBatches().catch(() => undefined);
+        return;
+      }
 
-    if (!companyId && isSuperadmin) {
-      return;
-    }
+      if (!companyId && isSuperadmin) {
+        return;
+      }
 
-    batchStore.fetchBatches({ companyId: companyId || undefined }).catch(() => undefined);
-  }, [companyId, isSuperadmin, isLearner]);
+      batchStore
+        .fetchBatches({ companyId: companyId || undefined })
+        .catch(() => undefined);
+    }, [companyId, isSuperadmin, isLearner]);
 
-  const items = isLearner ? batchStore.myBatches : batchStore.batches;
-  const isLoading = isLearner ? batchStore.isMyBatchesLoading : batchStore.isLoading;
-  const filteredItems = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+    const items = isLearner ? batchStore.myBatches : batchStore.batches;
+    const isLoading = isLearner
+      ? batchStore.isMyBatchesLoading
+      : batchStore.isLoading;
+    const filteredItems = useMemo(() => {
+      const query = searchQuery.trim().toLowerCase();
 
-    if (!query) {
-      return items;
-    }
+      if (!query) {
+        return items;
+      }
 
-    return items.filter((batch) => {
-      const searchableText = [
-        batch.name,
-        batch.company?.company_name,
-        batch.createdBy?.name,
-        batch.createdBy?.email,
-        batch.createdBy?.username,
-        batch.status,
-        batch.durationLabel,
-        batch.startDate ? new Date(batch.startDate).toLocaleDateString() : "",
-        batch.endDate ? new Date(batch.endDate).toLocaleDateString() : "",
-        String(batch.courseCount ?? ""),
-        String(batch.userCount ?? ""),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+      return items.filter((batch) => {
+        const searchableText = [
+          batch.name,
+          batch.company?.company_name,
+          batch.createdBy?.name,
+          batch.createdBy?.email,
+          batch.createdBy?.username,
+          batch.status,
+          batch.durationLabel,
+          batch.startDate ? new Date(batch.startDate).toLocaleDateString() : "",
+          batch.endDate ? new Date(batch.endDate).toLocaleDateString() : "",
+          String(batch.courseCount ?? ""),
+          String(batch.userCount ?? ""),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
 
-      return searchableText.includes(query);
-    });
-  }, [items, searchQuery]);
+        return searchableText.includes(query);
+      });
+    }, [items, searchQuery]);
 
-  const refreshBatches = async () => {
-    if (isLearner) {
-      await batchStore.fetchMyBatches();
-      return;
-    }
+    const refreshBatches = async () => {
+      if (isLearner) {
+        await batchStore.fetchMyBatches();
+        return;
+      }
 
-    await batchStore.fetchBatches({ companyId: companyId || undefined });
-  };
+      await batchStore.fetchBatches({ companyId: companyId || undefined });
+    };
 
-  const handleBatchClick = async (batchId: string) => {
-    detailsDisclosure.onOpen();
-    await batchStore.fetchBatchDetails(batchId).catch(() => undefined);
-  };
+    const handleBatchClick = async (batchId: string) => {
+      detailsDisclosure.onOpen();
+      await batchStore.fetchBatchDetails(batchId).catch(() => undefined);
+    };
 
-  const handleEditOpen = (initialStep = 0) => {
-    setEditStep(initialStep);
-    detailsDisclosure.onClose();
-    editDisclosure.onOpen();
-  };
+    const handleEditOpen = (initialStep = 0) => {
+      setEditStep(initialStep);
+      detailsDisclosure.onClose();
+      editDisclosure.onOpen();
+    };
 
-  return (
-    <Box minH="100vh" bg={isLearner ? "transparent" : "gray.50"} p={{ base: 4, md: 6 }}>
-      <Stack spacing={6}>
-        <Box
-          borderRadius="3xl"
-          px={{ base: 5, md: 7 }}
-          py={{ base: 6, md: 7 }}
-          bg={
-            isLearner
-              ? "linear-gradient(135deg, #0f172a 0%, #1d4ed8 52%, #dbeafe 100%)"
-              : "linear-gradient(135deg, #ffffff 0%, #eff6ff 45%, #f8fafc 100%)"
-          }
-          borderWidth="1px"
-          borderColor={isLearner ? "transparent" : "blue.100"}
-          boxShadow="sm"
-          color={isLearner ? "white" : "inherit"}
-        >
-          <Stack spacing={4}>
-            <HStack justify="space-between" align={{ base: "start", md: "center" }} flexWrap="wrap">
-              <Box maxW="3xl">
-                <Heading size="md">{isLearner ? "My Batches" : "Batch Workspace"}</Heading>
-                <Text mt={2} color={isLearner ? "whiteAlpha.900" : "gray.600"}>
-                  {isLearner
-                    ? "Open your learning groups, track what is already completed, and launch the courses bundled inside each batch."
-                    : `Manage multi-course learning cohorts for ${activeCompany?.company_name || "the selected company"} with clearer cards, quick drill-in, and smoother member updates.`}
-                </Text>
-              </Box>
+    return (
+      <Box
+        minH="100vh"
+        bg={isLearner ? "transparent" : "gray.50"}
+        p={{ base: 4, md: 6 }}
+      >
+        <Stack spacing={6}>
+          {/* 🔷 HEADER BOX */}
+          <Box
+            borderRadius="3xl"
+            px={{ base: 5, md: 7 }}
+            py={{ base: 6, md: 7 }}
+            bg={
+              isLearner
+                ? "linear-gradient(135deg, #0f172a 0%, #1d4ed8 52%, #dbeafe 100%)"
+                : "linear-gradient(135deg, #ffffff 0%, #eff6ff 45%, #f8fafc 100%)"
+            }
+            borderWidth="1px"
+            borderColor={isLearner ? "transparent" : "blue.100"}
+            boxShadow="sm"
+            color={isLearner ? "white" : "inherit"}
+          >
+            <Stack spacing={4}>
+              <HStack
+                justify="space-between"
+                align={{ base: "start", md: "center" }}
+                flexWrap="wrap"
+                gap={4}
+              >
+                <Box maxW="3xl">
+                  <Heading size="md">
+                    {isLearner ? "My Batches" : "Batch Workspace"}
+                  </Heading>
+                  <Text
+                    mt={2}
+                    color={isLearner ? "whiteAlpha.900" : "gray.600"}
+                  >
+                    {isLearner
+                      ? "Open your learning groups, track what is already completed, and launch the courses bundled inside each batch."
+                      : `Manage multi-course learning cohorts for ${
+                          activeCompany?.company_name || "the selected company"
+                        } with clearer cards, quick drill-in, and smoother member updates.`}
+                  </Text>
+                </Box>
 
-              {canCreate ? (
-                <Button colorScheme="blue" onClick={creationDisclosure.onOpen} isDisabled={!companyId && isSuperadmin}>
-                  Create Batch
-                </Button>
-              ) : null}
-            </HStack>
-          </Stack>
-        </Box>
+                {canCreate && (
+                  <Button
+                    colorScheme="blue"
+                    onClick={creationDisclosure.onOpen}
+                    isDisabled={!companyId && isSuperadmin}
+                  >
+                    Create Batch
+                  </Button>
+                )}
+              </HStack>
 
-        {!companyId && isSuperadmin && !isLearner ? (
-          <Alert status="info" borderRadius="2xl">
-            <AlertIcon />
-            <Box>
-              <AlertTitle>Select a company</AlertTitle>
-              <AlertDescription>
-                Use the header company selector to load or create batches for a company.
-              </AlertDescription>
-            </Box>
-          </Alert>
-        ) : isLoading ? (
-          <HStack justify="center" py={20}>
-            <Spinner />
-            <Text color="gray.600">Loading batches...</Text>
-          </HStack>
-        ) : items.length === 0 ? (
-          <Box bg="white" borderWidth="1px" borderRadius="3xl" p={8}>
-            <Text fontWeight="semibold">No batches yet</Text>
-            <Text mt={2} color="gray.600">
-              {isLearner
-                ? "You have not been added to a batch yet."
-                : "Create your first batch to assign multiple courses to a group of learners in one flow."}
-            </Text>
+              {/* 🔍 SEARCH INSIDE HEADER */}
+              <GlassSearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search batches..."
+                isLearner={isLearner}
+              />
+            </Stack>
           </Box>
-        ) : (
-          <Stack spacing={5}>
-            <Box bg="white" borderWidth="1px" borderRadius="3xl" p={{ base: 4, md: 5 }} boxShadow="sm">
-              <InputGroup maxW={{ base: "full", md: "420px" }}>
-                <InputLeftElement pointerEvents="none">
-                  <Icon as={FiSearch} color="gray.400" />
-                </InputLeftElement>
-                <Input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search batches by name, company, creator, or status"
-                  borderRadius="xl"
-                />
-              </InputGroup>
+
+          {/* 🔻 BELOW HEADER (SEPARATE SECTION) */}
+          {filteredItems.length === 0 ? (
+            <Box bg="white" borderWidth="1px" borderRadius="3xl" p={8}>
+              <Text fontWeight="semibold">No batches match that search</Text>
+              <Text mt={2} color="gray.600">
+                Try a different keyword...
+              </Text>
             </Box>
+          ) : (
+            <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={5}>
+              {filteredItems.map((batch) => (
+                <BatchCard
+                  key={batch._id}
+                  batch={batch}
+                  onClick={() => handleBatchClick(batch._id)}
+                  isLearner={isLearner}
+                />
+              ))}
+            </SimpleGrid>
+          )}
+        </Stack>
 
-            {filteredItems.length === 0 ? (
-              <Box bg="white" borderWidth="1px" borderRadius="3xl" p={8}>
-                <Text fontWeight="semibold">No batches match that search</Text>
-                <Text mt={2} color="gray.600">
-                  Try a different keyword or clear the search to see all created batches again.
-                </Text>
-              </Box>
-            ) : (
-              <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={5}>
-                {filteredItems.map((batch) => (
-                  <BatchCard key={batch._id} batch={batch} onClick={() => handleBatchClick(batch._id)} isLearner={isLearner} />
-                ))}
-              </SimpleGrid>
-            )}
-          </Stack>
-        )}
-      </Stack>
-
-      <BatchDetailsDrawer
-        isOpen={detailsDisclosure.isOpen}
-        onClose={() => {
-          detailsDisclosure.onClose();
-          batchStore.clearActiveBatch();
-        }}
-        batch={batchStore.activeBatch}
-        isLoading={batchStore.isDetailsLoading}
-        canManage={canManage && !isLearner}
-        isLearner={isLearner}
-        onEditBatch={() => handleEditOpen(0)}
-        onManageUsers={() => handleEditOpen(2)}
-        onOpenCourse={isLearner ? (courseId) => router.push(`${courseBasePath}?courseId=${courseId}`) : undefined}
-      />
-
-      <BatchCreationModal
-        isOpen={creationDisclosure.isOpen}
-        onClose={creationDisclosure.onClose}
-        companyId={companyId || undefined}
-        onCreated={refreshBatches}
-      />
-
-      <BatchCreationModal
-        isOpen={editDisclosure.isOpen}
-        onClose={editDisclosure.onClose}
-        companyId={companyId || undefined}
-        onCreated={async () => {
-          await refreshBatches();
-          if (batchStore.activeBatch?._id) {
-            await batchStore.fetchBatchDetails(batchStore.activeBatch._id);
+        <BatchDetailsDrawer
+          isOpen={detailsDisclosure.isOpen}
+          onClose={() => {
+            detailsDisclosure.onClose();
+            batchStore.clearActiveBatch();
+          }}
+          batch={batchStore.activeBatch}
+          isLoading={batchStore.isDetailsLoading}
+          canManage={canManage && !isLearner}
+          isLearner={isLearner}
+          onEditBatch={() => handleEditOpen(0)}
+          onManageUsers={() => handleEditOpen(2)}
+          onOpenCourse={
+            isLearner
+              ? (courseId) =>
+                  router.push(`${courseBasePath}?courseId=${courseId}`)
+              : undefined
           }
-        }}
-        mode="edit"
-        initialBatch={batchStore.activeBatch}
-        initialStep={editStep}
-      />
-    </Box>
-  );
-});
+        />
+
+        <BatchCreationModal
+          isOpen={creationDisclosure.isOpen}
+          onClose={creationDisclosure.onClose}
+          companyId={companyId || undefined}
+          onCreated={refreshBatches}
+        />
+
+        <BatchCreationModal
+          isOpen={editDisclosure.isOpen}
+          onClose={editDisclosure.onClose}
+          companyId={companyId || undefined}
+          onCreated={async () => {
+            await refreshBatches();
+            if (batchStore.activeBatch?._id) {
+              await batchStore.fetchBatchDetails(batchStore.activeBatch._id);
+            }
+          }}
+          mode="edit"
+          initialBatch={batchStore.activeBatch}
+          initialStep={editStep}
+        />
+      </Box>
+    );
+  },
+);
 
 export default BatchesWorkspace;

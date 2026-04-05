@@ -56,9 +56,9 @@ interface SidebarProps {
 }
 
 const SIDEBAR_BG =
-  "linear-gradient(180deg, #1e3a8a 0%, #4f46e5 40%, #7c3aed 100%)";
+  "linear-gradient(180deg, #1a0533 0%, #2d1b69 40%, #4a1d96 100%)";
 const SIDEBAR_BG_DARK =
-  "linear-gradient(180deg, #1e40af 0%, #4338ca 50%, #6d28d9 100%)";
+  "linear-gradient(180deg, #12021f 0%, #1e0a4a 50%, #3b0764 100%)";
 const ACTIVE_BG = "rgba(255,255,255,0.1)";
 const HOVER_BG = "rgba(255,255,255,0.06)";
 const ACTIVE_TEXT = "rgba(255,255,255,0.95)"; // soft white (not harsh)
@@ -204,7 +204,7 @@ const SidebarPopover = observer(
           transition="all 0.15s ease"
           borderRadius="12px"
           borderLeft={itemIsActive ? "3px solid" : "3px solid transparent"}
-          borderColor={itemIsActive ? "#a855f7" : "transparent"}
+         borderColor={itemIsActive ? "#c084fc" : "transparent"}
           _hover={{
             bg: "rgba(255,255,255,0.12)",
             transform: "translateX(4px)",
