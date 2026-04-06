@@ -3,6 +3,8 @@
 export type ScormTrackingContext = {
   userId?: string | null;
   courseId?: string | null;
+  moduleId?: string | null;
+  sectionId?: string | null;
   learnerName?: string | null;
 };
 
@@ -15,15 +17,30 @@ export type ScormProgressSnapshot = {
   totalTime?: string;
 };
 
+export type ScormInteractionPayload = {
+  index: number;
+  id: string;
+  type: string;
+  result: string;
+  studentResponse: string;
+  learnerResponse: string;
+  correctResponses: string[];
+  weighting: number | null;
+  rawData: Record<string, string>;
+};
+
 export type ScormTrackingPayload = {
   userId: string;
   courseId: string;
+  moduleId: string;
+  sectionId: string;
   lesson_status: string;
   score: number | null;
   lesson_location: string;
   suspend_data: string;
   session_time: string;
   total_time: string;
+  interactions: ScormInteractionPayload[];
 };
 
 type CreateScorm12ApiOptions = {
@@ -54,6 +71,62 @@ function normalizeScore(value: string) {
 
   const numericValue = Number(normalizedValue);
   return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function extractScormInteractions(state: Record<string, string>) {
+  const interactionMap = new Map<number, ScormInteractionPayload>();
+
+  Object.entries(state).forEach(([key, value]) => {
+    const match = key.match(/^cmi\.interactions\.(\d+)\.(.+)$/);
+    if (!match) {
+      return;
+    }
+
+    const interactionIndex = Number(match[1]);
+    const propertyPath = match[2];
+    const currentInteraction = interactionMap.get(interactionIndex) || {
+      index: interactionIndex,
+      id: "",
+      type: "",
+      result: "",
+      studentResponse: "",
+      learnerResponse: "",
+      correctResponses: [],
+      weighting: null,
+      rawData: {},
+    };
+
+    currentInteraction.rawData[propertyPath] = String(value ?? "");
+
+    if (propertyPath === "id") {
+      currentInteraction.id = normalizeString(value);
+    } else if (propertyPath === "type") {
+      currentInteraction.type = normalizeString(value);
+    } else if (propertyPath === "result") {
+      currentInteraction.result = normalizeString(value);
+    } else if (propertyPath === "student_response") {
+      currentInteraction.studentResponse = normalizeString(value);
+    } else if (propertyPath === "learner_response") {
+      currentInteraction.learnerResponse = normalizeString(value);
+    } else if (propertyPath === "weighting") {
+      currentInteraction.weighting = normalizeScore(String(value ?? ""));
+    } else {
+      const correctResponseMatch = propertyPath.match(/^correct_responses\.(\d+)\.pattern$/);
+      if (correctResponseMatch) {
+        const patternIndex = Number(correctResponseMatch[1]);
+        currentInteraction.correctResponses[patternIndex] = normalizeString(value);
+      }
+    }
+
+    interactionMap.set(interactionIndex, currentInteraction);
+  });
+
+  return Array.from(interactionMap.values())
+    .sort((left, right) => left.index - right.index)
+    .map((interaction) => ({
+      ...interaction,
+      correctResponses: interaction.correctResponses.filter(Boolean),
+    }));
 }
 
 export function buildScorm12InitialState(options: {
@@ -93,12 +166,15 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
     return {
       userId,
       courseId,
+      moduleId: normalizeString(options.context.moduleId),
+      sectionId: normalizeString(options.context.sectionId),
       lesson_status: normalizeString(state["cmi.core.lesson_status"]) || "not_attempted",
       score: normalizeScore(state["cmi.core.score.raw"]),
       lesson_location: normalizeString(state["cmi.core.lesson_location"]),
       suspend_data: normalizeString(state["cmi.suspend_data"]),
       session_time: normalizeString(state["cmi.core.session_time"]) || DEFAULT_SCORM_TIME,
       total_time: normalizeString(state["cmi.core.total_time"]) || DEFAULT_SCORM_TIME,
+      interactions: extractScormInteractions(state),
     };
   };
 

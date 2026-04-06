@@ -12,6 +12,7 @@ import { DoctorAppointment } from "./doctorAppointmentStore/doctorAppointmentSto
 import { EventStore } from './eventStore/eventStore';
 // import { labStore } from "./labStore/labStore";
 import { layoutStore } from './layoutStore/LayoutStore';
+import { managerStore } from "./managerStore/managerStore";
 import { orderStore } from "./orderStore/orderStore";
 import { testimonialStore } from "./testimonialStore/testimonialStore";
 import { themeStore } from "./themeStore/themeStore";
@@ -32,6 +33,7 @@ const stores = {
   batchStore: batchStore,
   themeStore : themeStore,
   layout : layoutStore,
+  managerStore: managerStore,
   chairsStore : chairsStore,
   contactStore : contactStore,
   BlogStore : blogStore,

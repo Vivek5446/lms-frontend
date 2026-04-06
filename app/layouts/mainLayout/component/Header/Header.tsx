@@ -24,7 +24,7 @@ import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import stores from '@/app/store/stores';
-import { isLearnerRole } from '@/app/config/utils/roleAccess';
+import { isLearnerRole, isManagerRole } from '@/app/config/utils/roleAccess';
 import UserProfileDrawer from './UserProfileDrawer';
 
 interface NavLink {
@@ -43,6 +43,7 @@ const Header: React.FC = observer(() => {
   const role = String(stores.auth.userType || user?.role || '').toLowerCase();
   const isLoggedIn = Boolean(user);
   const isLearner = isLoggedIn && isLearnerRole(role);
+  const isManagerUser = isLoggedIn && isManagerRole(role);
   const appHref = role === 'superadmin' ? '/dashboard/admins' : role === 'admin' || role === 'departmenthead' ? '/dashboard/users' : '/course';
 
   useEffect(() => {
@@ -55,9 +56,10 @@ const Header: React.FC = observer(() => {
     { href: '/', label: 'Home' },
     { href: '/course', label: 'Courses' },
     ...(isLearner ? [{ href: '/batches', label: 'Batches' }] : []),
+    ...(isManagerUser ? [{ href: '/manager', label: 'Learners' }] : []),
     { href: '/about-us', label: 'About Us' },
     { href: '/contact-us', label: 'Contact Us' },
-  ]), [isLearner]);
+  ]), [isLearner, isManagerUser]);
 
   const handleLogout = () => {
     stores.auth.logout();

@@ -1,5 +1,6 @@
 "use client";
 
+import { CourseLaunchSection, buildLaunchSection, getFirstPlayableLaunchSection } from "@/app/dashboard/course/scorm/sectionTracking";
 import {
   Accordion,
   AccordionButton,
@@ -54,12 +55,22 @@ const MotionButton = motion(Button);
 interface CourseDetailsProps {
   course: any;
   onBack: () => void;
-  onLaunchSection: (scormPath: string) => void;
+  onLaunchSection: (launchSection: CourseLaunchSection) => void;
   onAssignCourse?: (course: any) => void;
+  learnerAnswers?: any[];
+  isLearnerAnswersLoading?: boolean;
 }
 
-export default function CourseDetails({ course, onBack, onLaunchSection, onAssignCourse }: CourseDetailsProps) {
+export default function CourseDetails({
+  course,
+  onBack,
+  onLaunchSection,
+  onAssignCourse,
+  learnerAnswers = [],
+  isLearnerAnswersLoading = false,
+}: CourseDetailsProps) {
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
+  const firstPlayableLaunchSection = getFirstPlayableLaunchSection(course);
 
   // Colors (Chakra + Tailwind friendly)
   const bgColor = useColorModeValue("gray.50", "gray.900");
@@ -68,6 +79,8 @@ export default function CourseDetails({ course, onBack, onLaunchSection, onAssig
   const accentColor = "blue.500";
   const accentLight = useColorModeValue("blue.50", "blue.900");
   const textMuted = useColorModeValue("gray.500", "gray.400");
+  const reviewedAnswerBg = useColorModeValue("green.50", "green.900");
+  const pendingAnswerBg = useColorModeValue("yellow.50", "yellow.900");
 
   return (
     <Box minH="100vh" bg={bgColor}>
@@ -285,9 +298,12 @@ export default function CourseDetails({ course, onBack, onLaunchSection, onAssig
                                       onMouseEnter={() => setHoveredSection(secId)}
                                       onMouseLeave={() => setHoveredSection(null)}
                                       cursor={isPlayable ? "pointer" : "default"}
-                                      onClick={() =>
-                                        isPlayable && onLaunchSection(sec.content.previewUrl)
-                                      }
+                                      onClick={() => {
+                                        const launchSection = buildLaunchSection(mod, sec);
+                                        if (launchSection) {
+                                          onLaunchSection(launchSection);
+                                        }
+                                      }}
                                     >
                                       {/* Timeline Dot */}
                                       <Box
@@ -354,6 +370,95 @@ export default function CourseDetails({ course, onBack, onLaunchSection, onAssig
                       </AccordionItem>
                     ))}
                   </Accordion>
+                </CardBody>
+              </Card>
+            </MotionBox>
+
+            {/* Manager Review Card */}
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.18 }}
+            >
+              <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
+                <CardHeader pb={0}>
+                  <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+                    <Flex align="center" gap={2}>
+                      <Icon as={Award} boxSize={6} color={accentColor} />
+                      <Heading size="md">Manager Feedback</Heading>
+                    </Flex>
+                    <HStack spacing={2}>
+                      <Badge colorScheme="yellow" borderRadius="full" px={3} py={1}>
+                        {learnerAnswers.filter((entry) => entry.status !== "reviewed").length} pending
+                      </Badge>
+                      <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
+                        {learnerAnswers.filter((entry) => entry.status === "reviewed").length} reviewed
+                      </Badge>
+                    </HStack>
+                  </Flex>
+                </CardHeader>
+                <CardBody>
+                  {isLearnerAnswersLoading ? (
+                    <Text color={textMuted}>Loading the latest review updates for this course...</Text>
+                  ) : learnerAnswers.length === 0 ? (
+                    <Text color={textMuted}>
+                      Answer reviews will appear here when a manager evaluates your SCORM submissions.
+                    </Text>
+                  ) : (
+                    <Stack spacing={4}>
+                      {learnerAnswers.map((entry) => (
+                        <Box
+                          key={entry._id}
+                          p={4}
+                          borderWidth="1px"
+                          borderColor={entry.status === "reviewed" ? "green.200" : "yellow.200"}
+                          bg={entry.status === "reviewed" ? reviewedAnswerBg : pendingAnswerBg}
+                          borderRadius="xl"
+                        >
+                          <Flex justify="space-between" align="start" gap={3} wrap="wrap">
+                            <Box flex="1">
+                              <Text fontWeight="semibold">{entry.questionId || "Question"}</Text>
+                              <Text mt={2} fontSize="sm" color={textMuted}>
+                                Your answer
+                              </Text>
+                              <Text fontSize="sm">{entry.answer || "No answer captured"}</Text>
+                              {entry.correctAnswer ? (
+                                <>
+                                  <Text mt={2} fontSize="sm" color={textMuted}>
+                                    Correct answer
+                                  </Text>
+                                  <Text fontSize="sm">{entry.correctAnswer}</Text>
+                                </>
+                              ) : null}
+                              {entry.feedback ? (
+                                <>
+                                  <Text mt={3} fontSize="sm" color={textMuted}>
+                                    Manager feedback
+                                  </Text>
+                                  <Text fontSize="sm">{entry.feedback}</Text>
+                                </>
+                              ) : null}
+                            </Box>
+
+                            <VStack align="end" spacing={2}>
+                              <Badge
+                                colorScheme={entry.status === "reviewed" ? "green" : "yellow"}
+                                borderRadius="full"
+                                px={3}
+                                py={1}
+                              >
+                                {entry.status === "reviewed" ? "Reviewed" : "Pending"}
+                              </Badge>
+                              <Text fontSize="sm" fontWeight="bold">
+                                {entry.marksAwarded ?? "-"}
+                                {entry.maxMarks !== null && entry.maxMarks !== undefined ? ` / ${entry.maxMarks}` : ""}
+                              </Text>
+                            </VStack>
+                          </Flex>
+                        </Box>
+                      ))}
+                    </Stack>
+                  )}
                 </CardBody>
               </Card>
             </MotionBox>
@@ -441,8 +546,23 @@ export default function CourseDetails({ course, onBack, onLaunchSection, onAssig
                     <MotionButton
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => course.scormFilePath && onLaunchSection(course.scormFilePath)}
-                      isDisabled={!course.scormFilePath}
+                      onClick={() => {
+                        if (firstPlayableLaunchSection) {
+                          onLaunchSection(firstPlayableLaunchSection);
+                          return;
+                        }
+
+                        if (course.scormFilePath) {
+                          onLaunchSection({
+                            scormPath: course.scormFilePath,
+                            moduleId: "",
+                            moduleTitle: "",
+                            sectionId: "",
+                            sectionTitle: course.title || "Course",
+                          });
+                        }
+                      }}
+                      isDisabled={!firstPlayableLaunchSection && !course.scormFilePath}
                       colorScheme="blue"
                       size="lg"
                       borderRadius="xl"

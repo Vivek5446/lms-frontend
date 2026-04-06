@@ -8,6 +8,7 @@ import CourseList from "./CourseList";
 import CourseDetails from "./CourseDetails";
 import AssignCourseModal from "./components/AssignCourseModal";
 import CoursePlayer from "./scorm/CoursePlayer";
+import { CourseLaunchSection } from "./scorm/sectionTracking";
 import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore";
 import stores from "@/app/store/stores";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
@@ -20,7 +21,7 @@ function buildScormCourseUrl(scormPath: string) {
 function CoursePage() {
   const [view, setView] = useState<"gallery" | "create" | "details">("gallery");
   const [activeCourse, setActiveCourse] = useState<CourseListItem | null>(null);
-  const [playerPath, setPlayerPath] = useState<string | null>(null);
+  const [playerSection, setPlayerSection] = useState<CourseLaunchSection | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const router = useRouter();
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
@@ -45,12 +46,12 @@ function CoursePage() {
     setView("details");
   };
 
-  const handleLaunchScorm = (path: string) => {
-    setPlayerPath(path);
+  const handleLaunchScorm = (launchSection: CourseLaunchSection) => {
+    setPlayerSection(launchSection);
   };
 
   const handleBackFromPlayer = () => {
-    setPlayerPath(null);
+    setPlayerSection(null);
   };
 
   if (isLearner) {
@@ -74,12 +75,12 @@ function CoursePage() {
         <CourseDetails
           course={activeCourse}
           onBack={() => setView("gallery")}
-          onLaunchSection={(path: any) => handleLaunchScorm(path)}
+          onLaunchSection={(launchSection) => handleLaunchScorm(launchSection)}
           onAssignCourse={role === "superadmin" ? () => setIsAssignModalOpen(true) : undefined}
         />
 
         <AnimatePresence>
-          {playerPath && (
+          {playerSection && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -92,8 +93,13 @@ function CoursePage() {
               }}
             >
               <CoursePlayer
+                courseId={activeCourse._id}
+                userId={stores.auth.user?._id}
+                learnerName={stores.auth.user?.name || stores.auth.user?.username || "Learner"}
                 courseTitle={activeCourse.title}
-                courseUrl={buildScormCourseUrl(playerPath)}
+                courseUrl={buildScormCourseUrl(playerSection.scormPath)}
+                moduleId={playerSection.moduleId}
+                sectionId={playerSection.sectionId}
                 onBack={handleBackFromPlayer}
               />
             </motion.div>

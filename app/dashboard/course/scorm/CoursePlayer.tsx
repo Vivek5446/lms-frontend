@@ -11,6 +11,8 @@ interface CoursePlayerProps {
   courseTitle: string;
   onBack: () => void;
   courseId?: string;
+  moduleId?: string;
+  sectionId?: string;
   userId?: string;
   learnerName?: string;
 }
@@ -22,6 +24,8 @@ export default function CoursePlayer({
   courseTitle,
   onBack,
   courseId,
+  moduleId,
+  sectionId,
   userId,
   learnerName,
 }: CoursePlayerProps) {
@@ -127,6 +131,8 @@ export default function CoursePlayer({
             const response = await axios.post("/scorm/initialize", {
               userId,
               courseId,
+              moduleId,
+              sectionId,
             });
             progress = response?.data?.data || null;
           } catch (error: any) {
@@ -139,12 +145,16 @@ export default function CoursePlayer({
           context: {
             userId,
             courseId,
+            moduleId,
+            sectionId,
             learnerName,
           },
           initialState: buildScorm12InitialState({
             context: {
               userId,
               courseId,
+              moduleId,
+              sectionId,
               learnerName,
             },
             progress,
@@ -203,7 +213,7 @@ export default function CoursePlayer({
       detachApiFromWindow(iframeRef.current?.contentWindow);
       detachApiFromWindow(window);
     };
-  }, [courseId, courseUrl, learnerName, userId]);
+  }, [courseId, courseUrl, learnerName, moduleId, sectionId, userId]);
 
   useEffect(() => {
     const iframeElement = iframeRef.current;

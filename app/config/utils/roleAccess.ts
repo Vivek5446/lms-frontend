@@ -10,6 +10,11 @@ export function isLearnerRole(value: unknown) {
   return role === "user" || role === "manager" || /^l\d+-manager$/i.test(role);
 }
 
+export function isManagerRole(value: unknown) {
+  const role = normalizeRole(value);
+  return role === "manager" || /^l\d+-manager$/i.test(role);
+}
+
 export function expandRoleAliases(roles: string[] = []) {
   const expanded = new Set(roles.map((role) => normalizeRole(role)));
 
