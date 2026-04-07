@@ -165,8 +165,8 @@ class ManagerStore {
   reviewAnswer = async (payload: {
     trackingId: string;
     interactionId: string;
-    marksOverride?: number | null;
-    feedback?: string;
+    evaluation: "correct" | "incorrect";
+    marks: number;
   }) => {
     this.isSubmittingReview = true;
     this.error = null;
@@ -209,7 +209,7 @@ class ManagerStore {
       return data.data || [];
     } catch (err: any) {
       runInAction(() => {
-        this.error = err?.response?.data?.message || err?.response?.data?.error || "Failed to fetch feedback";
+        this.error = err?.response?.data?.message || err?.response?.data?.error || "Failed to fetch quiz answers";
       });
       return Promise.reject(err?.response?.data || err);
     } finally {

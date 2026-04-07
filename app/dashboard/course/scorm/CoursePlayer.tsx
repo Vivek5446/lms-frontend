@@ -11,7 +11,7 @@ import {
   DrawerOverlay,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FiMaximize2, FiMinimize2, FiX } from "react-icons/fi";
 import ScormQuizReviewContent from "./ScormQuizReviewContent";
 import { ScormAnswerSectionRecord } from "./quizReviewTypes";
@@ -29,9 +29,33 @@ interface CoursePlayerProps {
   answerSections?: ScormAnswerSectionRecord[];
   isAnswerSectionsLoading?: boolean;
   onRefreshAnswerSections?: () => void | Promise<void>;
+  onRefreshProgress?: () => void | Promise<void>;
 }
 
 const HEADER_H = 48;
+
+const StableScormIframe = memo(function StableScormIframe({
+  iframeRef,
+  src,
+  title,
+  onError,
+}: {
+  iframeRef: RefObject<HTMLIFrameElement>;
+  src: string;
+  title: string;
+  onError: () => void;
+}) {
+  return (
+    <iframe
+      ref={iframeRef}
+      src={src}
+      title={title}
+      className="w-full h-full bg-white"
+      allowFullScreen
+      onError={onError}
+    />
+  );
+});
 
 export default function CoursePlayer({
   courseUrl,
@@ -45,20 +69,31 @@ export default function CoursePlayer({
   answerSections = [],
   isAnswerSectionsLoading = false,
   onRefreshAnswerSections,
+  onRefreshProgress,
 }: CoursePlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const initialConfigRef = useRef({
+    courseUrl,
+    courseId,
+    moduleId,
+    sectionId,
+    userId,
+    learnerName,
+  });
+  const iframeSrcRef = useRef("about:blank");
+  const hasAttachedIframeSrcRef = useRef(false);
   const apiRef = useRef<ReturnType<typeof createScorm12Api> | null>(null);
   const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
   const trackingEnabledRef = useRef(false);
   const refreshTimerRef = useRef<number | null>(null);
+  const hasPersistedOnExitRef = useRef(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isFrameLoading, setIsFrameLoading] = useState(true);
   const [hasSlowLoad, setHasSlowLoad] = useState(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
-  const [resolvedCourseUrl, setResolvedCourseUrl] = useState<string | null>(null);
   const [isQuizReviewOpen, setIsQuizReviewOpen] = useState(false);
 
   const visibleAnswerSections = useMemo(() => {
@@ -100,8 +135,8 @@ export default function CoursePlayer({
     delete (targetWindow as any).__SCORM_CONTEXT__;
   };
 
-  const scheduleAnswersRefresh = (payload: ScormTrackingPayload, mode: "commit" | "finish") => {
-    if (!onRefreshAnswerSections) {
+  const scheduleUiRefresh = (payload: ScormTrackingPayload, mode: "commit" | "finish") => {
+    if (!onRefreshAnswerSections && !onRefreshProgress) {
       return;
     }
 
@@ -114,7 +149,8 @@ export default function CoursePlayer({
     }
 
     refreshTimerRef.current = window.setTimeout(() => {
-      Promise.resolve(onRefreshAnswerSections()).catch(() => undefined);
+      Promise.resolve(onRefreshAnswerSections?.()).catch(() => undefined);
+      Promise.resolve(onRefreshProgress?.()).catch(() => undefined);
     }, mode === "finish" ? 150 : 450);
   };
 
@@ -144,8 +180,8 @@ export default function CoursePlayer({
           });
         }
 
-        setSyncError(null);
-        scheduleAnswersRefresh(payload, mode);
+        setSyncError((currentValue) => (currentValue ? null : currentValue));
+        scheduleUiRefresh(payload, mode);
       })
       .catch((error) => {
         console.error(`SCORM ${mode} sync failed`, error);
@@ -154,6 +190,25 @@ export default function CoursePlayer({
 
     return syncQueueRef.current;
   };
+
+  const persistLatestProgress = useCallback(() => {
+    if (hasPersistedOnExitRef.current) {
+      return;
+    }
+
+    const currentRuntime = apiRef.current;
+    if (!currentRuntime?.isInitialized()) {
+      return;
+    }
+
+    const payload = currentRuntime.buildTrackingPayload();
+    if (!payload) {
+      return;
+    }
+
+    hasPersistedOnExitRef.current = true;
+    void queueTrackingSync("commit", payload);
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -164,9 +219,9 @@ export default function CoursePlayer({
       setHasSlowLoad(false);
       setPlayerError(null);
       setSyncError(null);
-      setResolvedCourseUrl(null);
-
-      const trackingEnabled = Boolean(userId && courseId);
+      hasPersistedOnExitRef.current = false;
+      const initialConfig = initialConfigRef.current;
+      const trackingEnabled = Boolean(initialConfig.userId && initialConfig.courseId);
       trackingEnabledRef.current = trackingEnabled;
 
       try {
@@ -176,10 +231,10 @@ export default function CoursePlayer({
         if (trackingEnabled) {
           try {
             const response = await axios.post("/scorm/initialize", {
-              userId,
-              courseId,
-              moduleId,
-              sectionId,
+              userId: initialConfig.userId,
+              courseId: initialConfig.courseId,
+              moduleId: initialConfig.moduleId,
+              sectionId: initialConfig.sectionId,
             });
             progress = response?.data?.data || null;
           } catch (error: any) {
@@ -190,19 +245,19 @@ export default function CoursePlayer({
 
         const runtime = createScorm12Api({
           context: {
-            userId,
-            courseId,
-            moduleId,
-            sectionId,
-            learnerName,
+            userId: initialConfig.userId,
+            courseId: initialConfig.courseId,
+            moduleId: initialConfig.moduleId,
+            sectionId: initialConfig.sectionId,
+            learnerName: initialConfig.learnerName,
           },
           initialState: buildScorm12InitialState({
             context: {
-              userId,
-              courseId,
-              moduleId,
-              sectionId,
-              learnerName,
+              userId: initialConfig.userId,
+              courseId: initialConfig.courseId,
+              moduleId: initialConfig.moduleId,
+              sectionId: initialConfig.sectionId,
+              learnerName: initialConfig.learnerName,
             },
             progress,
           }),
@@ -224,8 +279,11 @@ export default function CoursePlayer({
             "SCORM tracking could not be initialized. The lesson is loading without saved progress sync."
           );
         }
-
-        setResolvedCourseUrl(courseUrl);
+        iframeSrcRef.current = initialConfig.courseUrl;
+        hasAttachedIframeSrcRef.current = true;
+        if (iframeRef.current) {
+          iframeRef.current.src = iframeSrcRef.current;
+        }
       } catch (error: any) {
         console.error("SCORM player bootstrap failed", error);
         if (isActive) {
@@ -254,17 +312,24 @@ export default function CoursePlayer({
       const currentRuntime = apiRef.current;
       apiRef.current = null;
 
-      if (currentRuntime?.isInitialized()) {
-        const payload = currentRuntime.buildTrackingPayload();
-        if (payload) {
-          void queueTrackingSync("commit", payload);
-        }
-      }
-
       detachApiFromWindow(iframeRef.current?.contentWindow);
       detachApiFromWindow(window);
     };
-  }, [courseId, courseUrl, learnerName, moduleId, sectionId, userId]);
+  }, []);
+
+  useEffect(() => {
+    const handlePageHide = () => {
+      persistLatestProgress();
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("beforeunload", handlePageHide);
+
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("beforeunload", handlePageHide);
+    };
+  }, [persistLatestProgress]);
 
   useEffect(() => {
     const iframeElement = iframeRef.current;
@@ -273,6 +338,10 @@ export default function CoursePlayer({
     }
 
     const handleLoad = () => {
+      if (!hasAttachedIframeSrcRef.current) {
+        return;
+      }
+
       try {
         attachApiToWindow(window);
         attachApiToWindow(iframeElement.contentWindow);
@@ -295,7 +364,7 @@ export default function CoursePlayer({
     return () => {
       iframeElement.removeEventListener("load", handleLoad);
     };
-  }, [resolvedCourseUrl]);
+  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -316,7 +385,18 @@ export default function CoursePlayer({
     return () => {
       window.clearTimeout(slowLoadTimer);
     };
-  }, [courseUrl, resolvedCourseUrl]);
+  }, []);
+
+  const handleIframeError = useCallback(() => {
+    setPlayerError("We couldn't load this SCORM package.");
+    setIsFrameLoading(false);
+  }, []);
+
+  const handleClosePlayer = useCallback(() => {
+    persistLatestProgress();
+    setIsQuizReviewOpen(false);
+    onBack();
+  }, [onBack, persistLatestProgress]);
 
   const toggleFullscreen = async () => {
     if (!modalRef.current) {
@@ -345,7 +425,7 @@ export default function CoursePlayer({
         className="fixed inset-0 z-[1400] flex items-center justify-center bg-black/60 backdrop-blur-sm"
         onClick={(event) => {
           if (event.target === event.currentTarget) {
-            onBack();
+            handleClosePlayer();
           }
         }}
       >
@@ -378,7 +458,7 @@ export default function CoursePlayer({
                 onClick={() => setIsQuizReviewOpen(true)}
                 isDisabled={isBootstrapping}
               >
-                View Quiz Answers
+                View Quiz Review
               </Button>
               <button
                 type="button"
@@ -391,8 +471,7 @@ export default function CoursePlayer({
               <button
                 type="button"
                 onClick={() => {
-                  setIsQuizReviewOpen(false);
-                  onBack();
+                  handleClosePlayer();
                 }}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-200 transition hover:bg-white/10"
                 aria-label="Close player"
@@ -417,16 +496,11 @@ export default function CoursePlayer({
               </div>
             ) : null}
 
-            <iframe
-              ref={iframeRef}
-              src={resolvedCourseUrl || undefined}
+            <StableScormIframe
+              iframeRef={iframeRef}
+              src={iframeSrcRef.current}
               title={courseTitle}
-              className="w-full h-full bg-white"
-              allowFullScreen
-              onError={() => {
-                setPlayerError("We couldn't load this SCORM package.");
-                setIsFrameLoading(false);
-              }}
+              onError={handleIframeError}
             />
           </div>
 

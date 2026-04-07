@@ -78,6 +78,12 @@ function normalizeScore(value: unknown) {
   return Number.isFinite(numericValue) ? numericValue : null;
 }
 
+function normalizeInteractionType(value: unknown) {
+  return normalizeString(value)
+    .toLowerCase()
+    .replace(/_/g, "-");
+}
+
 function isPlainObject(value: unknown): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -119,6 +125,23 @@ function toDisplayString(value: unknown) {
 
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.map((value) => normalizeString(value)).filter(Boolean)));
+}
+
+function shouldPersistInteraction(interaction: Pick<ScormInteractionPayload, "id" | "learnerResponse">) {
+  const interactionId = normalizeString(interaction.id);
+  const learnerResponse = normalizeString(interaction.learnerResponse);
+
+  return Boolean(
+    interactionId &&
+    learnerResponse &&
+    !learnerResponse.toLowerCase().includes("loading")
+  );
+}
+
+function buildInteractionKey(interaction: { id?: string; index?: number }) {
+  const normalizedId = normalizeString(interaction.id);
+  const normalizedIndex = Number(interaction.index || 0);
+  return normalizedId ? `${normalizedId}::${normalizedIndex}` : `index:${normalizedIndex}`;
 }
 
 function safeJsonParse(value: string) {
@@ -261,7 +284,7 @@ function normalizeSuspendDataInteraction(entry: any, index: number, metadataMap:
   return {
     index,
     id: normalizeString(safeEntry.questionId || safeEntry.id || safeEntry.identifier || safeEntry.name || metadata.id),
-    type: normalizeString(safeEntry.type || safeEntry.kind || safeEntry.questionType),
+    type: normalizeInteractionType(safeEntry.type || safeEntry.kind || safeEntry.questionType),
     question: normalizeString(
       safeEntry.question ||
       safeEntry.prompt ||
@@ -355,7 +378,7 @@ function extractScormInteractions(state: Record<string, string>) {
     if (propertyPath === "id") {
       currentInteraction.id = normalizeString(value);
     } else if (propertyPath === "type") {
-      currentInteraction.type = normalizeString(value);
+      currentInteraction.type = normalizeInteractionType(value);
     } else if (propertyPath === "result") {
       currentInteraction.result = normalizeString(value).toLowerCase();
     } else if (propertyPath === "student_response" || propertyPath === "learner_response") {
@@ -398,11 +421,13 @@ function enrichNativeInteractions(nativeInteractions: ScormInteractionPayload[],
 
   const fallbackMap = new Map<string, ScormInteractionPayload>();
   suspendDataInteractions.forEach((interaction, index) => {
-    fallbackMap.set(interaction.id || `index:${interaction.index || index}`, interaction);
+    fallbackMap.set(buildInteractionKey({ id: interaction.id, index: interaction.index ?? index }), interaction);
   });
 
   return nativeInteractions.map((interaction, index) => {
-    const fallbackInteraction = fallbackMap.get(interaction.id || `index:${interaction.index || index}`);
+    const fallbackInteraction = fallbackMap.get(
+      buildInteractionKey({ id: interaction.id, index: interaction.index ?? index })
+    );
     if (!fallbackInteraction) {
       return interaction;
     }
@@ -503,7 +528,7 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
       suspend_data: suspendData,
       session_time: normalizeString(state["cmi.core.session_time"]) || DEFAULT_SCORM_TIME,
       total_time: normalizeString(state["cmi.core.total_time"]) || DEFAULT_SCORM_TIME,
-      interactions,
+      interactions: interactions.filter((interaction) => shouldPersistInteraction(interaction)),
     };
   };
 

@@ -190,7 +190,7 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
   };
 
   if (requestedCourseId) {
-    if (courseStore.isMyCourseDetailLoading || !activeCourse) {
+    if (!activeCourse) {
       return (
         <HStack justify="center" py={20}>
           <Spinner />
@@ -235,6 +235,17 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
                   }
 
                   return managerStore.fetchMyCourseAnswers(activeCourseId).then(() => undefined);
+                }}
+                onRefreshProgress={() => {
+                  const activeCourseId = activeCourse._id || activeCourse.courseId;
+                  if (!activeCourseId) {
+                    return Promise.resolve();
+                  }
+
+                  return Promise.all([
+                    courseStore.fetchMyCourseDetail(activeCourseId),
+                    courseStore.fetchMyCourses(),
+                  ]).then(() => undefined);
                 }}
                 onBack={() => setPlayerSection(null)}
               />

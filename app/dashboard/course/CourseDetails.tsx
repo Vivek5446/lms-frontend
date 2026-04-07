@@ -2,7 +2,11 @@
 
 import { CourseLaunchSection, buildLaunchSection, getFirstPlayableLaunchSection } from "@/app/dashboard/course/scorm/sectionTracking";
 import ScormQuizReviewContent from "@/app/dashboard/course/scorm/ScormQuizReviewContent";
-import { ScormAnswerSectionRecord, summarizeAnswerSections } from "@/app/dashboard/course/scorm/quizReviewTypes";
+import {
+  estimateCompletedSections,
+  ScormAnswerSectionRecord,
+  summarizeAnswerSections,
+} from "@/app/dashboard/course/scorm/quizReviewTypes";
 import {
   Accordion,
   AccordionButton,
@@ -74,6 +78,8 @@ export default function CourseDetails({
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
   const firstPlayableLaunchSection = getFirstPlayableLaunchSection(course);
   const answerSummary = summarizeAnswerSections(learnerAnswers);
+  const totalSections = Number(course.curriculum?.totalSections || 0);
+  const sectionsCompleted = estimateCompletedSections(course.progress, totalSections);
 
   // Colors (Chakra + Tailwind friendly)
   const bgColor = useColorModeValue("gray.50", "gray.900");
@@ -375,7 +381,7 @@ export default function CourseDetails({
               </Card>
             </MotionBox>
 
-            {/* Manager Review Card */}
+            {/* Quiz Review Card */}
             <MotionBox
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -386,15 +392,17 @@ export default function CourseDetails({
                   <Flex align="center" justify="space-between" gap={3} wrap="wrap">
                     <Flex align="center" gap={2}>
                       <Icon as={Award} boxSize={6} color={accentColor} />
-                      <Heading size="md">Manager Feedback</Heading>
+                      <Heading size="md">Quiz Review</Heading>
                     </Flex>
                     <HStack spacing={2}>
-                      <Badge colorScheme="yellow" borderRadius="full" px={3} py={1}>
-                        {answerSummary.pending} pending
+                      <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
+                        Score {answerSummary.correctCount}/{answerSummary.totalQuestions}
                       </Badge>
-                      <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
-                        {answerSummary.reviewed} reviewed
-                      </Badge>
+                      {answerSummary.pending > 0 ? (
+                        <Badge colorScheme="orange" borderRadius="full" px={3} py={1}>
+                          {answerSummary.pending} pending review
+                        </Badge>
+                      ) : null}
                     </HStack>
                   </Flex>
                 </CardHeader>
@@ -402,8 +410,12 @@ export default function CourseDetails({
                   <ScormQuizReviewContent
                     sections={learnerAnswers}
                     isLoading={isLearnerAnswersLoading}
-                    showOnlyReviewed
-                    emptyState="Answer reviews will appear here when a manager evaluates your SCORM submissions."
+                    progressSummary={{
+                      progressPercent: Number(course.progress || 0),
+                      sectionsCompleted,
+                      totalSections,
+                    }}
+                    emptyState="Your answers will appear here as soon as the SCORM lesson saves quiz progress."
                   />
                 </CardBody>
               </Card>
