@@ -1,5 +1,7 @@
 "use client";
 
+import LZString from "lz-string";
+
 export type ScormTrackingContext = {
   userId?: string | null;
   courseId?: string | null;
@@ -19,14 +21,17 @@ export type ScormProgressSnapshot = {
 
 export type ScormInteractionPayload = {
   index: number;
-  id: string;
-  type: string;
-  result: string;
-  studentResponse: string;
-  learnerResponse: string;
-  correctResponses: string[];
-  weighting: number | null;
-  rawData: Record<string, string>;
+  id?: string;
+  type?: string;
+  question?: string;
+  learnerResponse?: string;
+  correctResponses?: string[];
+  result?: string;
+  latency?: string;
+  time?: string;
+  maxMarks?: number | null;
+  source?: "cmi.interactions" | "suspend_data";
+  rawData?: Record<string, any>;
 };
 
 export type ScormTrackingPayload = {
@@ -63,7 +68,7 @@ function normalizeString(value: unknown) {
   return String(value ?? "").trim();
 }
 
-function normalizeScore(value: string) {
+function normalizeScore(value: unknown) {
   const normalizedValue = normalizeString(value);
   if (!normalizedValue) {
     return null;
@@ -71,6 +76,251 @@ function normalizeScore(value: string) {
 
   const numericValue = Number(normalizedValue);
   return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function isPlainObject(value: unknown): value is Record<string, any> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function flattenPrimitiveValues(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => flattenPrimitiveValues(entry));
+  }
+
+  if (isPlainObject(value)) {
+    const directText = [
+      value.text,
+      value.label,
+      value.value,
+      value.answer,
+      value.response,
+      value.name,
+      value.title,
+      value.prompt,
+      value.pattern,
+    ]
+      .map((entry) => normalizeString(entry))
+      .filter(Boolean);
+
+    if (directText.length) {
+      return directText;
+    }
+
+    return Object.values(value).flatMap((entry) => flattenPrimitiveValues(entry));
+  }
+
+  const normalizedValue = normalizeString(value);
+  return normalizedValue ? [normalizedValue] : [];
+}
+
+function toDisplayString(value: unknown) {
+  return flattenPrimitiveValues(value).filter(Boolean).join(", ");
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values.map((value) => normalizeString(value)).filter(Boolean)));
+}
+
+function safeJsonParse(value: string) {
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return null;
+  }
+}
+
+function decodeSuspendDataPayload(suspendData: string) {
+  const normalizedSuspendData = normalizeString(suspendData);
+  if (!normalizedSuspendData) {
+    return null;
+  }
+
+  const candidateStrings = [
+    normalizedSuspendData,
+    (() => {
+      try {
+        return decodeURIComponent(normalizedSuspendData);
+      } catch (error) {
+        return "";
+      }
+    })(),
+    LZString.decompressFromEncodedURIComponent(normalizedSuspendData) || "",
+    LZString.decompressFromBase64(normalizedSuspendData) || "",
+    LZString.decompress(normalizedSuspendData) || "",
+  ].filter(Boolean);
+
+  for (const candidate of candidateStrings) {
+    const parsed = safeJsonParse(candidate);
+    if (parsed !== null) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function findCandidateQuizArray(rootValue: unknown): any[] {
+  if (!rootValue) {
+    return [];
+  }
+
+  const root = isPlainObject(rootValue) ? rootValue : {};
+  const directCandidates = [
+    root.quiz && isPlainObject(root.quiz) ? root.quiz.questions : null,
+    root.questions,
+    root.interactions,
+    root.responses,
+  ];
+  const firstDirectCandidate = directCandidates.find((value) => Array.isArray(value));
+
+  if (Array.isArray(firstDirectCandidate)) {
+    return firstDirectCandidate;
+  }
+
+  const queue: unknown[] = [root];
+  const visited = new Set<unknown>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current)) {
+      continue;
+    }
+
+    visited.add(current);
+
+    if (Array.isArray(current)) {
+      current.forEach((entry) => queue.push(entry));
+      continue;
+    }
+
+    if (!isPlainObject(current)) {
+      continue;
+    }
+
+    const nestedCandidate = [current.questions, current.interactions, current.responses].find((value) =>
+      Array.isArray(value)
+    );
+    if (Array.isArray(nestedCandidate)) {
+      return nestedCandidate;
+    }
+
+    Object.values(current).forEach((entry) => queue.push(entry));
+  }
+
+  return [];
+}
+
+function buildQuestionMetadataMap(parsedSuspendData: any) {
+  const candidateQuestions = Array.isArray(parsedSuspendData?.quiz?.questions)
+    ? parsedSuspendData.quiz.questions
+    : Array.isArray(parsedSuspendData?.questions)
+      ? parsedSuspendData.questions
+      : [];
+
+  const metadataMap = new Map<string, Partial<ScormInteractionPayload>>();
+
+  candidateQuestions.forEach((entry: any, index: number) => {
+    const safeEntry = isPlainObject(entry) ? entry : {};
+    const key = normalizeString(safeEntry.questionId || safeEntry.id || safeEntry.identifier || safeEntry.name) || `index:${index}`;
+
+    metadataMap.set(key, {
+      id: normalizeString(safeEntry.questionId || safeEntry.id || safeEntry.identifier || safeEntry.name),
+      question: normalizeString(
+        safeEntry.question ||
+        safeEntry.prompt ||
+        safeEntry.text ||
+        safeEntry.title ||
+        safeEntry.label ||
+        safeEntry.description
+      ),
+      correctResponses: uniqueStrings(
+        flattenPrimitiveValues(
+          safeEntry.correctResponses ||
+          safeEntry.correct_responses ||
+          safeEntry.correctAnswer ||
+          safeEntry.correct_answer ||
+          safeEntry.correctResponse ||
+          safeEntry.correct_response ||
+          safeEntry.expectedAnswer ||
+          safeEntry.expected_answer ||
+          safeEntry.solution
+        )
+      ),
+      maxMarks: normalizeScore(safeEntry.weighting ?? safeEntry.maxMarks ?? safeEntry.max_marks ?? safeEntry.marks),
+    });
+  });
+
+  return metadataMap;
+}
+
+function normalizeSuspendDataInteraction(entry: any, index: number, metadataMap: Map<string, Partial<ScormInteractionPayload>>) {
+  const safeEntry = isPlainObject(entry) ? entry : {};
+  const metadataKey = normalizeString(safeEntry.questionId || safeEntry.id || safeEntry.identifier || safeEntry.name) || `index:${index}`;
+  const metadata = metadataMap.get(metadataKey) || {};
+
+  return {
+    index,
+    id: normalizeString(safeEntry.questionId || safeEntry.id || safeEntry.identifier || safeEntry.name || metadata.id),
+    type: normalizeString(safeEntry.type || safeEntry.kind || safeEntry.questionType),
+    question: normalizeString(
+      safeEntry.question ||
+      safeEntry.prompt ||
+      safeEntry.text ||
+      safeEntry.title ||
+      safeEntry.label ||
+      safeEntry.description ||
+      metadata.question
+    ),
+    learnerResponse: toDisplayString(
+      safeEntry.learnerResponse ??
+      safeEntry.studentResponse ??
+      safeEntry.response ??
+      safeEntry.answer ??
+      safeEntry.value ??
+      safeEntry.userAnswer ??
+      safeEntry.selected ??
+      safeEntry.selectedOption ??
+      safeEntry.selectedOptions
+    ),
+    correctResponses: uniqueStrings(
+      flattenPrimitiveValues(
+        safeEntry.correctResponses ??
+        safeEntry.correct_responses ??
+        safeEntry.correctAnswer ??
+        safeEntry.correct_answer ??
+        safeEntry.correctResponse ??
+        safeEntry.correct_response ??
+        safeEntry.expectedAnswer ??
+        safeEntry.expected_answer ??
+        safeEntry.solution ??
+        metadata.correctResponses
+      )
+    ),
+    result: normalizeString(
+      typeof safeEntry.result === "boolean"
+        ? safeEntry.result ? "correct" : "incorrect"
+        : safeEntry.result ?? safeEntry.status ?? safeEntry.isCorrect
+    ).toLowerCase(),
+    latency: normalizeString(safeEntry.latency),
+    time: normalizeString(safeEntry.time || safeEntry.timestamp),
+    maxMarks: normalizeScore(
+      safeEntry.weighting ?? safeEntry.maxMarks ?? safeEntry.max_marks ?? safeEntry.marks ?? metadata.maxMarks
+    ),
+    source: "suspend_data" as const,
+    rawData: isPlainObject(entry) ? entry : { value: entry },
+  };
+}
+
+function buildSuspendDataInteractions(suspendData: string) {
+  const parsedSuspendData = decodeSuspendDataPayload(suspendData);
+  if (!parsedSuspendData) {
+    return [];
+  }
+
+  const metadataMap = buildQuestionMetadataMap(parsedSuspendData);
+  const candidateArray = findCandidateQuizArray(parsedSuspendData);
+
+  return candidateArray.map((entry, index) => normalizeSuspendDataInteraction(entry, index, metadataMap));
 }
 
 function extractScormInteractions(state: Record<string, string>) {
@@ -88,14 +338,18 @@ function extractScormInteractions(state: Record<string, string>) {
       index: interactionIndex,
       id: "",
       type: "",
-      result: "",
-      studentResponse: "",
+      question: "",
       learnerResponse: "",
       correctResponses: [],
-      weighting: null,
+      result: "",
+      latency: "",
+      time: "",
+      maxMarks: null,
+      source: "cmi.interactions" as const,
       rawData: {},
     };
 
+    currentInteraction.rawData = currentInteraction.rawData || {};
     currentInteraction.rawData[propertyPath] = String(value ?? "");
 
     if (propertyPath === "id") {
@@ -103,18 +357,26 @@ function extractScormInteractions(state: Record<string, string>) {
     } else if (propertyPath === "type") {
       currentInteraction.type = normalizeString(value);
     } else if (propertyPath === "result") {
-      currentInteraction.result = normalizeString(value);
-    } else if (propertyPath === "student_response") {
-      currentInteraction.studentResponse = normalizeString(value);
-    } else if (propertyPath === "learner_response") {
+      currentInteraction.result = normalizeString(value).toLowerCase();
+    } else if (propertyPath === "student_response" || propertyPath === "learner_response") {
       currentInteraction.learnerResponse = normalizeString(value);
+    } else if (propertyPath === "latency") {
+      currentInteraction.latency = normalizeString(value);
+    } else if (propertyPath === "time") {
+      currentInteraction.time = normalizeString(value);
     } else if (propertyPath === "weighting") {
-      currentInteraction.weighting = normalizeScore(String(value ?? ""));
+      currentInteraction.maxMarks = normalizeScore(value);
+    } else if (propertyPath === "description" || propertyPath === "text") {
+      currentInteraction.question = normalizeString(value);
     } else {
       const correctResponseMatch = propertyPath.match(/^correct_responses\.(\d+)\.pattern$/);
       if (correctResponseMatch) {
         const patternIndex = Number(correctResponseMatch[1]);
-        currentInteraction.correctResponses[patternIndex] = normalizeString(value);
+        const nextCorrectResponses = Array.isArray(currentInteraction.correctResponses)
+          ? [...currentInteraction.correctResponses]
+          : [];
+        nextCorrectResponses[patternIndex] = normalizeString(value);
+        currentInteraction.correctResponses = nextCorrectResponses.filter(Boolean);
       }
     }
 
@@ -125,8 +387,68 @@ function extractScormInteractions(state: Record<string, string>) {
     .sort((left, right) => left.index - right.index)
     .map((interaction) => ({
       ...interaction,
-      correctResponses: interaction.correctResponses.filter(Boolean),
+      correctResponses: uniqueStrings(Array.isArray(interaction.correctResponses) ? interaction.correctResponses : []),
     }));
+}
+
+function enrichNativeInteractions(nativeInteractions: ScormInteractionPayload[], suspendDataInteractions: ScormInteractionPayload[]) {
+  if (!suspendDataInteractions.length) {
+    return nativeInteractions;
+  }
+
+  const fallbackMap = new Map<string, ScormInteractionPayload>();
+  suspendDataInteractions.forEach((interaction, index) => {
+    fallbackMap.set(interaction.id || `index:${interaction.index || index}`, interaction);
+  });
+
+  return nativeInteractions.map((interaction, index) => {
+    const fallbackInteraction = fallbackMap.get(interaction.id || `index:${interaction.index || index}`);
+    if (!fallbackInteraction) {
+      return interaction;
+    }
+
+    return {
+      ...interaction,
+      question: interaction.question || fallbackInteraction.question,
+      learnerResponse: interaction.learnerResponse || fallbackInteraction.learnerResponse,
+      correctResponses: interaction.correctResponses?.length
+        ? interaction.correctResponses
+        : fallbackInteraction.correctResponses,
+      latency: interaction.latency || fallbackInteraction.latency,
+      time: interaction.time || fallbackInteraction.time,
+      maxMarks: interaction.maxMarks ?? fallbackInteraction.maxMarks ?? null,
+      rawData: {
+        ...(fallbackInteraction.rawData || {}),
+        ...(interaction.rawData || {}),
+      },
+    };
+  });
+}
+
+function getInteractionCount(state: Record<string, string>) {
+  const indexes = new Set<number>();
+
+  Object.keys(state).forEach((key) => {
+    const match = key.match(/^cmi\.interactions\.(\d+)\./);
+    if (match) {
+      indexes.add(Number(match[1]));
+    }
+  });
+
+  return indexes.size;
+}
+
+function getCorrectResponseCount(state: Record<string, string>, interactionIndex: number) {
+  const indexes = new Set<number>();
+
+  Object.keys(state).forEach((key) => {
+    const match = key.match(new RegExp(`^cmi\\.interactions\\.${interactionIndex}\\.correct_responses\\.(\\d+)\\.`));
+    if (match) {
+      indexes.add(Number(match[1]));
+    }
+  });
+
+  return indexes.size;
 }
 
 export function buildScorm12InitialState(options: {
@@ -163,6 +485,13 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
       return null;
     }
 
+    const suspendData = normalizeString(state["cmi.suspend_data"]);
+    const nativeInteractions = extractScormInteractions(state);
+    const fallbackInteractions = buildSuspendDataInteractions(suspendData);
+    const interactions = nativeInteractions.length
+      ? enrichNativeInteractions(nativeInteractions, fallbackInteractions)
+      : fallbackInteractions;
+
     return {
       userId,
       courseId,
@@ -171,10 +500,10 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
       lesson_status: normalizeString(state["cmi.core.lesson_status"]) || "not_attempted",
       score: normalizeScore(state["cmi.core.score.raw"]),
       lesson_location: normalizeString(state["cmi.core.lesson_location"]),
-      suspend_data: normalizeString(state["cmi.suspend_data"]),
+      suspend_data: suspendData,
       session_time: normalizeString(state["cmi.core.session_time"]) || DEFAULT_SCORM_TIME,
       total_time: normalizeString(state["cmi.core.total_time"]) || DEFAULT_SCORM_TIME,
-      interactions: extractScormInteractions(state),
+      interactions,
     };
   };
 
@@ -208,6 +537,17 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
       if (!initialized) {
         lastError = "301";
         return "";
+      }
+
+      if (key === "cmi.interactions._count") {
+        lastError = "0";
+        return String(getInteractionCount(state));
+      }
+
+      const correctResponseCountMatch = key.match(/^cmi\.interactions\.(\d+)\.correct_responses\._count$/);
+      if (correctResponseCountMatch) {
+        lastError = "0";
+        return String(getCorrectResponseCount(state, Number(correctResponseCountMatch[1])));
       }
 
       lastError = "0";

@@ -1,9 +1,20 @@
 "use client";
 
 import axios from "axios";
-import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import {
+  Button,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerHeader,
+  DrawerOverlay,
+} from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FiMaximize2, FiMinimize2, FiX } from "react-icons/fi";
+import ScormQuizReviewContent from "./ScormQuizReviewContent";
+import { ScormAnswerSectionRecord } from "./quizReviewTypes";
 import { buildScorm12InitialState, createScorm12Api, ScormTrackingPayload } from "./scorm12";
 
 interface CoursePlayerProps {
@@ -15,6 +26,9 @@ interface CoursePlayerProps {
   sectionId?: string;
   userId?: string;
   learnerName?: string;
+  answerSections?: ScormAnswerSectionRecord[];
+  isAnswerSectionsLoading?: boolean;
+  onRefreshAnswerSections?: () => void | Promise<void>;
 }
 
 const HEADER_H = 48;
@@ -28,12 +42,16 @@ export default function CoursePlayer({
   sectionId,
   userId,
   learnerName,
+  answerSections = [],
+  isAnswerSectionsLoading = false,
+  onRefreshAnswerSections,
 }: CoursePlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<ReturnType<typeof createScorm12Api> | null>(null);
   const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
   const trackingEnabledRef = useRef(false);
+  const refreshTimerRef = useRef<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isFrameLoading, setIsFrameLoading] = useState(true);
@@ -41,6 +59,16 @@ export default function CoursePlayer({
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [resolvedCourseUrl, setResolvedCourseUrl] = useState<string | null>(null);
+  const [isQuizReviewOpen, setIsQuizReviewOpen] = useState(false);
+
+  const visibleAnswerSections = useMemo(() => {
+    if (!sectionId) {
+      return answerSections;
+    }
+
+    const matchingSections = answerSections.filter((entry) => entry.sectionId === sectionId);
+    return matchingSections.length ? matchingSections : answerSections;
+  }, [answerSections, sectionId]);
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
@@ -72,6 +100,24 @@ export default function CoursePlayer({
     delete (targetWindow as any).__SCORM_CONTEXT__;
   };
 
+  const scheduleAnswersRefresh = (payload: ScormTrackingPayload, mode: "commit" | "finish") => {
+    if (!onRefreshAnswerSections) {
+      return;
+    }
+
+    if (!payload.interactions.length && !payload.suspend_data && mode !== "finish") {
+      return;
+    }
+
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current);
+    }
+
+    refreshTimerRef.current = window.setTimeout(() => {
+      Promise.resolve(onRefreshAnswerSections()).catch(() => undefined);
+    }, mode === "finish" ? 150 : 450);
+  };
+
   const queueTrackingSync = (mode: "commit" | "finish", payload: ScormTrackingPayload) => {
     if (!trackingEnabledRef.current) {
       return Promise.resolve();
@@ -99,6 +145,7 @@ export default function CoursePlayer({
         }
 
         setSyncError(null);
+        scheduleAnswersRefresh(payload, mode);
       })
       .catch((error) => {
         console.error(`SCORM ${mode} sync failed`, error);
@@ -199,6 +246,10 @@ export default function CoursePlayer({
 
     return () => {
       isActive = false;
+
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
 
       const currentRuntime = apiRef.current;
       apiRef.current = null;
@@ -312,87 +363,95 @@ export default function CoursePlayer({
           `}
         >
           <div
-            className="flex items-center justify-between flex-shrink-0 px-3 bg-black dark:bg-[#0F0F0F] border-b border-gray-100 dark:border-white/10"
+            className="flex items-center justify-between gap-3 flex-shrink-0 px-3 bg-black dark:bg-[#0F0F0F] border-b border-gray-100 dark:border-white/10"
             style={{ height: HEADER_H }}
           >
             <h2 className="text-sm font-medium text-gray-100 dark:text-gray-400 truncate ml-1 select-none">
               {courseTitle}
             </h2>
 
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                colorScheme="teal"
+                variant="outline"
+                onClick={() => setIsQuizReviewOpen(true)}
+                isDisabled={isBootstrapping}
+              >
+                View Quiz Answers
+              </Button>
               <button
-                onClick={toggleFullscreen}
-                aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                className="p-2 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                type="button"
+                onClick={() => void toggleFullscreen()}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-200 transition hover:bg-white/10"
+                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               >
                 {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
               </button>
               <button
-                onClick={onBack}
-                aria-label="Close"
-                className="p-2 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                type="button"
+                onClick={() => {
+                  setIsQuizReviewOpen(false);
+                  onBack();
+                }}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-200 transition hover:bg-white/10"
+                aria-label="Close player"
               >
                 <FiX size={18} />
               </button>
             </div>
           </div>
 
-          <div
-            className="relative w-full overflow-hidden bg-white dark:bg-black"
-            style={{ height: `calc(100% - ${HEADER_H}px)` }}
-          >
-            <AnimatePresence>
-              {showOverlay ? (
-                <motion.div
-                  initial={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 bg-white/95 dark:bg-black/95 text-center px-6"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-sky-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                    <div className="scorm-spinner w-6 h-6 rounded-full border-[3px] border-white/30 border-t-white" />
-                  </div>
-
-                  <div className="max-w-md">
-                    {hasSlowLoad ? (
-                      <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-                        Taking longer than usual. Large packages need extra time on first load.
-                      </p>
-                    ) : null}
-                    {playerError ? (
-                      <p className="mt-2 text-sm text-red-500">{playerError}</p>
-                    ) : null}
-                    {syncError && !playerError ? (
-                      <p className="mt-2 text-sm text-amber-500">{syncError}</p>
-                    ) : null}
-                  </div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-
-            {syncError && !showOverlay ? (
-              <div className="absolute bottom-4 right-4 z-10 max-w-xs rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-700 shadow-lg">
-                {syncError}
+          <div className="relative flex-1 bg-[#0B0B0B]">
+            {showOverlay ? (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#0B0B0B] text-white">
+                <div className="scorm-spinner w-8 h-8 rounded-full border-[3px] border-white/20 border-t-white" />
+                <p className="text-sm font-medium">
+                  {playerError || "Loading course assets and reconnecting your SCORM session..."}
+                </p>
+                {hasSlowLoad && !playerError ? (
+                  <p className="text-xs text-white/70">
+                    This package is taking a bit longer than usual to load.
+                  </p>
+                ) : null}
               </div>
             ) : null}
 
-            {resolvedCourseUrl ? (
-              <iframe
-                key={resolvedCourseUrl}
-                ref={iframeRef}
-                src={resolvedCourseUrl}
-                onError={() => {
-                  setPlayerError("We couldn't load this SCORM package.");
-                  setIsFrameLoading(false);
-                }}
-                className="w-full h-full border-0 block"
-                title={courseTitle}
-                allow="autoplay; fullscreen"
-              />
-            ) : null}
+            <iframe
+              ref={iframeRef}
+              src={resolvedCourseUrl || undefined}
+              title={courseTitle}
+              className="w-full h-full bg-white"
+              allowFullScreen
+              onError={() => {
+                setPlayerError("We couldn't load this SCORM package.");
+                setIsFrameLoading(false);
+              }}
+            />
           </div>
+
+          {syncError ? (
+            <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+              {syncError}
+            </div>
+          ) : null}
         </motion.div>
       </div>
+
+      <Drawer isOpen={isQuizReviewOpen} placement="right" onClose={() => setIsQuizReviewOpen(false)} size="lg">
+        <DrawerOverlay backdropFilter="blur(4px)" />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth="1px">Quiz Review</DrawerHeader>
+          <DrawerBody py={6}>
+            <ScormQuizReviewContent
+              sections={visibleAnswerSections}
+              isLoading={isAnswerSectionsLoading}
+              emptyState="Answers will appear here after the SCORM package commits quiz data or when the lesson is completed."
+            />
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { makeAutoObservable, runInAction } from "mobx";
+import { ScormAnswerSectionRecord } from "@/app/dashboard/course/scorm/quizReviewTypes";
 
 export interface ManagedLearnerSummary {
   _id: string;
@@ -12,34 +13,6 @@ export interface ManagedLearnerSummary {
   avgScore: number | null;
   courseCount: number;
   completedCourses: number;
-}
-
-export interface LearnerAnswerSubmission {
-  _id: string;
-  userId: string;
-  courseId: string;
-  moduleId: string;
-  sectionId: string;
-  courseTitle?: string;
-  moduleTitle?: string;
-  sectionTitle?: string;
-  questionId: string;
-  answer: string;
-  correctAnswer?: string;
-  isCorrect?: boolean | null;
-  marksAwarded?: number | null;
-  maxMarks?: number | null;
-  feedback?: string;
-  status: "pending" | "reviewed";
-  reviewedBy?: {
-    _id?: string;
-    name?: string;
-    email?: string;
-    username?: string;
-  } | null;
-  reviewedAt?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
 }
 
 export interface LearnerCourseSectionProgress {
@@ -106,8 +79,8 @@ export interface LearnerProgressDetail {
 class ManagerStore {
   learners: ManagedLearnerSummary[] = [];
   learnerProgress: LearnerProgressDetail | null = null;
-  learnerAnswers: LearnerAnswerSubmission[] = [];
-  myCourseAnswers: LearnerAnswerSubmission[] = [];
+  learnerAnswers: ScormAnswerSectionRecord[] = [];
+  myCourseAnswers: ScormAnswerSectionRecord[] = [];
   isLearnersLoading = false;
   isLearnerProgressLoading = false;
   isLearnerAnswersLoading = false;
@@ -190,8 +163,9 @@ class ManagerStore {
   };
 
   reviewAnswer = async (payload: {
-    submissionId: string;
-    marksAwarded: number;
+    trackingId: string;
+    interactionId: string;
+    marksOverride?: number | null;
     feedback?: string;
   }) => {
     this.isSubmittingReview = true;
@@ -200,12 +174,12 @@ class ManagerStore {
       const { data } = await axios.post("/manager/review-answer", payload);
 
       runInAction(() => {
-        const updatedSubmission = data.data;
+        const updatedTrackingRecord = data.data as ScormAnswerSectionRecord;
         this.learnerAnswers = this.learnerAnswers.map((entry) =>
-          entry._id === updatedSubmission?._id ? updatedSubmission : entry
+          entry._id === updatedTrackingRecord?._id ? updatedTrackingRecord : entry
         );
         this.myCourseAnswers = this.myCourseAnswers.map((entry) =>
-          entry._id === updatedSubmission?._id ? updatedSubmission : entry
+          entry._id === updatedTrackingRecord?._id ? updatedTrackingRecord : entry
         );
       });
 

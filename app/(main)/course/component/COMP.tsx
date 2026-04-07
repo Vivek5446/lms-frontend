@@ -226,6 +226,16 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
                 sectionId={playerSection.sectionId}
                 userId={stores.auth.user?._id}
                 learnerName={stores.auth.user?.name || stores.auth.user?.username || stores.auth.user?.email}
+                answerSections={managerStore.myCourseAnswers}
+                isAnswerSectionsLoading={managerStore.isMyCourseAnswersLoading}
+                onRefreshAnswerSections={() => {
+                  const activeCourseId = activeCourse._id || activeCourse.courseId;
+                  if (!activeCourseId) {
+                    return Promise.resolve();
+                  }
+
+                  return managerStore.fetchMyCourseAnswers(activeCourseId).then(() => undefined);
+                }}
                 onBack={() => setPlayerSection(null)}
               />
             </motion.div>

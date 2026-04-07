@@ -1,6 +1,8 @@
 "use client";
 
 import { isManagerRole } from "@/app/config/utils/roleAccess";
+import ScormQuizReviewContent from "@/app/dashboard/course/scorm/ScormQuizReviewContent";
+import { ScormInteractionReview, ScormReviewDraftMap } from "@/app/dashboard/course/scorm/quizReviewTypes";
 import { managerStore } from "@/app/store/managerStore/managerStore";
 import stores from "@/app/store/stores";
 import {
@@ -24,16 +26,19 @@ import {
   Grid,
   Heading,
   HStack,
-  Input,
-  SimpleGrid,
   Spinner,
   Stack,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
   Text,
-  Textarea,
+  Th,
+  Thead,
+  Tr,
   useColorModeValue,
   useDisclosure,
   useToast,
-  VStack,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo, useState } from "react";
@@ -80,8 +85,6 @@ function averageNullableNumbers(values: Array<number | null | undefined>) {
   return averageNumbers(numericValues);
 }
 
-type ReviewDraftMap = Record<string, { marksAwarded: string; feedback: string }>;
-
 const ManagerLearningBoard = observer(() => {
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -89,14 +92,12 @@ const ManagerLearningBoard = observer(() => {
   const isManagerUser = isManagerRole(role);
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [reviewDrafts, setReviewDrafts] = useState<ReviewDraftMap>({});
+  const [reviewDrafts, setReviewDrafts] = useState<ScormReviewDraftMap>({});
 
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const mutedText = useColorModeValue("gray.600", "gray.300");
-  const pendingBg = useColorModeValue("yellow.50", "yellow.900");
-  const reviewedBg = useColorModeValue("green.50", "green.900");
   const metricBg = useColorModeValue("gray.50", "whiteAlpha.100");
   const activeCourseBg = useColorModeValue("teal.50", "teal.900");
 
@@ -107,14 +108,6 @@ const ManagerLearningBoard = observer(() => {
 
     managerStore.fetchManagedLearners().catch(() => undefined);
   }, [isManagerUser]);
-
-  useEffect(() => {
-    if (!isOpen || !selectedLearnerId || !selectedCourseId) {
-      return;
-    }
-
-    managerStore.fetchLearnerAnswers(selectedLearnerId, selectedCourseId).catch(() => undefined);
-  }, [isOpen, selectedCourseId, selectedLearnerId]);
 
   const selectedCourse = useMemo(() => {
     const courses = managerStore.learnerProgress?.courses || [];
@@ -145,6 +138,26 @@ const ManagerLearningBoard = observer(() => {
     }
   };
 
+  const selectCourse = async (courseId: string) => {
+    setSelectedCourseId(courseId);
+    setReviewDrafts({});
+
+    if (!selectedLearnerId) {
+      return;
+    }
+
+    try {
+      await managerStore.fetchLearnerAnswers(selectedLearnerId, courseId);
+    } catch (error: any) {
+      toast({
+        title: "Unable to load answers",
+        description: error?.message || error?.error || "Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
+  };
+
   const handleCloseDrawer = () => {
     setSelectedLearnerId("");
     setSelectedCourseId("");
@@ -153,28 +166,32 @@ const ManagerLearningBoard = observer(() => {
     onClose();
   };
 
-  const handleReviewChange = (submissionId: string, field: "marksAwarded" | "feedback", value: string) => {
+  const handleReviewChange = (interactionId: string, field: "marksOverride" | "feedback", value: string) => {
     setReviewDrafts((current) => ({
       ...current,
-      [submissionId]: {
-        marksAwarded: current[submissionId]?.marksAwarded ?? "",
-        feedback: current[submissionId]?.feedback ?? "",
+      [interactionId]: {
+        marksOverride: current[interactionId]?.marksOverride ?? "",
+        feedback: current[interactionId]?.feedback ?? "",
         [field]: value,
       },
     }));
   };
 
-  const submitReview = async (submission: any) => {
-    const draft = reviewDrafts[submission._id] || {
-      marksAwarded: submission.marksAwarded !== null && submission.marksAwarded !== undefined ? String(submission.marksAwarded) : "",
-      feedback: submission.feedback || "",
+  const submitReview = async (trackingId: string, interaction: ScormInteractionReview) => {
+    const draft = reviewDrafts[interaction._id] || {
+      marksOverride:
+        interaction.review?.marksOverride !== null && interaction.review?.marksOverride !== undefined
+          ? String(interaction.review.marksOverride)
+          : "",
+      feedback: interaction.review?.feedback || "",
     };
-    const marksAwarded = Number(draft.marksAwarded);
+    const marksOverride =
+      draft.marksOverride.trim() === "" ? null : Number(draft.marksOverride);
 
-    if (!Number.isFinite(marksAwarded) || marksAwarded < 0) {
+    if (marksOverride !== null && (!Number.isFinite(marksOverride) || marksOverride < 0)) {
       toast({
         title: "Enter valid marks",
-        description: "Marks awarded must be a non-negative number.",
+        description: "Marks override must be a non-negative number.",
         status: "warning",
         duration: 3000,
       });
@@ -183,14 +200,14 @@ const ManagerLearningBoard = observer(() => {
 
     try {
       await managerStore.reviewAnswer({
-        submissionId: submission._id,
-        marksAwarded,
+        trackingId,
+        interactionId: interaction._id,
+        marksOverride,
         feedback: draft.feedback,
       });
-      await managerStore.fetchLearnerAnswers(selectedLearnerId, selectedCourseId);
       toast({
         title: "Review saved",
-        description: "The learner can now see the updated score and feedback.",
+        description: "The learner can now see the updated feedback in quiz review.",
         status: "success",
         duration: 3000,
       });
@@ -233,15 +250,15 @@ const ManagerLearningBoard = observer(() => {
                 Team Review
               </Badge>
               <Heading mt={4} size="lg">
-                Track learner progress, scores, and manual evaluations from one place
+                Track learner progress, scores, and answer reviews from one place
               </Heading>
               <Text mt={3} color="whiteAlpha.900" maxW="2xl">
-                Open a learner to inspect course progress at the module and section level, review submitted answers,
-                and send marks plus feedback back to the learner experience.
+                Open a learner to inspect course progress at the module and section level, review captured quiz
+                answers, and save marks plus feedback question by question.
               </Text>
             </Box>
 
-            <SimpleGrid columns={3} spacing={3}>
+            <Grid templateColumns="repeat(3, minmax(0, 1fr))" gap={3}>
               <Box bg="whiteAlpha.220" borderWidth="1px" borderColor="whiteAlpha.300" borderRadius="2xl" p={4}>
                 <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.1em" color="whiteAlpha.800">
                   Learners
@@ -269,7 +286,7 @@ const ManagerLearningBoard = observer(() => {
                   {formatScore(averageNullableNumbers(managerStore.learners.map((learner) => learner.avgScore)))}
                 </Text>
               </Box>
-            </SimpleGrid>
+            </Grid>
           </Grid>
         </Box>
 
@@ -286,71 +303,70 @@ const ManagerLearningBoard = observer(() => {
             </Text>
           </Box>
         ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={6}>
-            {managerStore.learners.map((learner) => (
-              <Box
-                key={learner._id}
-                bg={cardBg}
-                borderWidth="1px"
-                borderColor={borderColor}
-                borderRadius="3xl"
-                p={6}
-                boxShadow="sm"
-              >
-                <Flex justify="space-between" align="start" gap={4}>
-                  <Box>
-                    <Heading size="md">{learner.name}</Heading>
-                    <Text mt={1} color={mutedText} fontSize="sm">
-                      {learner.email || learner.username || "Learner account"}
-                    </Text>
-                    {learner.department ? (
-                      <Badge mt={3} colorScheme="teal" borderRadius="full" px={3} py={1}>
-                        {learner.department}
-                      </Badge>
-                    ) : null}
-                  </Box>
-
-                  <CircularProgress
-                    value={learner.overallProgress}
-                    color={`${getProgressColor(learner.overallProgress)}.400`}
-                    size="72px"
-                    thickness="10px"
-                  >
-                    <CircularProgressLabel fontSize="sm" fontWeight="bold">
-                      {Math.round(learner.overallProgress)}%
-                    </CircularProgressLabel>
-                  </CircularProgress>
-                </Flex>
-
-                <SimpleGrid columns={2} spacing={3} mt={6}>
-                  <Box borderRadius="2xl" bg={metricBg} p={3}>
-                    <Text fontSize="xs" textTransform="uppercase" color={mutedText}>
-                      Avg score
-                    </Text>
-                    <Text mt={2} fontWeight="bold">
-                      {formatScore(learner.avgScore)}
-                    </Text>
-                  </Box>
-                  <Box borderRadius="2xl" bg={metricBg} p={3}>
-                    <Text fontSize="xs" textTransform="uppercase" color={mutedText}>
-                      Courses
-                    </Text>
-                    <Text mt={2} fontWeight="bold">
-                      {learner.completedCourses}/{learner.courseCount}
-                    </Text>
-                  </Box>
-                </SimpleGrid>
-
-                <Button mt={6} w="full" colorScheme="teal" borderRadius="xl" onClick={() => openLearner(learner._id)}>
-                  Open learner view
-                </Button>
-              </Box>
-            ))}
-          </SimpleGrid>
+          <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} borderRadius="3xl" overflow="hidden">
+            <TableContainer>
+              <Table variant="simple">
+                <Thead bg={metricBg}>
+                  <Tr>
+                    <Th>Learner</Th>
+                    <Th>Department</Th>
+                    <Th isNumeric>Progress</Th>
+                    <Th isNumeric>Avg Score</Th>
+                    <Th isNumeric>Courses</Th>
+                    <Th />
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {managerStore.learners.map((learner) => (
+                    <Tr key={learner._id}>
+                      <Td>
+                        <Text fontWeight="semibold">{learner.name}</Text>
+                        <Text mt={1} fontSize="sm" color={mutedText}>
+                          {learner.email || learner.username || "Learner account"}
+                        </Text>
+                      </Td>
+                      <Td>
+                        {learner.department ? (
+                          <Badge colorScheme="teal" borderRadius="full" px={3} py={1}>
+                            {learner.department}
+                          </Badge>
+                        ) : (
+                          <Text color={mutedText}>Unassigned</Text>
+                        )}
+                      </Td>
+                      <Td isNumeric>
+                        <HStack justify="flex-end" spacing={3}>
+                          <CircularProgress
+                            value={learner.overallProgress}
+                            color={`${getProgressColor(learner.overallProgress)}.400`}
+                            size="54px"
+                            thickness="10px"
+                          >
+                            <CircularProgressLabel fontSize="xs" fontWeight="bold">
+                              {Math.round(learner.overallProgress)}%
+                            </CircularProgressLabel>
+                          </CircularProgress>
+                        </HStack>
+                      </Td>
+                      <Td isNumeric>{formatScore(learner.avgScore)}</Td>
+                      <Td isNumeric>
+                        {learner.completedCourses}/{learner.courseCount}
+                      </Td>
+                      <Td textAlign="right">
+                        <Button colorScheme="teal" borderRadius="xl" onClick={() => openLearner(learner._id)}>
+                          View Answers
+                        </Button>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          </Box>
         )}
       </Stack>
 
-      <Drawer isOpen={isOpen} placement="right" onClose={handleCloseDrawer} size="xl">
+      <Drawer isOpen={isOpen} placement="right" onClose={handleCloseDrawer} size="2xl">
         <DrawerOverlay backdropFilter="blur(4px)" />
         <DrawerContent>
           <DrawerCloseButton />
@@ -368,7 +384,7 @@ const ManagerLearningBoard = observer(() => {
                   <Text mt={1} color={mutedText}>
                     {managerStore.learnerProgress.learner.email || managerStore.learnerProgress.learner.username || ""}
                   </Text>
-                  <SimpleGrid columns={3} spacing={3} mt={5}>
+                  <Grid templateColumns={{ base: "1fr", md: "repeat(3, minmax(0, 1fr))" }} gap={3} mt={5}>
                     <Box borderRadius="2xl" bg={metricBg} p={3}>
                       <Text fontSize="xs" textTransform="uppercase" color={mutedText}>
                         Overall progress
@@ -393,14 +409,14 @@ const ManagerLearningBoard = observer(() => {
                         {managerStore.learnerProgress.summary.courseCount}
                       </Text>
                     </Box>
-                  </SimpleGrid>
+                  </Grid>
                 </Box>
 
                 <Box>
                   <Heading size="sm" mb={3}>
                     Courses
                   </Heading>
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  <Grid templateColumns={{ base: "1fr", md: "repeat(2, minmax(0, 1fr))" }} gap={4}>
                     {managerStore.learnerProgress.courses.map((course) => {
                       const isActive = selectedCourse?.courseId === course.courseId;
                       return (
@@ -412,7 +428,7 @@ const ManagerLearningBoard = observer(() => {
                           p={4}
                           bg={isActive ? activeCourseBg : cardBg}
                           cursor="pointer"
-                          onClick={() => setSelectedCourseId(course.courseId)}
+                          onClick={() => void selectCourse(course.courseId)}
                         >
                           <Flex justify="space-between" align="start" gap={4}>
                             <Box flex="1">
@@ -439,7 +455,7 @@ const ManagerLearningBoard = observer(() => {
                         </Box>
                       );
                     })}
-                  </SimpleGrid>
+                  </Grid>
                 </Box>
 
                 {selectedCourse ? (
@@ -526,99 +542,16 @@ const ManagerLearningBoard = observer(() => {
                         </Badge>
                       </Flex>
 
-                      {managerStore.isLearnerAnswersLoading ? (
-                        <HStack py={10} justify="center">
-                          <Spinner />
-                          <Text color={mutedText}>Loading answer submissions...</Text>
-                        </HStack>
-                      ) : managerStore.learnerAnswers.length === 0 ? (
-                        <Box borderWidth="1px" borderColor={borderColor} borderRadius="2xl" p={5}>
-                          <Text color={mutedText}>
-                            No SCORM answers have been captured for this course yet.
-                          </Text>
-                        </Box>
-                      ) : (
-                        <Stack spacing={4}>
-                          {managerStore.learnerAnswers.map((submission) => {
-                            const draft = reviewDrafts[submission._id] || {
-                              marksAwarded:
-                                submission.marksAwarded !== null && submission.marksAwarded !== undefined
-                                  ? String(submission.marksAwarded)
-                                  : "",
-                              feedback: submission.feedback || "",
-                            };
-
-                            return (
-                              <Box
-                                key={submission._id}
-                                borderWidth="1px"
-                                borderColor={submission.status === "reviewed" ? "green.200" : "yellow.200"}
-                                bg={submission.status === "reviewed" ? reviewedBg : pendingBg}
-                                borderRadius="3xl"
-                                p={5}
-                              >
-                                <Flex justify="space-between" align="start" gap={4} wrap="wrap">
-                                  <Box flex="1">
-                                    <Text fontWeight="bold">{submission.questionId}</Text>
-                                    <Text mt={1} fontSize="sm" color={mutedText}>
-                                      {submission.moduleTitle || submission.moduleId}
-                                      {submission.sectionTitle ? ` | ${submission.sectionTitle}` : ""}
-                                    </Text>
-
-                                    <Text mt={4} fontSize="sm" color={mutedText}>
-                                      Learner answer
-                                    </Text>
-                                    <Text fontSize="sm">{submission.answer || "No answer captured"}</Text>
-
-                                    {submission.correctAnswer ? (
-                                      <>
-                                        <Text mt={3} fontSize="sm" color={mutedText}>
-                                          Correct answer
-                                        </Text>
-                                        <Text fontSize="sm">{submission.correctAnswer}</Text>
-                                      </>
-                                    ) : null}
-                                  </Box>
-
-                                  <VStack align="stretch" minW={{ base: "100%", md: "280px" }} spacing={3}>
-                                    <Badge
-                                      alignSelf="flex-start"
-                                      colorScheme={submission.status === "reviewed" ? "green" : "yellow"}
-                                      borderRadius="full"
-                                      px={3}
-                                      py={1}
-                                    >
-                                      {submission.status === "reviewed" ? "Reviewed" : "Pending review"}
-                                    </Badge>
-                                    <Input
-                                      type="number"
-                                      min={0}
-                                      placeholder={submission.maxMarks !== null && submission.maxMarks !== undefined ? `Marks / ${submission.maxMarks}` : "Marks awarded"}
-                                      value={draft.marksAwarded}
-                                      onChange={(event) => handleReviewChange(submission._id, "marksAwarded", event.target.value)}
-                                      bg={cardBg}
-                                    />
-                                    <Textarea
-                                      placeholder="Add manager feedback"
-                                      value={draft.feedback}
-                                      onChange={(event) => handleReviewChange(submission._id, "feedback", event.target.value)}
-                                      bg={cardBg}
-                                      rows={4}
-                                    />
-                                    <Button
-                                      colorScheme="teal"
-                                      onClick={() => submitReview(submission)}
-                                      isLoading={managerStore.isSubmittingReview}
-                                    >
-                                      Save review
-                                    </Button>
-                                  </VStack>
-                                </Flex>
-                              </Box>
-                            );
-                          })}
-                        </Stack>
-                      )}
+                      <ScormQuizReviewContent
+                        sections={managerStore.learnerAnswers}
+                        isLoading={managerStore.isLearnerAnswersLoading}
+                        mode="manager"
+                        reviewDrafts={reviewDrafts}
+                        onReviewChange={handleReviewChange}
+                        onSaveReview={submitReview}
+                        isSubmittingReview={managerStore.isSubmittingReview}
+                        emptyState="No SCORM answers have been captured for this course yet."
+                      />
                     </Box>
                   </>
                 ) : null}
