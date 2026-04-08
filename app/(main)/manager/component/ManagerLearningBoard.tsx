@@ -11,7 +11,6 @@ import {
   Button,
   CircularProgress,
   CircularProgressLabel,
-  Flex,
   Grid,
   Heading,
   HStack,
@@ -27,28 +26,19 @@ import {
   Tr,
   useColorModeValue,
   useDisclosure,
-  useToast,
+  useToast
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function getProgressColor(progress: number) {
-  if (progress >= 100) {
-    return "green";
-  }
-
-  if (progress > 0) {
-    return "yellow";
-  }
-
+  if (progress >= 100) return "green";
+  if (progress > 0) return "yellow";
   return "red";
 }
 
 function formatScore(score?: number | null) {
-  if (score === null || score === undefined) {
-    return "N/A";
-  }
-
+  if (score === null || score === undefined) return "N/A";
   return `${Math.round(score * 100) / 100}`;
 }
 
@@ -57,20 +47,14 @@ function formatTime(value?: string | null) {
 }
 
 function averageNumbers(values: number[]) {
-  if (!values.length) {
-    return 0;
-  }
-
+  if (!values.length) return 0;
   const total = values.reduce((sum, value) => sum + value, 0);
   return Math.round((total / values.length) * 100) / 100;
 }
 
 function averageNullableNumbers(values: Array<number | null | undefined>) {
   const numericValues = values.filter((value): value is number => Number.isFinite(value));
-  if (!numericValues.length) {
-    return null;
-  }
-
+  if (!numericValues.length) return null;
   return averageNumbers(numericValues);
 }
 
@@ -79,41 +63,78 @@ const ManagerLearningBoard = observer(() => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
   const isManagerUser = isManagerRole(role);
+
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [isAnswersLoading, setIsAnswersLoading] = useState(false);
+
+  // ✅ Track the latest course-select request to discard stale responses
+  const answersFetchSeqRef = useRef(0);
 
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const mutedText = useColorModeValue("gray.600", "gray.300");
   const metricBg = useColorModeValue("gray.50", "whiteAlpha.100");
-  const activeCourseBg = useColorModeValue("teal.50", "teal.900");
 
   useEffect(() => {
-    if (!isManagerUser) {
-      return;
-    }
-
+    if (!isManagerUser) return;
     managerStore.fetchManagedLearners().catch(() => undefined);
   }, [isManagerUser]);
 
+  // ✅ selectedCourse is now derived from the SAME selectedCourseId that drives answers,
+  //    so both always point to the same course simultaneously.
   const selectedCourse = useMemo(() => {
     const courses = managerStore.learnerProgress?.courses || [];
-    return courses.find((course) => course.courseId === selectedCourseId) || courses[0] || null;
+    if (!courses.length) return null;
+    // Fall back to first course only when selectedCourseId is empty (initial open)
+    return courses.find((c) => c.courseId === selectedCourseId) ?? courses[0] ?? null;
   }, [selectedCourseId, managerStore.learnerProgress?.courses]);
 
+  // ✅ Fetch answers for a course with stale-request protection
+  const fetchAnswersForCourse = useCallback(
+    async (learnerId: string, courseId: string) => {
+      // Increment sequence — any in-flight request with an older seq is discarded
+      const seq = ++answersFetchSeqRef.current;
+      setIsAnswersLoading(true);
+
+      try {
+        await managerStore.fetchLearnerAnswers(learnerId, courseId);
+        // Only apply the result if this is still the latest request
+        if (seq !== answersFetchSeqRef.current) return;
+      } catch (error: any) {
+        if (seq !== answersFetchSeqRef.current) return;
+        toast({
+          title: "Unable to load answers",
+          description: error?.message || error?.error || "Please try again.",
+          status: "error",
+          duration: 4000,
+        });
+      } finally {
+        if (seq === answersFetchSeqRef.current) {
+          setIsAnswersLoading(false);
+        }
+      }
+    },
+    [toast]
+  );
+
   const openLearner = async (learnerId: string) => {
+    // ✅ Clear stale state BEFORE opening so drawer never shows previous learner's data
     setSelectedLearnerId(learnerId);
     setSelectedCourseId("");
+    managerStore.clearLearnerState();
     onOpen();
 
     try {
       const learnerProgress = await managerStore.fetchLearnerProgress(learnerId);
       const initialCourseId = learnerProgress?.courses?.[0]?.courseId || "";
+
+      // ✅ Set course ID first so selectedCourse memo resolves correctly
       setSelectedCourseId(initialCourseId);
 
       if (initialCourseId) {
-        await managerStore.fetchLearnerAnswers(learnerId, initialCourseId);
+        await fetchAnswersForCourse(learnerId, initialCourseId);
       }
     } catch (error: any) {
       toast({
@@ -125,28 +146,23 @@ const ManagerLearningBoard = observer(() => {
     }
   };
 
-  const selectCourse = async (courseId: string) => {
-    setSelectedCourseId(courseId);
+  const selectCourse = useCallback(
+    async (courseId: string) => {
+      if (!selectedLearnerId || courseId === selectedCourseId) return;
 
-    if (!selectedLearnerId) {
-      return;
-    }
-
-    try {
-      await managerStore.fetchLearnerAnswers(selectedLearnerId, courseId);
-    } catch (error: any) {
-      toast({
-        title: "Unable to load answers",
-        description: error?.message || error?.error || "Please try again.",
-        status: "error",
-        duration: 4000,
-      });
-    }
-  };
+      // ✅ Update course ID immediately so UI highlights the right tab/course at once
+      setSelectedCourseId(courseId);
+      await fetchAnswersForCourse(selectedLearnerId, courseId);
+    },
+    [selectedLearnerId, selectedCourseId, fetchAnswersForCourse]
+  );
 
   const handleCloseDrawer = () => {
+    // ✅ Invalidate any in-flight answer fetch so it doesn't update state after close
+    answersFetchSeqRef.current++;
     setSelectedLearnerId("");
     setSelectedCourseId("");
+    setIsAnswersLoading(false);
     managerStore.clearLearnerState();
     onClose();
   };
@@ -169,6 +185,11 @@ const ManagerLearningBoard = observer(() => {
         status: "success",
         duration: 3000,
       });
+
+      if (selectedLearnerId) {
+        managerStore.fetchLearnerProgress(selectedLearnerId).catch(() => {});
+      }
+      managerStore.fetchManagedLearners().catch(() => {});
     } catch (error: any) {
       toast({
         title: "Unable to save review",
@@ -195,6 +216,7 @@ const ManagerLearningBoard = observer(() => {
   return (
     <Box minH="100vh" bg={pageBg}>
       <Stack spacing={6}>
+        {/* Header banner */}
         <Box
           borderRadius="3xl"
           px={{ base: 5, md: 8 }}
@@ -231,9 +253,8 @@ const ManagerLearningBoard = observer(() => {
                 </Text>
                 <Text mt={2} fontSize="2xl" fontWeight="bold">
                   {Math.round(
-                    averageNumbers(managerStore.learners.map((learner) => Number(learner.overallProgress || 0)))
-                  )}
-                  %
+                    averageNumbers(managerStore.learners.map((l) => Number(l.overallProgress || 0)))
+                  )}%
                 </Text>
               </Box>
               <Box bg="whiteAlpha.220" borderWidth="1px" borderColor="whiteAlpha.300" borderRadius="2xl" p={4}>
@@ -241,13 +262,14 @@ const ManagerLearningBoard = observer(() => {
                   Avg Score
                 </Text>
                 <Text mt={2} fontSize="2xl" fontWeight="bold">
-                  {formatScore(averageNullableNumbers(managerStore.learners.map((learner) => learner.avgScore)))}
+                  {formatScore(averageNullableNumbers(managerStore.learners.map((l) => l.avgScore)))}
                 </Text>
               </Box>
             </Grid>
           </Grid>
         </Box>
 
+        {/* Learners table */}
         {managerStore.isLearnersLoading ? (
           <HStack justify="center" py={20}>
             <Spinner />
@@ -329,6 +351,8 @@ const ManagerLearningBoard = observer(() => {
         onClose={handleCloseDrawer}
         managerStore={managerStore}
         selectedCourse={selectedCourse}
+        selectedCourseId={selectedCourseId}   // ✅ pass down so drawer can highlight active tab
+        isAnswersLoading={isAnswersLoading}    // ✅ pass down so drawer can show inline spinner
         selectCourse={selectCourse}
         submitReview={submitReview}
       />

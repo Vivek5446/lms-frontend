@@ -38,6 +38,8 @@ type LearnerReviewDrawerProps = {
   selectedCourse: any;
   selectCourse: (courseId: string) => Promise<void>;
   submitReview: (trackingId: string, interaction: any, evaluation: "correct" | "incorrect") => void | Promise<void>;
+  selectedCourseId: string;
+  isAnswersLoading: boolean;
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -262,16 +264,11 @@ function CourseCard({
                 {course.attempts}
               </Text>
             </HStack>
-            {course.answerSummary && (
+            {course.answerSummary && course.answerSummary.pending > 0 && (
               <HStack spacing={2}>
-                <Badge colorScheme="green" fontSize="9px" borderRadius="full" px={2}>
-                  {course.answerSummary.reviewed} reviewed
+                <Badge colorScheme="orange" fontSize="9px" borderRadius="full" px={2}>
+                  {course.answerSummary.pending} pending
                 </Badge>
-                {course.answerSummary.pending > 0 && (
-                  <Badge colorScheme="orange" fontSize="9px" borderRadius="full" px={2}>
-                    {course.answerSummary.pending} pending
-                  </Badge>
-                )}
               </HStack>
             )}
           </VStack>
@@ -289,20 +286,27 @@ export default function LearnerReviewDrawer({
   onClose,
   managerStore,
   selectedCourse,
+  selectedCourseId,   // ✅ use this for isActive checks — always in sync with the click
+  isAnswersLoading,   // ✅ use this for answers-loading state — set before fetch begins
   selectCourse,
   submitReview,
 }: LearnerReviewDrawerProps) {
   const muted = useColorModeValue("gray.500", "gray.400");
   const divider = useColorModeValue("gray.100", "gray.700");
 
-  const handleCloseDrawer = () => onClose();
   const learner = managerStore.learnerProgress?.learner;
   const summary = managerStore.learnerProgress?.summary;
   const courses = managerStore.learnerProgress?.courses || [];
   const selectedCourseSectionSummary = summarizeCourseSections(selectedCourse?.modules || []);
 
+  // ✅ Combine both loading signals:
+  //    isAnswersLoading  → parent set it true the moment user clicked (pre-fetch)
+  //    isLearnerAnswersLoading → store's own in-flight flag
+  //    This ensures the spinner shows with zero delay on click, no stale data flash.
+  const answersLoading = isAnswersLoading || managerStore.isLearnerAnswersLoading;
+
   return (
-    <Drawer isOpen={isOpen} placement="right" onClose={handleCloseDrawer} size="full">
+    <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="full">
       <DrawerOverlay backdropFilter="blur(6px)" bg="blackAlpha.400" />
       <DrawerContent maxW={{ base: "100%", md: "640px", lg: "70vw" }}>
         <DrawerCloseButton top={4} right={4} />
@@ -376,7 +380,10 @@ export default function LearnerReviewDrawer({
                     <CourseCard
                       key={course.courseId}
                       course={course}
-                      isActive={selectedCourse?.courseId === course.courseId}
+                      // ✅ Compare against selectedCourseId (prop) not selectedCourse?.courseId
+                      //    selectedCourse is memo-derived and can lag one render behind the click;
+                      //    selectedCourseId is set synchronously inside selectCourse before the fetch.
+                      isActive={selectedCourseId === course.courseId}
                       onSelect={() => void selectCourse(course.courseId)}
                     />
                   ))}
@@ -419,8 +426,14 @@ export default function LearnerReviewDrawer({
                     </HStack>
 
                     <ScormQuizReviewContent
+                      // ✅ Key on selectedCourseId — forces a full unmount+remount when the
+                      //    course changes, so the previous course's rendered answers are wiped
+                      //    from the DOM instantly on click rather than lingering during the fetch.
+                      key={selectedCourseId}
                       sections={managerStore.learnerAnswers}
-                      isLoading={managerStore.isLearnerAnswersLoading}
+                      // ✅ Use the combined loading flag so the spinner appears on click,
+                      //    not only after the store's own flag catches up.
+                      isLoading={answersLoading}
                       mode="manager"
                       progressSummary={{
                         progressPercent: Number(selectedCourse.progress || 0),
