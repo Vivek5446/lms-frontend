@@ -56,7 +56,7 @@ const Home = observer(() => {
       {/* <OurOfferings /> */}
       <Box
         // maxW={{ md: "90%" }}
-        mx={"auto"}
+        // mx={"auto"}
         my={{ base: "70px", md: "4rem", lg: "80px" }}
         // px={{ base: 4 }}
       >

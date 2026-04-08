@@ -181,43 +181,59 @@ export default function BatchDetailsDrawer({
                 </Box>
               ) : null}
 
-              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                <Box borderWidth="1px" borderRadius="2xl" p={4} bg={softBg}>
-                  <HStack spacing={2} color={mutedText}>
-                    <Icon as={FiBriefcase} />
-                    <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
-                      Company
+              {!isLearner ? (
+                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                  <Box borderWidth="1px" borderRadius="2xl" p={4} bg={softBg}>
+                    <HStack spacing={2} color={mutedText}>
+                      <Icon as={FiBriefcase} />
+                      <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
+                        Company
+                      </Text>
+                    </HStack>
+                    <Text mt={2} fontWeight="semibold">
+                      {batch.company?.company_name || "Not available"}
                     </Text>
-                  </HStack>
-                  <Text mt={2} fontWeight="semibold">
-                    {batch.company?.company_name || "Not available"}
-                  </Text>
-                </Box>
+                  </Box>
 
-                <Box borderWidth="1px" borderRadius="2xl" p={4} bg={softBg}>
-                  <HStack spacing={2} color={mutedText}>
-                    <Icon as={FiUsers} />
-                    <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
-                      Created By
+                  <Box borderWidth="1px" borderRadius="2xl" p={4} bg={softBg}>
+                    <HStack spacing={2} color={mutedText}>
+                      <Icon as={FiUsers} />
+                      <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
+                        Created By
+                      </Text>
+                    </HStack>
+                    <Text mt={2} fontWeight="semibold">
+                      {batch.createdBy?.name || batch.createdBy?.email || "Unknown"}
                     </Text>
-                  </HStack>
-                  <Text mt={2} fontWeight="semibold">
-                    {batch.createdBy?.name || batch.createdBy?.email || "Unknown"}
-                  </Text>
-                </Box>
+                  </Box>
 
-                <Box borderWidth="1px" borderRadius="2xl" p={4} bg={softBg}>
-                  <HStack spacing={2} color={mutedText}>
-                    <Icon as={FiCalendar} />
-                    <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
-                      Duration
+                  <Box borderWidth="1px" borderRadius="2xl" p={4} bg={softBg}>
+                    <HStack spacing={2} color={mutedText}>
+                      <Icon as={FiCalendar} />
+                      <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
+                        Duration
+                      </Text>
+                    </HStack>
+                    <Text mt={2} fontWeight="semibold">
+                      {formatDuration(batch)}
                     </Text>
-                  </HStack>
-                  <Text mt={2} fontWeight="semibold">
-                    {formatDuration(batch)}
-                  </Text>
-                </Box>
-              </SimpleGrid>
+                  </Box>
+                </SimpleGrid>
+              ) : (
+                <SimpleGrid columns={{ base: 1 }} spacing={4}>
+                  <Box borderWidth="1px" borderRadius="2xl" p={4} bg={softBg}>
+                    <HStack spacing={2} color={mutedText}>
+                      <Icon as={FiCalendar} />
+                      <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
+                        Batch Duration
+                      </Text>
+                    </HStack>
+                    <Text mt={2} fontWeight="semibold">
+                      {formatDuration(batch)}
+                    </Text>
+                  </Box>
+                </SimpleGrid>
+              )}
 
               <Box borderWidth="1px" borderRadius="3xl" p={5}>
                 <HStack justify="space-between" mb={4} align="end">
