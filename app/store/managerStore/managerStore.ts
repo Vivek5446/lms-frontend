@@ -165,7 +165,6 @@ class ManagerStore {
   reviewAnswer = async (payload: {
     trackingId: string;
     interactionId: string;
-    evaluation: "correct" | "incorrect";
     marks: number;
   }) => {
     this.isSubmittingReview = true;

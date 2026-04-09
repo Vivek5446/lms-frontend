@@ -37,7 +37,7 @@ type LearnerReviewDrawerProps = {
   managerStore: any;
   selectedCourse: any;
   selectCourse: (courseId: string) => Promise<void>;
-  submitReview: (trackingId: string, interaction: any, evaluation: "correct" | "incorrect") => void | Promise<void>;
+  submitReview: (trackingId: string, interaction: any, marks: number) => void | Promise<void>;
   selectedCourseId: string;
   isAnswersLoading: boolean;
 };

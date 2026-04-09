@@ -138,10 +138,39 @@ function shouldPersistInteraction(interaction: Pick<ScormInteractionPayload, "id
   );
 }
 
+function normalizeQuestionFingerprint(value: unknown) {
+  return normalizeString(value)
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function buildInteractionKey(interaction: { id?: string; index?: number }) {
   const normalizedId = normalizeString(interaction.id);
+  if (normalizedId) {
+    return `id:${normalizedId.toLowerCase()}`;
+  }
+
+  const normalizedQuestion = normalizeQuestionFingerprint((interaction as any)?.question);
+  if (normalizedQuestion) {
+    return `question:${normalizedQuestion}`;
+  }
+
   const normalizedIndex = Number(interaction.index || 0);
-  return normalizedId ? `${normalizedId}::${normalizedIndex}` : `index:${normalizedIndex}`;
+  return `index:${normalizedIndex}`;
+}
+
+function collapseInteractionsByKey(interactions: ScormInteractionPayload[]) {
+  const interactionMap = new Map<string, ScormInteractionPayload>();
+
+  interactions
+    .slice()
+    .sort((left, right) => left.index - right.index)
+    .forEach((interaction) => {
+      interactionMap.set(buildInteractionKey(interaction), interaction);
+    });
+
+  return Array.from(interactionMap.values()).sort((left, right) => left.index - right.index);
 }
 
 function safeJsonParse(value: string) {
@@ -406,12 +435,14 @@ function extractScormInteractions(state: Record<string, string>) {
     interactionMap.set(interactionIndex, currentInteraction);
   });
 
-  return Array.from(interactionMap.values())
-    .sort((left, right) => left.index - right.index)
-    .map((interaction) => ({
-      ...interaction,
-      correctResponses: uniqueStrings(Array.isArray(interaction.correctResponses) ? interaction.correctResponses : []),
-    }));
+  return collapseInteractionsByKey(
+    Array.from(interactionMap.values())
+      .sort((left, right) => left.index - right.index)
+      .map((interaction) => ({
+        ...interaction,
+        correctResponses: uniqueStrings(Array.isArray(interaction.correctResponses) ? interaction.correctResponses : []),
+      }))
+  );
 }
 
 function enrichNativeInteractions(nativeInteractions: ScormInteractionPayload[], suspendDataInteractions: ScormInteractionPayload[]) {

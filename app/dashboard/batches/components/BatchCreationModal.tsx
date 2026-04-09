@@ -88,8 +88,6 @@ const BatchCreationModal = observer(
   }: BatchCreationModalProps) => {
     const toast = useToast();
     const { auth } = stores;
-    const role = String(auth.userType || auth.user?.role || "").toLowerCase();
-    const isSuperadmin = role === "superadmin";
     const isEditMode = mode === "edit";
 
     const [step, setStep] = useState(initialStep);
@@ -103,13 +101,59 @@ const BatchCreationModal = observer(
     const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
     const [csvFile, setCsvFile] = useState<File | null>(null);
 
-    const availableCourses = useMemo<any[]>(() => {
-      if (isSuperadmin) {
-        return courseStore.courses || [];
-      }
+    const companyAssignedCourseIds = useMemo(
+      () =>
+        Array.from(
+          new Set(
+            (courseStore.assignedCourseAccesses || [])
+              .filter((access) => access.assignmentType === "company" && access.status !== "expired")
+              .map((access) => access.courseId)
+              .filter(Boolean)
+          )
+        ),
+      [courseStore.assignedCourseAccesses]
+    );
 
-      return (courseStore.accessibleCourses || []).filter((course) => course.access?.canAssign);
-    }, [courseStore.accessibleCourses, courseStore.courses, isSuperadmin]);
+    const companyAssignedCourseMap = useMemo(
+      () =>
+        new Map(
+          (courseStore.assignedCourseAccesses || [])
+            .filter((access) => access.assignmentType === "company" && access.courseId)
+            .map((access) => [access.courseId, access.courseName])
+        ),
+      [courseStore.assignedCourseAccesses]
+    );
+
+    const availableCourses = useMemo<any[]>(() => {
+      const courseMap = new Map((courseStore.courses || []).map((course) => [course._id, course]));
+      const existingCourseMap = new Map((initialBatch?.courses || []).map((course) => [course._id, course]));
+      const scopedCourses = companyAssignedCourseIds.map((courseId) => {
+        const existingCourse = existingCourseMap.get(courseId);
+        return (
+          courseMap.get(courseId) ||
+          existingCourse || {
+            _id: courseId,
+            title: companyAssignedCourseMap.get(courseId) || "Assigned course",
+            description: existingCourse?.description || { text: "" },
+          }
+        );
+      });
+
+      const missingExistingCourses = (initialBatch?.courses || [])
+        .filter((course) => selectedCourseIds.includes(course._id) && !companyAssignedCourseIds.includes(course._id))
+        .map((course) => ({
+          ...course,
+          description: {
+            text:
+              course.description?.text ||
+              "This course is no longer assigned to the company. Remove it before saving this batch.",
+          },
+        }));
+
+      return [...scopedCourses, ...missingExistingCourses].filter(
+        (course, index, courses) => courses.findIndex((item) => item._id === course._id) === index
+      );
+    }, [companyAssignedCourseIds, companyAssignedCourseMap, courseStore.courses, initialBatch?.courses, selectedCourseIds]);
 
     const selectedCourses = useMemo(() => {
       const availableById = new Map(availableCourses.map((course) => [course._id, course]));
@@ -119,6 +163,11 @@ const BatchCreationModal = observer(
         .map((courseId) => availableById.get(courseId) || existingCourses.find((course) => course._id === courseId))
         .filter(Boolean);
     }, [availableCourses, initialBatch?.courses, selectedCourseIds]);
+
+    const invalidSelectedCourses = useMemo(
+      () => selectedCourses.filter((course: any) => !companyAssignedCourseIds.includes(course._id)),
+      [companyAssignedCourseIds, selectedCourses]
+    );
 
     const hydrateFromBatch = (batch: BatchDetailsItem | null, nextStep = 0) => {
       setStep(nextStep);
@@ -158,8 +207,15 @@ const BatchCreationModal = observer(
       }
 
       courseStore.fetchCourses().catch(() => undefined);
-      courseStore.fetchAccessibleCourses().catch(() => undefined);
-    }, [initialBatch, initialStep, isEditMode, isOpen]);
+      if (companyId) {
+        courseStore
+          .fetchAssignedCourseAccesses({
+            companyId,
+            assignmentType: "company",
+          })
+          .catch(() => undefined);
+      }
+    }, [companyId, initialBatch, initialStep, isEditMode, isOpen]);
 
     useEffect(() => {
       if (!isOpen) {
@@ -192,7 +248,7 @@ const BatchCreationModal = observer(
       }
 
       if (step === 1) {
-        return selectedCourseIds.length > 0;
+        return selectedCourseIds.length > 0 && invalidSelectedCourses.length === 0;
       }
 
       if (step === 2) {
@@ -200,7 +256,7 @@ const BatchCreationModal = observer(
       }
 
       return true;
-    }, [csvFile, name, selectedCourseIds.length, selectedUsers.length, startDate, step]);
+    }, [csvFile, invalidSelectedCourses.length, name, selectedCourseIds.length, selectedUsers.length, startDate, step]);
 
     const toggleUser = (user: any) => {
       setSelectedUsers((current) => {
@@ -312,16 +368,42 @@ const BatchCreationModal = observer(
               ) : null}
 
               {step === 1 ? (
-                <CourseMultiSelectInput
-                  courses={availableCourses}
-                  selectedCourseIds={selectedCourseIds}
-                  onSelectionChange={setSelectedCourseIds}
-                  searchValue={courseSearch}
-                  onSearchChange={setCourseSearch}
-                  label="Select courses"
-                  helperText="Pick every course that should be bundled into this batch."
-                  emptyStateText="No courses match this search."
-                />
+                <Stack spacing={4}>
+                  {!companyAssignedCourseIds.length ? (
+                    <Alert status="warning" borderRadius="2xl">
+                      <AlertIcon />
+                      <Box>
+                        <AlertTitle>No company-assigned courses available</AlertTitle>
+                        <AlertDescription>
+                          Assign the course to this company first, then it will become available for batch creation.
+                        </AlertDescription>
+                      </Box>
+                    </Alert>
+                  ) : null}
+
+                  {invalidSelectedCourses.length ? (
+                    <Alert status="warning" borderRadius="2xl">
+                      <AlertIcon />
+                      <Box>
+                        <AlertTitle>Some saved courses are no longer valid for this company</AlertTitle>
+                        <AlertDescription>
+                          Remove {invalidSelectedCourses.length === 1 ? "this course" : "these courses"} before saving the batch again.
+                        </AlertDescription>
+                      </Box>
+                    </Alert>
+                  ) : null}
+
+                  <CourseMultiSelectInput
+                    courses={availableCourses}
+                    selectedCourseIds={selectedCourseIds}
+                    onSelectionChange={setSelectedCourseIds}
+                    searchValue={courseSearch}
+                    onSearchChange={setCourseSearch}
+                    label="Select courses"
+                    helperText="Only courses already assigned to this company can be bundled into a batch."
+                    emptyStateText="No company-assigned courses match this search."
+                  />
+                </Stack>
               ) : null}
 
               {step === 2 ? (

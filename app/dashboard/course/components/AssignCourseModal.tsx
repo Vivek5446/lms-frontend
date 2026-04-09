@@ -1,6 +1,5 @@
 "use client";
 
-import CustomInput from "@/app/component/config/component/customInput/CustomInput";
 import { courseStore } from "@/app/store/courseStore/courseStore";
 import stores from "@/app/store/stores";
 import {
@@ -27,15 +26,10 @@ import {
   Select,
   SimpleGrid,
   Stack,
-  Step,
-  StepDescription,
-  StepIndicator,
-  StepNumber,
-  Stepper,
-  StepSeparator,
-  StepStatus,
-  StepTitle,
   Switch,
+  Tag,
+  TagCloseButton,
+  TagLabel,
   Text,
   useToast,
   VStack,
@@ -44,13 +38,7 @@ import {
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo, useState } from "react";
-
-const STEPS = [
-  { title: "Target", description: "Choose courses and audience" },
-  { title: "Duration", description: "Configure validity" },
-  { title: "Rules", description: "Control downstream assignment" },
-  { title: "Review", description: "Confirm before saving" },
-];
+import CourseMultiSelectInput from "./CourseMultiSelectInput";
 
 type AssignmentTarget = "company" | "department" | "users";
 
@@ -62,15 +50,21 @@ type AssignCourseModalProps = {
   onAssigned?: () => void | Promise<void>;
 };
 
+function getDefaultTarget(role: string): AssignmentTarget {
+  return role === "departmenthead" ? "users" : "company";
+}
+
 const AssignCourseModal = observer(
   ({ isOpen, onClose, defaultCourseId = "", fixedCompanyId = "", onAssigned }: AssignCourseModalProps) => {
     const toast = useToast();
     const { auth, companyStore } = stores;
     const role = String(auth.userType || auth.user?.role || "").toLowerCase();
     const isSuperadmin = role === "superadmin";
-    const [step, setStep] = useState(0);
+    const isDepartmentHead = role === "departmenthead";
+
     const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>(defaultCourseId ? [defaultCourseId] : []);
-    const [assignmentTarget, setAssignmentTarget] = useState<AssignmentTarget>("company");
+    const [courseSearch, setCourseSearch] = useState("");
+    const [assignmentTarget, setAssignmentTarget] = useState<AssignmentTarget>(getDefaultTarget(role));
     const [companyId, setCompanyId] = useState(fixedCompanyId || companyStore.getActiveCompanyId());
     const [departmentName, setDepartmentName] = useState("");
     const [allowFurtherAssignment, setAllowFurtherAssignment] = useState(true);
@@ -81,24 +75,37 @@ const AssignCourseModal = observer(
     const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
 
     const companies = companyStore.companies.data || [];
-    const selectedCompany = companies.find((company: any) => company._id === companyId);
+    const selectedCompany =
+      companies.find((company: any) => company._id === companyId) || auth.user?.companyDetails || null;
     const departments = selectedCompany?.departments || auth.user?.companyDetails?.departments || [];
-    const courseOptions = useMemo(
-      () =>
-        courseStore.courses.map((course) => ({
-          label: course.title,
-          value: course._id,
-        })),
-      [courseStore.courses]
-    );
-    const selectedCourseOptions = useMemo(
-      () => courseOptions.filter((course) => selectedCourseIds.includes(course.value)),
-      [courseOptions, selectedCourseIds]
-    );
-    const selectedCourses = useMemo(
-      () => courseStore.courses.filter((course) => selectedCourseIds.includes(course._id)),
-      [courseStore.courses, selectedCourseIds]
-    );
+
+    const availableCourses = useMemo(() => {
+      if (isSuperadmin) {
+        return courseStore.courses || [];
+      }
+
+      return (courseStore.accessibleCourses || []).filter((course) => course.access?.canAssign);
+    }, [courseStore.accessibleCourses, courseStore.courses, isSuperadmin]);
+
+    const selectedCourses = useMemo(() => {
+      const courseMap = new Map(availableCourses.map((course) => [course._id, course]));
+      return selectedCourseIds.map((courseId) => courseMap.get(courseId)).filter(Boolean);
+    }, [availableCourses, selectedCourseIds]);
+
+    const assignmentOptions = useMemo(() => {
+      if (isDepartmentHead) {
+        return [
+          { value: "users", label: "Users" },
+          { value: "department", label: "Department" },
+        ];
+      }
+
+      return [
+        { value: "company", label: "Company-wide" },
+        { value: "department", label: "Department" },
+        { value: "users", label: "Users" },
+      ];
+    }, [isDepartmentHead]);
 
     useEffect(() => {
       if (!isOpen) {
@@ -106,6 +113,8 @@ const AssignCourseModal = observer(
       }
 
       courseStore.fetchCourses().catch(() => undefined);
+      courseStore.fetchAccessibleCourses().catch(() => undefined);
+
       if (isSuperadmin && !companyStore.companies.data?.length) {
         companyStore.getManagedCompanies().catch(() => undefined);
       }
@@ -117,8 +126,9 @@ const AssignCourseModal = observer(
       }
 
       setSelectedCourseIds(defaultCourseId ? [defaultCourseId] : []);
+      setCourseSearch("");
       setCompanyId(fixedCompanyId || companyStore.getActiveCompanyId());
-      setAssignmentTarget("company");
+      setAssignmentTarget(getDefaultTarget(role));
       setDepartmentName("");
       setAllowFurtherAssignment(true);
       setNoExpiry(true);
@@ -126,8 +136,7 @@ const AssignCourseModal = observer(
       setUserSearch("");
       setUserResults([]);
       setSelectedUsers([]);
-      setStep(0);
-    }, [companyStore, defaultCourseId, fixedCompanyId, isOpen]);
+    }, [companyStore, defaultCourseId, fixedCompanyId, isOpen, role]);
 
     useEffect(() => {
       if (!isOpen || assignmentTarget !== "users" || !companyId) {
@@ -155,29 +164,25 @@ const AssignCourseModal = observer(
       return () => clearTimeout(timeoutId);
     }, [assignmentTarget, auth, companyId, isOpen, userSearch]);
 
-    const canContinue = useMemo(() => {
-      if (step === 0) {
-        if (!selectedCourseIds.length || !companyId) {
-          return false;
-        }
-
-        if (assignmentTarget === "department") {
-          return Boolean(departmentName);
-        }
-
-        if (assignmentTarget === "users") {
-          return selectedUsers.length > 0;
-        }
-
-        return true;
+    const canSubmit = useMemo(() => {
+      if (!selectedCourseIds.length) {
+        return false;
       }
 
-      if (step === 1) {
-        return noExpiry || Boolean(validTill);
+      if (!companyId) {
+        return false;
       }
 
-      return true;
-    }, [assignmentTarget, companyId, departmentName, noExpiry, selectedCourseIds.length, selectedUsers.length, step, validTill]);
+      if (assignmentTarget === "users") {
+        return selectedUsers.length > 0 && (noExpiry || Boolean(validTill));
+      }
+
+      if (assignmentTarget === "department") {
+        return Boolean(departmentName) && (noExpiry || Boolean(validTill));
+      }
+
+      return noExpiry || Boolean(validTill);
+    }, [assignmentTarget, companyId, departmentName, noExpiry, selectedCourseIds.length, selectedUsers.length, validTill]);
 
     const toggleSelectedUser = (user: any) => {
       setSelectedUsers((current) => {
@@ -191,7 +196,7 @@ const AssignCourseModal = observer(
     };
 
     const handleSubmit = async () => {
-      if (!selectedCourseIds.length || !companyId) {
+      if (!canSubmit) {
         return;
       }
 
@@ -237,50 +242,37 @@ const AssignCourseModal = observer(
           <DrawerHeader>Assign Courses</DrawerHeader>
 
           <DrawerBody>
-            {!isSuperadmin ? (
-              <Alert status="warning" borderRadius="xl">
-                <AlertIcon />
-                <Box>
-                  <AlertTitle>Superadmin only</AlertTitle>
-                  <AlertDescription>
-                    This assignment flow is reserved for cross-company course assignment.
-                  </AlertDescription>
-                </Box>
-              </Alert>
-            ) : (
-              <Stack spacing={6}>
-                <Stepper index={step} orientation="horizontal" size="sm">
-                  {STEPS.map((item) => (
-                    <Step key={item.title}>
-                      <StepIndicator>
-                        <StepStatus complete={<StepNumber />} incomplete={<StepNumber />} active={<StepNumber />} />
-                      </StepIndicator>
-                      <Box flexShrink="0">
-                        <StepTitle>{item.title}</StepTitle>
-                        <StepDescription>{item.description}</StepDescription>
-                      </Box>
-                      <StepSeparator />
-                    </Step>
-                  ))}
-                </Stepper>
+            <Stack spacing={6}>
+              {!companyId && isSuperadmin ? (
+                <Alert status="info" borderRadius="xl">
+                  <AlertIcon />
+                  <Box>
+                    <AlertTitle>Select a company first</AlertTitle>
+                    <AlertDescription>
+                      Choose a company before assigning courses so the target audience and departments can be loaded correctly.
+                    </AlertDescription>
+                  </Box>
+                </Alert>
+              ) : null}
 
-                {step === 0 ? (
-                  <Stack spacing={5}>
-                    <CustomInput
-                      type="select"
-                      name="courseIds"
-                      label="Courses"
-                      placeholder="Search and select courses"
-                      value={selectedCourseOptions}
-                      options={courseOptions}
-                      onChange={(value: Array<{ label: string; value: string }> | null) =>
-                        setSelectedCourseIds((value || []).map((option) => option.value))
-                      }
-                      isSearchable
-                      isMulti
-                      isClear
-                    />
+              <CourseMultiSelectInput
+                courses={availableCourses}
+                selectedCourseIds={selectedCourseIds}
+                onSelectionChange={setSelectedCourseIds}
+                searchValue={courseSearch}
+                onSearchChange={setCourseSearch}
+                label="Courses"
+                helperText="Pick one or more published courses, then complete the audience and validity settings below."
+                emptyStateText="No courses match your search."
+              />
 
+              <Box borderWidth="1px" borderRadius="3xl" p={5}>
+                <Stack spacing={4}>
+                  <Text fontWeight="semibold" fontSize="lg">
+                    Assignment details
+                  </Text>
+
+                  {isSuperadmin ? (
                     <FormControl isRequired isDisabled={Boolean(fixedCompanyId)}>
                       <FormLabel>Company</FormLabel>
                       <Select value={companyId} onChange={(event) => setCompanyId(event.target.value)}>
@@ -292,100 +284,128 @@ const AssignCourseModal = observer(
                         ))}
                       </Select>
                     </FormControl>
-
-                    <FormControl isRequired>
-                      <FormLabel>Assign to</FormLabel>
-                      <RadioGroup value={assignmentTarget} onChange={(value) => setAssignmentTarget(value as AssignmentTarget)}>
-                        <HStack spacing={4} flexWrap="wrap">
-                          <Radio value="company">Company-wide</Radio>
-                          <Radio value="department">Department</Radio>
-                          <Radio value="users">Users</Radio>
-                        </HStack>
-                      </RadioGroup>
-                    </FormControl>
-
-                    {assignmentTarget === "department" ? (
-                      <FormControl isRequired>
-                        <FormLabel>Department</FormLabel>
-                        <Select value={departmentName} onChange={(event) => setDepartmentName(event.target.value)}>
-                          <option value="">Select department</option>
-                          {departments.map((department: string) => (
-                            <option key={department} value={department}>
-                              {department}
-                            </option>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    ) : null}
-
-                    {assignmentTarget === "users" ? (
-                      <Stack spacing={3}>
-                        <FormControl>
-                          <FormLabel>Search users</FormLabel>
-                          <Input
-                            value={userSearch}
-                            onChange={(event) => setUserSearch(event.target.value)}
-                            placeholder="Search by name, email, code, or department"
-                          />
-                        </FormControl>
-
-                        <Box borderWidth="1px" borderRadius="xl" p={3} minH="220px">
-                          {userResults.length === 0 ? (
-                            <Text color="gray.500" fontSize="sm">
-                              Start typing to find users in the selected company.
-                            </Text>
-                          ) : (
-                            <VStack align="stretch" spacing={3}>
-                              {userResults.map((row: any) => {
-                                const user = row.user || row;
-                                const isSelected = selectedUsers.some((item) => item._id === user._id);
-
-                                return (
-                                  <Box
-                                    key={user._id}
-                                    borderWidth="1px"
-                                    borderColor={isSelected ? "blue.300" : "gray.200"}
-                                    bg={isSelected ? "blue.50" : "white"}
-                                    borderRadius="lg"
-                                    p={3}
-                                    cursor="pointer"
-                                    onClick={() => toggleSelectedUser(user)}
-                                  >
-                                    <HStack justify="space-between">
-                                      <Box>
-                                        <Text fontWeight="semibold">{user.name || user.email}</Text>
-                                        <Text fontSize="sm" color="gray.600">
-                                          {user.email || user.username}
-                                        </Text>
-                                      </Box>
-                                      <Badge colorScheme={isSelected ? "blue" : "gray"}>
-                                        {user.department || "No department"}
-                                      </Badge>
-                                    </HStack>
-                                  </Box>
-                                );
-                              })}
-                            </VStack>
-                          )}
-                        </Box>
-                      </Stack>
-                    ) : null}
-                  </Stack>
-                ) : null}
-
-                {step === 1 ? (
-                  <Stack spacing={4}>
-                    <Box borderWidth="1px" borderRadius="xl" p={4}>
-                      <HStack justify="space-between">
-                        <Box>
-                          <Text fontWeight="semibold">No expiry</Text>
-                          <Text color="gray.600" fontSize="sm">
-                            Keep this assignment active until you change or remove it.
-                          </Text>
-                        </Box>
-                        <Switch isChecked={noExpiry} onChange={(event) => setNoExpiry(event.target.checked)} />
-                      </HStack>
+                  ) : (
+                    <Box borderWidth="1px" borderRadius="2xl" p={4} bg="gray.50">
+                      <Text fontSize="sm" color="gray.500">
+                        Company
+                      </Text>
+                      <Text mt={1} fontWeight="semibold">
+                        {selectedCompany?.company_name || "Current company"}
+                      </Text>
                     </Box>
+                  )}
+
+                  <FormControl isRequired>
+                    <FormLabel>Assign to</FormLabel>
+                    <RadioGroup value={assignmentTarget} onChange={(value) => setAssignmentTarget(value as AssignmentTarget)}>
+                      <HStack spacing={4} flexWrap="wrap">
+                        {assignmentOptions.map((option) => (
+                          <Radio key={option.value} value={option.value}>
+                            {option.label}
+                          </Radio>
+                        ))}
+                      </HStack>
+                    </RadioGroup>
+                  </FormControl>
+
+                  {assignmentTarget === "department" ? (
+                    <FormControl isRequired>
+                      <FormLabel>Department</FormLabel>
+                      <Select value={departmentName} onChange={(event) => setDepartmentName(event.target.value)}>
+                        <option value="">Select department</option>
+                        {departments.map((department: string) => (
+                          <option key={department} value={department}>
+                            {department}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  ) : null}
+
+                  {assignmentTarget === "users" ? (
+                    <Stack spacing={3}>
+                      <FormControl>
+                        <FormLabel>Search users</FormLabel>
+                        <Input
+                          value={userSearch}
+                          onChange={(event) => setUserSearch(event.target.value)}
+                          placeholder="Search by name, email, code, or department"
+                        />
+                      </FormControl>
+
+                      <Wrap spacing={2}>
+                        {selectedUsers.length ? (
+                          selectedUsers.map((user) => (
+                            <WrapItem key={user._id}>
+                              <Tag size="lg" borderRadius="full" colorScheme="blue">
+                                <TagLabel>{user.name || user.email}</TagLabel>
+                                <TagCloseButton onClick={() => toggleSelectedUser(user)} />
+                              </Tag>
+                            </WrapItem>
+                          ))
+                        ) : (
+                          <Text color="gray.500" fontSize="sm">
+                            Selected users will appear here once you choose them.
+                          </Text>
+                        )}
+                      </Wrap>
+
+                      <Box borderWidth="1px" borderRadius="2xl" p={3} minH="220px">
+                        {userResults.length === 0 ? (
+                          <Text color="gray.500" fontSize="sm">
+                            Start typing to search users inside the selected company.
+                          </Text>
+                        ) : (
+                          <VStack align="stretch" spacing={3}>
+                            {userResults.map((row: any) => {
+                              const user = row.user || row;
+                              const isSelected = selectedUsers.some((item) => item._id === user._id);
+
+                              return (
+                                <Box
+                                  key={user._id}
+                                  borderWidth="1px"
+                                  borderColor={isSelected ? "blue.300" : "gray.200"}
+                                  bg={isSelected ? "blue.50" : "white"}
+                                  borderRadius="lg"
+                                  p={3}
+                                  cursor="pointer"
+                                  onClick={() => toggleSelectedUser(user)}
+                                >
+                                  <HStack justify="space-between">
+                                    <Box>
+                                      <Text fontWeight="semibold">{user.name || user.email}</Text>
+                                      <Text fontSize="sm" color="gray.600">
+                                        {user.email || user.username}
+                                      </Text>
+                                    </Box>
+                                    <Badge colorScheme={isSelected ? "blue" : "gray"}>
+                                      {user.department || "No department"}
+                                    </Badge>
+                                  </HStack>
+                                </Box>
+                              );
+                            })}
+                          </VStack>
+                        )}
+                      </Box>
+                    </Stack>
+                  ) : null}
+                </Stack>
+              </Box>
+
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                <Box borderWidth="1px" borderRadius="3xl" p={5}>
+                  <Stack spacing={4}>
+                    <HStack justify="space-between">
+                      <Box>
+                        <Text fontWeight="semibold">No expiry</Text>
+                        <Text color="gray.600" fontSize="sm">
+                          Keep this assignment active until it is changed or revoked.
+                        </Text>
+                      </Box>
+                      <Switch isChecked={noExpiry} onChange={(event) => setNoExpiry(event.target.checked)} />
+                    </HStack>
 
                     {!noExpiry ? (
                       <FormControl isRequired>
@@ -394,15 +414,15 @@ const AssignCourseModal = observer(
                       </FormControl>
                     ) : null}
                   </Stack>
-                ) : null}
+                </Box>
 
-                {step === 2 ? (
-                  <Box borderWidth="1px" borderRadius="xl" p={4}>
+                {isSuperadmin ? (
+                  <Box borderWidth="1px" borderRadius="3xl" p={5}>
                     <HStack justify="space-between">
                       <Box>
                         <Text fontWeight="semibold">Allow further assignment</Text>
                         <Text color="gray.600" fontSize="sm">
-                          Let downstream admins assign this course within their allowed scope.
+                          Let downstream admins continue assigning this course within their allowed scope.
                         </Text>
                       </Box>
                       <Switch
@@ -412,94 +432,73 @@ const AssignCourseModal = observer(
                     </HStack>
                   </Box>
                 ) : null}
+              </SimpleGrid>
 
-                {step === 3 ? (
-                  <Stack spacing={4}>
-                    <Box borderWidth="1px" borderRadius="2xl" p={5}>
-                      <Text fontWeight="semibold" fontSize="lg">
-                        Assignment summary
+              <Box borderWidth="1px" borderRadius="3xl" p={5} bg="gray.50">
+                <Stack spacing={4}>
+                  <Text fontWeight="semibold" fontSize="lg">
+                    Review
+                  </Text>
+
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                    <Box>
+                      <Text fontSize="sm" color="gray.500">
+                        Courses
                       </Text>
-                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
-                        <Box>
-                          <Text fontSize="sm" color="gray.500">
-                            Courses
-                          </Text>
-                          <Text fontWeight="medium">
-                            {selectedCourses.length ? `${selectedCourses.length} selected` : "Not selected"}
-                          </Text>
-                        </Box>
-                        <Box>
-                          <Text fontSize="sm" color="gray.500">
-                            Company
-                          </Text>
-                          <Text fontWeight="medium">{selectedCompany?.company_name || "Not selected"}</Text>
-                        </Box>
-                        <Box>
-                          <Text fontSize="sm" color="gray.500">
-                            Target
-                          </Text>
-                          <Text fontWeight="medium">
-                            {assignmentTarget === "company"
-                              ? "Company-wide"
-                              : assignmentTarget === "department"
-                                ? departmentName || "Not selected"
-                                : `${selectedUsers.length} selected user${selectedUsers.length === 1 ? "" : "s"}`}
-                          </Text>
-                        </Box>
-                        <Box>
-                          <Text fontSize="sm" color="gray.500">
-                            Valid till
-                          </Text>
-                          <Text fontWeight="medium">{noExpiry ? "No expiry" : validTill || "Not selected"}</Text>
-                        </Box>
-                      </SimpleGrid>
-
-                      {selectedCourses.length ? (
-                        <Wrap spacing={2} mt={4}>
-                          {selectedCourses.map((course) => (
-                            <WrapItem key={course._id}>
-                              <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
-                                {course.title}
-                              </Badge>
-                            </WrapItem>
-                          ))}
-                        </Wrap>
-                      ) : null}
+                      <Text fontWeight="medium">
+                        {selectedCourses.length ? `${selectedCourses.length} selected` : "Not selected"}
+                      </Text>
                     </Box>
-
-                    <HStack spacing={3} flexWrap="wrap">
-                      <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
+                    <Box>
+                      <Text fontSize="sm" color="gray.500">
+                        Company
+                      </Text>
+                      <Text fontWeight="medium">{selectedCompany?.company_name || "Not selected"}</Text>
+                    </Box>
+                    <Box>
+                      <Text fontSize="sm" color="gray.500">
+                        Audience
+                      </Text>
+                      <Text fontWeight="medium">
                         {assignmentTarget === "company"
                           ? "Company-wide"
                           : assignmentTarget === "department"
-                            ? "Department"
-                            : "User-specific"}
-                      </Badge>
-                      <Badge colorScheme={allowFurtherAssignment ? "blue" : "gray"} borderRadius="full" px={3} py={1}>
-                        {allowFurtherAssignment ? "Further assignment enabled" : "Further assignment disabled"}
-                      </Badge>
-                    </HStack>
-                  </Stack>
-                ) : null}
-              </Stack>
-            )}
+                            ? departmentName || "Department not selected"
+                            : `${selectedUsers.length} selected user${selectedUsers.length === 1 ? "" : "s"}`}
+                      </Text>
+                    </Box>
+                    <Box>
+                      <Text fontSize="sm" color="gray.500">
+                        Valid till
+                      </Text>
+                      <Text fontWeight="medium">{noExpiry ? "No expiry" : validTill || "Not selected"}</Text>
+                    </Box>
+                  </SimpleGrid>
+
+                  {selectedCourses.length ? (
+                    <Wrap spacing={2}>
+                      {selectedCourses.map((course: any) => (
+                        <WrapItem key={course._id}>
+                          <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
+                            {course.title}
+                          </Badge>
+                        </WrapItem>
+                      ))}
+                    </Wrap>
+                  ) : null}
+                </Stack>
+              </Box>
+            </Stack>
           </DrawerBody>
 
           <DrawerFooter>
             <HStack justify="space-between" w="full">
-              <Button variant="outline" onClick={() => (step === 0 ? onClose() : setStep((current) => current - 1))}>
-                {step === 0 ? "Cancel" : "Back"}
+              <Button variant="outline" onClick={onClose}>
+                Cancel
               </Button>
-
-              {step < STEPS.length - 1 ? (
-                <Button colorScheme="blue" onClick={() => setStep((current) => current + 1)} isDisabled={!canContinue || !isSuperadmin}>
-                  Continue
-                </Button>
-              ) : (
-                <Button colorScheme="blue" onClick={handleSubmit} isLoading={courseStore.isAssignmentSubmitting} isDisabled={!isSuperadmin}>
-                  Confirm assignment
-                </Button>
-              )}
+              <Button colorScheme="blue" onClick={handleSubmit} isLoading={courseStore.isAssignmentSubmitting} isDisabled={!canSubmit}>
+                Review and assign
+              </Button>
             </HStack>
           </DrawerFooter>
         </DrawerContent>

@@ -406,6 +406,7 @@ class CourseStoreClass {
     courseId?: string;
     department?: string;
     userId?: string;
+    assignmentType?: "company" | "department" | "user";
   } = {}) => {
     this.isAssignedCoursesLoading = true;
     this.accessError = null;

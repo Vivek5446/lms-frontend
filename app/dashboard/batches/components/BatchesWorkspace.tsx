@@ -18,6 +18,7 @@ import {
   Stack,
   Text,
   useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useRouter } from "next/navigation";
@@ -41,7 +42,9 @@ const BatchesWorkspace = observer(
   }: BatchesWorkspaceProps) => {
     const { auth, companyStore } = stores;
     const role = String(auth.userType || auth.user?.role || "").toLowerCase();
+    const currentUserId = String(auth.user?._id || "");
     const router = useRouter();
+    const toast = useToast();
     const isLearner = isLearnerRole(role);
     const isSuperadmin = role === "superadmin";
     const canCreate = ["superadmin", "admin", "departmenthead"].includes(role);
@@ -133,6 +136,46 @@ const BatchesWorkspace = observer(
       setEditStep(initialStep);
       detailsDisclosure.onClose();
       editDisclosure.onOpen();
+    };
+
+    const canDeleteActiveBatch = Boolean(
+      canManage &&
+      batchStore.activeBatch?._id &&
+      currentUserId &&
+      String(batchStore.activeBatch.createdBy?._id || "") === currentUserId
+    );
+
+    const handleDeleteBatch = async () => {
+      if (!batchStore.activeBatch?._id) {
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Delete "${batchStore.activeBatch.name}"? Learners will lose access to this batch and its batch-based course access.`
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await batchStore.deleteBatch(batchStore.activeBatch._id);
+        toast({
+          title: "Batch deleted",
+          description: "The batch and its batch-based learner access have been removed.",
+          status: "success",
+          duration: 4000,
+        });
+        detailsDisclosure.onClose();
+        batchStore.clearActiveBatch();
+        await refreshBatches();
+      } catch (error: any) {
+        toast({
+          title: "Unable to delete batch",
+          description: error?.message || error?.error || "Please try again.",
+          status: "error",
+          duration: 4500,
+        });
+      }
     };
 
     return (
@@ -232,8 +275,11 @@ const BatchesWorkspace = observer(
           batch={batchStore.activeBatch}
           isLoading={batchStore.isDetailsLoading}
           canManage={canManage && !isLearner}
+          canDelete={canDeleteActiveBatch}
           isLearner={isLearner}
+          isDeleteLoading={batchStore.isSubmitting}
           onEditBatch={() => handleEditOpen(0)}
+          onDeleteBatch={handleDeleteBatch}
           onManageUsers={() => handleEditOpen(2)}
           onOpenCourse={
             isLearner

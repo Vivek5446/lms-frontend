@@ -10,8 +10,10 @@ import {
   Box,
   Button,
   Flex,
+  FormControl,
   Grid,
   HStack,
+  Input,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -20,6 +22,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { AlertCircle, CheckCircle2, Layers3, Trophy, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   formatQuestionTitle,
   getEffectiveInteractionResult,
@@ -27,7 +30,6 @@ import {
   isReviewableInteraction,
   ScormAnswerSectionRecord,
   ScormInteractionReview,
-  ScormReviewEvaluation,
   summarizeAnswerSections,
 } from "./quizReviewTypes";
 
@@ -39,7 +41,7 @@ type ScormQuizReviewContentProps = {
   onSaveReview?: (
     trackingId: string,
     interaction: ScormInteractionReview,
-    evaluation: ScormReviewEvaluation
+    marks: number
   ) => void | Promise<void>;
   isSubmittingReview?: boolean;
   showOnlyReviewed?: boolean;
@@ -63,7 +65,7 @@ function getCorrectResponses(values?: string[]) {
 
 type StatusMeta = {
   label: string;
-  colorScheme: "green" | "red" | "orange" | "gray";
+  colorScheme: "green" | "red" | "orange" | "gray" | "blue";
   icon: React.ReactNode;
   borderColor: string;
 };
@@ -71,23 +73,37 @@ type StatusMeta = {
 function getInteractionStatusMeta(interaction: ScormInteractionReview): StatusMeta {
   const reviewable = isReviewableInteraction(interaction);
   const effectiveResult = getEffectiveInteractionResult(interaction);
+  const awardedMarks = Number(interaction.review?.marks);
+  const possibleMarks =
+    isReviewableInteraction(interaction)
+      ? Math.max(0, Number(interaction.maxMarks ?? 10) || 10)
+      : 1;
 
   if (reviewable) {
-    if (interaction.review?.status === "reviewed" && interaction.review?.evaluation === "correct") {
+    if (interaction.review?.status === "reviewed" && Number.isFinite(awardedMarks) && awardedMarks >= possibleMarks) {
       return {
-        label: "Marked Correct",
+        label: `Reviewed: ${awardedMarks}/${possibleMarks}`,
         colorScheme: "green",
         icon: <CheckCircle2 size={15} />,
         borderColor: "green.300",
       };
     }
 
-    if (interaction.review?.status === "reviewed" && interaction.review?.evaluation === "incorrect") {
+    if (interaction.review?.status === "reviewed" && Number.isFinite(awardedMarks) && awardedMarks <= 0) {
       return {
-        label: "Marked Incorrect",
+        label: `Reviewed: ${awardedMarks}/${possibleMarks}`,
         colorScheme: "red",
         icon: <XCircle size={15} />,
         borderColor: "red.300",
+      };
+    }
+
+    if (interaction.review?.status === "reviewed") {
+      return {
+        label: `Reviewed: ${Number.isFinite(awardedMarks) ? awardedMarks : 0}/${possibleMarks}`,
+        colorScheme: "blue",
+        icon: <Trophy size={15} />,
+        borderColor: "blue.300",
       };
     }
 
@@ -180,22 +196,18 @@ function ReviewStatusBlock({ interaction }: { interaction: ScormInteractionRevie
   }
 
   const reviewed = interaction.review?.status === "reviewed";
-  const evaluationLabel =
-    interaction.review?.evaluation === "correct"
-      ? "Marked Correct"
-      : interaction.review?.evaluation === "incorrect"
-        ? "Marked Incorrect"
-        : "Pending Review";
+  const possibleMarks = Math.max(0, Number(interaction.maxMarks ?? 10) || 10);
+  const marks = Number(interaction.review?.marks);
 
   return (
     <Box bg={bg} borderWidth="1px" borderColor={border} borderRadius="xl" p={3}>
       <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color={muted} fontWeight="600" mb={1}>
         Status
       </Text>
-      <Text fontSize="sm">{reviewed ? evaluationLabel : "Pending Review"}</Text>
-      {reviewed && interaction.review?.marks !== null && interaction.review?.marks !== undefined ? (
+      <Text fontSize="sm">{reviewed ? "Reviewed" : "Pending Review"}</Text>
+      {reviewed && Number.isFinite(marks) ? (
         <Text mt={2} fontSize="sm" fontWeight="semibold">
-          Marks: {interaction.review.marks}
+          Marks: {marks}/{possibleMarks}
         </Text>
       ) : null}
     </Box>
@@ -213,44 +225,71 @@ function ManagerEvaluationPanel({
   onSaveReview?: (
     trackingId: string,
     interaction: ScormInteractionReview,
-    evaluation: ScormReviewEvaluation
+    marks: number
   ) => void | Promise<void>;
   isSubmittingReview?: boolean;
 }) {
   const border = useColorModeValue("gray.200", "gray.700");
   const bg = useColorModeValue("white", "gray.800");
+  const [marksInput, setMarksInput] = useState("");
+  const reviewable = isReviewableInteraction(interaction);
+  const possibleMarks = Math.max(0, Number(interaction.maxMarks ?? 10) || 10);
+  const numericMarks = Number(marksInput);
+  const isValidMarks =
+    marksInput.trim().length > 0 &&
+    Number.isFinite(numericMarks) &&
+    numericMarks >= 0 &&
+    numericMarks <= possibleMarks;
 
-  if (!isReviewableInteraction(interaction)) {
+  useEffect(() => {
+    if (interaction.review?.status === "reviewed" && interaction.review?.marks !== null && interaction.review?.marks !== undefined) {
+      setMarksInput(String(interaction.review.marks));
+      return;
+    }
+
+    setMarksInput("");
+  }, [interaction._id, interaction.review?.marks, interaction.review?.status]);
+
+  if (!reviewable) {
     return null;
   }
 
   return (
     <Box borderWidth="1px" borderColor={border} borderRadius="xl" p={4} bg={bg}>
       <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="gray.500" fontWeight="600" mb={3}>
-        Evaluation
+        Marks Review
       </Text>
-      <HStack spacing={3} flexWrap="wrap">
+      <Stack spacing={3}>
+        <FormControl>
+          <HStack justify="space-between" mb={2}>
+            <Text fontSize="sm" color="gray.600">
+              Award marks for this answer
+            </Text>
+            <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
+              Out of {possibleMarks}
+            </Badge>
+          </HStack>
+          <Input
+            type="number"
+            min={0}
+            max={possibleMarks}
+            step={0.5}
+            value={marksInput}
+            onChange={(event) => setMarksInput(event.target.value)}
+            placeholder={`Enter marks between 0 and ${possibleMarks}`}
+          />
+        </FormControl>
         <Button
-          colorScheme="green"
-          variant={interaction.review?.evaluation === "correct" ? "solid" : "outline"}
+          colorScheme="blue"
           borderRadius="lg"
-          leftIcon={<CheckCircle2 size={14} />}
-          onClick={() => onSaveReview?.(trackingId, interaction, "correct")}
+          leftIcon={<Trophy size={14} />}
+          onClick={() => onSaveReview?.(trackingId, interaction, numericMarks)}
           isLoading={isSubmittingReview}
+          isDisabled={!isValidMarks}
         >
-          Mark Correct
+          Submit marks
         </Button>
-        <Button
-          colorScheme="red"
-          variant={interaction.review?.evaluation === "incorrect" ? "solid" : "outline"}
-          borderRadius="lg"
-          leftIcon={<XCircle size={14} />}
-          onClick={() => onSaveReview?.(trackingId, interaction, "incorrect")}
-          isLoading={isSubmittingReview}
-        >
-          Mark Incorrect
-        </Button>
-      </HStack>
+      </Stack>
     </Box>
   );
 }
@@ -330,8 +369,8 @@ export default function ScormQuizReviewContent({
           />
         ) : null}
         <SummaryCard
-          label="Score"
-          value={`${summary.correctCount} / ${summary.totalQuestions}`}
+          label="Marks"
+          value={`${summary.awardedMarks} / ${summary.possibleMarks}`}
           icon={<Layers3 size={14} />}
           accent="green.400"
         />
@@ -371,7 +410,7 @@ export default function ScormQuizReviewContent({
                     {moduleGroup.sections.length} section{moduleGroup.sections.length !== 1 ? "s" : ""}
                   </Badge>
                   <Badge colorScheme="green" variant="subtle" borderRadius="full" px={3} py={1}>
-                    Score {moduleGroup.correctCount}/{moduleGroup.totalQuestions}
+                    Marks {moduleGroup.awardedMarks}/{moduleGroup.possibleMarks}
                   </Badge>
                   <AccordionIcon color={muted} />
                 </HStack>
@@ -414,7 +453,7 @@ export default function ScormQuizReviewContent({
                               {section.lessonStatus?.replace(/_/g, " ") || "not started"}
                             </Badge>
                             <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={3} py={1}>
-                              Score {section.correctCount}/{section.totalQuestions}
+                              Marks {section.awardedMarks ?? 0}/{section.possibleMarks ?? 0}
                             </Badge>
                             <AccordionIcon color={muted} />
                           </HStack>
@@ -516,7 +555,7 @@ export default function ScormQuizReviewContent({
 
       {mode === "manager" ? (
         <Text color={muted} fontSize="sm">
-          Only subjective or input-style answers need evaluation. Auto-graded answers remain read-only.
+          Only subjective or input-style answers need manual marking. Auto-graded answers remain read-only.
         </Text>
       ) : null}
     </Stack>

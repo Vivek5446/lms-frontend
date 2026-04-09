@@ -2,7 +2,7 @@
 
 import { isManagerRole } from "@/app/config/utils/roleAccess";
 import LearnerReviewDrawer from "@/app/dashboard/course/scorm/LearnerProgressDashboard";
-import { ScormInteractionReview, ScormReviewEvaluation } from "@/app/dashboard/course/scorm/quizReviewTypes";
+import { ScormInteractionReview } from "@/app/dashboard/course/scorm/quizReviewTypes";
 import { managerStore } from "@/app/store/managerStore/managerStore";
 import stores from "@/app/store/stores";
 import {
@@ -170,18 +170,17 @@ const ManagerLearningBoard = observer(() => {
   const submitReview = async (
     trackingId: string,
     interaction: ScormInteractionReview,
-    evaluation: ScormReviewEvaluation
+    marks: number
   ) => {
     try {
       await managerStore.reviewAnswer({
         trackingId,
         interactionId: interaction._id,
-        evaluation,
-        marks: evaluation === "correct" ? 1 : 0,
+        marks,
       });
       toast({
-        title: "Evaluation saved",
-        description: `This answer is now marked ${evaluation}.`,
+        title: "Marks saved",
+        description: `This answer has been reviewed with ${marks} mark${marks === 1 ? "" : "s"}.`,
         status: "success",
         duration: 3000,
       });
@@ -233,8 +232,8 @@ const ManagerLearningBoard = observer(() => {
                 Track learner progress, scores, and answer reviews from one place
               </Heading>
               <Text mt={3} color="whiteAlpha.900" maxW="2xl">
-                Open a learner to inspect course progress at the module and section level, review captured quiz
-                answers, and quickly mark subjective responses as correct or incorrect.
+              Open a learner to inspect course progress at the module and section level, review captured quiz
+                answers, and award marks to subjective responses question by question.
               </Text>
             </Box>
 

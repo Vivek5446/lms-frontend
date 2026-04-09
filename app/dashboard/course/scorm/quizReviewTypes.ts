@@ -60,6 +60,8 @@ export interface ScormAnswerSectionRecord {
     pending: number;
     reviewed: number;
   };
+  awardedMarks?: number;
+  possibleMarks?: number;
   interactions: ScormInteractionReview[];
 }
 
@@ -72,6 +74,8 @@ export interface ScormAnswerModuleGroup {
   incorrectCount: number;
   pending: number;
   reviewed: number;
+  awardedMarks: number;
+  possibleMarks: number;
 }
 
 function normalizeString(value: unknown) {
@@ -125,10 +129,27 @@ export function isReviewableInteraction(
   );
 }
 
-export function getEffectiveInteractionResult(interaction: Pick<ScormInteractionReview, "result" | "review" | "type" | "correctResponses" | "isReviewable">) {
+export function getEffectiveInteractionResult(interaction: Pick<ScormInteractionReview, "result" | "review" | "type" | "correctResponses" | "isReviewable" | "maxMarks">) {
   if (isReviewableInteraction(interaction)) {
-    if (interaction.review?.status === "reviewed" && interaction.review?.evaluation) {
-      return interaction.review.evaluation;
+    if (interaction.review?.status === "reviewed") {
+      const possibleMarks = Math.max(0, Number(interaction.maxMarks ?? 10) || 10);
+      const awardedMarks = Number(interaction.review?.marks);
+
+      if (Number.isFinite(awardedMarks)) {
+        if (awardedMarks <= 0) {
+          return "incorrect";
+        }
+
+        if (awardedMarks >= possibleMarks) {
+          return "correct";
+        }
+
+        return "partial";
+      }
+
+      if (interaction.review?.evaluation) {
+        return interaction.review.evaluation;
+      }
     }
 
     return "";
@@ -191,6 +212,33 @@ function shouldIncludeReviewedOnly(interaction: ScormInteractionReview) {
   return interaction.review?.status === "reviewed";
 }
 
+function getInteractionPossibleMarks(interaction: ScormInteractionReview) {
+  if (isReviewableInteraction(interaction)) {
+    return 10;
+  }
+
+  return 1;
+}
+
+function getInteractionAwardedMarks(interaction: ScormInteractionReview) {
+  const possibleMarks = getInteractionPossibleMarks(interaction);
+
+  if (isReviewableInteraction(interaction)) {
+    if (interaction.review?.status !== "reviewed") {
+      return 0;
+    }
+
+    const awardedMarks = Number(interaction.review?.marks);
+    if (!Number.isFinite(awardedMarks)) {
+      return 0;
+    }
+
+    return Math.max(0, Math.min(possibleMarks, awardedMarks));
+  }
+
+  return isCorrectResult(getEffectiveInteractionResult(interaction)) ? possibleMarks : 0;
+}
+
 function summarizeInteractions(interactions: ScormInteractionReview[]) {
   return interactions.reduce(
     (summary, interaction) => {
@@ -203,6 +251,8 @@ function summarizeInteractions(interactions: ScormInteractionReview[]) {
         incorrectCount: summary.incorrectCount + (isIncorrectResult(effectiveResult) ? 1 : 0),
         pending: summary.pending + (isReviewable && interaction.review?.status !== "reviewed" ? 1 : 0),
         reviewed: summary.reviewed + (isReviewable && interaction.review?.status === "reviewed" ? 1 : 0),
+        awardedMarks: summary.awardedMarks + getInteractionAwardedMarks(interaction),
+        possibleMarks: summary.possibleMarks + getInteractionPossibleMarks(interaction),
       };
     },
     {
@@ -211,6 +261,8 @@ function summarizeInteractions(interactions: ScormInteractionReview[]) {
       incorrectCount: 0,
       pending: 0,
       reviewed: 0,
+      awardedMarks: 0,
+      possibleMarks: 0,
     }
   );
 }
@@ -246,6 +298,8 @@ export function sanitizeAnswerSections(
           pending: summary.pending,
           reviewed: summary.reviewed,
         },
+        awardedMarks: summary.awardedMarks,
+        possibleMarks: summary.possibleMarks,
       };
     })
     .filter((section) => section.interactions.length > 0)
@@ -285,6 +339,8 @@ export function groupAnswerSections(
         incorrectCount: sectionSummary.incorrectCount,
         pending: sectionSummary.pending,
         reviewed: sectionSummary.reviewed,
+        awardedMarks: sectionSummary.awardedMarks,
+        possibleMarks: sectionSummary.possibleMarks,
       });
       return;
     }
@@ -295,6 +351,8 @@ export function groupAnswerSections(
     existingModule.incorrectCount += sectionSummary.incorrectCount;
     existingModule.pending += sectionSummary.pending;
     existingModule.reviewed += sectionSummary.reviewed;
+    existingModule.awardedMarks += sectionSummary.awardedMarks;
+    existingModule.possibleMarks += sectionSummary.possibleMarks;
   });
 
   return Array.from(moduleMap.values())
@@ -323,6 +381,8 @@ export function summarizeAnswerSections(sections: ScormAnswerSectionRecord[]) {
       incorrectCount: summary.incorrectCount + Number(section.incorrectCount || 0),
       pending: summary.pending + Number(section.reviewSummary?.pending || 0),
       reviewed: summary.reviewed + Number(section.reviewSummary?.reviewed || 0),
+      awardedMarks: summary.awardedMarks + Number(section.awardedMarks || 0),
+      possibleMarks: summary.possibleMarks + Number(section.possibleMarks || 0),
     }),
     {
       totalQuestions: 0,
@@ -330,6 +390,8 @@ export function summarizeAnswerSections(sections: ScormAnswerSectionRecord[]) {
       incorrectCount: 0,
       pending: 0,
       reviewed: 0,
+      awardedMarks: 0,
+      possibleMarks: 0,
     }
   );
 }

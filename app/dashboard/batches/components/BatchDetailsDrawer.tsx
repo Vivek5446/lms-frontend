@@ -27,7 +27,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { useEffect, useMemo, useState } from "react";
-import { FiBookOpen, FiBriefcase, FiCalendar, FiEdit2, FiPlayCircle, FiSearch, FiUserPlus, FiUsers } from "react-icons/fi";
+import { FiBookOpen, FiBriefcase, FiCalendar, FiEdit2, FiPlayCircle, FiSearch, FiTrash2, FiUserPlus, FiUsers } from "react-icons/fi";
 import type { BatchDetailsItem } from "@/app/store/batchStore/batchStore";
 
 function getStatusColor(status: string) {
@@ -71,8 +71,11 @@ type BatchDetailsDrawerProps = {
   batch: BatchDetailsItem | null;
   isLoading?: boolean;
   canManage?: boolean;
+  canDelete?: boolean;
   isLearner?: boolean;
+  isDeleteLoading?: boolean;
   onEditBatch?: () => void;
+  onDeleteBatch?: () => void;
   onManageUsers?: () => void;
   onOpenCourse?: (courseId: string) => void;
 };
@@ -83,8 +86,11 @@ export default function BatchDetailsDrawer({
   batch,
   isLoading = false,
   canManage = false,
+  canDelete = false,
   isLearner = false,
+  isDeleteLoading = false,
   onEditBatch,
+  onDeleteBatch,
   onManageUsers,
   onOpenCourse,
 }: BatchDetailsDrawerProps) {
@@ -145,6 +151,17 @@ export default function BatchDetailsDrawer({
                 <Button leftIcon={<Icon as={FiUserPlus} />} variant="outline" onClick={onManageUsers}>
                   Add or remove users
                 </Button>
+                {canDelete ? (
+                  <Button
+                    leftIcon={<Icon as={FiTrash2} />}
+                    variant="outline"
+                    colorScheme="red"
+                    onClick={onDeleteBatch}
+                    isLoading={isDeleteLoading}
+                  >
+                    Delete batch
+                  </Button>
+                ) : null}
               </HStack>
             ) : null}
           </Stack>

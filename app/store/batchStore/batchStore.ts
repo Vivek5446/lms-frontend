@@ -264,6 +264,31 @@ class BatchStoreClass {
       });
     }
   };
+
+  deleteBatch = async (id: string) => {
+    this.isSubmitting = true;
+    this.error = null;
+    try {
+      const { data } = await axios.delete(`/batches/${id}`);
+      runInAction(() => {
+        this.batches = this.batches.filter((batch) => batch._id !== id);
+        this.myBatches = this.myBatches.filter((batch) => batch._id !== id);
+        if (this.activeBatch?._id === id) {
+          this.activeBatch = null;
+        }
+      });
+      return data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err?.response?.data?.message || err?.response?.data?.error || "Failed to delete batch";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isSubmitting = false;
+      });
+    }
+  };
 }
 
 export const batchStore = new BatchStoreClass();
