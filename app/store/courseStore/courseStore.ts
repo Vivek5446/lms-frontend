@@ -207,6 +207,8 @@ interface CreateCourseInput {
   payload: Record<string, unknown>;
   thumbnailFile?: File | null;
   scormFiles: File[];
+  contentFiles: File[];
+  studyMaterialFiles: File[];
 }
 
 interface ChunkedScormUpload {
@@ -475,6 +477,20 @@ class CourseStoreClass {
     this.currentCourse = null;
   };
 
+  updateSectionProgress = async (payload: {
+    courseId: string;
+    moduleId: string;
+    sectionId: string;
+    status: "in_progress" | "completed";
+  }) => {
+    try {
+      const { data } = await axios.post("/scorm/section-progress", payload);
+      return data?.data || null;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err);
+    }
+  };
+
   fetchCourseAssignmentAudit = async (params: {
     courseId?: string;
     userId?: string;
@@ -657,7 +673,7 @@ class CourseStoreClass {
     this.submissionStage = options?.action === "publish" ? "Publishing course" : "Saving draft";
     this.submissionDetail =
       (options?.fileCount || 0) > 0
-        ? `Uploading ${options?.fileCount} file${options?.fileCount === 1 ? "" : "s"} and preparing your SCORM package.`
+        ? `Uploading ${options?.fileCount} file${options?.fileCount === 1 ? "" : "s"} and preparing your course assets.`
         : "Saving your course details.";
     this.error = null;
 
@@ -676,20 +692,28 @@ class CourseStoreClass {
 
         runInAction(() => {
           this.submissionProgress = 80;
-          this.submissionStage = "Processing SCORM package";
-          this.submissionDetail = "Extracting files, storing package assets, and creating the course record...";
+          this.submissionStage = "Processing SCORM packages";
+          this.submissionDetail = "Extracting SCORM files, storing media assets, and creating the course record...";
         });
       }
+
+      input.contentFiles.forEach((file) => {
+        formData.append("contentMedia", file);
+      });
+
+      input.studyMaterialFiles.forEach((file) => {
+        formData.append("studyMaterial", file);
+      });
 
       const { data } = await axios.post("/course/create", formData, {
         ...multipartRequestConfig,
         onUploadProgress: (progressEvent) => {
           if (!progressEvent.total) {
             runInAction(() => {
-              this.submissionStage = input.scormFiles.length > 0 ? "Processing SCORM package" : "Uploading files";
+              this.submissionStage = input.scormFiles.length > 0 ? "Processing SCORM packages" : "Uploading course files";
               this.submissionDetail = input.scormFiles.length > 0
                 ? "Finishing the course setup on the server..."
-                : "Sending your course content to the server...";
+                : "Sending your course media and PDF files to the server...";
             });
             return;
           }
@@ -705,10 +729,10 @@ class CourseStoreClass {
 
           runInAction(() => {
             this.submissionProgress = progress;
-            this.submissionStage = uploadCompleted ? "Processing SCORM package" : "Uploading files";
+            this.submissionStage = uploadCompleted ? "Processing course assets" : "Uploading files";
             this.submissionDetail = uploadCompleted
-              ? "Extracting files, storing package assets, and creating the course record..."
-              : `Uploaded ${Math.round(ratio * 100)}% of your course package.`;
+              ? "Extracting SCORM packages, storing media/PDF assets, and creating the course record..."
+              : `Uploaded ${Math.round(ratio * 100)}% of your course files.`;
           });
         },
       });

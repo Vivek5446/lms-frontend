@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, FolderTree, Layers, Plus, Rocket, Trash2, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText, FolderTree, Layers, Plus, Rocket, Trash2, Upload, Video } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { FormField } from "./component/FormField";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   createEmptyModule,
   createEmptyModuleSection,
   createStoredFile,
+  createStudyMaterialFiles,
   getFileKindLabel,
   inferModuleUploadKind,
 } from "../courseForm";
@@ -139,6 +140,47 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
     });
   };
 
+  const handleModuleStudyMaterialChange = (moduleId: string, fileList: FileList | null) => {
+    if (!fileList?.length) {
+      return;
+    }
+
+    const nextFiles = createStudyMaterialFiles(fileList);
+    const targetModule = value.modules.find((module) => module.id === moduleId);
+    updateModule(moduleId, {
+      studyMaterials: [...(targetModule?.studyMaterials || []), ...nextFiles],
+    });
+  };
+
+  const handleSectionStudyMaterialChange = (moduleId: string, sectionId: string, fileList: FileList | null) => {
+    if (!fileList?.length) {
+      return;
+    }
+
+    const targetModule = value.modules.find((module) => module.id === moduleId);
+    const targetSection = targetModule?.sections.find((section) => section.id === sectionId);
+
+    updateSection(moduleId, sectionId, {
+      studyMaterials: [...(targetSection?.studyMaterials || []), ...createStudyMaterialFiles(fileList)],
+    });
+  };
+
+  const removeModuleStudyMaterial = (moduleId: string, materialId: string) => {
+    const targetModule = value.modules.find((module) => module.id === moduleId);
+    updateModule(moduleId, {
+      studyMaterials: (targetModule?.studyMaterials || []).filter((material) => material.id !== materialId),
+    });
+  };
+
+  const removeSectionStudyMaterial = (moduleId: string, sectionId: string, materialId: string) => {
+    const targetModule = value.modules.find((module) => module.id === moduleId);
+    const targetSection = targetModule?.sections.find((section) => section.id === sectionId);
+
+    updateSection(moduleId, sectionId, {
+      studyMaterials: (targetSection?.studyMaterials || []).filter((material) => material.id !== materialId),
+    });
+  };
+
   return (
     <StepWrapper
       stepKey={1}
@@ -175,7 +217,7 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
             </div>
           </FormField>
           <div className="rounded-xl bg-background border border-border p-4 text-sm text-muted-foreground">
-            SCORM packages can contain quiz/test logic, and later we can also support fully custom quiz creation.
+            Each section can have a primary SCORM package or MP4 lesson, and you can attach PDF study materials at the module or section level.
           </div>
         </div>
 
@@ -262,12 +304,64 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
                             />
                           </FormField>
 
+                          <FormField label="Module Study Material" helper="Attach one or more PDFs learners can open or download">
+                            <div className="space-y-3">
+                              <label className="border-2 border-dashed border-border rounded-xl p-3 flex items-center gap-3 hover:border-step-2/50 transition-colors cursor-pointer">
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept="application/pdf,.pdf"
+                                  multiple
+                                  onChange={(event) => {
+                                    handleModuleStudyMaterialChange(module.id, event.target.files);
+                                    event.currentTarget.value = "";
+                                  }}
+                                />
+                                <FileText className="w-5 h-5 text-muted-foreground" />
+                                <div className="flex-1 min-w-0">
+                                  <span className="block text-sm text-muted-foreground">
+                                    Add PDF notes, handouts, or worksheets
+                                  </span>
+                                  <span className="block text-xs text-muted-foreground mt-1">
+                                    {module.studyMaterials.length > 0
+                                      ? `${module.studyMaterials.length} PDF file${module.studyMaterials.length === 1 ? "" : "s"} attached`
+                                      : "No module study material yet"}
+                                  </span>
+                                </div>
+                              </label>
+
+                              {module.studyMaterials.length > 0 ? (
+                                <div className="space-y-2">
+                                  {module.studyMaterials.map((material) => (
+                                    <div
+                                      key={material.id}
+                                      className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
+                                    >
+                                      <FileText className="w-4 h-4 text-step-2" />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-foreground truncate">{material.name}</p>
+                                        <p className="text-xs text-muted-foreground">{getFileKindLabel(material.kind)}</p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeModuleStudyMaterial(module.id, material.id)}
+                                        className="text-xs text-destructive hover:underline"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          </FormField>
+
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="text-sm font-semibold text-foreground">Module Sections</p>
                                 <p className="text-xs text-muted-foreground">
-                                  Add lessons, SCORM packages, videos, PDFs, or ZIP resources under this module.
+                                  Add sections with SCORM or MP4 content, then attach PDFs separately as study material.
                                 </p>
                               </div>
                               <Button type="button" variant="outline" className="rounded-xl" onClick={() => addSection(module.id)}>
@@ -309,22 +403,26 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
                                         className="bg-card border-border rounded-xl h-11"
                                       />
                                     </FormField>
-                                    <FormField label="Upload Content" helper="Video, PDF, SCORM package, or ZIP">
+                                    <FormField label="Primary Lesson Content" helper="Upload one SCORM package or one MP4 video">
                                       <label className="border-2 border-dashed border-border rounded-xl p-3 flex items-center gap-3 hover:border-step-2/50 transition-colors cursor-pointer">
                                         <input
                                           type="file"
                                           className="hidden"
-                                          accept="video/*,application/pdf,.zip,.scorm,application/zip,application/x-zip-compressed"
+                                          accept="video/mp4,video/*,.zip,.scorm,application/zip,application/x-zip-compressed"
                                           onChange={(event) => handleSectionFileChange(module.id, section.id, event.target.files)}
                                         />
-                                        <Upload className="w-5 h-5 text-muted-foreground" />
+                                        {section.contentFile?.kind === "video" ? (
+                                          <Video className="w-5 h-5 text-muted-foreground" />
+                                        ) : (
+                                          <Upload className="w-5 h-5 text-muted-foreground" />
+                                        )}
                                         <div className="flex-1 min-w-0">
                                           <span className="block text-sm text-muted-foreground truncate">
-                                            {section.contentFile ? section.contentFile.name : "Drop files or click to upload"}
+                                            {section.contentFile ? section.contentFile.name : "Drop a SCORM package or click to upload an MP4"}
                                           </span>
                                           {section.contentFile && (
                                             <span className="block text-xs text-step-2 mt-1">
-                                              {getFileKindLabel(section.contentFile.kind)} file ready
+                                              {getFileKindLabel(section.contentFile.kind)} lesson ready
                                             </span>
                                           )}
                                         </div>
@@ -352,6 +450,58 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
                                       placeholder="Explain what learners will cover in this section."
                                       className="bg-card border-border rounded-xl resize-none min-h-[80px]"
                                     />
+                                  </FormField>
+
+                                  <FormField label="Section Study Material" helper="Attach PDF reading material for this section">
+                                    <div className="space-y-3">
+                                      <label className="border-2 border-dashed border-border rounded-xl p-3 flex items-center gap-3 hover:border-step-2/50 transition-colors cursor-pointer">
+                                        <input
+                                          type="file"
+                                          className="hidden"
+                                          accept="application/pdf,.pdf"
+                                          multiple
+                                          onChange={(event) => {
+                                            handleSectionStudyMaterialChange(module.id, section.id, event.target.files);
+                                            event.currentTarget.value = "";
+                                          }}
+                                        />
+                                        <FileText className="w-5 h-5 text-muted-foreground" />
+                                        <div className="flex-1 min-w-0">
+                                          <span className="block text-sm text-muted-foreground">
+                                            Add PDF study materials
+                                          </span>
+                                          <span className="block text-xs text-muted-foreground mt-1">
+                                            {section.studyMaterials.length > 0
+                                              ? `${section.studyMaterials.length} PDF file${section.studyMaterials.length === 1 ? "" : "s"} attached`
+                                              : "No section study material yet"}
+                                          </span>
+                                        </div>
+                                      </label>
+
+                                      {section.studyMaterials.length > 0 ? (
+                                        <div className="space-y-2">
+                                          {section.studyMaterials.map((material) => (
+                                            <div
+                                              key={material.id}
+                                              className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
+                                            >
+                                              <FileText className="w-4 h-4 text-step-2" />
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-foreground truncate">{material.name}</p>
+                                                <p className="text-xs text-muted-foreground">{getFileKindLabel(material.kind)}</p>
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => removeSectionStudyMaterial(module.id, section.id, material.id)}
+                                                className="text-xs text-destructive hover:underline"
+                                              >
+                                                Remove
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                    </div>
                                   </FormField>
                                 </div>
                               ))

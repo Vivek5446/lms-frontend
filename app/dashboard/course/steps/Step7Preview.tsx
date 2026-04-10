@@ -15,6 +15,13 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
   const modules = courseForm.structure.modules;
   const learnerCount = courseForm.learners.selectedLearners.length;
   const totalSections = modules.reduce((count, module) => count + module.sections.length, 0);
+  const totalStudyMaterials = modules.reduce((count, module) => {
+    return (
+      count +
+      module.studyMaterials.length +
+      module.sections.reduce((sectionCount, section) => sectionCount + section.studyMaterials.length, 0)
+    );
+  }, 0);
   const pricingLabel = courseForm.pricing.isPaid ? formatInr(courseForm.pricing.amount) : "Free";
   const accessLabel = courseForm.pricing.accessDurationDays.trim()
     ? `${courseForm.pricing.accessDurationDays} days`
@@ -81,7 +88,11 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
                 { icon: Layers, label: "Structure", value: `${modules.length}M / ${totalSections}S` },
                 { icon: Clock, label: "Access", value: accessLabel },
                 { icon: Users, label: "Learners", value: String(learnerCount) },
-                { icon: Award, label: "Certificate", value: courseForm.progress.certificateEnabled ? "Yes" : "No" },
+                {
+                  icon: Award,
+                  label: "Certificate / PDFs",
+                  value: `${courseForm.progress.certificateEnabled ? "Yes" : "No"} / ${totalStudyMaterials}`,
+                },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className="text-center">
                   <Icon className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
@@ -124,24 +135,44 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
                     <Badge className="bg-step-3/10 text-step-3 border-0 text-xs">Test</Badge>
                   )}
                 </div>
+                {module.studyMaterials.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {module.studyMaterials.map((material) => (
+                      <Badge key={material.id} className="bg-step-2/10 text-step-2 border-0 text-xs">
+                        Module PDF: {material.name}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="space-y-2">
                   {module.sections.length === 0 ? (
                     <div className="text-xs text-muted-foreground">No sections added yet.</div>
                   ) : (
                     module.sections.map((section, sectionIndex) => (
-                      <div key={section.id} className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
-                        <div className="text-xs font-semibold text-step-7">{sectionIndex + 1}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-foreground">{section.title || `Section ${sectionIndex + 1}`}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {section.description || "Section description will appear here."}
-                          </p>
+                      <div key={section.id} className="rounded-lg border border-border bg-card px-3 py-3 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div className="text-xs font-semibold text-step-7">{sectionIndex + 1}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground">{section.title || `Section ${sectionIndex + 1}`}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {section.description || "Section description will appear here."}
+                            </p>
+                          </div>
+                          {section.contentFile && (
+                            <Badge className="bg-step-4/10 text-step-4 border-0 text-xs">
+                              {getFileKindLabel(section.contentFile.kind)}
+                            </Badge>
+                          )}
                         </div>
-                        {section.contentFile && (
-                          <Badge className="bg-step-4/10 text-step-4 border-0 text-xs">
-                            {getFileKindLabel(section.contentFile.kind)}
-                          </Badge>
-                        )}
+                        {section.studyMaterials.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {section.studyMaterials.map((material) => (
+                              <Badge key={material.id} className="bg-step-2/10 text-step-2 border-0 text-xs">
+                                PDF: {material.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     ))
                   )}

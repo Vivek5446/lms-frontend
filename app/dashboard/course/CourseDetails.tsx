@@ -1,12 +1,18 @@
 "use client";
 
-import { CourseLaunchSection, buildLaunchSection, getFirstPlayableLaunchSection } from "@/app/dashboard/course/scorm/sectionTracking";
 import ScormQuizReviewContent from "@/app/dashboard/course/scorm/ScormQuizReviewContent";
 import {
   estimateCompletedSections,
   ScormAnswerSectionRecord,
   summarizeAnswerSections,
 } from "@/app/dashboard/course/scorm/quizReviewTypes";
+import {
+  buildCourseAssetUrl,
+  buildLaunchSection,
+  CourseLaunchSection,
+  getFirstPlayableLaunchSection,
+  isScormLaunchSection,
+} from "@/app/dashboard/course/scorm/sectionTracking";
 import {
   Accordion,
   AccordionButton,
@@ -42,14 +48,17 @@ import {
   CheckCircle,
   ChevronLeft,
   Clock,
+  Download,
+  ExternalLink,
   FileBox,
+  FileText,
   GraduationCap,
   Layers,
-  MapPin,
   PlayCircle,
   Rocket,
   Star,
   Users,
+  Video,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -57,6 +66,30 @@ import { useState } from "react";
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
 const MotionButton = motion(Button);
+
+function normalizeMaterials(materials: any) {
+  return Array.isArray(materials) ? materials.filter(Boolean) : [];
+}
+
+function getStartLearningLabel(launchSection: CourseLaunchSection | null, fallbackPath?: string | null) {
+  if (launchSection?.contentKind === "video") {
+    return "Watch Lesson";
+  }
+
+  if (launchSection?.contentKind === "document") {
+    return "Open Lesson";
+  }
+
+  if (launchSection && isScormLaunchSection(launchSection)) {
+    return "Start SCORM";
+  }
+
+  if (fallbackPath) {
+    return "Start Learning";
+  }
+
+  return "No lesson asset";
+}
 
 interface CourseDetailsProps {
   course: any;
@@ -275,6 +308,70 @@ export default function CourseDetails({
                                   {mod.summary}
                                 </Text>
                               )}
+
+                              {normalizeMaterials(mod.studyMaterial).length > 0 ? (
+                                <Box mb={6} pl={14}>
+                                  <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" color={textMuted} mb={3}>
+                                    Module Study Material
+                                  </Text>
+                                  <Stack spacing={2}>
+                                    {normalizeMaterials(mod.studyMaterial).map((material: any, materialIndex: number) => {
+                                      const materialUrl = buildCourseAssetUrl(String(material?.previewUrl || ""));
+
+                                      return (
+                                        <Flex
+                                          key={`${mod.order}-module-material-${materialIndex}`}
+                                          align="center"
+                                          justify="space-between"
+                                          gap={3}
+                                          borderWidth="1px"
+                                          borderColor={borderColor}
+                                          borderRadius="xl"
+                                          p={3}
+                                          bg={useColorModeValue("gray.50", "gray.800")}
+                                        >
+                                          <HStack align="start" spacing={3}>
+                                            <Icon as={FileText} boxSize={4} color={accentColor} mt={0.5} />
+                                            <Box>
+                                              <Text fontSize="sm" fontWeight="medium">
+                                                {material?.name || `Module PDF ${materialIndex + 1}`}
+                                              </Text>
+                                              <Text fontSize="xs" color={textMuted}>
+                                                PDF handout for this module
+                                              </Text>
+                                            </Box>
+                                          </HStack>
+                                          <HStack spacing={2}>
+                                            <Button
+                                              as="a"
+                                              href={materialUrl}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              size="sm"
+                                              variant="outline"
+                                              borderRadius="full"
+                                              leftIcon={<Icon as={ExternalLink} boxSize={3.5} />}
+                                            >
+                                              Open
+                                            </Button>
+                                            <Button
+                                              as="a"
+                                              href={materialUrl}
+                                              download
+                                              size="sm"
+                                              variant="ghost"
+                                              borderRadius="full"
+                                              leftIcon={<Icon as={Download} boxSize={3.5} />}
+                                            >
+                                              Download
+                                            </Button>
+                                          </HStack>
+                                        </Flex>
+                                      );
+                                    })}
+                                  </Stack>
+                                </Box>
+                              ) : null}
                               
                               {/* Timeline Container */}
                               <Box position="relative" pl={4}>
@@ -291,8 +388,19 @@ export default function CourseDetails({
 
                                 {mod.sections?.map((sec: any, idx: number) => {
                                   const secId = mod.order * 100 + idx;
-                                  const isPlayable = Boolean(sec.content?.previewUrl);
+                                  const launchSection = buildLaunchSection(mod, sec);
+                                  const isPlayable = Boolean(launchSection);
                                   const isLast = idx === mod.sections.length - 1;
+                                  const sectionStudyMaterials = normalizeMaterials(sec.studyMaterial);
+                                  const contentKind = String(sec.content?.kind || "").trim().toLowerCase();
+                                  const contentTagLabel =
+                                    contentKind === "video"
+                                      ? "VIDEO"
+                                      : contentKind === "document"
+                                        ? "DOCUMENT"
+                                        : contentKind
+                                          ? contentKind.toUpperCase()
+                                          : "";
 
                                   return (
                                     <MotionFlex
@@ -306,7 +414,6 @@ export default function CourseDetails({
                                       onMouseLeave={() => setHoveredSection(null)}
                                       cursor={isPlayable ? "pointer" : "default"}
                                       onClick={() => {
-                                        const launchSection = buildLaunchSection(mod, sec);
                                         if (launchSection) {
                                           onLaunchSection(launchSection);
                                         }
@@ -329,7 +436,7 @@ export default function CourseDetails({
                                         zIndex={2}
                                       >
                                         <Icon
-                                          as={isPlayable ? PlayCircle : BookOpen}
+                                          as={contentKind === "video" ? Video : isPlayable ? PlayCircle : BookOpen}
                                           boxSize={5}
                                           color={isPlayable ? accentColor : textMuted}
                                           fill={isPlayable && hoveredSection === secId ? accentColor : "none"}
@@ -359,13 +466,92 @@ export default function CourseDetails({
                                             )}
                                           </Box>
                                           
-                                          {sec.content && (
+                                          {contentTagLabel ? (
                                             <Tag size="sm" variant="subtle" colorScheme="gray" borderRadius="md" mt={1}>
                                               <Icon as={FileBox} boxSize={3} mr={1} />
-                                              {sec.content.kind?.toUpperCase()}
+                                              {contentTagLabel}
                                             </Tag>
-                                          )}
+                                          ) : null}
                                         </Flex>
+
+                                        {sectionStudyMaterials.length > 0 ? (
+                                          <Stack spacing={2} mt={4}>
+                                            {sectionStudyMaterials.map((material: any, materialIndex: number) => {
+                                              const materialUrl = buildCourseAssetUrl(String(material?.previewUrl || ""));
+
+                                              return (
+                                                <Flex
+                                                  key={`${sec.order}-section-material-${materialIndex}`}
+                                                  align="center"
+                                                  justify="space-between"
+                                                  gap={3}
+                                                  p={3}
+                                                  borderRadius="lg"
+                                                  borderWidth="1px"
+                                                  borderColor={borderColor}
+                                                  bg={useColorModeValue("gray.50", "gray.800")}
+                                                  onClick={(event) => event.stopPropagation()}
+                                                >
+                                                  <HStack align="start" spacing={3}>
+                                                    <Icon as={FileText} boxSize={4} color={accentColor} mt={0.5} />
+                                                    <Box>
+                                                      <Text fontSize="sm" fontWeight="medium">
+                                                        {material?.name || `Section PDF ${materialIndex + 1}`}
+                                                      </Text>
+                                                      <Text fontSize="xs" color={textMuted}>
+                                                        Study material for this section
+                                                      </Text>
+                                                    </Box>
+                                                  </HStack>
+                                                  <HStack spacing={2}>
+                                                    <Button
+                                                      as="a"
+                                                      href={materialUrl}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      size="xs"
+                                                      variant="outline"
+                                                      borderRadius="full"
+                                                      leftIcon={<Icon as={ExternalLink} boxSize={3} />}
+                                                    >
+                                                      Open
+                                                    </Button>
+                                                    <Button
+                                                      as="a"
+                                                      href={materialUrl}
+                                                      download
+                                                      size="xs"
+                                                      variant="ghost"
+                                                      borderRadius="full"
+                                                      leftIcon={<Icon as={Download} boxSize={3} />}
+                                                    >
+                                                      Download
+                                                    </Button>
+                                                  </HStack>
+                                                </Flex>
+                                              );
+                                            })}
+                                          </Stack>
+                                        ) : null}
+
+                                        {launchSection ? (
+                                          <Button
+                                            mt={4}
+                                            size="sm"
+                                            colorScheme="blue"
+                                            variant={launchSection.contentKind === "video" ? "solid" : "outline"}
+                                            borderRadius="full"
+                                            onClick={(event) => {
+                                              event.stopPropagation();
+                                              onLaunchSection(launchSection);
+                                            }}
+                                            leftIcon={
+                                              <Icon as={launchSection.contentKind === "video" ? Video : PlayCircle} boxSize={4} />
+                                            }
+                                          >
+                                            {launchSection.contentKind === "video" ? "Watch Video" : "Open Lesson"}
+                                          </Button>
+                                        ) : null}
                                       </Box>
                                     </MotionFlex>
                                   );
@@ -512,7 +698,8 @@ export default function CourseDetails({
 
                         if (course.scormFilePath) {
                           onLaunchSection({
-                            scormPath: course.scormFilePath,
+                            assetPath: course.scormFilePath,
+                            contentKind: "scorm",
                             moduleId: "",
                             moduleTitle: "",
                             sectionId: "",
@@ -528,7 +715,7 @@ export default function CourseDetails({
                       leftIcon={<Icon as={Rocket} />}
                       shadow="md"
                     >
-                      Start Learning
+                      {getStartLearningLabel(firstPlayableLaunchSection, course.scormFilePath)}
                     </MotionButton>
 
                     <Divider />

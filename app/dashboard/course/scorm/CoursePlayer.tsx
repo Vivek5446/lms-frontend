@@ -1,6 +1,5 @@
 "use client";
 
-import axios from "axios";
 import {
   Button,
   Drawer,
@@ -10,6 +9,7 @@ import {
   DrawerHeader,
   DrawerOverlay,
 } from "@chakra-ui/react";
+import axios from "axios";
 import { motion } from "framer-motion";
 import { memo, RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FiMaximize2, FiMinimize2, FiX } from "react-icons/fi";
