@@ -8,15 +8,11 @@ import CourseList from "./CourseList";
 import CourseDetails from "./CourseDetails";
 import AssignCourseModal from "./components/AssignCourseModal";
 import CoursePlayer from "./scorm/CoursePlayer";
-import { CourseLaunchSection } from "./scorm/sectionTracking";
+import CourseAssetModal from "./scorm/CourseAssetModal";
+import { buildCourseAssetUrl, CourseLaunchSection, isScormLaunchSection } from "./scorm/sectionTracking";
 import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore";
 import stores from "@/app/store/stores";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
-
-function buildScormCourseUrl(scormPath: string) {
-  const normalizedPath = scormPath.startsWith("/") ? scormPath : `/${scormPath}`;
-  return `/courses${normalizedPath}`;
-}
 
 function CoursePage() {
   const [view, setView] = useState<"gallery" | "create" | "details">("gallery");
@@ -80,7 +76,7 @@ function CoursePage() {
         />
 
         <AnimatePresence>
-          {playerSection && (
+          {playerSection && isScormLaunchSection(playerSection) ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -97,13 +93,20 @@ function CoursePage() {
                 userId={stores.auth.user?._id}
                 learnerName={stores.auth.user?.name || stores.auth.user?.username || "Learner"}
                 courseTitle={activeCourse.title}
-                courseUrl={buildScormCourseUrl(playerSection.scormPath)}
+                courseUrl={buildCourseAssetUrl(playerSection.assetPath)}
                 moduleId={playerSection.moduleId}
                 sectionId={playerSection.sectionId}
                 onBack={handleBackFromPlayer}
               />
             </motion.div>
-          )}
+          ) : playerSection ? (
+            <CourseAssetModal
+              assetKind={playerSection.contentKind}
+              assetUrl={buildCourseAssetUrl(playerSection.assetPath)}
+              title={playerSection.sectionTitle || activeCourse.title}
+              onBack={handleBackFromPlayer}
+            />
+          ) : null}
         </AnimatePresence>
 
         <AssignCourseModal

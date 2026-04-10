@@ -36,6 +36,7 @@ export interface CourseModuleSectionInput {
   title: string;
   description: string;
   contentFile: StoredFile | null;
+  studyMaterials: StoredFile[];
 }
 
 export interface CourseModuleInput {
@@ -43,6 +44,7 @@ export interface CourseModuleInput {
   name: string;
   description: string;
   sections: CourseModuleSectionInput[];
+  studyMaterials: StoredFile[];
   hasQuiz: boolean;
   hasTest: boolean;
 }
@@ -157,6 +159,7 @@ export function createEmptyModuleSection(): CourseModuleSectionInput {
     title: "",
     description: "",
     contentFile: null,
+    studyMaterials: [],
   };
 }
 
@@ -166,6 +169,7 @@ export function createEmptyModule(): CourseModuleInput {
     name: "",
     description: "",
     sections: [createEmptyModuleSection()],
+    studyMaterials: [],
     hasQuiz: false,
     hasTest: false,
   };
@@ -253,6 +257,47 @@ export function getFileKindLabel(kind: StoredFileKind) {
   }
 }
 
+export function createStudyMaterialFiles(fileList: FileList | File[]) {
+  return Array.from(fileList || []).map((file) => createStoredFile(file, "document"));
+}
+
+export function collectCourseUploadFiles(courseForm: CourseFormState) {
+  const scormFiles: File[] = [];
+  const contentFiles: File[] = [];
+  const studyMaterialFiles: File[] = [];
+
+  courseForm.structure.modules.forEach((module) => {
+    module.studyMaterials.forEach((material) => {
+      studyMaterialFiles.push(material.file);
+    });
+
+    module.sections.forEach((section) => {
+      if (section.contentFile) {
+        if (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip") {
+          scormFiles.push(section.contentFile.file);
+        } else {
+          contentFiles.push(section.contentFile.file);
+        }
+      }
+
+      section.studyMaterials.forEach((material) => {
+        studyMaterialFiles.push(material.file);
+      });
+    });
+  });
+
+  return {
+    scormFiles,
+    contentFiles,
+    studyMaterialFiles,
+    totalFileCount:
+      scormFiles.length +
+      contentFiles.length +
+      studyMaterialFiles.length +
+      (courseForm.basicInfo.thumbnail?.file ? 1 : 0),
+  };
+}
+
 export function buildCoursePayload(courseForm: CourseFormState, action: "draft" | "publish") {
   const amount = courseForm.pricing.isPaid ? parseNumericValue(courseForm.pricing.amount) : null;
   const accessDurationDays = parseNumericValue(courseForm.pricing.accessDurationDays);
@@ -287,11 +332,13 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
         title: module.name.trim(),
         summary: module.description.trim(),
         sectionCount: module.sections.length,
+        studyMaterial: module.studyMaterials.map((material) => summarizeFile(material)),
         sections: module.sections.map((section, sectionIndex) => ({
           order: sectionIndex + 1,
           title: section.title.trim(),
           description: section.description.trim(),
           content: summarizeFile(section.contentFile),
+          studyMaterial: section.studyMaterials.map((material) => summarizeFile(material)),
         })),
         assessments: {
           quizEnabled: module.hasQuiz,

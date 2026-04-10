@@ -12,7 +12,7 @@ import Step4Pricing from "./steps/Step4Pricing";
 import Step6Learners from "./steps/Step6Learners";
 import Step7Preview from "./steps/Step7Preview";
 import Step8Review from "./steps/Step8Review";
-import { CourseFormState, buildCoursePayload, initialCourseFormState } from "./courseForm";
+import { CourseFormState, buildCoursePayload, collectCourseUploadFiles, initialCourseFormState } from "./courseForm";
 import { courseStore } from "@/app/store/courseStore/courseStore";
 
 const TOTAL_STEPS = 7;
@@ -55,37 +55,19 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
 
   const handleSave = async (action: "draft" | "publish") => {
     let wasSuccessful = false;
-    const scormFiles = courseForm.structure.modules.flatMap((mod) =>
-      mod.sections.flatMap((section) =>
-        section.contentFile &&
-        (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip")
-          ? [section.contentFile.file]
-          : []
-      )
-    );
-
-    const scormFileCount = courseForm.structure.modules.reduce((count, mod) => {
-      return (
-        count +
-        mod.sections.filter(
-          (section) =>
-            section.contentFile &&
-            (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip")
-        ).length
-      );
-    }, 0);
-
+    const uploadFiles = collectCourseUploadFiles(courseForm);
     const payload = buildCoursePayload(courseForm, action);
 
     try {
       await courseStore.createCourse({
         payload,
         thumbnailFile: courseForm.basicInfo.thumbnail?.file ?? null,
-        scormFiles,
+        scormFiles: uploadFiles.scormFiles,
+        contentFiles: uploadFiles.contentFiles,
+        studyMaterialFiles: uploadFiles.studyMaterialFiles,
       }, {
         action,
-        fileCount:
-          scormFileCount + (courseForm.basicInfo.thumbnail?.file ? 1 : 0),
+        fileCount: uploadFiles.totalFileCount,
       });
       wasSuccessful = true;
       if (onSuccess) {
@@ -252,7 +234,7 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
 
             <div style={{ display: "flex", justifyContent: "space-between", gap: 16, fontSize: 13, color: "#64748B" }}>
               <span>{Math.max(courseStore.submissionProgress, 8)}% complete</span>
-              <span>SCORM uploads can take a little longer while the package is extracted and stored.</span>
+              <span>SCORM packages take longer because they need extraction. MP4 and PDF files upload directly.</span>
             </div>
           </div>
           <style>{`@keyframes course-submit-spin { to { transform: rotate(360deg); } }`}</style>

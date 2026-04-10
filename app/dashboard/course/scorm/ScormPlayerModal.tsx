@@ -1,16 +1,16 @@
 import {
-    Box,
-    Flex,
-    Heading,
-    IconButton,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalHeader,
-    ModalOverlay,
-    Text,
-    useColorModeValue,
+  Box,
+  Flex,
+  Heading,
+  IconButton,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
+  Text,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";

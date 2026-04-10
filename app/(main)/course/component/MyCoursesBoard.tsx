@@ -1,8 +1,9 @@
 "use client";
 
 import CourseDetails from "@/app/dashboard/course/CourseDetails";
+import CourseAssetModal from "@/app/dashboard/course/scorm/CourseAssetModal";
 import CoursePlayer from "@/app/dashboard/course/scorm/CoursePlayer";
-import { CourseLaunchSection } from "@/app/dashboard/course/scorm/sectionTracking";
+import { buildCourseAssetUrl, CourseLaunchSection, isScormLaunchSection } from "@/app/dashboard/course/scorm/sectionTracking";
 import { courseStore } from "@/app/store/courseStore/courseStore";
 import { managerStore } from "@/app/store/managerStore/managerStore";
 import stores from "@/app/store/stores";
@@ -58,11 +59,6 @@ function getStatusColor(status: string) {
   }
 
   return "green";
-}
-
-function buildScormCourseUrl(scormPath: string) {
-  const normalizedPath = scormPath.startsWith("/") ? scormPath : `/${scormPath}`;
-  return `/courses${normalizedPath}`;
 }
 
 function truncateText(value?: string, limit = 120) {
@@ -189,6 +185,25 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
     router.push(`${basePath}?courseId=${courseId}`);
   };
 
+  const syncNonScormSectionProgress = async (status: "in_progress" | "completed") => {
+    const activeCourseId = activeCourse?._id || activeCourse?.courseId;
+    if (!activeCourseId || !playerSection?.moduleId || !playerSection?.sectionId) {
+      return;
+    }
+
+    await courseStore.updateSectionProgress({
+      courseId: activeCourseId,
+      moduleId: playerSection.moduleId,
+      sectionId: playerSection.sectionId,
+      status,
+    });
+
+    await Promise.all([
+      courseStore.fetchMyCourseDetail(activeCourseId),
+      courseStore.fetchMyCourses(),
+    ]);
+  };
+
   if (requestedCourseId) {
     if (!activeCourse) {
       return (
@@ -210,7 +225,7 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
         />
 
         <AnimatePresence>
-          {playerSection ? (
+          {playerSection && isScormLaunchSection(playerSection) ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -220,7 +235,7 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
             >
               <CoursePlayer
                 courseTitle={activeCourse.title}
-                courseUrl={buildScormCourseUrl(playerSection.scormPath)}
+                courseUrl={buildCourseAssetUrl(playerSection.assetPath)}
                 courseId={activeCourse._id || activeCourse.courseId}
                 moduleId={playerSection.moduleId}
                 sectionId={playerSection.sectionId}
@@ -250,6 +265,15 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
                 onBack={() => setPlayerSection(null)}
               />
             </motion.div>
+          ) : playerSection ? (
+            <CourseAssetModal
+              assetKind={playerSection.contentKind}
+              assetUrl={buildCourseAssetUrl(playerSection.assetPath)}
+              title={playerSection.sectionTitle || activeCourse.title}
+              onOpened={playerSection.contentKind === "video" ? () => syncNonScormSectionProgress("in_progress") : undefined}
+              onCompleted={playerSection.contentKind === "video" ? () => syncNonScormSectionProgress("completed") : undefined}
+              onBack={() => setPlayerSection(null)}
+            />
           ) : null}
         </AnimatePresence>
       </>
