@@ -145,7 +145,7 @@ interface OverviewTabProps {
   unassignedCourseCount: number;
   averageBatchSize: number;
   activeInstructorCount: number;
-  assignmentTypeStats: any;
+  assignmentTypeStats: Record<string, number>;
   topCompaniesByBatches: any[];
   topCompaniesByAssignments: any[];
   getActivities: () => any[];
@@ -337,11 +337,11 @@ const OverviewTab = observer((props: OverviewTabProps) => {
             <Icon as={PieChartIcon} boxSize={4} color="purple.600" />
           </Flex>
           <VStack align="stretch" spacing={2}>
-            {Object.entries(props.assignmentTypeStats).map(([key, count]) => (
+            {Object.entries(props.assignmentTypeStats).map(([key, count]: [string, number]) => (
               <Flex key={key} justify="space-between" align="center" p={2} bg={headerBg} rounded="md">
                 <Text fontSize="sm" fontWeight="medium" textTransform="capitalize">{key}</Text>
                 <Badge colorScheme={count > 0 ? 'purple' : 'gray'} variant="solid" fontSize="xs">
-                  {count}
+                  {count as number}
                 </Badge>
               </Flex>
             ))}
