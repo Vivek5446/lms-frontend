@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -26,10 +27,19 @@ import {
   useColorModeValue,
   VStack,
 } from "@chakra-ui/react";
-import { BookOpen, CheckCircle, Clock, GraduationCap, LayoutGrid, TrendingUp } from "lucide-react";
+import {
+  BookOpen,
+  CheckCircle,
+  Clock,
+  FileText,
+  GraduationCap,
+  LayoutGrid,
+  PlayCircle,
+  TrendingUp,
+  Video,
+} from "lucide-react";
 import ScormQuizReviewContent from "./ScormQuizReviewContent";
-
-// ─── Types (adapt to your actual store shape) ────────────────────────────────
+import { clampLearningProgress, getLearningStatusMeta } from "./progressPresentation";
 
 type LearnerReviewDrawerProps = {
   isOpen: boolean;
@@ -42,31 +52,35 @@ type LearnerReviewDrawerProps = {
   isAnswersLoading: boolean;
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function formatScore(score?: number | null) {
-  if (score == null || isNaN(score)) return "—";
+  if (score == null || Number.isNaN(score)) return "--";
   return `${Math.round(score)}%`;
 }
 
-function formatTime(seconds?: number) {
-  if (!seconds) return "—";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+function formatTime(value?: string | number | null) {
+  if (typeof value === "string") {
+    return value || "--";
+  }
+
+  if (!value) {
+    return "--";
+  }
+
+  const minutes = Math.floor(value / 60);
+  const seconds = value % 60;
+  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
 
 function getProgressColor(progress: number) {
-  if (progress >= 80) return "green";
-  if (progress >= 50) return "yellow";
-  return "red";
+  if (progress >= 100) return "green";
+  if (progress > 0) return "blue";
+  return "gray";
 }
 
 function summarizeCourseSections(modules: any[] = []) {
   const sections = modules.flatMap((moduleRecord) => moduleRecord.sections || []);
   const completed = sections.filter((sectionRecord) => {
-    const normalizedStatus = String(sectionRecord.lessonStatus || "").toLowerCase();
-    return normalizedStatus === "completed" || normalizedStatus === "passed";
+    return getLearningStatusMeta(sectionRecord.lessonStatus, sectionRecord.progress).state === "completed";
   }).length;
 
   return {
@@ -75,7 +89,13 @@ function summarizeCourseSections(modules: any[] = []) {
   };
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+function getSectionContentIcon(sectionRecord: any) {
+  const contentType = String(sectionRecord?.contentType || "").trim().toLowerCase();
+
+  if (contentType === "video") return Video;
+  if (contentType === "document") return FileText;
+  return PlayCircle;
+}
 
 function StatCard({
   icon,
@@ -83,7 +103,7 @@ function StatCard({
   value,
   accent,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string | number;
   accent?: string;
@@ -91,6 +111,7 @@ function StatCard({
   const bg = useColorModeValue("gray.50", "whiteAlpha.50");
   const border = useColorModeValue("gray.200", "gray.700");
   const muted = useColorModeValue("gray.500", "gray.400");
+
   return (
     <Box bg={bg} borderWidth="1px" borderColor={border} borderRadius="xl" p={4}>
       <HStack spacing={2} mb={2}>
@@ -107,11 +128,13 @@ function StatCard({
 }
 
 function ProgressRing({ value }: { value: number }) {
-  const color = getProgressColor(value);
+  const safeValue = clampLearningProgress(value);
+  const color = getProgressColor(safeValue);
+
   return (
-    <CircularProgress value={value} color={`${color}.400`} trackColor="gray.100" size="52px" thickness="8px">
+    <CircularProgress value={safeValue} color={`${color}.400`} trackColor="gray.100" size="54px" thickness="9px">
       <CircularProgressLabel fontSize="10px" fontWeight="bold">
-        {Math.round(value)}%
+        {safeValue}%
       </CircularProgressLabel>
     </CircularProgress>
   );
@@ -121,7 +144,10 @@ function SectionRow({ sectionRecord }: { sectionRecord: any }) {
   const border = useColorModeValue("gray.200", "gray.700");
   const muted = useColorModeValue("gray.500", "gray.400");
   const bg = useColorModeValue("white", "gray.800");
-  const statusColor = sectionRecord.lessonStatus?.includes("complete") ? "green" : "gray";
+  const completedBg = useColorModeValue("green.50", "green.900");
+  const completedBorder = useColorModeValue("green.200", "green.700");
+  const statusMeta = getLearningStatusMeta(sectionRecord.lessonStatus, sectionRecord.progress);
+  const SectionIcon = getSectionContentIcon(sectionRecord);
 
   return (
     <Flex
@@ -129,19 +155,41 @@ function SectionRow({ sectionRecord }: { sectionRecord: any }) {
       gap={4}
       px={4}
       py={3}
-      bg={bg}
+      bg={statusMeta.state === "completed" ? completedBg : bg}
       borderWidth="1px"
-      borderColor={border}
+      borderColor={statusMeta.state === "completed" ? completedBorder : border}
       borderRadius="lg"
     >
+      <Box
+        w={10}
+        h={10}
+        borderRadius="full"
+        bg={statusMeta.state === "completed" ? "green.500" : `${statusMeta.colorScheme}.50`}
+        color={statusMeta.state === "completed" ? "white" : `${statusMeta.colorScheme}.500`}
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        flexShrink={0}
+      >
+        {statusMeta.state === "completed" ? <CheckCircle size={18} /> : <SectionIcon size={18} />}
+      </Box>
+
       <Box flex="1" minW={0}>
-        <Text fontWeight="medium" fontSize="sm" noOfLines={1}>
-          {sectionRecord.title}
-        </Text>
-        <HStack spacing={3} mt={1} flexWrap="wrap">
-          <Badge colorScheme={statusColor} fontSize="10px" borderRadius="full" px={2}>
-            {sectionRecord.lessonStatus?.replace(/_/g, " ") || "not started"}
+        <HStack spacing={3} flexWrap="wrap" mb={1}>
+          <Text fontWeight="medium" fontSize="sm" noOfLines={1}>
+            {sectionRecord.title}
+          </Text>
+          <Badge colorScheme={statusMeta.colorScheme} fontSize="10px" borderRadius="full" px={2.5} py={1}>
+            {statusMeta.label}
           </Badge>
+          {statusMeta.state === "completed" ? (
+            <Badge colorScheme="green" fontSize="10px" borderRadius="full" px={2.5} py={1}>
+              Done
+            </Badge>
+          ) : null}
+        </HStack>
+
+        <HStack spacing={3} mt={1} flexWrap="wrap">
           <Text fontSize="xs" color={muted}>
             Score: {formatScore(sectionRecord.score)}
           </Text>
@@ -153,6 +201,7 @@ function SectionRow({ sectionRecord }: { sectionRecord: any }) {
           </Text>
         </HStack>
       </Box>
+
       <ProgressRing value={sectionRecord.progress} />
     </Flex>
   );
@@ -162,31 +211,32 @@ function ModuleAccordionItem({ moduleRecord }: { moduleRecord: any }) {
   const border = useColorModeValue("gray.200", "gray.700");
   const muted = useColorModeValue("gray.500", "gray.400");
   const headerBg = useColorModeValue("gray.50", "gray.750");
+  const statusMeta = getLearningStatusMeta(moduleRecord.lessonStatus, moduleRecord.progress);
 
   return (
-    <AccordionItem
-      borderWidth="1px"
-      borderColor={border}
-      borderRadius="xl"
-      mb={3}
-      overflow="hidden"
-    >
+    <AccordionItem borderWidth="1px" borderColor={border} borderRadius="xl" mb={3} overflow="hidden">
       <AccordionButton py={4} px={5} bg={headerBg} _hover={{ bg: headerBg }} _expanded={{ bg: headerBg }}>
         <Flex flex="1" align="center" gap={4}>
           <ProgressRing value={moduleRecord.progress} />
           <Box flex="1" textAlign="left">
-            <Text fontWeight="semibold" fontSize="sm">
-              {moduleRecord.title}
-            </Text>
-            <HStack spacing={3} mt={1}>
+            <HStack spacing={3} flexWrap="wrap">
+              <Text fontWeight="semibold" fontSize="sm">
+                {moduleRecord.title}
+              </Text>
+              <Badge colorScheme={statusMeta.colorScheme} borderRadius="full" px={3} py={1} fontSize="10px">
+                {statusMeta.label}
+              </Badge>
+            </HStack>
+
+            <HStack spacing={3} mt={1} flexWrap="wrap">
+              <Text fontSize="xs" color={muted}>
+                {moduleRecord.sectionsCompleted || 0}/{moduleRecord.sectionCount || moduleRecord.sections?.length || 0} done
+              </Text>
               <Text fontSize="xs" color={muted}>
                 Score: {formatScore(moduleRecord.score)}
               </Text>
               <Text fontSize="xs" color={muted}>
-                Attempts: {moduleRecord.attempts}
-              </Text>
-              <Text fontSize="xs" color={muted}>
-                {moduleRecord.sections?.length || 0} sections
+                Time: {formatTime(moduleRecord.totalTime)}
               </Text>
             </HStack>
           </Box>
@@ -195,8 +245,8 @@ function ModuleAccordionItem({ moduleRecord }: { moduleRecord: any }) {
       </AccordionButton>
       <AccordionPanel p={4}>
         <Stack spacing={2}>
-          {moduleRecord.sections?.map((sec: any) => (
-            <SectionRow key={sec.sectionId} sectionRecord={sec} />
+          {moduleRecord.sections?.map((sectionRecord: any) => (
+            <SectionRow key={sectionRecord.sectionId} sectionRecord={sectionRecord} />
           ))}
         </Stack>
       </AccordionPanel>
@@ -217,6 +267,8 @@ function CourseCard({
   const activeBg = useColorModeValue("teal.50", "teal.900");
   const bg = useColorModeValue("white", "gray.800");
   const muted = useColorModeValue("gray.500", "gray.400");
+  const courseSections = summarizeCourseSections(course.modules || []);
+  const statusMeta = getLearningStatusMeta(course.lessonStatus, course.progress);
 
   return (
     <Box
@@ -231,63 +283,53 @@ function CourseCard({
       _hover={{ borderColor: "teal.300", shadow: "sm" }}
       position="relative"
     >
-      {isActive && (
-        <Box
-          position="absolute"
-          top={3}
-          right={3}
-          w={2}
-          h={2}
-          borderRadius="full"
-          bg="teal.400"
-        />
-      )}
+      {isActive ? (
+        <Box position="absolute" top={3} right={3} w={2} h={2} borderRadius="full" bg="teal.400" />
+      ) : null}
+
       <Flex justify="space-between" align="flex-start" gap={3}>
         <Box flex="1" minW={0}>
           <Text fontWeight="semibold" fontSize="sm" noOfLines={2} mb={2}>
             {course.title}
           </Text>
+
+          <HStack spacing={2} flexWrap="wrap" mb={2}>
+            <Badge colorScheme={statusMeta.colorScheme} borderRadius="full" px={2.5} py={1} fontSize="10px">
+              {statusMeta.label}
+            </Badge>
+            <Badge colorScheme="teal" borderRadius="full" px={2.5} py={1} fontSize="10px">
+              {courseSections.completed}/{courseSections.total} done
+            </Badge>
+            {course.answerSummary?.pending > 0 ? (
+              <Badge colorScheme="orange" borderRadius="full" px={2.5} py={1} fontSize="10px">
+                {course.answerSummary.pending} pending
+              </Badge>
+            ) : null}
+          </HStack>
+
           <VStack align="stretch" spacing={1}>
-            <HStack spacing={2}>
-              <Text fontSize="xs" color={muted}>
-                Score:
-              </Text>
-              <Text fontSize="xs" fontWeight="medium">
-                {formatScore(course.score)}
-              </Text>
-            </HStack>
-            <HStack spacing={2}>
-              <Text fontSize="xs" color={muted}>
-                Attempts:
-              </Text>
-              <Text fontSize="xs" fontWeight="medium">
-                {course.attempts}
-              </Text>
-            </HStack>
-            {course.answerSummary && course.answerSummary.pending > 0 && (
-              <HStack spacing={2}>
-                <Badge colorScheme="orange" fontSize="9px" borderRadius="full" px={2}>
-                  {course.answerSummary.pending} pending
-                </Badge>
-              </HStack>
-            )}
+            <Text fontSize="xs" color={muted}>
+              Score: {formatScore(course.score)}
+            </Text>
+            <Text fontSize="xs" color={muted}>
+              Time: {formatTime(course.totalTime)}
+            </Text>
           </VStack>
         </Box>
+
         <ProgressRing value={course.progress} />
       </Flex>
     </Box>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function LearnerReviewDrawer({
   isOpen,
   onClose,
   managerStore,
   selectedCourse,
-  selectedCourseId,   // ✅ use this for isActive checks — always in sync with the click
-  isAnswersLoading,   // ✅ use this for answers-loading state — set before fetch begins
+  selectedCourseId,
+  isAnswersLoading,
   selectCourse,
   submitReview,
 }: LearnerReviewDrawerProps) {
@@ -298,11 +340,6 @@ export default function LearnerReviewDrawer({
   const summary = managerStore.learnerProgress?.summary;
   const courses = managerStore.learnerProgress?.courses || [];
   const selectedCourseSectionSummary = summarizeCourseSections(selectedCourse?.modules || []);
-
-  // ✅ Combine both loading signals:
-  //    isAnswersLoading  → parent set it true the moment user clicked (pre-fetch)
-  //    isLearnerAnswersLoading → store's own in-flight flag
-  //    This ensures the spinner shows with zero delay on click, no stale data flash.
   const answersLoading = isAnswersLoading || managerStore.isLearnerAnswersLoading;
 
   return (
@@ -311,7 +348,6 @@ export default function LearnerReviewDrawer({
       <DrawerContent maxW={{ base: "100%", md: "640px", lg: "70vw" }}>
         <DrawerCloseButton top={4} right={4} />
 
-        {/* Header */}
         <DrawerHeader px={6} pt={6} pb={4} borderBottomWidth="1px" borderColor={divider}>
           <HStack spacing={3}>
             <Box p={2} bg="teal.50" borderRadius="lg" color="teal.600">
@@ -321,11 +357,11 @@ export default function LearnerReviewDrawer({
               <Text fontSize="xs" textTransform="uppercase" letterSpacing="wide" color={muted} fontWeight="600">
                 Learner Review
               </Text>
-              {learner && (
+              {learner ? (
                 <Heading size="md" mt={0.5}>
                   {learner.name}
                 </Heading>
-              )}
+              ) : null}
             </Box>
           </HStack>
         </DrawerHeader>
@@ -335,17 +371,16 @@ export default function LearnerReviewDrawer({
             <Flex justify="center" align="center" direction="column" gap={3} py={20}>
               <Spinner size="lg" color="teal.400" />
               <Text color={muted} fontSize="sm">
-                Loading learner details…
+                Loading learner details...
               </Text>
             </Flex>
           ) : (
             <Stack spacing={7}>
-              {/* ── Learner Info ── */}
               <Box>
                 <Text color={muted} fontSize="sm">
                   {learner?.email || learner?.username || ""}
                 </Text>
-                <Grid templateColumns="repeat(3, 1fr)" gap={3} mt={4}>
+                <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={3} mt={4}>
                   <StatCard
                     icon={<TrendingUp size={14} />}
                     label="Overall"
@@ -367,7 +402,6 @@ export default function LearnerReviewDrawer({
                 </Grid>
               </Box>
 
-              {/* ── Courses ── */}
               <Box>
                 <HStack mb={3}>
                   <LayoutGrid size={15} color="var(--chakra-colors-gray-400)" />
@@ -375,14 +409,12 @@ export default function LearnerReviewDrawer({
                     Courses
                   </Heading>
                 </HStack>
+
                 <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)" }} gap={3}>
                   {courses.map((course: any) => (
                     <CourseCard
                       key={course.courseId}
                       course={course}
-                      // ✅ Compare against selectedCourseId (prop) not selectedCourse?.courseId
-                      //    selectedCourse is memo-derived and can lag one render behind the click;
-                      //    selectedCourseId is set synchronously inside selectCourse before the fetch.
                       isActive={selectedCourseId === course.courseId}
                       onSelect={() => void selectCourse(course.courseId)}
                     />
@@ -390,10 +422,8 @@ export default function LearnerReviewDrawer({
                 </Grid>
               </Box>
 
-              {/* ── Selected Course Detail ── */}
-              {selectedCourse && (
+              {selectedCourse ? (
                 <>
-                  {/* Module Breakdown */}
                   <Box>
                     <HStack justify="space-between" mb={3} flexWrap="wrap" gap={2}>
                       <HStack>
@@ -402,19 +432,23 @@ export default function LearnerReviewDrawer({
                           Module Breakdown
                         </Heading>
                       </HStack>
-                      <Badge colorScheme="teal" borderRadius="full" px={3} py={1} fontSize="xs">
-                        {selectedCourse.title}
-                      </Badge>
+                      <HStack spacing={2} flexWrap="wrap">
+                        <Badge colorScheme="teal" borderRadius="full" px={3} py={1} fontSize="xs">
+                          {selectedCourse.title}
+                        </Badge>
+                        <Badge colorScheme="green" borderRadius="full" px={3} py={1} fontSize="xs">
+                          {selectedCourseSectionSummary.completed}/{selectedCourseSectionSummary.total} completed
+                        </Badge>
+                      </HStack>
                     </HStack>
 
                     <Accordion allowMultiple defaultIndex={[0]}>
-                      {selectedCourse.modules?.map((mod: any) => (
-                        <ModuleAccordionItem key={mod.moduleId} moduleRecord={mod} />
+                      {selectedCourse.modules?.map((moduleRecord: any) => (
+                        <ModuleAccordionItem key={moduleRecord.moduleId} moduleRecord={moduleRecord} />
                       ))}
                     </Accordion>
                   </Box>
 
-                  {/* Answers Review */}
                   <Box>
                     <HStack justify="space-between" mb={3} flexWrap="wrap" gap={2}>
                       <Heading size="xs" textTransform="uppercase" letterSpacing="wide" color={muted}>
@@ -426,13 +460,8 @@ export default function LearnerReviewDrawer({
                     </HStack>
 
                     <ScormQuizReviewContent
-                      // ✅ Key on selectedCourseId — forces a full unmount+remount when the
-                      //    course changes, so the previous course's rendered answers are wiped
-                      //    from the DOM instantly on click rather than lingering during the fetch.
                       key={selectedCourseId}
                       sections={managerStore.learnerAnswers}
-                      // ✅ Use the combined loading flag so the spinner appears on click,
-                      //    not only after the store's own flag catches up.
                       isLoading={answersLoading}
                       mode="manager"
                       progressSummary={{
@@ -446,7 +475,7 @@ export default function LearnerReviewDrawer({
                     />
                   </Box>
                 </>
-              )}
+              ) : null}
             </Stack>
           )}
         </DrawerBody>

@@ -185,7 +185,10 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
     router.push(`${basePath}?courseId=${courseId}`);
   };
 
-  const syncNonScormSectionProgress = async (status: "in_progress" | "completed") => {
+  const syncNonScormSectionProgress = async (
+    status: "in_progress" | "completed",
+    extra?: { currentTime?: number; duration?: number; progress?: number; startOver?: boolean }
+  ) => {
     const activeCourseId = activeCourse?._id || activeCourse?.courseId;
     if (!activeCourseId || !playerSection?.moduleId || !playerSection?.sectionId) {
       return;
@@ -196,13 +199,35 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
       moduleId: playerSection.moduleId,
       sectionId: playerSection.sectionId,
       status,
+      ...extra,
     });
 
-    await Promise.all([
-      courseStore.fetchMyCourseDetail(activeCourseId),
-      courseStore.fetchMyCourses(),
-    ]);
+    // We don't necessarily need to refetch everything on every throttled update,
+    // but on completion we definitely should.
+    if (status === "completed" || extra?.startOver) {
+      await Promise.all([
+        courseStore.fetchMyCourseDetail(activeCourseId),
+        courseStore.fetchMyCourses(),
+      ]);
+    }
   };
+
+  const [initialSectionProgress, setInitialSectionProgress] = useState<any>(null);
+
+  useEffect(() => {
+    if (playerSection && !isScormLaunchSection(playerSection)) {
+      const activeCourseId = activeCourse?._id || activeCourse?.courseId;
+      if (activeCourseId) {
+        courseStore.fetchSectionProgress({
+          courseId: activeCourseId,
+          moduleId: playerSection.moduleId,
+          sectionId: playerSection.sectionId,
+        }).then(setInitialSectionProgress);
+      }
+    } else {
+      setInitialSectionProgress(null);
+    }
+  }, [playerSection, activeCourse?._id, activeCourse?.courseId]);
 
   if (requestedCourseId) {
     if (!activeCourse) {
@@ -270,8 +295,12 @@ const MyCoursesBoard = observer(({ basePath = "/dashboard/course/my-courses" }: 
               assetKind={playerSection.contentKind}
               assetUrl={buildCourseAssetUrl(playerSection.assetPath)}
               title={playerSection.sectionTitle || activeCourse.title}
+              initialTime={initialSectionProgress?.currentTime || 0}
+              initialProgress={initialSectionProgress?.progress || 0}
               onOpened={playerSection.contentKind === "video" ? () => syncNonScormSectionProgress("in_progress") : undefined}
-              onCompleted={playerSection.contentKind === "video" ? () => syncNonScormSectionProgress("completed") : undefined}
+              onProgressUpdate={(data) => syncNonScormSectionProgress("in_progress", data)}
+              onCompleted={() => syncNonScormSectionProgress("completed")}
+              onStartOver={() => syncNonScormSectionProgress("in_progress", { startOver: true })}
               onBack={() => setPlayerSection(null)}
             />
           ) : null}

@@ -150,7 +150,37 @@ export interface MyCourseItem {
   visibilityStatus: "active" | "expired" | "expiring_soon";
 }
 
+export interface MyCourseSectionProgressItem {
+  sectionId: string;
+  title: string;
+  progress: number;
+  score: number | null;
+  attempts: number;
+  lessonStatus: string;
+  totalTime: string;
+  lastAccessed?: string | null;
+  contentType?: "scorm" | "video" | "document" | "other";
+  completedAt?: string | null;
+  currentTime?: number;
+  duration?: number;
+}
+
+export interface MyCourseModuleProgressItem {
+  moduleId: string;
+  title: string;
+  progress: number;
+  score: number | null;
+  attempts: number;
+  lessonStatus: string;
+  totalTime: string;
+  lastAccessed?: string | null;
+  sectionsCompleted: number;
+  sectionCount: number;
+  sections: MyCourseSectionProgressItem[];
+}
+
 export interface MyCourseDetailItem extends CourseListItem {
+  courseId?: string;
   description?: {
     text?: string;
     html?: string;
@@ -171,6 +201,7 @@ export interface MyCourseDetailItem extends CourseListItem {
   validTill?: string | null;
   isExpired: boolean;
   visibilityStatus: "active" | "expired" | "expiring_soon";
+  progressModules?: MyCourseModuleProgressItem[];
 }
 
 export interface CourseAssignmentAuditItem {
@@ -239,7 +270,7 @@ class CourseStoreClass {
   assignedCourseAccesses: AssignedCourseAccessItem[] = [];
   myCourses: MyCourseItem[] = [];
   courseAssignmentAudit: CourseAssignmentAuditItem[] = [];
-  currentCourse: any = null;
+  currentCourse: MyCourseDetailItem | null = null;
   isLoading: boolean = false;
   isAccessLoading: boolean = false;
   isAssignedCoursesLoading: boolean = false;
@@ -482,12 +513,31 @@ class CourseStoreClass {
     moduleId: string;
     sectionId: string;
     status: "in_progress" | "completed";
+    lessonLocation?: string;
+    currentTime?: number;
+    duration?: number;
+    progress?: number;
+    contentType?: string;
+    startOver?: boolean;
   }) => {
     try {
       const { data } = await axios.post("/scorm/section-progress", payload);
       return data?.data || null;
     } catch (err: any) {
       return Promise.reject(err?.response?.data || err);
+    }
+  };
+
+  fetchSectionProgress = async (params: {
+    courseId: string;
+    moduleId: string;
+    sectionId: string;
+  }) => {
+    try {
+      const { data } = await axios.get("/scorm/progress", { params });
+      return data?.data || null;
+    } catch (err: any) {
+      return null;
     }
   };
 

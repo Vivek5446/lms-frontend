@@ -1,29 +1,38 @@
-"use client";
-
 import { motion } from "framer-motion";
-import { Download, ExternalLink, FileText, Video, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Download, ExternalLink, FileText, RotateCcw, Video, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { LaunchContentKind } from "./sectionTracking";
 
 interface CourseAssetModalProps {
   assetUrl: string;
   assetKind: LaunchContentKind;
   title: string;
+  initialTime?: number;
+  initialProgress?: number;
   onBack: () => void;
   onOpened?: () => void | Promise<void>;
   onCompleted?: () => void | Promise<void>;
+  onProgressUpdate?: (data: { currentTime: number; duration: number; progress: number }) => void;
+  onStartOver?: () => void;
 }
 
 export default function CourseAssetModal({
   assetUrl,
   assetKind,
   title,
+  initialTime = 0,
+  initialProgress = 0,
   onBack,
   onOpened,
   onCompleted,
+  onProgressUpdate,
+  onStartOver,
 }: CourseAssetModalProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const lastUpdateRef = useRef(0);
   const hasTrackedOpenRef = useRef(false);
   const hasTrackedCompletionRef = useRef(false);
+  const [showStartOver, setShowStartOver] = useState(initialProgress >= 100);
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
@@ -39,8 +48,59 @@ export default function CourseAssetModal({
     return () => {
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
+      
+      // Save current position on unmount if it's a video
+      if (assetKind === "video" && videoRef.current) {
+        const video = videoRef.current;
+        if (video.currentTime > 0 && !hasTrackedCompletionRef.current) {
+          const progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
+          onProgressUpdate?.({
+            currentTime: video.currentTime,
+            duration: video.duration,
+            progress: Math.min(progress, 99),
+          });
+        }
+      }
     };
-  }, [onOpened]);
+  }, [onOpened, assetKind, onProgressUpdate]);
+
+  // Restore initial time when video is ready
+  useEffect(() => {
+    if (assetKind === "video" && videoRef.current && initialTime > 0) {
+      videoRef.current.currentTime = initialTime;
+    }
+  }, [initialTime, assetKind]);
+
+  const handleTimeUpdate = () => {
+    if (!videoRef.current || !onProgressUpdate) return;
+    
+    const now = Date.now();
+    // Throttle updates to every 10 seconds
+    if (now - lastUpdateRef.current > 10000) {
+      const video = videoRef.current;
+      const progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
+      
+      onProgressUpdate({
+        currentTime: video.currentTime,
+        duration: video.duration,
+        progress: Math.min(progress, 99),
+      });
+      
+      lastUpdateRef.current = now;
+    }
+  };
+
+  const handlePause = () => {
+    if (!videoRef.current || !onProgressUpdate) return;
+    const video = videoRef.current;
+    const progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
+    
+    onProgressUpdate({
+      currentTime: video.currentTime,
+      duration: video.duration,
+      progress: Math.min(progress, 99),
+    });
+  };
 
   const handleCompleted = () => {
     if (hasTrackedCompletionRef.current) {
@@ -51,18 +111,52 @@ export default function CourseAssetModal({
     void Promise.resolve(onCompleted?.()).catch(() => undefined);
   };
 
-  // console.log('assetUrl',assetUrl)
+  const handleStartOver = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
+    }
+    setShowStartOver(false);
+    onStartOver?.();
+  };
 
   const renderContent = () => {
     if (assetKind === "video") {
       return (
-        <video
-          src={assetUrl}
-          controls
-          autoPlay
-          className="h-full w-full bg-black"
-          onEnded={handleCompleted}
-        />
+        <div className="relative h-full w-full bg-black">
+          <video
+            ref={videoRef}
+            src={assetUrl}
+            controls
+            autoPlay
+            className="h-full w-full"
+            onTimeUpdate={handleTimeUpdate}
+            onPause={handlePause}
+            onEnded={handleCompleted}
+          />
+          {showStartOver && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+              <div className="text-center space-y-4 p-6 rounded-2xl bg-slate-900/90 border border-white/10 shadow-2xl">
+                <p className="text-white font-medium">You've already completed this lesson.</p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setShowStartOver(false)}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition"
+                  >
+                    Resume Playing
+                  </button>
+                  <button
+                    onClick={handleStartOver}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold transition flex items-center gap-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Start Over
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       );
     }
 

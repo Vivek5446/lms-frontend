@@ -10,9 +10,16 @@ import {
   buildCourseAssetUrl,
   buildLaunchSection,
   CourseLaunchSection,
+  deriveModuleId,
+  deriveSectionId,
   getFirstPlayableLaunchSection,
   isScormLaunchSection,
 } from "@/app/dashboard/course/scorm/sectionTracking";
+import {
+  clampLearningProgress,
+  getLearningProgressState,
+  getLearningStatusMeta,
+} from "@/app/dashboard/course/scorm/progressPresentation";
 import {
   Accordion,
   AccordionButton,
@@ -33,6 +40,7 @@ import {
   HStack,
   Icon,
   Image,
+  Progress,
   SimpleGrid,
   Stack,
   Tag,
@@ -60,7 +68,7 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 // Motion components
 const MotionBox = motion(Box);
@@ -91,6 +99,78 @@ function getStartLearningLabel(launchSection: CourseLaunchSection | null, fallba
   return "No lesson asset";
 }
 
+function getSectionActionLabel(launchSection: CourseLaunchSection | null, status?: string | null, progress?: number | null) {
+  if (!launchSection) {
+    return "Lesson unavailable";
+  }
+
+  const state = getLearningProgressState(status, progress);
+  if (state === "completed") {
+    if (launchSection.contentKind === "video") {
+      return "Rewatch video";
+    }
+
+    if (launchSection.contentKind === "document") {
+      return "Reopen document";
+    }
+
+    return "Review lesson";
+  }
+
+  if (state === "in_progress") {
+    if (launchSection.contentKind === "video") {
+      return "Resume video";
+    }
+
+    if (launchSection.contentKind === "document") {
+      return "Continue document";
+    }
+
+    return "Continue lesson";
+  }
+
+  if (launchSection.contentKind === "video") {
+    return "Start video";
+  }
+
+  if (launchSection.contentKind === "document") {
+    return "Open document";
+  }
+
+  return "Start lesson";
+}
+
+function getSectionTypeLabel(contentKind?: string | null) {
+  const normalizedKind = String(contentKind || "").trim().toLowerCase();
+
+  if (normalizedKind === "video") {
+    return "VIDEO";
+  }
+
+  if (normalizedKind === "document") {
+    return "DOCUMENT";
+  }
+
+  if (normalizedKind === "scorm" || normalizedKind === "zip") {
+    return "SCORM";
+  }
+
+  return normalizedKind ? normalizedKind.toUpperCase() : "";
+}
+
+function formatAccessLabel(value?: string | null) {
+  if (!value) {
+    return "No expiry";
+  }
+
+  const accessDate = new Date(value);
+  if (Number.isNaN(accessDate.getTime())) {
+    return "No expiry";
+  }
+
+  return accessDate.toLocaleDateString();
+}
+
 interface CourseDetailsProps {
   course: any;
   onBack: () => void;
@@ -109,15 +189,107 @@ export default function CourseDetails({
   isLearnerAnswersLoading = false,
 }: CourseDetailsProps) {
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
+  const isAssignedCourseView = Array.isArray(course.sources);
   const firstPlayableLaunchSection = getFirstPlayableLaunchSection(course);
   const answerSummary = summarizeAnswerSections(learnerAnswers);
   const totalSections = Number(course.curriculum?.totalSections || 0);
-  const sectionsCompleted = estimateCompletedSections(course.progress, totalSections);
+  const progressModules = Array.isArray(course.progressModules) ? course.progressModules : [];
+
+  const moduleProgressMap = useMemo(
+    () => new Map<string, any>(progressModules.map((moduleRecord: any) => [moduleRecord.moduleId, moduleRecord])),
+    [progressModules]
+  );
+
+  const sectionProgressMap = useMemo(() => {
+    const nextMap = new Map<string, any>();
+
+    progressModules.forEach((moduleRecord: any) => {
+      (moduleRecord.sections || []).forEach((sectionRecord: any) => {
+        nextMap.set(sectionRecord.sectionId, sectionRecord);
+      });
+    });
+
+    return nextMap;
+  }, [progressModules]);
+
+  const sectionSummary = useMemo(() => {
+    const modules = Array.isArray(course.curriculum?.modules) ? course.curriculum.modules : [];
+    let computedTotal = 0;
+    let completed = 0;
+    let inProgress = 0;
+
+    modules.forEach((moduleRecord: any) => {
+      (moduleRecord.sections || []).forEach((sectionRecord: any) => {
+        computedTotal += 1;
+        const trackingRecord = sectionProgressMap.get(deriveSectionId(moduleRecord, sectionRecord));
+        const state = getLearningProgressState(trackingRecord?.lessonStatus, trackingRecord?.progress);
+
+        if (state === "completed") {
+          completed += 1;
+          return;
+        }
+
+        if (state === "in_progress") {
+          inProgress += 1;
+        }
+      });
+    });
+
+    return {
+      total: computedTotal || totalSections,
+      completed,
+      inProgress,
+      notStarted: Math.max((computedTotal || totalSections) - completed - inProgress, 0),
+    };
+  }, [course.curriculum?.modules, sectionProgressMap, totalSections]);
+
+  const sectionsCompleted = isAssignedCourseView
+    ? sectionSummary.completed
+    : estimateCompletedSections(course.progress, totalSections);
+
+  const nextLaunchSection = useMemo(() => {
+    const modules = Array.isArray(course.curriculum?.modules) ? course.curriculum.modules : [];
+    let firstIncompleteLaunchSection: CourseLaunchSection | null = null;
+
+    for (const moduleRecord of modules) {
+      for (const sectionRecord of moduleRecord.sections || []) {
+        const launchSection = buildLaunchSection(moduleRecord, sectionRecord);
+        if (!launchSection) {
+          continue;
+        }
+
+        const trackingRecord = sectionProgressMap.get(launchSection.sectionId);
+        const state = getLearningProgressState(trackingRecord?.lessonStatus, trackingRecord?.progress);
+        if (state === "in_progress") {
+          return launchSection;
+        }
+
+        if (!firstIncompleteLaunchSection && state !== "completed") {
+          firstIncompleteLaunchSection = launchSection;
+        }
+      }
+    }
+
+    return firstIncompleteLaunchSection || firstPlayableLaunchSection;
+  }, [course.curriculum?.modules, firstPlayableLaunchSection, sectionProgressMap]);
+
+  const nextLaunchTracking = nextLaunchSection ? sectionProgressMap.get(nextLaunchSection.sectionId) : null;
+  const nextLaunchLabel = getSectionActionLabel(
+    nextLaunchSection,
+    nextLaunchTracking?.lessonStatus,
+    nextLaunchTracking?.progress
+  );
 
   // Colors (Chakra + Tailwind friendly)
   const bgColor = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
+  const surfaceBg = useColorModeValue("white", "gray.800");
+  const mutedSurfaceBg = useColorModeValue("gray.50", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
+  const completedSectionBg = useColorModeValue("green.50", "green.900");
+  const completedSectionBorder = useColorModeValue("green.200", "green.700");
+  const timelineColor = useColorModeValue("gray.100", "gray.700");
+  const mutedDotBorder = useColorModeValue("gray.50", "gray.700");
   const accentColor = "blue.500";
   const accentLight = useColorModeValue("blue.50", "blue.900");
   const textMuted = useColorModeValue("gray.500", "gray.400");
@@ -247,18 +419,30 @@ export default function CourseDetails({
               <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
                 <CardHeader pb={0}>
                   <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
-                    <Flex align="center" gap={2}>
+                    <Flex align="center" gap={2} wrap="wrap">
                       <Icon as={Layers} boxSize={6} color={accentColor} />
                       <Heading size="md">Course Curriculum</Heading>
+                      {isAssignedCourseView ? (
+                        <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
+                          {sectionSummary.completed}/{sectionSummary.total} complete
+                        </Badge>
+                      ) : null}
                     </Flex>
                     <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
-                      {course.curriculum?.totalModules} modules • {course.curriculum?.totalSections} lessons
+                      {course.curriculum?.totalModules} modules {" / "} {course.curriculum?.totalSections} lessons
                     </Badge>
                   </Flex>
                 </CardHeader>
                 <CardBody>
                   <Accordion allowMultiple defaultIndex={[0]}>
-                    {course.curriculum?.modules?.map((mod: any) => (
+                    {course.curriculum?.modules?.map((mod: any) => {
+                      const moduleTracking = moduleProgressMap.get(deriveModuleId(mod));
+                      const moduleProgressMeta = getLearningStatusMeta(
+                        moduleTracking?.lessonStatus,
+                        moduleTracking?.progress
+                      );
+
+                      return (
                       <AccordionItem
                         key={mod.order}
                         border="none"
@@ -282,21 +466,50 @@ export default function CourseDetails({
                                   w={10}
                                   h={10}
                                   borderRadius="xl"
-                                  bg={isExpanded ? accentColor : useColorModeValue("gray.100", "gray.700")}
-                                  color={isExpanded ? "white" : textMuted}
+                                  bg={
+                                    isAssignedCourseView && moduleProgressMeta.state === "completed"
+                                      ? "green.500"
+                                      : isExpanded
+                                        ? accentColor
+                                        : useColorModeValue("gray.100", "gray.700")
+                                  }
+                                  color={isAssignedCourseView && moduleProgressMeta.state === "completed" ? "white" : isExpanded ? "white" : textMuted}
                                   display="flex"
                                   alignItems="center"
                                   justifyContent="center"
                                   fontWeight="bold"
                                   transition="all 0.2s"
                                 >
-                                  {mod.order}
+                                  {moduleProgressMeta.state === "completed" && isAssignedCourseView ? (
+                                    <Icon as={CheckCircle} boxSize={5} />
+                                  ) : (
+                                    mod.order
+                                  )}
                                 </Box>
                                 <Box flex="1" textAlign="left">
-                                  <Text fontWeight="bold" fontSize="lg">{mod.title}</Text>
-                                  <Text fontSize="sm" color={textMuted}>
-                                    {mod.sections?.length} {mod.sections?.length === 1 ? "lesson" : "lessons"}
-                                  </Text>
+                                  <HStack spacing={3} flexWrap="wrap">
+                                    <Text fontWeight="bold" fontSize="lg">{mod.title}</Text>
+                                    {isAssignedCourseView ? (
+                                      <Badge colorScheme={moduleProgressMeta.colorScheme} borderRadius="full" px={3} py={1}>
+                                        {moduleProgressMeta.label}
+                                      </Badge>
+                                    ) : null}
+                                  </HStack>
+                                  <HStack spacing={3} mt={1} flexWrap="wrap">
+                                    <Text fontSize="sm" color={textMuted}>
+                                      {mod.sections?.length} {mod.sections?.length === 1 ? "lesson" : "lessons"}
+                                    </Text>
+                                    {isAssignedCourseView && moduleTracking ? (
+                                      <>
+                                        <Text fontSize="sm" color={textMuted}>
+                                          {moduleTracking.sectionsCompleted}/{moduleTracking.sectionCount} complete
+                                        </Text>
+                                        <Text fontSize="sm" color={textMuted}>
+                                          {clampLearningProgress(moduleTracking.progress)}%
+                                        </Text>
+                                      </>
+                                    ) : null}
+                                  </HStack>
                                 </Box>
                                 <AccordionIcon boxSize={6} color={textMuted} />
                               </Flex>
@@ -382,25 +595,36 @@ export default function CourseDetails({
                                   top="20px"
                                   bottom="30px"
                                   width="2px"
-                                  bg={useColorModeValue("gray.100", "gray.700")}
+                                  bg={timelineColor}
                                   zIndex={0}
                                 />
 
                                 {mod.sections?.map((sec: any, idx: number) => {
                                   const secId = mod.order * 100 + idx;
                                   const launchSection = buildLaunchSection(mod, sec);
+                                  const sectionTracking = sectionProgressMap.get(deriveSectionId(mod, sec));
+                                  const sectionProgressMeta = getLearningStatusMeta(
+                                    sectionTracking?.lessonStatus,
+                                    sectionTracking?.progress
+                                  );
                                   const isPlayable = Boolean(launchSection);
                                   const isLast = idx === mod.sections.length - 1;
                                   const sectionStudyMaterials = normalizeMaterials(sec.studyMaterial);
                                   const contentKind = String(sec.content?.kind || "").trim().toLowerCase();
-                                  const contentTagLabel =
-                                    contentKind === "video"
-                                      ? "VIDEO"
-                                      : contentKind === "document"
-                                        ? "DOCUMENT"
-                                        : contentKind
-                                          ? contentKind.toUpperCase()
-                                          : "";
+                                  const contentTagLabel = getSectionTypeLabel(contentKind);
+                                  const actionLabel = getSectionActionLabel(
+                                    launchSection,
+                                    sectionTracking?.lessonStatus,
+                                    sectionTracking?.progress
+                                  );
+                                  const sectionIcon =
+                                    sectionProgressMeta.state === "completed"
+                                      ? CheckCircle
+                                      : contentKind === "video"
+                                        ? Video
+                                        : isPlayable
+                                          ? PlayCircle
+                                          : BookOpen;
 
                                   return (
                                     <MotionFlex
@@ -419,14 +643,25 @@ export default function CourseDetails({
                                         }
                                       }}
                                     >
-                                      {/* Timeline Dot */}
                                       <Box
                                         w={10}
                                         h={10}
                                         borderRadius="full"
-                                        bg={isPlayable ? useColorModeValue("white", "gray.800") : "transparent"}
+                                        bg={
+                                          sectionProgressMeta.state === "completed"
+                                            ? "green.500"
+                                            : isPlayable
+                                              ? surfaceBg
+                                              : "transparent"
+                                        }
                                         border="4px solid"
-                                        borderColor={isPlayable ? accentLight : useColorModeValue("gray.50", "gray.700")}
+                                        borderColor={
+                                          sectionProgressMeta.state === "completed"
+                                            ? "green.100"
+                                            : isPlayable
+                                              ? accentLight
+                                              : mutedDotBorder
+                                        }
                                         display="flex"
                                         alignItems="center"
                                         justifyContent="center"
@@ -436,21 +671,34 @@ export default function CourseDetails({
                                         zIndex={2}
                                       >
                                         <Icon
-                                          as={contentKind === "video" ? Video : isPlayable ? PlayCircle : BookOpen}
+                                          as={sectionIcon}
                                           boxSize={5}
-                                          color={isPlayable ? accentColor : textMuted}
-                                          fill={isPlayable && hoveredSection === secId ? accentColor : "none"}
-                                          stroke={isPlayable && hoveredSection === secId ? "white" : "currentColor"}
+                                          color={
+                                            sectionProgressMeta.state === "completed"
+                                              ? "white"
+                                              : isPlayable
+                                                ? accentColor
+                                                : textMuted
+                                          }
                                         />
                                       </Box>
 
-                                      {/* Section Content Card */}
                                       <Box
                                         flex="1"
                                         p={4}
-                                        bg={useColorModeValue("white", "gray.800")}
+                                        bg={
+                                          isAssignedCourseView && sectionProgressMeta.state === "completed"
+                                            ? completedSectionBg
+                                            : surfaceBg
+                                        }
                                         borderWidth="1px"
-                                        borderColor={hoveredSection === secId ? accentColor : borderColor}
+                                        borderColor={
+                                          hoveredSection === secId
+                                            ? accentColor
+                                            : isAssignedCourseView && sectionProgressMeta.state === "completed"
+                                              ? completedSectionBorder
+                                              : borderColor
+                                        }
                                         borderRadius="xl"
                                         shadow={hoveredSection === secId ? "md" : "sm"}
                                         transition="all 0.2s"
@@ -458,21 +706,55 @@ export default function CourseDetails({
                                       >
                                         <Flex justify="space-between" align="flex-start" wrap="wrap" gap={2}>
                                           <Box flex="1">
-                                            <Heading size="sm" mb={1}>{sec.title}</Heading>
+                                            <HStack spacing={3} flexWrap="wrap" mb={1}>
+                                              <Heading size="sm">{sec.title}</Heading>
+                                              {isAssignedCourseView ? (
+                                                <Badge colorScheme={sectionProgressMeta.colorScheme} borderRadius="full" px={3} py={1}>
+                                                  {sectionProgressMeta.label}
+                                                </Badge>
+                                              ) : null}
+                                            </HStack>
                                             {sec.description && (
                                               <Text fontSize="sm" color={textMuted} noOfLines={2}>
                                                 {sec.description}
                                               </Text>
                                             )}
                                           </Box>
-                                          
-                                          {contentTagLabel ? (
-                                            <Tag size="sm" variant="subtle" colorScheme="gray" borderRadius="md" mt={1}>
-                                              <Icon as={FileBox} boxSize={3} mr={1} />
-                                              {contentTagLabel}
-                                            </Tag>
-                                          ) : null}
+
+                                          <HStack spacing={2} align="start" flexWrap="wrap" justify="flex-end">
+                                            {contentTagLabel ? (
+                                              <Tag size="sm" variant="subtle" colorScheme="gray" borderRadius="md" mt={1}>
+                                                <Icon as={FileBox} boxSize={3} mr={1} />
+                                                {contentTagLabel}
+                                              </Tag>
+                                            ) : null}
+                                            {isAssignedCourseView && sectionProgressMeta.state === "completed" ? (
+                                              <Badge colorScheme="green" borderRadius="full" px={3} py={1} mt={1}>
+                                                Completed
+                                              </Badge>
+                                            ) : null}
+                                          </HStack>
                                         </Flex>
+
+                                        {isAssignedCourseView ? (
+                                          <Box mt={4}>
+                                            <HStack justify="space-between" mb={2}>
+                                              <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" color={textMuted}>
+                                                Lesson progress
+                                              </Text>
+                                              <Text fontSize="sm" fontWeight="semibold">
+                                                {sectionProgressMeta.progress}%
+                                              </Text>
+                                            </HStack>
+                                            <Progress
+                                              value={sectionProgressMeta.progress}
+                                              colorScheme={sectionProgressMeta.colorScheme}
+                                              borderRadius="full"
+                                              h="10px"
+                                              bg={mutedSurfaceBg}
+                                            />
+                                          </Box>
+                                        ) : null}
 
                                         {sectionStudyMaterials.length > 0 ? (
                                           <Stack spacing={2} mt={4}>
@@ -489,7 +771,7 @@ export default function CourseDetails({
                                                   borderRadius="lg"
                                                   borderWidth="1px"
                                                   borderColor={borderColor}
-                                                  bg={useColorModeValue("gray.50", "gray.800")}
+                                                  bg={mutedSurfaceBg}
                                                   onClick={(event) => event.stopPropagation()}
                                                 >
                                                   <HStack align="start" spacing={3}>
@@ -538,8 +820,12 @@ export default function CourseDetails({
                                           <Button
                                             mt={4}
                                             size="sm"
-                                            colorScheme="blue"
-                                            variant={launchSection.contentKind === "video" ? "solid" : "outline"}
+                                            colorScheme={sectionProgressMeta.colorScheme === "gray" ? "blue" : sectionProgressMeta.colorScheme}
+                                            variant={
+                                              launchSection.contentKind === "video" || sectionProgressMeta.state === "in_progress"
+                                                ? "solid"
+                                                : "outline"
+                                            }
                                             borderRadius="full"
                                             onClick={(event) => {
                                               event.stopPropagation();
@@ -549,7 +835,7 @@ export default function CourseDetails({
                                               <Icon as={launchSection.contentKind === "video" ? Video : PlayCircle} boxSize={4} />
                                             }
                                           >
-                                            {launchSection.contentKind === "video" ? "Watch Video" : "Open Lesson"}
+                                            {actionLabel}
                                           </Button>
                                         ) : null}
                                       </Box>
@@ -561,7 +847,8 @@ export default function CourseDetails({
                           </>
                         )}
                       </AccordionItem>
-                    ))}
+                      );
+                    })}
                   </Accordion>
                 </CardBody>
               </Card>
@@ -607,47 +894,48 @@ export default function CourseDetails({
               </Card>
             </MotionBox>
 
-            {/* Batch Management Card */}
-            <MotionBox
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-            >
-              <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
-                <CardHeader pb={0}>
-                  <Flex align="center" gap={2}>
-                    <Icon as={Users} boxSize={6} color={accentColor} />
-                    <Heading size="md">Batch Delivery</Heading>
-                  </Flex>
-                </CardHeader>
-                <CardBody>
-                  <Stack spacing={4}>
-                    <Text color={textMuted}>
-                      Courses are now delivered through the dedicated batch module. Create and manage batches from the
-                      Batches workspace, then learners will see course access marked with the batch they came from.
-                    </Text>
-                    <Box
-                      p={4}
-                      borderWidth="1px"
-                      borderRadius="xl"
-                      borderColor={borderColor}
-                      bg={useColorModeValue("gray.50", "gray.800")}
-                    >
-                      <HStack spacing={3} align="start">
-                        <Icon as={Calendar} boxSize={5} color={accentColor} mt={0.5} />
-                        <Box>
-                          <Text fontWeight="semibold">Standalone batch management</Text>
-                          <Text mt={1} fontSize="sm" color={textMuted}>
-                            Use the new batch screens to group users, attach multiple courses, define dates, and track
-                            learner progress without mixing batch logic into course setup.
-                          </Text>
-                        </Box>
-                      </HStack>
-                    </Box>
-                  </Stack>
-                </CardBody>
-              </Card>
-            </MotionBox>
+            {!isAssignedCourseView ? (
+              <MotionBox
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
+                  <CardHeader pb={0}>
+                    <Flex align="center" gap={2}>
+                      <Icon as={Users} boxSize={6} color={accentColor} />
+                      <Heading size="md">Batch Delivery</Heading>
+                    </Flex>
+                  </CardHeader>
+                  <CardBody>
+                    <Stack spacing={4}>
+                      <Text color={textMuted}>
+                        Courses are now delivered through the dedicated batch module. Create and manage batches from the
+                        Batches workspace, then learners will see course access marked with the batch they came from.
+                      </Text>
+                      <Box
+                        p={4}
+                        borderWidth="1px"
+                        borderRadius="xl"
+                        borderColor={borderColor}
+                        bg={useColorModeValue("gray.50", "gray.800")}
+                      >
+                        <HStack spacing={3} align="start">
+                          <Icon as={Calendar} boxSize={5} color={accentColor} mt={0.5} />
+                          <Box>
+                            <Text fontWeight="semibold">Standalone batch management</Text>
+                            <Text mt={1} fontSize="sm" color={textMuted}>
+                              Use the new batch screens to group users, attach multiple courses, define dates, and track
+                              learner progress without mixing batch logic into course setup.
+                            </Text>
+                          </Box>
+                        </HStack>
+                      </Box>
+                    </Stack>
+                  </CardBody>
+                </Card>
+              </MotionBox>
+            ) : null}
           </Stack>
 
           {/* Sidebar */}
@@ -678,21 +966,68 @@ export default function CourseDetails({
                   <VStack spacing={5} align="stretch">
                     <Box textAlign="center" pt={2}>
                       <Text fontSize="xs" fontWeight="bold" color={textMuted} textTransform="uppercase" letterSpacing="wide">
-                        Enrollment Price
+                        {isAssignedCourseView ? "Your progress" : "Enrollment Price"}
                       </Text>
                       <Text fontSize="4xl" fontWeight="extrabold" color={accentColor}>
-                        {course.commerce?.pricingModel === "paid"
-                          ? `₹${course.commerce.amountInRupees}`
-                          : "Free"}
+                        {isAssignedCourseView
+                          ? `${clampLearningProgress(course.progress)}%`
+                          : course.commerce?.pricingModel === "paid"
+                            ? `₹${course.commerce.amountInRupees}`
+                            : "Free"}
                       </Text>
+                      {isAssignedCourseView ? (
+                        <Text mt={2} fontSize="sm" color={textMuted}>
+                          {sectionSummary.completed} of {sectionSummary.total} lessons completed
+                        </Text>
+                      ) : null}
                     </Box>
+
+                    {isAssignedCourseView ? (
+                      <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4} bg={mutedSurfaceBg}>
+                        <HStack justify="space-between" mb={2}>
+                          <Text fontSize="sm" fontWeight="semibold">
+                            Course progress
+                          </Text>
+                          <Text fontSize="sm" fontWeight="semibold">
+                            {clampLearningProgress(course.progress)}%
+                          </Text>
+                        </HStack>
+                        <Progress value={clampLearningProgress(course.progress)} colorScheme="blue" borderRadius="full" h="10px" />
+                        <SimpleGrid columns={3} spacing={3} mt={4}>
+                          <Box>
+                            <Text fontSize="xs" textTransform="uppercase" color={textMuted}>
+                              Done
+                            </Text>
+                            <Text mt={1} fontWeight="bold" color="green.500">
+                              {sectionSummary.completed}
+                            </Text>
+                          </Box>
+                          <Box>
+                            <Text fontSize="xs" textTransform="uppercase" color={textMuted}>
+                              Active
+                            </Text>
+                            <Text mt={1} fontWeight="bold" color="blue.500">
+                              {sectionSummary.inProgress}
+                            </Text>
+                          </Box>
+                          <Box>
+                            <Text fontSize="xs" textTransform="uppercase" color={textMuted}>
+                              Left
+                            </Text>
+                            <Text mt={1} fontWeight="bold">
+                              {sectionSummary.notStarted}
+                            </Text>
+                          </Box>
+                        </SimpleGrid>
+                      </Box>
+                    ) : null}
 
                     <MotionButton
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
-                        if (firstPlayableLaunchSection) {
-                          onLaunchSection(firstPlayableLaunchSection);
+                        if (nextLaunchSection) {
+                          onLaunchSection(nextLaunchSection);
                           return;
                         }
 
@@ -707,7 +1042,7 @@ export default function CourseDetails({
                           });
                         }
                       }}
-                      isDisabled={!firstPlayableLaunchSection && !course.scormFilePath}
+                      isDisabled={!nextLaunchSection && !course.scormFilePath}
                       colorScheme="blue"
                       size="lg"
                       borderRadius="xl"
@@ -715,30 +1050,79 @@ export default function CourseDetails({
                       leftIcon={<Icon as={Rocket} />}
                       shadow="md"
                     >
-                      {getStartLearningLabel(firstPlayableLaunchSection, course.scormFilePath)}
+                      {isAssignedCourseView
+                        ? nextLaunchLabel
+                        : getStartLearningLabel(firstPlayableLaunchSection, course.scormFilePath)}
                     </MotionButton>
+
+                    {isAssignedCourseView && nextLaunchSection ? (
+                      <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4}>
+                        <Text fontSize="xs" textTransform="uppercase" letterSpacing="wide" color={textMuted} fontWeight="bold">
+                          Next up
+                        </Text>
+                        <Text mt={2} fontWeight="semibold">
+                          {nextLaunchSection.sectionTitle}
+                        </Text>
+                        <Text mt={1} fontSize="sm" color={textMuted}>
+                          {nextLaunchTracking
+                            ? getLearningStatusMeta(nextLaunchTracking.lessonStatus, nextLaunchTracking.progress).label
+                            : "Ready to start"}
+                        </Text>
+                      </Box>
+                    ) : null}
 
                     <Divider />
 
                     <VStack spacing={3} align="start" px={2}>
-                      <HStack>
-                        <Icon as={CheckCircle} boxSize={5} color="green.500" />
-                        <Text fontSize="sm" fontWeight="medium">Full lifetime access</Text>
-                      </HStack>
-                      <HStack>
-                        <Icon as={Layers} boxSize={5} color="blue.500" />
-                        <Text fontSize="sm" fontWeight="medium">{course.curriculum?.totalSections} Interactive modules</Text>
-                      </HStack>
-                      {course.progression?.certificateEnabled && (
-                        <HStack>
-                          <Icon as={Award} boxSize={5} color="purple.500" />
-                          <Text fontSize="sm" fontWeight="medium">Certificate of completion</Text>
-                        </HStack>
+                      {isAssignedCourseView ? (
+                        <>
+                          <HStack>
+                            <Icon as={CheckCircle} boxSize={5} color="green.500" />
+                            <Text fontSize="sm" fontWeight="medium">
+                              {sectionSummary.completed} lesson{sectionSummary.completed === 1 ? "" : "s"} completed
+                            </Text>
+                          </HStack>
+                          <HStack>
+                            <Icon as={Layers} boxSize={5} color="blue.500" />
+                            <Text fontSize="sm" fontWeight="medium">
+                              {course.curriculum?.totalModules} modules, {course.curriculum?.totalSections} lessons
+                            </Text>
+                          </HStack>
+                          <HStack>
+                            <Icon as={Calendar} boxSize={5} color="orange.500" />
+                            <Text fontSize="sm" fontWeight="medium">
+                              Access ends: {formatAccessLabel(course.validTill)}
+                            </Text>
+                          </HStack>
+                          {course.progression?.certificateEnabled ? (
+                            <HStack>
+                              <Icon as={Award} boxSize={5} color="purple.500" />
+                              <Text fontSize="sm" fontWeight="medium">Certificate available after completion</Text>
+                            </HStack>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          <HStack>
+                            <Icon as={CheckCircle} boxSize={5} color="green.500" />
+                            <Text fontSize="sm" fontWeight="medium">Full lifetime access</Text>
+                          </HStack>
+                          <HStack>
+                            <Icon as={Layers} boxSize={5} color="blue.500" />
+                            <Text fontSize="sm" fontWeight="medium">{course.curriculum?.totalSections} Interactive modules</Text>
+                          </HStack>
+                          {course.progression?.certificateEnabled ? (
+                            <HStack>
+                              <Icon as={Award} boxSize={5} color="purple.500" />
+                              <Text fontSize="sm" fontWeight="medium">Certificate of completion</Text>
+                            </HStack>
+                          ) : null}
+                          <HStack>
+                            <Icon as={Star} boxSize={5} color="yellow.500" />
+                            <Text fontSize="sm" fontWeight="medium">Community support</Text>
+                          </HStack>
+                        </>
                       )}
-                      <HStack>
-                        <Icon as={Star} boxSize={5} color="yellow.500" />
-                        <Text fontSize="sm" fontWeight="medium">Community support</Text>
-                      </HStack>
                     </VStack>
                   </VStack>
                 </CardBody>

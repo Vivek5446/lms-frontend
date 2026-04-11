@@ -24,6 +24,10 @@ export interface LearnerCourseSectionProgress {
   lessonStatus: string;
   totalTime: string;
   lastAccessed?: string | null;
+  contentType?: "scorm" | "video" | "document" | "other";
+  completedAt?: string | null;
+  currentTime?: number;
+  duration?: number;
 }
 
 export interface LearnerCourseModuleProgress {
@@ -35,6 +39,8 @@ export interface LearnerCourseModuleProgress {
   lessonStatus: string;
   totalTime: string;
   lastAccessed?: string | null;
+  sectionsCompleted: number;
+  sectionCount: number;
   sections: LearnerCourseSectionProgress[];
 }
 
