@@ -15,6 +15,7 @@ import {
   StatLabel,
   StatNumber,
   Text,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo } from "react";
@@ -24,6 +25,11 @@ const DepartmentsPage = observer(() => {
   const { auth, companyStore } = stores;
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isSuperadmin = role === "superadmin";
+  const pageBg = useColorModeValue("gray.50", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.800");
+  const cardAltBg = useColorModeValue("gray.50", "gray.700");
+  const textColor = useColorModeValue("gray.600", "gray.300");
+  const hoverBg = useColorModeValue("white", "gray.700");
 
   useEffect(() => {
     if (isSuperadmin) {
@@ -62,13 +68,13 @@ const DepartmentsPage = observer(() => {
   }, [activeCompany]);
 
   return (
-    <Box minH="100vh" bg="gray.50" p={{ base: 4, md: 6 }}>
+    <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
       <Stack spacing={6}>
-        <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
+        <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
           <Flex justify="space-between" align={{ base: "start", md: "center" }} gap={4} wrap="wrap">
             <Box>
               <Heading size="md">Departments</Heading>
-              <Text mt={2} color="gray.600" maxW="3xl">
+              <Text mt={2} color={textColor} maxW="3xl">
                 Review the department structure for {activeCompany?.company_name || "the selected company"}.
                 The header company selector controls this workspace for superadmins.
               </Text>
@@ -94,19 +100,19 @@ const DepartmentsPage = observer(() => {
         ) : (
           <>
             <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-              <Box bg="white" borderWidth="1px" borderRadius="2xl" p={5} boxShadow="sm">
+              <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={5} boxShadow="sm">
                 <Stat>
                   <StatLabel>Total Departments</StatLabel>
                   <StatNumber>{departments.length}</StatNumber>
                 </Stat>
               </Box>
-              <Box bg="white" borderWidth="1px" borderRadius="2xl" p={5} boxShadow="sm">
+              <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={5} boxShadow="sm">
                 <Stat>
                   <StatLabel>Company</StatLabel>
                   <StatNumber fontSize="xl">{activeCompany?.company_name || "Not selected"}</StatNumber>
                 </Stat>
               </Box>
-              <Box bg="white" borderWidth="1px" borderRadius="2xl" p={5} boxShadow="sm">
+              <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={5} boxShadow="sm">
                 <Stat>
                   <StatLabel>Context</StatLabel>
                   <StatNumber fontSize="xl">{isSuperadmin ? "Cross-company view" : "Restricted scope"}</StatNumber>
@@ -114,7 +120,7 @@ const DepartmentsPage = observer(() => {
               </Box>
             </SimpleGrid>
 
-            <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
+            <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
               {departments.length === 0 ? (
                 <Alert status="info" borderRadius="xl">
                   <AlertIcon />
@@ -133,9 +139,9 @@ const DepartmentsPage = observer(() => {
                       borderWidth="1px"
                       borderRadius="xl"
                       p={5}
-                      bg="gray.50"
+                      bg={cardAltBg}
                       transition="all 0.2s"
-                      _hover={{ borderColor: "blue.200", bg: "white" }}
+                      _hover={{ borderColor: "blue.200", bg: hoverBg }}
                     >
                       <Stack spacing={3}>
                         <Flex justify="space-between" align="center" gap={3}>
@@ -146,7 +152,7 @@ const DepartmentsPage = observer(() => {
                             Department
                           </Badge>
                         </Flex>
-                        <Text color="gray.600" fontSize="sm">
+                        <Text color={textColor} fontSize="sm">
                           {department.code ? `Code: ${department.code}` : "Department code not configured"}
                         </Text>
                       </Stack>

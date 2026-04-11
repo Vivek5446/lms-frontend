@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { observer } from "mobx-react-lite";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useColorModeValue } from "@chakra-ui/react";
 import CourseList from "./CourseList";
 import CourseDetails from "./CourseDetails";
 import AssignCourseModal from "./components/AssignCourseModal";
@@ -17,6 +18,13 @@ import { isLearnerRole } from "@/app/config/utils/roleAccess";
 function CoursePage() {
   const [view, setView] = useState<"gallery" | "create" | "details">("gallery");
   const [activeCourse, setActiveCourse] = useState<CourseListItem | null>(null);
+  const pageBg = useColorModeValue("#F9FAFB", "#0F172A");
+  const cardBg = useColorModeValue("#FFFFFF", "#1f2937");
+  const surfaceBg = useColorModeValue("#FFFFFF", "#111827");
+  const borderColor = useColorModeValue("#E5E7EB", "#334155");
+  const titleColor = useColorModeValue("#111827", "#F8FAFC");
+  const textColor = useColorModeValue("#6B7280", "#CBD5E1");
+  const mutedTextColor = useColorModeValue("#9CA3AF", "#94A3B8");
   const [playerSection, setPlayerSection] = useState<CourseLaunchSection | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const router = useRouter();
@@ -125,16 +133,16 @@ function CoursePage() {
 
   // ─── Gallery View ──────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: "#F9FAFB", padding: "32px 24px" }}>
+    <div style={{ minHeight: "100vh", background: pageBg, padding: "32px 24px" }}>
       <div>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111827" }}>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: titleColor }}>
               Course Hub 🚀
             </h1>
-            <p style={{ margin: "4px 0 0", fontSize: 15, color: "#6B7280" }}>
+            <p style={{ margin: "4px 0 0", fontSize: 15, color: textColor }}>
               Manage your interactive learning adventures
             </p>
           </div>
@@ -157,9 +165,9 @@ function CoursePage() {
                 gap: 8,
                 padding: "12px 18px",
                 borderRadius: 14,
-                border: "1px solid #CBD5E1",
-                background: "#FFFFFF",
-                color: "#1E293B",
+                border: `1px solid ${borderColor}`,
+                background: cardBg,
+                color: titleColor,
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -209,10 +217,10 @@ function CoursePage() {
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         ) : courseStore.courses.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "80px 0", background: "#fff", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+          <div style={{ textAlign: "center", padding: "80px 0", background: surfaceBg, borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <p style={{ fontSize: 40, marginBottom: 8 }}>📚</p>
-            <p style={{ fontSize: 18, fontWeight: 600, color: "#374151" }}>No courses yet</p>
-            <p style={{ fontSize: 14, color: "#9CA3AF", marginBottom: 24 }}>Create your first course to get started!</p>
+            <p style={{ fontSize: 18, fontWeight: 600, color: titleColor }}>No courses yet</p>
+            <p style={{ fontSize: 14, color: mutedTextColor, marginBottom: 24 }}>Create your first course to get started!</p>
             <button
               onClick={() => setView("create")}
               style={{
@@ -247,10 +255,10 @@ function CoursePage() {
                   whileHover={{ y: -4 }}
                   onClick={() => handleOpenDetails(course)}
                   style={{
-                    background: "#fff",
+                    background: surfaceBg,
                     borderRadius: 16,
                     overflow: "hidden",
-                    border: "1px solid #E5E7EB",
+                    border: `1px solid ${borderColor}`,
                     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                     transition: "box-shadow 0.2s",
                     cursor: "pointer",
@@ -276,7 +284,7 @@ function CoursePage() {
                     {course.scormFilePath && (
                       <span style={{
                         position: "absolute", top: 10, left: 10,
-                        background: "#fff", color: "#4F46E5", padding: "3px 10px", borderRadius: 20,
+                        background: surfaceBg, color: "#4F46E5", padding: "3px 10px", borderRadius: 20,
                         fontSize: 11, fontWeight: 700, boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                       }}>
                         SCORM
@@ -286,10 +294,10 @@ function CoursePage() {
 
                   {/* Content */}
                   <div style={{ padding: "16px 20px 20px" }}>
-                    <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 600, color: "#111827" }}>
+                    <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 600, color: titleColor }}>
                       {course.title}
                     </h3>
-                    <div style={{ display: "flex", gap: 12, marginBottom: 14, fontSize: 12, color: "#9CA3AF" }}>
+                    <div style={{ display: "flex", gap: 12, marginBottom: 14, fontSize: 12, color: mutedTextColor }}>
                       <span>{course.curriculum?.totalModules || 0} modules</span>
                       <span>•</span>
                       <span>{course.commerce?.pricingModel === "paid"
@@ -307,9 +315,9 @@ function CoursePage() {
                           flex: 1,
                           padding: "8px 0",
                           borderRadius: 10,
-                          border: "1px solid #E5E7EB",
-                          background: "#fff",
-                          color: "#374151",
+                          border: `1px solid ${borderColor}`,
+                          background: surfaceBg,
+                          color: titleColor,
                           fontWeight: 600,
                           fontSize: 13,
                           cursor: "pointer",
@@ -327,8 +335,8 @@ function CoursePage() {
                         style={{
                           padding: "8px 14px",
                           borderRadius: 10,
-                          border: "1px solid #FCA5A5",
-                          background: "#FFF",
+                          border: `1px solid ${borderColor}`,
+                          background: surfaceBg,
                           color: "#EF4444",
                           fontWeight: 600,
                           fontSize: 13,

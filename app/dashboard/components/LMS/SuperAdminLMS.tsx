@@ -151,6 +151,7 @@ const StatCard = ({ label, value, icon: StatIcon, growth, color, isLoading, size
 };
 
 const SuperAdminLMS = observer(() => {
+  const pageBg = useColorModeValue("gray.50", "gray.900");
   const sectionBg = useColorModeValue("white", "gray.800");
   const headerBg = useColorModeValue("gray.50", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -651,7 +652,7 @@ const SuperAdminLMS = observer(() => {
   }
 
   return (
-    <Box p={6}>
+    <Box p={6} bg={pageBg} minH="100vh">
       <VStack spacing={6} align="stretch">
         {/* Main Header */}
         <MotionFlex

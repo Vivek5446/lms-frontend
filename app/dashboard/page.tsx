@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Center, Container, Spinner, Text, VStack } from "@chakra-ui/react";
+import { Box, Center, Container, Spinner, Text, VStack, useColorModeValue } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -52,8 +52,10 @@ const Page = observer(() => {
     );
   };
 
+  const pageBg = useColorModeValue("gray.50", "gray.900");
+
   return (
-    <Box minH="100vh" bg="gray.50">
+    <Box minH="100vh" bg={pageBg}>
       <Container maxW="container.2xl" py={8}>
         <RenderDashboard />
       </Container>

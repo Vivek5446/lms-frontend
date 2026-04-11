@@ -21,6 +21,7 @@ import {
   Th,
   Thead,
   Tr,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo, useState } from "react";
@@ -56,6 +57,10 @@ const CourseAssignmentsAuditPage = observer(() => {
   const { auth, companyStore } = stores;
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isSuperadmin = role === "superadmin";
+  const pageBg = useColorModeValue("gray.50", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.800");
+  const textColor = useColorModeValue("gray.600", "gray.300");
+  const surfaceBg = useColorModeValue("gray.50", "gray.700");
   const companyId = isSuperadmin ? companyStore.getActiveCompanyId() : auth.company;
   const [courseFilter, setCourseFilter] = useState("");
   const [userFilter, setUserFilter] = useState("");
@@ -100,11 +105,11 @@ const CourseAssignmentsAuditPage = observer(() => {
   }, [rows]);
 
   return (
-    <Box minH="100vh" bg="gray.50" p={{ base: 4, md: 6 }}>
+    <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
       <Stack spacing={6}>
-        <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
+        <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
           <Heading size="md">Assignment Audit</Heading>
-          <Text mt={2} color="gray.600">
+          <Text mt={2} color={textColor}>
             Trace direct and batch-based course assignments for the active company context.
           </Text>
         </Box>
@@ -121,7 +126,7 @@ const CourseAssignmentsAuditPage = observer(() => {
           </Alert>
         ) : (
           <>
-            <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
+            <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
               <HStack gap={4} align="end" flexWrap="wrap">
                 <FormControl maxW={{ base: "full", md: "260px" }}>
                   <FormLabel>Course</FormLabel>
@@ -148,11 +153,11 @@ const CourseAssignmentsAuditPage = observer(() => {
               </HStack>
             </Box>
 
-            <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 4, md: 5 }} boxShadow="sm" overflowX="auto">
+            <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 4, md: 5 }} boxShadow="sm" overflowX="auto">
               {courseStore.isCourseAssignmentAuditLoading ? (
                 <HStack justify="center" py={16}>
                   <Spinner />
-                  <Text color="gray.600">Loading assignment audit...</Text>
+                  <Text color={textColor}>Loading assignment audit...</Text>
                 </HStack>
               ) : rows.length === 0 ? (
                 <Alert status="info" borderRadius="xl">

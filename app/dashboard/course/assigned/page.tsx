@@ -29,6 +29,7 @@ import {
   Th,
   Thead,
   Tr,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo, useState } from "react";
@@ -65,6 +66,10 @@ const AssignedCoursesPage = observer(() => {
   const { auth, companyStore } = stores;
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isSuperadmin = role === "superadmin";
+  const pageBg = useColorModeValue("gray.50", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.800");
+  const textColor = useColorModeValue("gray.600", "gray.300");
+  const surfaceBg = useColorModeValue("gray.50", "gray.700");
   const [courseFilter, setCourseFilter] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [userFilter, setUserFilter] = useState("");
@@ -180,13 +185,13 @@ const AssignedCoursesPage = observer(() => {
   };
 
   return (
-    <Box minH="100vh" bg="gray.50" p={{ base: 4, md: 6 }}>
+    <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
       <Stack spacing={6}>
-        <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
+        <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
           <Flex justify="space-between" align={{ base: "start", md: "center" }} gap={4} wrap="wrap">
             <Box>
               <Heading size="md">Assigned Courses</Heading>
-              <Text mt={2} color="gray.600">
+              <Text mt={2} color={textColor}>
                 Review what is already assigned to {activeCompany?.company_name || "the selected company"} and assign new courses from the full library without leaving this workspace.
               </Text>
             </Box>
@@ -216,7 +221,7 @@ const AssignedCoursesPage = observer(() => {
             <TabPanels>
               <TabPanel px={0} pt={6}>
                 <Stack spacing={6}>
-                  <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
+                  <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
                     <Flex gap={4} wrap="wrap">
                       <FormControl maxW={{ base: "full", md: "240px" }}>
                         <FormLabel>Course</FormLabel>
@@ -256,11 +261,11 @@ const AssignedCoursesPage = observer(() => {
                     </Flex>
                   </Box>
 
-                  <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 4, md: 5 }} boxShadow="sm" overflowX="auto">
+                  <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 4, md: 5 }} boxShadow="sm" overflowX="auto">
                     {courseStore.isAssignedCoursesLoading ? (
                       <HStack justify="center" py={16}>
                         <Spinner />
-                        <Text color="gray.600">Loading assigned courses...</Text>
+                        <Text color={textColor}>Loading assigned courses...</Text>
                       </HStack>
                     ) : filteredRows.length === 0 ? (
                       <Alert status="info" borderRadius="xl">
@@ -336,7 +341,7 @@ const AssignedCoursesPage = observer(() => {
 
               <TabPanel px={0} pt={6}>
                 <Stack spacing={6}>
-                  <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
+                  <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
                     <FormControl maxW={{ base: "full", md: "360px" }}>
                       <FormLabel>Search course library</FormLabel>
                       <Input
@@ -347,11 +352,11 @@ const AssignedCoursesPage = observer(() => {
                     </FormControl>
                   </Box>
 
-                  <Box bg="white" borderWidth="1px" borderRadius="2xl" p={{ base: 4, md: 5 }} boxShadow="sm" overflowX="auto">
+                  <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 4, md: 5 }} boxShadow="sm" overflowX="auto">
                     {courseStore.isLoading || courseStore.isAccessLoading ? (
                       <HStack justify="center" py={16}>
                         <Spinner />
-                        <Text color="gray.600">Loading course library...</Text>
+                        <Text color={textColor}>Loading course library...</Text>
                       </HStack>
                     ) : filteredLibraryCourses.length === 0 ? (
                       <Alert status="info" borderRadius="xl">
