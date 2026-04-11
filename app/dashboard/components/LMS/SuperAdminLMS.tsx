@@ -1,70 +1,48 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import {
-  Box,
-  Flex,
-  Text,
-  SimpleGrid,
-  Icon,
-  HStack,
-  VStack,
-  useColorModeValue,
-  Badge,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  Spinner,
   Alert,
   AlertIcon,
-  Divider,
+  Badge,
+  Box,
   Button,
-  ButtonGroup,
-  Progress,
+  Flex,
+  HStack,
+  Icon,
+  Spinner,
+  Text,
+  VStack,
+  useColorModeValue
 } from "@chakra-ui/react";
 import {
-  Users,
-  BookOpen,
-  DollarSign,
-  TrendingUp,
-  Activity,
-  Globe,
-  Award,
-  ArrowUpRight,
-  Star,
-  Building2,
-  GraduationCap,
-  Clock,
-  CheckCircle,
-  Zap,
-  BarChart3,
-  PieChart as PieChartIcon,
-} from "lucide-react";
-import {
-  Chart as ChartJS,
+  ArcElement,
+  BarElement,
   CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LineElement,
   LinearScale,
   PointElement,
-  LineElement,
-  ArcElement,
   Title,
   Tooltip,
-  Legend,
-  Filler,
-  BarElement,
 } from "chart.js";
-import { Line, Doughnut, Bar } from "react-chartjs-2";
 import { motion } from "framer-motion";
+import {
+  ArrowUpRight,
+  BarChart3,
+  BookOpen,
+  Building2,
+  Globe,
+  GraduationCap
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
+import { useEffect, useState } from "react";
 import stores from "../../../store/stores";
-import OverviewTab from "./components/superadmincomponent/OverviewTab";
-import CoursesAnalytics from "./components/superadmincomponent/CoursesAnalytics";
-import CompaniesAnalytics from "./components/superadmincomponent/CompaniesAnalytics";
 import BatchesAnalytics from "./components/superadmincomponent/BatchesAnalytics";
+import CompaniesAnalytics from "./components/superadmincomponent/CompaniesAnalytics";
+import CoursesAnalytics from "./components/superadmincomponent/CoursesAnalytics";
+import OverviewTab from "./components/superadmincomponent/OverviewTab";
 
 // Register ChartJS components
 ChartJS.register(
@@ -652,7 +630,7 @@ const SuperAdminLMS = observer(() => {
   }
 
   return (
-    <Box p={6} bg={pageBg} minH="100vh">
+    <Box bg={pageBg} minH="100vh">
       <VStack spacing={6} align="stretch">
         {/* Main Header */}
         <MotionFlex
