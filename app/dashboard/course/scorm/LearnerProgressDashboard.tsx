@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -38,6 +37,7 @@ import {
   TrendingUp,
   Video,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import ScormQuizReviewContent from "./ScormQuizReviewContent";
 import { clampLearningProgress, getLearningStatusMeta } from "./progressPresentation";
 

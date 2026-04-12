@@ -1,7 +1,8 @@
 import axios from "axios";
 import { makeAutoObservable, runInAction } from "mobx";
 
-const SCORM_CHUNK_SIZE_BYTES = 3.5 * 1024 * 1024;
+const COURSE_ASSET_CHUNK_SIZE_BYTES = 3.5 * 1024 * 1024;
+const COURSE_UPLOAD_PROGRESS_MAX = 82;
 
 export interface CourseListItem {
   _id: string;
@@ -242,13 +243,17 @@ interface CreateCourseInput {
   studyMaterialFiles: File[];
 }
 
-interface ChunkedScormUpload {
+interface ChunkedCourseUpload {
   uploadId: string;
   fileName: string;
   totalChunks: number;
   contentType: string;
   sizeInBytes: number;
 }
+
+type ChunkUploadFieldName = "scormChunkUploads" | "contentChunkUploads" | "studyMaterialChunkUploads";
+
+type ChunkedCourseUploadMap = Record<ChunkUploadFieldName, ChunkedCourseUpload[]>;
 
 const multipartRequestConfig = {
   headers: {
@@ -665,47 +670,90 @@ class CourseStoreClass {
     this.submissionDetail = "";
   };
 
-  private uploadScormFilesInChunks = async (files: File[]) => {
-    const uploads: ChunkedScormUpload[] = [];
-    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+  private uploadCourseFilesInChunks = async (
+    input: Pick<CreateCourseInput, "scormFiles" | "contentFiles" | "studyMaterialFiles">
+  ) => {
+    const uploadGroups: Array<{
+      key: ChunkUploadFieldName;
+      files: File[];
+      stageLabel: string;
+      assetLabel: string;
+    }> = [
+      {
+        key: "scormChunkUploads",
+        files: input.scormFiles,
+        stageLabel: "Uploading SCORM files",
+        assetLabel: "SCORM package",
+      },
+      {
+        key: "contentChunkUploads",
+        files: input.contentFiles,
+        stageLabel: "Uploading lesson media",
+        assetLabel: "lesson media",
+      },
+      {
+        key: "studyMaterialChunkUploads",
+        files: input.studyMaterialFiles,
+        stageLabel: "Uploading study materials",
+        assetLabel: "study material",
+      },
+    ];
+    const uploads: ChunkedCourseUploadMap = {
+      scormChunkUploads: [],
+      contentChunkUploads: [],
+      studyMaterialChunkUploads: [],
+    };
+    const totalBytes = uploadGroups.reduce(
+      (sum, group) => sum + group.files.reduce((fileSum, file) => fileSum + file.size, 0),
+      0
+    );
     let uploadedBytes = 0;
 
-    for (const file of files) {
-      const uploadId = createClientUploadId();
-      const totalChunks = Math.max(1, Math.ceil(file.size / SCORM_CHUNK_SIZE_BYTES));
+    if (totalBytes === 0) {
+      return uploads;
+    }
 
-      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
-        const start = chunkIndex * SCORM_CHUNK_SIZE_BYTES;
-        const end = Math.min(file.size, start + SCORM_CHUNK_SIZE_BYTES);
-        const chunk = file.slice(start, end);
-        const chunkFormData = new FormData();
+    for (const group of uploadGroups) {
+      for (const file of group.files) {
+        const uploadId = createClientUploadId();
+        const totalChunks = Math.max(1, Math.ceil(file.size / COURSE_ASSET_CHUNK_SIZE_BYTES));
 
-        chunkFormData.append("uploadId", uploadId);
-        chunkFormData.append("chunkIndex", String(chunkIndex));
-        chunkFormData.append("totalChunks", String(totalChunks));
-        chunkFormData.append("fileName", file.name);
-        chunkFormData.append("chunk", chunk, `${file.name}.part-${chunkIndex}`);
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
+          const start = chunkIndex * COURSE_ASSET_CHUNK_SIZE_BYTES;
+          const end = Math.min(file.size, start + COURSE_ASSET_CHUNK_SIZE_BYTES);
+          const chunk = file.slice(start, end);
+          const chunkFormData = new FormData();
 
-        await axios.post("/course/upload-chunk", chunkFormData, multipartRequestConfig);
+          chunkFormData.append("uploadId", uploadId);
+          chunkFormData.append("chunkIndex", String(chunkIndex));
+          chunkFormData.append("totalChunks", String(totalChunks));
+          chunkFormData.append("fileName", file.name);
+          chunkFormData.append("chunk", chunk, `${file.name}.part-${chunkIndex}`);
 
-        uploadedBytes += chunk.size;
-        const uploadRatio = totalBytes > 0 ? uploadedBytes / totalBytes : 1;
-        const progress = Math.min(74, Math.max(8, Math.round(uploadRatio * 74)));
+          await axios.post("/course/upload-chunk", chunkFormData, multipartRequestConfig);
 
-        runInAction(() => {
-          this.submissionProgress = progress;
-          this.submissionStage = "Uploading SCORM files";
-          this.submissionDetail = `Uploaded ${Math.round(uploadRatio * 100)}% of your course package.`;
+          uploadedBytes += chunk.size;
+          const uploadRatio = uploadedBytes / totalBytes;
+          const progress = Math.min(
+            COURSE_UPLOAD_PROGRESS_MAX,
+            Math.max(8, Math.round(uploadRatio * COURSE_UPLOAD_PROGRESS_MAX))
+          );
+
+          runInAction(() => {
+            this.submissionProgress = progress;
+            this.submissionStage = group.stageLabel;
+            this.submissionDetail = `${Math.round(uploadRatio * 100)}% complete. Uploading ${group.assetLabel}: ${file.name}`;
+          });
+        }
+
+        uploads[group.key].push({
+          uploadId,
+          fileName: file.name,
+          totalChunks,
+          contentType: file.type || "application/octet-stream",
+          sizeInBytes: file.size,
         });
       }
-
-      uploads.push({
-        uploadId,
-        fileName: file.name,
-        totalChunks,
-        contentType: file.type || "application/octet-stream",
-        sizeInBytes: file.size,
-      });
     }
 
     return uploads;
@@ -731,46 +779,49 @@ class CourseStoreClass {
     try {
       const formData = new FormData();
       formData.append("payload", JSON.stringify(input.payload));
+      const chunkUploads = await this.uploadCourseFilesInChunks(input);
+      const hasChunkedUploads = Object.values(chunkUploads).some((uploads) => uploads.length > 0);
 
       if (input.thumbnailFile) {
         formData.append("thumbnail", input.thumbnailFile);
       }
 
-      if (input.scormFiles.length > 0) {
-        const scormChunkUploads = await this.uploadScormFilesInChunks(input.scormFiles);
-        formData.append("scormChunkUploads", JSON.stringify(scormChunkUploads));
-
-        runInAction(() => {
-          this.submissionProgress = 80;
-          this.submissionStage = "Processing SCORM packages";
-          this.submissionDetail = "Extracting SCORM files, storing media assets, and creating the course record...";
-        });
+      if (chunkUploads.scormChunkUploads.length > 0) {
+        formData.append("scormChunkUploads", JSON.stringify(chunkUploads.scormChunkUploads));
       }
 
-      input.contentFiles.forEach((file) => {
-        formData.append("contentMedia", file);
-      });
+      if (chunkUploads.contentChunkUploads.length > 0) {
+        formData.append("contentChunkUploads", JSON.stringify(chunkUploads.contentChunkUploads));
+      }
 
-      input.studyMaterialFiles.forEach((file) => {
-        formData.append("studyMaterial", file);
-      });
+      if (chunkUploads.studyMaterialChunkUploads.length > 0) {
+        formData.append("studyMaterialChunkUploads", JSON.stringify(chunkUploads.studyMaterialChunkUploads));
+      }
+
+      if (hasChunkedUploads) {
+        runInAction(() => {
+          this.submissionProgress = 86;
+          this.submissionStage = "Creating course";
+          this.submissionDetail = "Finalizing uploaded assets, extracting SCORM packages, and saving the course.";
+        });
+      }
 
       const { data } = await axios.post("/course/create", formData, {
         ...multipartRequestConfig,
         onUploadProgress: (progressEvent) => {
           if (!progressEvent.total) {
             runInAction(() => {
-              this.submissionStage = input.scormFiles.length > 0 ? "Processing SCORM packages" : "Uploading course files";
-              this.submissionDetail = input.scormFiles.length > 0
+              this.submissionStage = hasChunkedUploads ? "Creating course" : "Uploading course files";
+              this.submissionDetail = hasChunkedUploads
                 ? "Finishing the course setup on the server..."
-                : "Sending your course media and PDF files to the server...";
+                : "Sending your course thumbnail and details to the server...";
             });
             return;
           }
 
           const ratio = progressEvent.loaded / progressEvent.total;
-          const progressFloor = input.scormFiles.length > 0 ? 80 : 8;
-          const progressCeiling = 88;
+          const progressFloor = hasChunkedUploads ? 86 : 8;
+          const progressCeiling = hasChunkedUploads ? 94 : 88;
           const progress = Math.min(
             progressCeiling,
             Math.max(progressFloor, Math.round(progressFloor + ratio * (progressCeiling - progressFloor)))
@@ -781,8 +832,10 @@ class CourseStoreClass {
             this.submissionProgress = progress;
             this.submissionStage = uploadCompleted ? "Processing course assets" : "Uploading files";
             this.submissionDetail = uploadCompleted
-              ? "Extracting SCORM packages, storing media/PDF assets, and creating the course record..."
-              : `Uploaded ${Math.round(ratio * 100)}% of your course files.`;
+              ? "Saving uploaded assets and creating the course record..."
+              : hasChunkedUploads
+                ? "Sending the final course request..."
+                : `Uploaded ${Math.round(ratio * 100)}% of your course files.`;
           });
         },
       });

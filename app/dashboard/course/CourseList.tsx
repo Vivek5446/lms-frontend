@@ -234,7 +234,7 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
 
             <div style={{ display: "flex", justifyContent: "space-between", gap: 16, fontSize: 13, color: "#64748B" }}>
               <span>{Math.max(courseStore.submissionProgress, 8)}% complete</span>
-              <span>SCORM packages take longer because they need extraction. MP4 and PDF files upload directly.</span>
+              <span>SCORM, MP4, and PDF files upload in smaller parts before the course is created.</span>
             </div>
           </div>
           <style>{`@keyframes course-submit-spin { to { transform: rotate(360deg); } }`}</style>
