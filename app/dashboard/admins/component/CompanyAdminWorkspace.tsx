@@ -34,6 +34,8 @@ import UserTable from "./users/UserTable";
 import DeleteData from "./users/component/DeleteUser";
 import { initialValues } from "./utils/constant";
 
+const isRealFile = (value: unknown): value is File => typeof File !== "undefined" && value instanceof File;
+
 // Compact summary card with smaller font sizes and reduced padding
 const SummaryCard = ({
   label,
@@ -136,7 +138,7 @@ const CompanyAdminWorkspace = ({
       setLoading(true);
       const values = { ...formData };
 
-      if (values.pic?.file) {
+      if (isRealFile(values.pic?.file)) {
         const buffer = await readFileAsBase64(values.pic.file);
         values.pic = {
           buffer,
@@ -186,7 +188,7 @@ const CompanyAdminWorkspace = ({
       setLoading(true);
       const formData: any = { ...values, company: company._id };
 
-      if (formData?.pic?.file && formData?.pic?.isAdd) {
+      if (isRealFile(formData?.pic?.file) && formData?.pic?.isAdd) {
         const buffer = await readFileAsBase64(formData?.pic?.file);
         formData.pic = {
           buffer,

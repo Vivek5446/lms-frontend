@@ -92,6 +92,8 @@ const toUtcISOString = (date: string, time: string) => {
   ).toISOString();
 };
 
+const isRealFile = (value: unknown): value is File => typeof File !== "undefined" && value instanceof File;
+
 const SectionCard = ({ title, children }: { title: string; children: any }) => (
   <Card
     variant="outline"
@@ -190,7 +192,7 @@ const EditAppointmentForm = observer(
       try {
         setFormLoading(true);
         const values = { ...formData };
-        if (values.pic?.file && values.pic?.file?.length !== 0) {
+        if (isRealFile(values.pic?.file)) {
           const buffer = await readFileAsBase64(values.pic?.file);
           const fileData = {
             buffer: buffer,
