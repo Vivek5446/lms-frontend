@@ -6,7 +6,6 @@ import {
   LayoutTemplate,// Structure
   TrendingUp,    // Progress
   CreditCard,    // Pricing
-  GraduationCap, // Learners
   Eye,           // Preview
   Send,          // Publish
 } from "lucide-react";
@@ -16,7 +15,6 @@ const STEPS = [
   { label: "Structure",  icon: LayoutTemplate },
   { label: "Progress",   icon: TrendingUp },
   { label: "Pricing",    icon: CreditCard },
-  { label: "Learners",   icon: GraduationCap },
   { label: "Preview",    icon: Eye },
   { label: "Publish",    icon: Send },
 ];
@@ -27,7 +25,6 @@ const STEP_COLORS = [
   "#10B981", // emerald
   "#F59E0B", // amber
   "#EF4444", // red
-  "#EC489A", // pink
   "#06B6D4", // cyan
   "#6B7280", // gray
 ];

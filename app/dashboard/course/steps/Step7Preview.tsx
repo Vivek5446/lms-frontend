@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Award, BookOpen, Clock, Eye, IndianRupee, Layers, Users } from "lucide-react";
+import { Award, BookOpen, Clock, Eye, IndianRupee, Layers } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { Badge } from "@/components/ui/badge";
 import { CourseFormState, formatInr, getFileKindLabel } from "../courseForm";
@@ -13,7 +13,6 @@ interface Step7PreviewProps {
 
 export default function Step7Preview({ courseForm, onProgressChange }: Step7PreviewProps) {
   const modules = courseForm.structure.modules;
-  const learnerCount = courseForm.learners.selectedLearners.length;
   const totalSections = modules.reduce((count, module) => count + module.sections.length, 0);
   const totalStudyMaterials = modules.reduce((count, module) => {
     return (
@@ -87,10 +86,9 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
               {[
                 { icon: Layers, label: "Structure", value: `${modules.length}M / ${totalSections}S` },
                 { icon: Clock, label: "Access", value: accessLabel },
-                { icon: Users, label: "Learners", value: String(learnerCount) },
                 {
                   icon: Award,
-                  label: "Certificate / PDFs",
+                  label: "Certificate / Assets",
                   value: `${courseForm.progress.certificateEnabled ? "Yes" : "No"} / ${totalStudyMaterials}`,
                 },
               ].map(({ icon: Icon, label, value }) => (

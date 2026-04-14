@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { Building2, IndianRupee } from "lucide-react";
+import { IndianRupee } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { FormField } from "./component/FormField";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { COMPANIES, CoursePricingState } from "../courseForm";
+import { CoursePricingState } from "../courseForm";
 
 interface Step4PricingProps {
   value: CoursePricingState;
@@ -21,19 +20,9 @@ export default function Step4Pricing({ value, onChange, onProgressChange }: Step
 
     if (!value.isPaid || value.amount.trim()) filled++;
     if (!value.isPaid || value.accessDurationDays.trim()) filled++;
-    if (value.selectedCompanies.length > 0) filled++;
 
-    onProgressChange?.(Math.round((filled / 4) * 100));
+    onProgressChange?.(Math.round((filled / 3) * 100));
   }, [value, onProgressChange]);
-
-  const toggleCompany = (company: string) => {
-    onChange({
-      ...value,
-      selectedCompanies: value.selectedCompanies.includes(company)
-        ? value.selectedCompanies.filter((item) => item !== company)
-        : [...value.selectedCompanies, company],
-    });
-  };
 
   return (
     <StepWrapper
@@ -41,7 +30,7 @@ export default function Step4Pricing({ value, onChange, onProgressChange }: Step
       title="Pricing & Access"
       subtitle={
         <span className="inline-flex items-center gap-1.5">
-          Set up pricing and who gets access
+          Set up pricing and access duration
           <IndianRupee className="w-4 h-4" />
         </span>
       }
@@ -92,32 +81,6 @@ export default function Step4Pricing({ value, onChange, onProgressChange }: Step
           )}
         </div>
 
-        <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-step-4/15 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-step-4" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Assign to Companies</h3>
-              <p className="text-sm text-muted-foreground">Grant access to specific organizations</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {COMPANIES.map((company) => (
-              <Badge
-                key={company}
-                variant={value.selectedCompanies.includes(company) ? "default" : "outline"}
-                className={`cursor-pointer rounded-full px-4 py-2 text-sm transition-all ${
-                  value.selectedCompanies.includes(company) ? "bg-step-4 text-primary-foreground" : "hover:bg-muted"
-                }`}
-                onClick={() => toggleCompany(company)}
-              >
-                <Building2 className="w-3 h-3 mr-1.5" />
-                {company}
-              </Badge>
-            ))}
-          </div>
-        </div>
       </div>
     </StepWrapper>
   );

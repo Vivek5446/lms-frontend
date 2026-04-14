@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   CircleDashed,
   FileText,
-  GraduationCap,
   IndianRupee,
   Layers,
   Pencil,
@@ -74,21 +73,12 @@ export default function Step8Review({
       icon: IndianRupee,
       label: "Pricing",
       status: `${courseForm.pricing.isPaid ? formatInr(courseForm.pricing.amount) : "Free"} - ${
-        courseForm.pricing.selectedCompanies.length
-      } compan${courseForm.pricing.selectedCompanies.length === 1 ? "y" : "ies"}`,
+        courseForm.pricing.accessDurationDays.trim() ? `${courseForm.pricing.accessDurationDays} day access` : "Open access"
+      }`,
       colorClass: "text-step-4",
       bgClass: "bg-step-4/15",
       complete: true,
       stepIndex: 3,
-    },
-    {
-      icon: GraduationCap,
-      label: "Learners",
-      status: `${courseForm.learners.selectedLearners.length} selected${courseForm.learners.csvFile ? " - CSV attached" : ""}`,
-      colorClass: "text-step-6",
-      bgClass: "bg-step-6/15",
-      complete: courseForm.learners.selectedLearners.length > 0 || Boolean(courseForm.learners.csvFile),
-      stepIndex: 4,
     },
   ];
 

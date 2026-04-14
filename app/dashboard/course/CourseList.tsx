@@ -9,13 +9,12 @@ import Step1BasicInfo from "./steps/Step1BasicInfo";
 import Step2Structure from "./steps/Step2Structure";
 import Step3Progress from "./steps/Step3Progress";
 import Step4Pricing from "./steps/Step4Pricing";
-import Step6Learners from "./steps/Step6Learners";
 import Step7Preview from "./steps/Step7Preview";
 import Step8Review from "./steps/Step8Review";
 import { CourseFormState, buildCoursePayload, collectCourseUploadFiles, initialCourseFormState } from "./courseForm";
 import { courseStore } from "@/app/store/courseStore/courseStore";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 interface CourseListProps {
   onSuccess?: () => void;
@@ -123,20 +122,12 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
         );
       case 4:
         return (
-          <Step6Learners
-            learners={courseForm.learners}
-            selectedCompanies={courseForm.pricing.selectedCompanies}
+          <Step7Preview
+            courseForm={courseForm}
             onProgressChange={(progress) => updateStepProgress(4, progress)}
           />
         );
       case 5:
-        return (
-          <Step7Preview
-            courseForm={courseForm}
-            onProgressChange={(progress) => updateStepProgress(5, progress)}
-          />
-        );
-      case 6:
         return (
           <Step8Review
             courseForm={courseForm}

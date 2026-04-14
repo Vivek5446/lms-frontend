@@ -3,8 +3,6 @@
 export const LANGUAGES = ["English", "Spanish", "French", "German", "Hindi", "Arabic", "Chinese"];
 export const CATEGORIES = ["Technology", "Business", "Design", "Marketing", "HR", "Compliance", "Leadership"];
 export const LEVELS = ["Beginner", "Intermediate", "Advanced", "Expert"];
-export const COMPANIES = ["Acme Corp", "TechStart Inc", "GlobalEd Ltd", "Innovate Co", "LearnHub"];
-export const AVAILABLE_LEARNERS = ["Alice Johnson", "Bob Smith", "Carol Davis", "David Lee", "Emma Wilson", "Frank Chen"];
 
 export type QuizMode = "per-module" | "final";
 export type StoredFileKind = "image" | "video" | "document" | "scorm" | "zip" | "spreadsheet" | "other";
@@ -66,12 +64,6 @@ export interface CoursePricingState {
   amount: string;
   currency: "INR";
   accessDurationDays: string;
-  selectedCompanies: string[];
-}
-
-export interface CourseLearnersState {
-  selectedLearners: string[];
-  csvFile: StoredFile | null;
 }
 
 export interface CourseFormState {
@@ -79,7 +71,6 @@ export interface CourseFormState {
   structure: CourseStructureState;
   progress: CourseProgressState;
   pricing: CoursePricingState;
-  learners: CourseLearnersState;
 }
 
 function createClientId() {
@@ -201,11 +192,6 @@ export const initialCourseFormState: CourseFormState = {
     amount: "",
     currency: "INR",
     accessDurationDays: "",
-    selectedCompanies: [],
-  },
-  learners: {
-    selectedLearners: [],
-    csvFile: null,
   },
 };
 
@@ -357,20 +343,10 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
       currency: courseForm.pricing.currency,
       amountInRupees: amount,
       accessDurationDays,
-      companyAccess: courseForm.pricing.selectedCompanies,
-    },
-    enrollment: {
-      learnerSelection: {
-        totalSelected: courseForm.learners.selectedLearners.length,
-        selectedLearners: courseForm.learners.selectedLearners,
-        csvImport: summarizeFile(courseForm.learners.csvFile),
-      },
     },
     meta: {
       moduleCount: courseForm.structure.modules.length,
       sectionCount: totalSections,
-      learnerCount: courseForm.learners.selectedLearners.length,
-      companyCount: courseForm.pricing.selectedCompanies.length,
     },
   };
 }
