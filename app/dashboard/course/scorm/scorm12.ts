@@ -2,6 +2,8 @@
 
 import LZString from "lz-string";
 
+export type ScormVersion = "1.2" | "2004";
+
 export type ScormTrackingContext = {
   userId?: string | null;
   courseId?: string | null;
@@ -13,10 +15,14 @@ export type ScormTrackingContext = {
 export type ScormProgressSnapshot = {
   lessonStatus?: string;
   score?: number | null;
+  progress?: number | null;
   lessonLocation?: string;
   suspendData?: string;
   sessionTime?: string;
   totalTime?: string;
+  completionStatus?: string;
+  successStatus?: string;
+  progressMeasure?: number | null;
 };
 
 export type ScormInteractionPayload = {
@@ -39,7 +45,11 @@ export type ScormTrackingPayload = {
   courseId: string;
   moduleId: string;
   sectionId: string;
+  scorm_version: ScormVersion;
   lesson_status: string;
+  completion_status: string;
+  success_status: string;
+  progress_measure: number | null;
   score: number | null;
   lesson_location: string;
   suspend_data: string;
@@ -56,6 +66,8 @@ type CreateScorm12ApiOptions = {
 };
 
 const DEFAULT_SCORM_TIME = "00:00:00";
+const DEFAULT_SCORM_2004_TIME = "PT0H0M0S";
+const COMPLETED_STATUSES = new Set(["completed", "passed"]);
 
 const ERROR_MESSAGES: Record<string, string> = {
   "0": "No error",
@@ -76,6 +88,293 @@ function normalizeScore(value: unknown) {
 
   const numericValue = Number(normalizedValue);
   return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function normalizeProgressMeasure(value: unknown) {
+  const numericValue = normalizeScore(value);
+  if (numericValue === null) {
+    return null;
+  }
+
+  const normalizedValue = numericValue > 1 ? numericValue / 100 : numericValue;
+  return Math.max(0, Math.min(1, Math.round(normalizedValue * 10000) / 10000));
+}
+
+function parseScorm12Time(value: string | null | undefined) {
+  const normalizedValue = normalizeString(value);
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const match = normalizedValue.match(/^(\d{1,4}):([0-5]?\d):([0-5]?\d)(?:\.(\d{1,2}))?$/);
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3]);
+  const centiseconds = Number((match[4] || "").padEnd(2, "0").slice(0, 2) || "0");
+
+  return ((((hours * 60) + minutes) * 60) + seconds) * 100 + centiseconds;
+}
+
+function parseScorm2004Time(value: string | null | undefined) {
+  const normalizedValue = normalizeString(value).toUpperCase();
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const match = normalizedValue.match(
+    /^P(?:\d+Y)?(?:\d+M)?(?:\d+D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/
+  );
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1] || 0);
+  const minutes = Number(match[2] || 0);
+  const seconds = Number(match[3] || 0);
+  const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+
+  return Number.isFinite(totalSeconds) ? Math.round(totalSeconds * 100) : null;
+}
+
+function parseScormTime(value: string | null | undefined) {
+  return parseScorm12Time(value) ?? parseScorm2004Time(value);
+}
+
+function formatScorm12Time(totalCentiseconds: number | null | undefined) {
+  if (!Number.isFinite(totalCentiseconds) || totalCentiseconds === null || totalCentiseconds === undefined) {
+    return DEFAULT_SCORM_TIME;
+  }
+
+  const safeValue = Math.max(0, Math.floor(totalCentiseconds));
+  const hours = Math.floor(safeValue / 360000);
+  const remainderAfterHours = safeValue % 360000;
+  const minutes = Math.floor(remainderAfterHours / 6000);
+  const remainderAfterMinutes = remainderAfterHours % 6000;
+  const seconds = Math.floor(remainderAfterMinutes / 100);
+  const centiseconds = remainderAfterMinutes % 100;
+
+  const baseValue = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return centiseconds > 0 ? `${baseValue}.${String(centiseconds).padStart(2, "0")}` : baseValue;
+}
+
+function formatScorm2004Time(totalCentiseconds: number | null | undefined) {
+  if (!Number.isFinite(totalCentiseconds) || totalCentiseconds === null || totalCentiseconds === undefined) {
+    return DEFAULT_SCORM_2004_TIME;
+  }
+
+  const safeValue = Math.max(0, Math.floor(totalCentiseconds));
+  const totalSeconds = safeValue / 100;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secondsValue = totalSeconds - (hours * 3600) - (minutes * 60);
+  const secondsLabel = Number.isInteger(secondsValue)
+    ? String(secondsValue)
+    : secondsValue.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+
+  return `PT${hours}H${minutes}M${secondsLabel}S`;
+}
+
+function toScorm12Time(value: unknown, fallback = DEFAULT_SCORM_TIME) {
+  const parsedValue = parseScormTime(normalizeString(value));
+  return parsedValue === null ? fallback : formatScorm12Time(parsedValue);
+}
+
+function toScorm2004Time(value: unknown, fallback = DEFAULT_SCORM_2004_TIME) {
+  const parsedValue = parseScormTime(normalizeString(value));
+  return parsedValue === null ? fallback : formatScorm2004Time(parsedValue);
+}
+
+function normalizeCompletionStatus(value: unknown) {
+  const normalizedValue = normalizeString(value)
+    .toLowerCase()
+    .replace(/_/g, " ");
+
+  if (
+    normalizedValue === "completed" ||
+    normalizedValue === "incomplete" ||
+    normalizedValue === "not attempted" ||
+    normalizedValue === "unknown"
+  ) {
+    return normalizedValue;
+  }
+
+  return "";
+}
+
+function normalizeSuccessStatus(value: unknown) {
+  const normalizedValue = normalizeString(value).toLowerCase();
+  if (normalizedValue === "passed" || normalizedValue === "failed" || normalizedValue === "unknown") {
+    return normalizedValue;
+  }
+
+  return "";
+}
+
+function mapLessonStatusTo2004Statuses(lessonStatus: unknown) {
+  const normalizedLessonStatus = normalizeString(lessonStatus).toLowerCase();
+
+  if (normalizedLessonStatus === "passed") {
+    return {
+      completionStatus: "completed",
+      successStatus: "passed",
+    };
+  }
+
+  if (normalizedLessonStatus === "failed") {
+    return {
+      completionStatus: "completed",
+      successStatus: "failed",
+    };
+  }
+
+  if (normalizedLessonStatus === "completed") {
+    return {
+      completionStatus: "completed",
+      successStatus: "unknown",
+    };
+  }
+
+  if (normalizedLessonStatus === "incomplete" || normalizedLessonStatus === "browsed") {
+    return {
+      completionStatus: "incomplete",
+      successStatus: "unknown",
+    };
+  }
+
+  return {
+    completionStatus: "not attempted",
+    successStatus: "unknown",
+  };
+}
+
+function map2004ToLessonStatus(options: {
+  completionStatus?: unknown;
+  successStatus?: unknown;
+  fallbackLessonStatus?: unknown;
+}) {
+  const successStatus = normalizeSuccessStatus(options.successStatus);
+  const completionStatus = normalizeCompletionStatus(options.completionStatus);
+
+  if (successStatus === "passed") {
+    return "passed";
+  }
+
+  if (successStatus === "failed") {
+    return "failed";
+  }
+
+  if (completionStatus === "completed") {
+    return "completed";
+  }
+
+  if (completionStatus === "incomplete") {
+    return "incomplete";
+  }
+
+  if (completionStatus === "not attempted") {
+    return "not_attempted";
+  }
+
+  return normalizeString(options.fallbackLessonStatus).toLowerCase() || "not_attempted";
+}
+
+function toScaledScore(score: number | null) {
+  if (score === null || score === undefined || !Number.isFinite(score)) {
+    return "";
+  }
+
+  const normalizedValue = score > 1 ? score / 100 : score;
+  return String(Math.max(0, Math.min(1, normalizedValue)));
+}
+
+function resolveRawScore(state: Record<string, string>, scormVersion: ScormVersion) {
+  const rawScoreKeys = scormVersion === "2004"
+    ? ["cmi.score.raw", "cmi.core.score.raw"]
+    : ["cmi.core.score.raw", "cmi.score.raw"];
+
+  for (const key of rawScoreKeys) {
+    const rawScore = normalizeScore(state[key]);
+    if (rawScore !== null) {
+      return rawScore;
+    }
+  }
+
+  const scaledScore = normalizeScore(state["cmi.score.scaled"]);
+  if (scaledScore === null) {
+    return null;
+  }
+
+  return scaledScore <= 1 ? Math.round(scaledScore * 10000) / 100 : scaledScore;
+}
+
+function readFirstStateValue(state: Record<string, string>, keys: string[]) {
+  for (const key of keys) {
+    const value = normalizeString(state[key]);
+    if (value) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function readVersionedStateValue(
+  state: Record<string, string>,
+  scormVersion: ScormVersion,
+  scorm12Keys: string[],
+  scorm2004Keys: string[]
+) {
+  return scormVersion === "2004"
+    ? readFirstStateValue(state, [...scorm2004Keys, ...scorm12Keys])
+    : readFirstStateValue(state, [...scorm12Keys, ...scorm2004Keys]);
+}
+
+function extractLocationProgress(value: unknown) {
+  const normalizedValue = normalizeString(value);
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const match = normalizedValue.match(/^(\d+(?:\.\d+)?)%?$/);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  const numericValue = Number(match[1]);
+  if (!Number.isFinite(numericValue)) {
+    return null;
+  }
+
+  return Math.max(0, Math.min(100, numericValue));
+}
+
+function resolveProgressMeasure(
+  state: Record<string, string>,
+  lessonStatus: string,
+  scormVersion: ScormVersion
+) {
+  const directProgressMeasure = normalizeProgressMeasure(state["cmi.progress_measure"]);
+  if (directProgressMeasure !== null) {
+    return directProgressMeasure;
+  }
+
+  const locationProgress = extractLocationProgress(
+    readVersionedStateValue(
+      state,
+      scormVersion,
+      ["cmi.core.lesson_location"],
+      ["cmi.location"]
+    )
+  );
+  if (locationProgress !== null) {
+    return Math.max(0, Math.min(1, locationProgress / 100));
+  }
+
+  return COMPLETED_STATUSES.has(lessonStatus) ? 1 : null;
 }
 
 function normalizeInteractionType(value: unknown) {
@@ -414,7 +713,7 @@ function extractScormInteractions(state: Record<string, string>) {
       currentInteraction.learnerResponse = normalizeString(value);
     } else if (propertyPath === "latency") {
       currentInteraction.latency = normalizeString(value);
-    } else if (propertyPath === "time") {
+    } else if (propertyPath === "time" || propertyPath === "timestamp") {
       currentInteraction.time = normalizeString(value);
     } else if (propertyPath === "weighting") {
       currentInteraction.maxMarks = normalizeScore(value);
@@ -510,19 +809,43 @@ function getCorrectResponseCount(state: Record<string, string>, interactionIndex
 export function buildScorm12InitialState(options: {
   context: ScormTrackingContext;
   progress?: ScormProgressSnapshot | null;
+  includeSessionTime?: boolean;
 }) {
   const progress = options.progress || null;
-
-  return {
+  const lessonStatus = normalizeString(progress?.lessonStatus).toLowerCase() || "not_attempted";
+  const scorm2004Statuses = mapLessonStatusTo2004Statuses(lessonStatus);
+  const completionStatus = normalizeCompletionStatus(progress?.completionStatus) || scorm2004Statuses.completionStatus;
+  const successStatus = normalizeSuccessStatus(progress?.successStatus) || scorm2004Statuses.successStatus;
+  const progressMeasure = normalizeProgressMeasure(progress?.progressMeasure ?? progress?.progress)
+    ?? (COMPLETED_STATUSES.has(lessonStatus) ? 1 : null);
+  const score = normalizeScore(progress?.score);
+  const state: Record<string, string> = {
     "cmi.core.student_id": normalizeString(options.context.userId),
     "cmi.core.student_name": normalizeString(options.context.learnerName),
-    "cmi.core.lesson_status": normalizeString(progress?.lessonStatus) || "not_attempted",
-    "cmi.core.score.raw": progress?.score === null || progress?.score === undefined ? "" : String(progress.score),
+    "cmi.core.lesson_status": lessonStatus,
+    "cmi.core.lesson_mode": "normal",
+    "cmi.core.score.raw": score === null ? "" : String(score),
     "cmi.core.lesson_location": normalizeString(progress?.lessonLocation),
     "cmi.suspend_data": normalizeString(progress?.suspendData),
-    "cmi.core.session_time": DEFAULT_SCORM_TIME,
-    "cmi.core.total_time": normalizeString(progress?.totalTime) || DEFAULT_SCORM_TIME,
+    "cmi.core.total_time": toScorm12Time(progress?.totalTime),
+    "cmi.learner_id": normalizeString(options.context.userId),
+    "cmi.learner_name": normalizeString(options.context.learnerName),
+    "cmi.mode": "normal",
+    "cmi.completion_status": completionStatus,
+    "cmi.success_status": successStatus,
+    "cmi.location": normalizeString(progress?.lessonLocation),
+    "cmi.total_time": toScorm2004Time(progress?.totalTime),
+    "cmi.progress_measure": progressMeasure === null ? "" : String(progressMeasure),
+    "cmi.score.raw": score === null ? "" : String(score),
+    "cmi.score.scaled": toScaledScore(score),
   };
+
+  if (options.includeSessionTime !== false) {
+    state["cmi.core.session_time"] = DEFAULT_SCORM_TIME;
+    state["cmi.session_time"] = DEFAULT_SCORM_2004_TIME;
+  }
+
+  return state;
 }
 
 export function createScorm12Api(options: CreateScorm12ApiOptions) {
@@ -532,6 +855,7 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
 
   let initialized = false;
   let lastError = "0";
+  let activeVersion: ScormVersion | null = null;
 
   const buildTrackingPayload = (): ScormTrackingPayload | null => {
     const userId = normalizeString(options.context.userId);
@@ -547,18 +871,66 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
     const interactions = nativeInteractions.length
       ? enrichNativeInteractions(nativeInteractions, fallbackInteractions)
       : fallbackInteractions;
+    const inferredVersion = activeVersion
+      || (
+        normalizeCompletionStatus(state["cmi.completion_status"])
+        || normalizeSuccessStatus(state["cmi.success_status"])
+        || normalizeString(state["cmi.location"])
+        || normalizeString(state["cmi.progress_measure"])
+          ? "2004"
+          : "1.2"
+      );
+    const completionStatus = normalizeCompletionStatus(state["cmi.completion_status"]);
+    const successStatus = normalizeSuccessStatus(state["cmi.success_status"]);
+    const lessonStatus = inferredVersion === "2004"
+      ? map2004ToLessonStatus({
+          completionStatus,
+          successStatus,
+          fallbackLessonStatus: state["cmi.core.lesson_status"],
+        })
+      : normalizeString(state["cmi.core.lesson_status"]).toLowerCase()
+        || map2004ToLessonStatus({
+            completionStatus,
+            successStatus,
+          });
+    const progressMeasure = resolveProgressMeasure(state, lessonStatus, inferredVersion);
 
     return {
       userId,
       courseId,
       moduleId: normalizeString(options.context.moduleId),
       sectionId: normalizeString(options.context.sectionId),
-      lesson_status: normalizeString(state["cmi.core.lesson_status"]) || "not_attempted",
-      score: normalizeScore(state["cmi.core.score.raw"]),
-      lesson_location: normalizeString(state["cmi.core.lesson_location"]),
+      scorm_version: inferredVersion,
+      lesson_status: lessonStatus || "not_attempted",
+      completion_status: completionStatus || mapLessonStatusTo2004Statuses(lessonStatus).completionStatus,
+      success_status: successStatus || mapLessonStatusTo2004Statuses(lessonStatus).successStatus,
+      progress_measure: progressMeasure,
+      score: resolveRawScore(state, inferredVersion),
+      lesson_location: readVersionedStateValue(
+        state,
+        inferredVersion,
+        ["cmi.core.lesson_location"],
+        ["cmi.location"]
+      ),
       suspend_data: suspendData,
-      session_time: normalizeString(state["cmi.core.session_time"]) || DEFAULT_SCORM_TIME,
-      total_time: normalizeString(state["cmi.core.total_time"]) || DEFAULT_SCORM_TIME,
+      session_time: toScorm12Time(
+        readVersionedStateValue(
+          state,
+          inferredVersion,
+          ["cmi.core.session_time"],
+          ["cmi.session_time"]
+        ),
+        DEFAULT_SCORM_TIME
+      ),
+      total_time: toScorm12Time(
+        readVersionedStateValue(
+          state,
+          inferredVersion,
+          ["cmi.core.total_time"],
+          ["cmi.total_time"]
+        ),
+        DEFAULT_SCORM_TIME
+      ),
       interactions: interactions.filter((interaction) => shouldPersistInteraction(interaction)),
     };
   };
@@ -575,6 +947,7 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
   const api = {
     LMSInitialize: () => {
       initialized = true;
+      activeVersion = "1.2";
       lastError = "0";
       return "true";
     },
@@ -584,9 +957,9 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
         return "false";
       }
 
-      initialized = false;
       lastError = "0";
       fireAndForget(options.onFinish);
+      initialized = false;
       return "true";
     },
     LMSGetValue: (key: string) => {
@@ -615,6 +988,7 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
         return "false";
       }
 
+      activeVersion = "1.2";
       state[key] = String(value ?? "");
       lastError = "0";
       return "true";
@@ -634,8 +1008,73 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
     LMSGetDiagnostic: (errorCode?: string) => ERROR_MESSAGES[String(errorCode || lastError)] || "Unknown error",
   };
 
+  const api2004 = {
+    Initialize: (_parameter?: string) => {
+      initialized = true;
+      activeVersion = "2004";
+      lastError = "0";
+      return "true";
+    },
+    Terminate: (_parameter?: string) => {
+      if (!initialized) {
+        lastError = "301";
+        return "false";
+      }
+
+      lastError = "0";
+      fireAndForget(options.onFinish);
+      initialized = false;
+      return "true";
+    },
+    GetValue: (key: string) => {
+      if (!initialized) {
+        lastError = "301";
+        return "";
+      }
+
+      if (key === "cmi.interactions._count") {
+        lastError = "0";
+        return String(getInteractionCount(state));
+      }
+
+      const correctResponseCountMatch = key.match(/^cmi\.interactions\.(\d+)\.correct_responses\._count$/);
+      if (correctResponseCountMatch) {
+        lastError = "0";
+        return String(getCorrectResponseCount(state, Number(correctResponseCountMatch[1])));
+      }
+
+      lastError = "0";
+      return state[key] ?? "";
+    },
+    SetValue: (key: string, value: string) => {
+      if (!initialized) {
+        lastError = "301";
+        return "false";
+      }
+
+      activeVersion = "2004";
+      state[key] = String(value ?? "");
+      lastError = "0";
+      return "true";
+    },
+    Commit: (_parameter?: string) => {
+      if (!initialized) {
+        lastError = "301";
+        return "false";
+      }
+
+      lastError = "0";
+      fireAndForget(options.onCommit);
+      return "true";
+    },
+    GetLastError: () => lastError,
+    GetErrorString: (errorCode: string) => ERROR_MESSAGES[String(errorCode)] || "Unknown error",
+    GetDiagnostic: (errorCode?: string) => ERROR_MESSAGES[String(errorCode || lastError)] || "Unknown error",
+  };
+
   return {
     api,
+    api2004,
     context: options.context,
     isInitialized: () => initialized,
     getValue: (key: string) => state[key] ?? "",

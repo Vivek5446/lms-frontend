@@ -123,6 +123,7 @@ export default function CoursePlayer({
     }
 
     (targetWindow as any).API = apiRef.current.api;
+    (targetWindow as any).API_1484_11 = apiRef.current.api2004;
     (targetWindow as any).__SCORM_CONTEXT__ = apiRef.current.context;
   };
 
@@ -132,6 +133,7 @@ export default function CoursePlayer({
     }
 
     delete (targetWindow as any).API;
+    delete (targetWindow as any).API_1484_11;
     delete (targetWindow as any).__SCORM_CONTEXT__;
   };
 
@@ -154,12 +156,53 @@ export default function CoursePlayer({
     }, mode === "finish" ? 150 : 450);
   };
 
-  const queueTrackingSync = (mode: "commit" | "finish", payload: ScormTrackingPayload) => {
+  const sendKeepaliveTracking = (mode: "commit" | "finish", payload: ScormTrackingPayload) => {
+    const endpoint = mode === "finish" ? "/scorm/finish" : "/scorm/commit";
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+        const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+        if (navigator.sendBeacon(endpoint, blob)) {
+          scheduleUiRefresh(payload, mode);
+          return true;
+        }
+      }
+
+      if (typeof fetch === "function") {
+        void fetch(endpoint, {
+          method: "POST",
+          body: JSON.stringify(payload),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          keepalive: true,
+        }).catch(() => undefined);
+
+        scheduleUiRefresh(payload, mode);
+        return true;
+      }
+    } catch (error) {
+      console.warn(`SCORM ${mode} keepalive sync failed`, error);
+    }
+
+    return false;
+  };
+
+  const queueTrackingSync = (
+    mode: "commit" | "finish",
+    payload: ScormTrackingPayload,
+    options?: { preferKeepalive?: boolean }
+  ) => {
     if (!trackingEnabledRef.current) {
       return Promise.resolve();
     }
 
     const endpoint = mode === "finish" ? "/scorm/finish" : "/scorm/commit";
+
+    if (options?.preferKeepalive && sendKeepaliveTracking(mode, payload)) {
+      return Promise.resolve();
+    }
 
     syncQueueRef.current = syncQueueRef.current
       .catch(() => undefined)
@@ -168,16 +211,26 @@ export default function CoursePlayer({
         const persistedProgress = response?.data?.data;
 
         if (persistedProgress && apiRef.current) {
-          apiRef.current.mergeState({
-            "cmi.core.lesson_status": persistedProgress.lessonStatus || payload.lesson_status,
-            "cmi.core.score.raw":
-              persistedProgress.score === null || persistedProgress.score === undefined
-                ? ""
-                : String(persistedProgress.score),
-            "cmi.core.lesson_location": persistedProgress.lessonLocation || payload.lesson_location,
-            "cmi.suspend_data": persistedProgress.suspendData || payload.suspend_data,
-            "cmi.core.total_time": persistedProgress.totalTime || payload.total_time,
-          });
+          apiRef.current.mergeState(
+            buildScorm12InitialState({
+              context: apiRef.current.context,
+              progress: {
+                lessonStatus: persistedProgress.lessonStatus || payload.lesson_status,
+                completionStatus: persistedProgress.completionStatus || payload.completion_status,
+                successStatus: persistedProgress.successStatus || payload.success_status,
+                progress: persistedProgress.progress,
+                progressMeasure: payload.progress_measure,
+                score:
+                  persistedProgress.score === null || persistedProgress.score === undefined
+                    ? payload.score
+                    : persistedProgress.score,
+                lessonLocation: persistedProgress.lessonLocation || payload.lesson_location,
+                suspendData: persistedProgress.suspendData || payload.suspend_data,
+                totalTime: persistedProgress.totalTime || payload.total_time,
+              },
+              includeSessionTime: false,
+            })
+          );
         }
 
         setSyncError((currentValue) => (currentValue ? null : currentValue));
@@ -207,7 +260,7 @@ export default function CoursePlayer({
     }
 
     hasPersistedOnExitRef.current = true;
-    void queueTrackingSync("commit", payload);
+    void queueTrackingSync("commit", payload, { preferKeepalive: true });
   }, []);
 
   useEffect(() => {
