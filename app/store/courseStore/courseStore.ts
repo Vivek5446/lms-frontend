@@ -261,6 +261,153 @@ const multipartRequestConfig = {
   },
 } as const;
 
+function clampProgressValue(value: unknown) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numericValue)));
+}
+
+function isCompletedLessonStatus(value: unknown) {
+  const normalizedValue = String(value || "").trim().toLowerCase();
+  return normalizedValue === "completed" || normalizedValue === "passed";
+}
+
+function deriveEnrollmentStatusFromLessonStatus(
+  lessonStatus: unknown,
+  progress: number
+): MyCourseItem["status"] {
+  const normalizedValue = String(lessonStatus || "").trim().toLowerCase();
+  if (progress >= 100) {
+    return "completed";
+  }
+
+  if (isCompletedLessonStatus(normalizedValue)) {
+    return "completed";
+  }
+
+  if (progress > 0 || normalizedValue === "incomplete" || normalizedValue === "failed" || normalizedValue === "browsed") {
+    return "in_progress";
+  }
+
+  return "not_started";
+}
+
+function deriveAggregateLessonStatus(statuses: unknown[]) {
+  const normalizedStatuses = statuses
+    .map((status) => String(status || "").trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!normalizedStatuses.length) {
+    return "not_attempted";
+  }
+
+  if (normalizedStatuses.every((status) => status === "completed" || status === "passed")) {
+    return normalizedStatuses.some((status) => status === "passed") ? "passed" : "completed";
+  }
+
+  if (
+    normalizedStatuses.every((status) => status === "completed" || status === "passed" || status === "failed") &&
+    normalizedStatuses.some((status) => status === "failed")
+  ) {
+    return "failed";
+  }
+
+  if (normalizedStatuses.some((status) => status !== "not_attempted")) {
+    return "incomplete";
+  }
+
+  return "not_attempted";
+}
+
+function averageNullableNumbers(values: Array<number | null | undefined>) {
+  const finiteValues = values.filter((value): value is number => Number.isFinite(value));
+  if (!finiteValues.length) {
+    return null;
+  }
+
+  const total = finiteValues.reduce((sum, value) => sum + value, 0);
+  return Math.round((total / finiteValues.length) * 100) / 100;
+}
+
+function parseScormDuration(value: string | null | undefined) {
+  const normalizedValue = String(value || "").trim();
+  if (!normalizedValue) {
+    return 0;
+  }
+
+  const scorm12Match = normalizedValue.match(/^(\d{1,4}):([0-5]?\d):([0-5]?\d)(?:\.(\d{1,2}))?$/);
+  if (scorm12Match) {
+    const hours = Number(scorm12Match[1]);
+    const minutes = Number(scorm12Match[2]);
+    const seconds = Number(scorm12Match[3]);
+    const centiseconds = Number((scorm12Match[4] || "").padEnd(2, "0").slice(0, 2) || "0");
+    return ((((hours * 60) + minutes) * 60) + seconds) * 100 + centiseconds;
+  }
+
+  const scorm2004Match = normalizedValue.toUpperCase().match(
+    /^P(?:\d+Y)?(?:\d+M)?(?:\d+D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/
+  );
+  if (!scorm2004Match) {
+    return 0;
+  }
+
+  const hours = Number(scorm2004Match[1] || 0);
+  const minutes = Number(scorm2004Match[2] || 0);
+  const seconds = Number(scorm2004Match[3] || 0);
+  return Math.round((((hours * 60) + minutes) * 60 + seconds) * 100);
+}
+
+function formatScormDuration(totalCentiseconds: number) {
+  const safeValue = Math.max(0, Math.floor(totalCentiseconds || 0));
+  const hours = Math.floor(safeValue / 360000);
+  const remainderAfterHours = safeValue % 360000;
+  const minutes = Math.floor(remainderAfterHours / 6000);
+  const remainderAfterMinutes = remainderAfterHours % 6000;
+  const seconds = Math.floor(remainderAfterMinutes / 100);
+  const centiseconds = remainderAfterMinutes % 100;
+  const baseValue = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+  return centiseconds > 0 ? `${baseValue}.${String(centiseconds).padStart(2, "0")}` : baseValue;
+}
+
+function normalizeDateValue(value: unknown) {
+  const normalizedValue = String(value || "").trim();
+  return normalizedValue || null;
+}
+
+function recalculateModuleProgress(moduleRecord: MyCourseModuleProgressItem): MyCourseModuleProgressItem {
+  const sections = Array.isArray(moduleRecord.sections) ? moduleRecord.sections : [];
+  const completedCount = sections.filter((sectionRecord) => {
+    return isCompletedLessonStatus(sectionRecord.lessonStatus) || Boolean(sectionRecord.completedAt) || Number(sectionRecord.progress || 0) >= 100;
+  }).length;
+  const latestAccessValue = sections.reduce((latest, sectionRecord) => {
+    const currentValue = sectionRecord.lastAccessed ? new Date(sectionRecord.lastAccessed).getTime() : 0;
+    return Math.max(latest, currentValue);
+  }, 0);
+  const averageProgress = sections.length
+    ? Math.round(
+        sections.reduce((total, sectionRecord) => total + clampProgressValue(sectionRecord.progress), 0) / sections.length
+      )
+    : 0;
+
+  return {
+    ...moduleRecord,
+    progress: averageProgress,
+    score: averageNullableNumbers(sections.map((sectionRecord) => sectionRecord.score)),
+    attempts: sections.reduce((highest, sectionRecord) => Math.max(highest, Number(sectionRecord.attempts || 0)), 0),
+    lessonStatus: deriveAggregateLessonStatus(sections.map((sectionRecord) => sectionRecord.lessonStatus)),
+    totalTime: formatScormDuration(
+      sections.reduce((total, sectionRecord) => total + parseScormDuration(sectionRecord.totalTime), 0)
+    ),
+    lastAccessed: latestAccessValue ? new Date(latestAccessValue).toISOString() : null,
+    sectionsCompleted: completedCount,
+    sectionCount: sections.length,
+  };
+}
+
 function createClientUploadId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -511,6 +658,104 @@ class CourseStoreClass {
 
   clearCurrentCourse = () => {
     this.currentCourse = null;
+  };
+
+  applyRealtimeSectionProgressUpdate = (options: {
+    courseId: string;
+    moduleId: string;
+    sectionId: string;
+    data: any;
+  }) => {
+    const normalizedCourseId = String(options.courseId || "").trim();
+    if (!normalizedCourseId) {
+      return;
+    }
+
+    const sectionProgress = options.data?.sectionProgress || options.data || null;
+    const courseProgress = options.data?.courseProgress || sectionProgress?.courseProgress || null;
+
+    runInAction(() => {
+      let derivedCourseProgress = courseProgress ? clampProgressValue(courseProgress.progress) : 0;
+      let derivedCourseStatus = courseProgress
+        ? deriveEnrollmentStatusFromLessonStatus(courseProgress.lessonStatus, derivedCourseProgress)
+        : "not_started";
+
+      const currentCourseId = String(this.currentCourse?._id || this.currentCourse?.courseId || "").trim();
+      if (this.currentCourse && currentCourseId === normalizedCourseId && Array.isArray(this.currentCourse.progressModules)) {
+        const nextModules = this.currentCourse.progressModules.map((moduleRecord) => {
+          if (moduleRecord.moduleId !== options.moduleId) {
+            return moduleRecord;
+          }
+
+          const nextSections = (moduleRecord.sections || []).map((sectionRecord) => {
+            if (sectionRecord.sectionId !== options.sectionId) {
+              return sectionRecord;
+            }
+
+            return {
+              ...sectionRecord,
+              progress: clampProgressValue(sectionProgress?.progress ?? sectionRecord.progress),
+              score: sectionProgress?.score ?? sectionRecord.score ?? null,
+              attempts: Number(sectionProgress?.attempts ?? sectionRecord.attempts ?? 0),
+              lessonStatus: String(sectionProgress?.lessonStatus || sectionRecord.lessonStatus || "not_attempted"),
+              totalTime: String(sectionProgress?.totalTime || sectionRecord.totalTime || "00:00:00"),
+              lastAccessed: Object.prototype.hasOwnProperty.call(sectionProgress || {}, "lastAccessed")
+                ? normalizeDateValue(sectionProgress?.lastAccessed)
+                : sectionRecord.lastAccessed ?? null,
+              contentType: sectionProgress?.contentType || sectionRecord.contentType || "other",
+              completedAt: Object.prototype.hasOwnProperty.call(sectionProgress || {}, "completedAt")
+                ? normalizeDateValue(sectionProgress?.completedAt)
+                : sectionRecord.completedAt ?? null,
+              currentTime: Number(sectionProgress?.currentTime ?? sectionRecord.currentTime ?? 0),
+              duration: Number(sectionProgress?.duration ?? sectionRecord.duration ?? 0),
+            };
+          });
+
+          return recalculateModuleProgress({
+            ...moduleRecord,
+            sections: nextSections,
+          });
+        });
+
+        const allSections = nextModules.flatMap((moduleRecord) => moduleRecord.sections || []);
+
+        if (!courseProgress) {
+          derivedCourseProgress = allSections.length
+            ? Math.round(
+                allSections.reduce((total, sectionRecord) => total + clampProgressValue(sectionRecord.progress), 0) /
+                  allSections.length
+              )
+            : 0;
+          derivedCourseStatus = deriveEnrollmentStatusFromLessonStatus(
+            deriveAggregateLessonStatus(nextModules.map((moduleRecord) => moduleRecord.lessonStatus)),
+            derivedCourseProgress
+          );
+        }
+
+        this.currentCourse = {
+          ...this.currentCourse,
+          progressModules: nextModules,
+          progress: courseProgress ? clampProgressValue(courseProgress.progress) : derivedCourseProgress,
+        };
+      }
+
+      this.myCourses = this.myCourses.map((courseRecord) => {
+        if (courseRecord.courseId !== normalizedCourseId) {
+          return courseRecord;
+        }
+
+        const nextProgress = courseProgress ? clampProgressValue(courseProgress.progress) : clampProgressValue(derivedCourseProgress);
+        const nextStatus = courseProgress
+          ? deriveEnrollmentStatusFromLessonStatus(courseProgress.lessonStatus, nextProgress)
+          : derivedCourseStatus;
+
+        return {
+          ...courseRecord,
+          progress: nextProgress,
+          status: nextStatus,
+        };
+      });
+    });
   };
 
   updateSectionProgress = async (payload: {

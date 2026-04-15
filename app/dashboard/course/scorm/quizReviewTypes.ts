@@ -86,25 +86,51 @@ function toTitleCase(value: string) {
   return value.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function isGenericQuestionLabel(value: unknown) {
+  const normalizedValue = normalizeString(value).toLowerCase();
+  if (!normalizedValue) {
+    return false;
+  }
+
+  return (
+    /^question\s*\d+\b/.test(normalizedValue) ||
+    /^q\s*\d+\b/.test(normalizedValue) ||
+    /^interaction\s*\d+\b/.test(normalizedValue) ||
+    /^item\s*\d+\b/.test(normalizedValue)
+  );
+}
+
+function normalizeQuestionFromId(id: string) {
+  const tokens = normalizeString(id)
+    .split(/[^A-Za-z0-9]+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .filter((token) => /[A-Za-z]/.test(token))
+    .filter((token) => {
+      const normalizedToken = token.toLowerCase();
+      return !["question", "questions", "interaction", "interactions", "item", "items", "quiz", "quizzes", "q", "slide", "slides", "scorm"].includes(normalizedToken);
+    });
+
+  return tokens.length ? toTitleCase(tokens.join(" ")) : "";
+}
+
 export function formatQuestionTitle(
   interaction: Pick<ScormInteractionReview, "questionTitle" | "question" | "id" | "index">,
   fallbackIndex?: number
 ) {
   const explicitTitle = normalizeString(interaction.questionTitle);
-  if (explicitTitle.length > 10) {
+  if (explicitTitle.length > 8 && !isGenericQuestionLabel(explicitTitle)) {
     return explicitTitle;
   }
 
   const explicitQuestion = normalizeString(interaction.question);
-  if (explicitQuestion.length > 10) {
+  if (explicitQuestion.length > 8 && !isGenericQuestionLabel(explicitQuestion)) {
     return explicitQuestion;
   }
 
-  const id = normalizeString(interaction.id);
-  const match = id.match(/_([A-Za-z_]+)_?$/);
-
-  if (match?.[1]) {
-    return toTitleCase(match[1].replace(/_/g, " ").trim());
+  const fromId = normalizeQuestionFromId(interaction.id || "");
+  if (fromId.length > 3 && !isGenericQuestionLabel(fromId)) {
+    return fromId;
   }
 
   return `Question ${Number(interaction.index ?? fallbackIndex ?? 0) + 1}`;

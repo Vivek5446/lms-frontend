@@ -320,7 +320,7 @@ function CourseCard({
         <ProgressRing value={course.progress} />
       </Flex>
     </Box>
-  );
+  ); 
 }
 
 export default function LearnerReviewDrawer({

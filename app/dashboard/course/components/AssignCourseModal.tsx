@@ -204,7 +204,7 @@ const AssignCourseModal = observer(
       }
       return courses;
     }, [isSuperadmin, courseSearch, courseStore.courses, courseStore.accessibleCourses]);
-
+ 
     const selectedCourses = useMemo(() => {
       const courseMap = new Map(availableCourses.map((course) => [course._id, course]));
       return selectedCourseIds.map((courseId) => courseMap.get(courseId)).filter(Boolean);

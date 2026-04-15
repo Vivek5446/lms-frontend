@@ -184,7 +184,7 @@ export default function CourseDetails({
   course,
   onBack,
   onLaunchSection,
-  onAssignCourse,
+  onAssignCourse, 
   learnerAnswers = [],
   isLearnerAnswersLoading = false,
 }: CourseDetailsProps) {

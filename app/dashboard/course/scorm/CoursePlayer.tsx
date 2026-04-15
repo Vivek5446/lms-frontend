@@ -30,6 +30,11 @@ interface CoursePlayerProps {
   isAnswerSectionsLoading?: boolean;
   onRefreshAnswerSections?: () => void | Promise<void>;
   onRefreshProgress?: () => void | Promise<void>;
+  onProgressSynced?: (
+    persistedProgress: any,
+    payload: ScormTrackingPayload,
+    mode: "commit" | "finish"
+  ) => void | Promise<void>;
 }
 
 const HEADER_H = 48;
@@ -70,6 +75,7 @@ export default function CoursePlayer({
   isAnswerSectionsLoading = false,
   onRefreshAnswerSections,
   onRefreshProgress,
+  onProgressSynced,
 }: CoursePlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -138,7 +144,10 @@ export default function CoursePlayer({
   };
 
   const scheduleUiRefresh = (payload: ScormTrackingPayload, mode: "commit" | "finish") => {
-    if (!onRefreshAnswerSections && !onRefreshProgress) {
+    const shouldRefreshAnswers = Boolean(onRefreshAnswerSections && (isQuizReviewOpen || mode === "finish"));
+    const shouldRefreshProgress = Boolean(onRefreshProgress);
+
+    if (!shouldRefreshAnswers && !shouldRefreshProgress) {
       return;
     }
 
@@ -151,8 +160,13 @@ export default function CoursePlayer({
     }
 
     refreshTimerRef.current = window.setTimeout(() => {
-      Promise.resolve(onRefreshAnswerSections?.()).catch(() => undefined);
-      Promise.resolve(onRefreshProgress?.()).catch(() => undefined);
+      if (shouldRefreshAnswers) {
+        Promise.resolve(onRefreshAnswerSections?.()).catch(() => undefined);
+      }
+
+      if (shouldRefreshProgress) {
+        Promise.resolve(onRefreshProgress?.()).catch(() => undefined);
+      }
     }, mode === "finish" ? 150 : 450);
   };
 
@@ -233,6 +247,7 @@ export default function CoursePlayer({
           );
         }
 
+        Promise.resolve(onProgressSynced?.(persistedProgress, payload, mode)).catch(() => undefined);
         setSyncError((currentValue) => (currentValue ? null : currentValue));
         scheduleUiRefresh(payload, mode);
       })
