@@ -17,39 +17,43 @@ export default function GlassSearchInput({
   isLearner = true,
 }: Props) {
   return (
-    <Box
-      bg={isLearner ? "rgba(255,255,255,0.07)" : "white"}
-      backdropFilter={isLearner ? "blur(16px)" : "none"}
-      border="1px solid rgba(255,255,255,0.12)"
-      borderRadius="16px"
-      p={1.5}
-      maxW={maxW}
-      _focusWithin={{
-        border: "1px solid rgba(255,255,255,0.3)",
-        bg: "rgba(255,255,255,0.1)",
-      }}
-      transition="all 0.2s"
-    >
-      <InputGroup>
-        <InputLeftElement pointerEvents="none" pl={2}>
-          <Icon
-            as={FiSearch}
-            color="rgba(255,255,255,0.5)"
-            boxSize={4}
-          />
-        </InputLeftElement>
+   <Box
+  bg={isLearner ? "rgba(255,255,255,0.07)" : "white"}
+  backdropFilter={isLearner ? "blur(16px)" : "none"}
+  border={isLearner ? "1px solid rgba(255,255,255,0.12)" : "1.5px solid"}
+  borderColor={isLearner ? "transparent" : "blue.200"}   // ← visible border
+  borderRadius="16px"
+  p={1.5}
+  maxW={maxW}
+  boxShadow={isLearner ? "none" : "0 2px 12px rgba(0,0,0,0.08)"}  // ← subtle shadow
+  _focusWithin={{
+    border: isLearner ? "1px solid rgba(255,255,255,0.3)" : "1.5px solid",
+    borderColor: isLearner ? "transparent" : "blue.400",
+    bg: isLearner ? "rgba(255,255,255,0.1)" : "white",
+    boxShadow: isLearner ? "none" : "0 2px 16px rgba(66,153,225,0.2)",
+  }}
+  transition="all 0.2s"
+>
+  <InputGroup>
+    <InputLeftElement pointerEvents="none" pl={2}>
+      <Icon
+        as={FiSearch}
+        color={isLearner ? "rgba(255,255,255,0.5)" : "blue.400"}  // ← blue icon
+        boxSize={4}
+      />
+    </InputLeftElement>
 
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          color="white"
-          border="none"
-          _placeholder={{ color: "rgba(255,255,255,0.4)" }}
-          _focus={{ boxShadow: "none" }}
-          fontSize="sm"
-        />
-      </InputGroup>
-    </Box>
+    <Input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      color={isLearner ? "white" : "gray.700"}               // ← dark text
+      border="none"
+      _placeholder={{ color: isLearner ? "rgba(255,255,255,0.4)" : "gray.400" }}
+      _focus={{ boxShadow: "none" }}
+      fontSize="sm"
+    />
+  </InputGroup>
+</Box>
   );
 }
