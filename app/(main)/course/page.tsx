@@ -4,7 +4,6 @@ import MyCoursesBoard from "@/app/(main)/course/component/MyCoursesBoard";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import stores from "@/app/store/stores";
 import {
-  AspectRatio,
   Box,
   Button,
   Checkbox,
@@ -15,34 +14,16 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
-  Flex,
-  Heading,
-  HStack,
-  Icon,
-  Image,
   Input,
-  SimpleGrid,
   Stack,
-  Tag,
-  TagLabel,
   Text,
   useColorModeValue,
   useDisclosure,
-  VStack,
+  VStack
 } from "@chakra-ui/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
 import { useMemo, useState } from "react";
-import {
-  FaArrowLeft,
-  FaCertificate,
-  FaClock,
-  FaFilter,
-  FaLock,
-  FaPlayCircle,
-  FaUserGraduate,
-} from "react-icons/fa";
-import { CourseCard } from "./component/CourseCard";
 
 const MotionBox = motion(Box);
 
@@ -316,10 +297,6 @@ const CoursesPage = observer(function CoursesPage() {
   );
 
   const pageBg = useColorModeValue("#F8FAFC", "gray.900");
-  const cardBg = useColorModeValue("white", "gray.800");
-  const cardBorder = useColorModeValue("gray.100", "gray.700");
-  const textColor = useColorModeValue("gray.800", "whiteAlpha.900");
-  const subtitleColor = useColorModeValue("gray.500", "gray.300");
 
   if (isLearner) {
   return (
@@ -331,7 +308,9 @@ const CoursesPage = observer(function CoursesPage() {
 
   return (
     <Box minH="100vh" bg={pageBg} py={{ base: 4, md: 10 }}>
-      <Box w="100%" px={{ base: 2, md: 4 }}>
+<MyCoursesBoard basePath="/course" />
+
+      {/* <Box w="100%" px={{ base: 2, md: 4 }}>
         <AnimatePresence mode="wait">
           {!selectedCourse ? (
             <MotionBox
@@ -341,7 +320,6 @@ const CoursesPage = observer(function CoursesPage() {
               exit={{ opacity: 0 }}
             >
               <Flex gap={6} direction={{ base: "column", md: "row" }}>
-                {/* Fixed Sidebar Design */}
                 <Box
                   display={{ base: "none", md: "block" }}
                   w="240px"
@@ -368,7 +346,6 @@ const CoursesPage = observer(function CoursesPage() {
                   </VStack>
                 </Box>
 
-                {/* Mobile FAB */}
                 <Button
                   display={{ base: "flex", md: "none" }}
                   position="fixed"
@@ -386,7 +363,6 @@ const CoursesPage = observer(function CoursesPage() {
                   Filters{" "}
                 </Button>
 
-                {/* Main Content */}
                 <Box flex="1">
                   <Flex justify="space-between" align="flex-end" mb={8} px={2}>
                     <Box>
@@ -446,7 +422,6 @@ const CoursesPage = observer(function CoursesPage() {
               </Flex>
             </MotionBox>
           ) : (
-            /* --- LUXURY COURSE DETAIL --- */
             <MotionBox
               key="detail"
               initial={{ opacity: 0, x: 20 }}
@@ -589,7 +564,7 @@ const CoursesPage = observer(function CoursesPage() {
             </MotionBox>
           )}
         </AnimatePresence>
-      </Box>
+      </Box> */}
 
       {/* Drawer for Mobile (Simplified) */}
       <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
