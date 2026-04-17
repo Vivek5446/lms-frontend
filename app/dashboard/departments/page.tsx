@@ -18,8 +18,10 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
+import { departmentStore } from "@/app/store/departmentStore/departmentStore";
 import stores from "@/app/store/stores";
+import DepartmentTable from "./DepartmentTable";
 
 const DepartmentsPage = observer(() => {
   const { auth, companyStore } = stores;
@@ -27,9 +29,7 @@ const DepartmentsPage = observer(() => {
   const isSuperadmin = role === "superadmin";
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
-  const cardAltBg = useColorModeValue("gray.50", "gray.700");
   const textColor = useColorModeValue("gray.600", "gray.300");
-  const hoverBg = useColorModeValue("white", "gray.700");
 
   useEffect(() => {
     if (isSuperadmin) {
@@ -43,40 +43,36 @@ const DepartmentsPage = observer(() => {
   const companyId = companyStore.getActiveCompanyId();
   const companies = companyStore.companies.data || [];
   const activeCompany =
-    companies.find((company: any) => company._id === companyId) || auth.user?.companyDetails || null;
-
-  const departments = useMemo(() => {
-    const rawDepartments = activeCompany?.departments || [];
-
-    return rawDepartments
-      .map((department: any, index: number) => {
-        if (typeof department === "string") {
-          return {
-            id: `${department}-${index}`,
-            name: department,
-            code: "",
-          };
-        }
-
-        return {
-          id: department?._id || department?.code || department?.title || `department-${index}`,
-          name: department?.title || department?.name || department?.label || "Department",
-          code: department?.code || "",
-        };
-      })
-      .filter((department: any) => Boolean(department.name));
-  }, [activeCompany]);
+    companies.find((company: any) => company._id === companyId) ||
+    auth.user?.companyDetails ||
+    null;
+  const totalDepartments =
+    departmentStore.activeCompanyId === (companyId || "")
+      ? departmentStore.pagination?.total || 0
+      : 0;
 
   return (
     <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
       <Stack spacing={6}>
-        <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
-          <Flex justify="space-between" align={{ base: "start", md: "center" }} gap={4} wrap="wrap">
+        <Box
+          bg={cardBg}
+          borderWidth="1px"
+          borderRadius="2xl"
+          p={{ base: 5, md: 6 }}
+          boxShadow="sm"
+        >
+          <Flex
+            justify="space-between"
+            align={{ base: "start", md: "center" }}
+            gap={4}
+            wrap="wrap"
+          >
             <Box>
               <Heading size="md">Departments</Heading>
               <Text mt={2} color={textColor} maxW="3xl">
-                Review the department structure for {activeCompany?.company_name || "the selected company"}.
-                The header company selector controls this workspace for superadmins.
+                Review the department structure for{" "}
+                {activeCompany?.company_name || "the selected company"}. The
+                header company selector controls this workspace for superadmins.
               </Text>
             </Box>
             {activeCompany?.company_name ? (
@@ -93,74 +89,63 @@ const DepartmentsPage = observer(() => {
             <Box>
               <AlertTitle>Select a company</AlertTitle>
               <AlertDescription>
-                Use the global company selector in the header to load departments for a company.
+                Use the global company selector in the header to load
+                departments for a company.
               </AlertDescription>
             </Box>
           </Alert>
         ) : (
           <>
             <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-              <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={5} boxShadow="sm">
+              <Box
+                bg={cardBg}
+                borderWidth="1px"
+                borderRadius="2xl"
+                p={5}
+                boxShadow="sm"
+              >
                 <Stat>
                   <StatLabel>Total Departments</StatLabel>
-                  <StatNumber>{departments.length}</StatNumber>
+                  <StatNumber>
+                    {departmentStore.isLoading ? "..." : totalDepartments}
+                  </StatNumber>
                 </Stat>
               </Box>
-              <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={5} boxShadow="sm">
+              <Box
+                bg={cardBg}
+                borderWidth="1px"
+                borderRadius="2xl"
+                p={5}
+                boxShadow="sm"
+              >
                 <Stat>
                   <StatLabel>Company</StatLabel>
-                  <StatNumber fontSize="xl">{activeCompany?.company_name || "Not selected"}</StatNumber>
+                  <StatNumber fontSize="xl">
+                    {activeCompany?.company_name || "Not selected"}
+                  </StatNumber>
                 </Stat>
               </Box>
-              <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={5} boxShadow="sm">
+              <Box
+                bg={cardBg}
+                borderWidth="1px"
+                borderRadius="2xl"
+                p={5}
+                boxShadow="sm"
+              >
                 <Stat>
                   <StatLabel>Context</StatLabel>
-                  <StatNumber fontSize="xl">{isSuperadmin ? "Cross-company view" : "Restricted scope"}</StatNumber>
+                  <StatNumber fontSize="xl">
+                    {isSuperadmin ? "Cross-company view" : "Restricted scope"}
+                  </StatNumber>
                 </Stat>
               </Box>
             </SimpleGrid>
 
-            <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
-              {departments.length === 0 ? (
-                <Alert status="info" borderRadius="xl">
-                  <AlertIcon />
-                  <Box>
-                    <AlertTitle>No departments configured</AlertTitle>
-                    <AlertDescription>
-                      This company does not have any departments configured yet.
-                    </AlertDescription>
-                  </Box>
-                </Alert>
-              ) : (
-                <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={4}>
-                  {departments.map((department: any) => (
-                    <Box
-                      key={department.id}
-                      borderWidth="1px"
-                      borderRadius="xl"
-                      p={5}
-                      bg={cardAltBg}
-                      transition="all 0.2s"
-                      _hover={{ borderColor: "blue.200", bg: hoverBg }}
-                    >
-                      <Stack spacing={3}>
-                        <Flex justify="space-between" align="center" gap={3}>
-                          <Text fontWeight="semibold" fontSize="lg">
-                            {department.name}
-                          </Text>
-                          <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
-                            Department
-                          </Badge>
-                        </Flex>
-                        <Text color={textColor} fontSize="sm">
-                          {department.code ? `Code: ${department.code}` : "Department code not configured"}
-                        </Text>
-                      </Stack>
-                    </Box>
-                  ))}
-                </SimpleGrid>
-              )}
-            </Box>
+            <DepartmentTable
+              key={companyId || "no-company"}
+              companyId={companyId || undefined}
+              companyName={activeCompany?.company_name}
+            />
           </>
         )}
       </Stack>
