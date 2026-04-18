@@ -5,6 +5,9 @@ import { authStore } from "../authStore/authStore";
 const COMPANY_CONTEXT_KEY = "lms:selected-company-context";
 
 class CompanyStores {
+  fetchCompanies() {
+    throw new Error("Method not implemented.");
+  }
   therapist: any = {
     loading : false,
     data : [],
