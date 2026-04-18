@@ -32,6 +32,7 @@ import {
   ScormInteractionReview,
   summarizeAnswerSections,
 } from "./quizReviewTypes";
+import { toJS } from "mobx";
 
 type ScormQuizReviewContentProps = {
   sections: ScormAnswerSectionRecord[];
@@ -331,6 +332,8 @@ export default function ScormQuizReviewContent({
   const muted = useColorModeValue("gray.500", "gray.400");
   const sectionBg = useColorModeValue("gray.50", "gray.900");
   const moduleBg = useColorModeValue("white", "gray.800");
+
+  console.log('sections--',toJS(sections))
 
   const moduleGroups = groupAnswerSections(sections, { showOnlyReviewed });
   const visibleSections = moduleGroups.flatMap((moduleGroup) => moduleGroup.sections);

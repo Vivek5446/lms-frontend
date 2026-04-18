@@ -1,5 +1,6 @@
 "use client";
 
+import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
 import CourseDetails from "@/app/dashboard/course/CourseDetails";
 import CourseAssetModal from "@/app/dashboard/course/scorm/CourseAssetModal";
 import CoursePlayer from "@/app/dashboard/course/scorm/CoursePlayer";
@@ -12,41 +13,25 @@ import { courseStore } from "@/app/store/courseStore/courseStore";
 import { managerStore } from "@/app/store/managerStore/managerStore";
 import stores from "@/app/store/stores";
 import {
-  AspectRatio,
   Badge,
   Box,
   Button,
-  Flex,
   Grid,
   Heading,
   HStack,
-  Icon,
   Image,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  Progress,
   SimpleGrid,
   Spinner,
   Stack,
   Text,
   useColorModeValue,
-  useToast,
-  VStack,
+  useToast
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import {
-  FiBookOpen,
-  FiClock,
-  FiLayers,
-  FiPlayCircle,
-  FiSearch,
-} from "react-icons/fi";
 import MYCourseBoardCard from "./MyCourseBoardCard";
-import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
 
 function formatDate(value?: string | null) {
   if (!value) {

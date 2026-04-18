@@ -301,7 +301,7 @@ const Form = ({
 
                   {((!isDeptHead && values.role === "departmenthead") || values.role === "user") && (
                     <CustomInput
-                      type={values.role === "departmenthead" ? "creatable-select" : "select"}
+                      type="select"
                       label="Department"
                       name="department"
                       disabled={isDeptHead}

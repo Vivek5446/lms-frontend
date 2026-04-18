@@ -47,7 +47,8 @@ export interface ScormAnswerSectionRecord {
   lessonStatus: string;
   score: number | null;
   lessonLocation?: string;
-  suspendData?: string;
+  suspendData?: string | Record<string, any>;
+  rawSuspendData?: string;
   totalTime?: string;
   attempts: number;
   lastAccessed?: string | null;
@@ -114,27 +115,118 @@ function normalizeQuestionFromId(id: string) {
   return tokens.length ? toTitleCase(tokens.join(" ")) : "";
 }
 
+// export function formatQuestionTitle(
+//   interaction: Pick<ScormInteractionReview, "questionTitle" | "question" | "id" | "index">,
+//   fallbackIndex?: number
+// ) {
+//   const explicitTitle = normalizeString(interaction.questionTitle);
+//   if (explicitTitle.length > 8 && !isGenericQuestionLabel(explicitTitle)) {
+//     return explicitTitle;
+//   }
+
+//   const explicitQuestion = normalizeString(interaction.question);
+//   if (explicitQuestion.length > 8 && !isGenericQuestionLabel(explicitQuestion)) {
+//     return explicitQuestion;
+//   }
+
+//   const fromId = normalizeQuestionFromId(interaction.id || "");
+//   if (fromId.length > 3 && !isGenericQuestionLabel(fromId)) {
+//     return fromId;
+//   }
+
+//   return `Question ${Number(interaction.index ?? fallbackIndex ?? 0) + 1}`;
+// }
+
 export function formatQuestionTitle(
   interaction: Pick<ScormInteractionReview, "questionTitle" | "question" | "id" | "index">,
   fallbackIndex?: number
 ) {
-  const explicitTitle = normalizeString(interaction.questionTitle);
-  if (explicitTitle.length > 8 && !isGenericQuestionLabel(explicitTitle)) {
-    return explicitTitle;
+  /**
+   * Articulate Storyline IDs follow this pattern:
+   *   SlideX_Q_<alphanumeric-hash>_<Readable_Question_With_Underscores>
+   *
+   * Examples:
+   *   "Slide24_Q_xfhsktlrf94k-96j763y9znbj_What_does_Customer_Centricity_mean_"
+   *     → "What does Customer Centricity mean"
+   *   "Slide16_Q_2mxl1mff5xlw-mrqgotadctue_Time_For_Reflection"
+   *     → "Time For Reflection"
+   *   "Slide2_Q_bj8mu5dw8s29-3d3vi3ylzj3a_"
+   *     → "" (no text after hash, fall through)
+   */
+  const extractFromArticulateId = (id: string): string => {
+    if (!id) return "";
+
+    // Capture everything after the hash segment (e.g. _Q_abc123-def456_<HERE>)
+    const match = id.match(/_Q_[a-z0-9]+(?:-[a-z0-9]+)?_(.+)$/i);
+    if (match?.[1]) {
+      const text = match[1].replace(/_/g, " ").trim();
+      // Only return if it's actually meaningful text (not just whitespace/punctuation)
+      if (text.length > 2) return text;
+    }
+
+    // Fallback: at least humanize "Slide8" → "Slide 8 Question"
+    const slideMatch = id.match(/Slide(\d+)/i);
+    if (slideMatch) return `Slide ${slideMatch[1]} Question`;
+
+    return "";
+  };
+
+  // 1. Use questionTitle if it's meaningful and doesn't contain a raw Articulate hash
+  const title = normalizeString(interaction.questionTitle ?? "");
+  if (title.length > 4 && !isGenericQuestionLabel(title) && !title.includes("_Q_")) {
+    return title;
   }
 
-  const explicitQuestion = normalizeString(interaction.question);
-  if (explicitQuestion.length > 8 && !isGenericQuestionLabel(explicitQuestion)) {
-    return explicitQuestion;
+  // 2. Use question field if it's meaningful and not a raw "SlideX" stub
+  const question = normalizeString(interaction.question ?? "");
+  if (question.length > 4 && !isGenericQuestionLabel(question) && !/^slide\d+$/i.test(question)) {
+    return question;
   }
 
-  const fromId = normalizeQuestionFromId(interaction.id || "");
-  if (fromId.length > 3 && !isGenericQuestionLabel(fromId)) {
-    return fromId;
-  }
+  // 3. Parse the ID to recover the human-readable question text
+  const fromId = extractFromArticulateId(interaction.id ?? "");
+  if (fromId.length > 3) return fromId;
 
+  // 4. Last resort
   return `Question ${Number(interaction.index ?? fallbackIndex ?? 0) + 1}`;
 }
+
+
+// export function formatQuestionTitle(
+//   interaction: Pick<ScormInteractionReview, "questionTitle" | "question" | "id" | "index">,
+//   fallbackIndex?: number
+// ) {
+//   // Helper to intercept and clean Articulate Storyline hashes (e.g., Slide2_Q_hash_)
+//   const cleanArticulateHash = (text: string) => {
+//     if (!text || !text.includes("_Q_")) return text;
+    
+//     // Look for "SlideX_Q_" and extract the number
+//     const match = text.match(/Slide(\d+)_Q_/i);
+//     if (match && match[1]) {
+//       return `Slide ${match[1]} Question`;
+//     }
+    
+//     // Fallback: drop the hash and separate CamelCase words if present
+//     return text.split('_')[0].replace(/([a-z])([A-Z])/g, '$1 $2');
+//   };
+
+//   const explicitTitle = cleanArticulateHash(normalizeString(interaction.questionTitle));
+//   if (explicitTitle.length > 8 && !isGenericQuestionLabel(explicitTitle)) {
+//     return explicitTitle;
+//   }
+
+//   const explicitQuestion = cleanArticulateHash(normalizeString(interaction.question));
+//   if (explicitQuestion.length > 8 && !isGenericQuestionLabel(explicitQuestion)) {
+//     return explicitQuestion;
+//   }
+
+//   const fromId = cleanArticulateHash(normalizeQuestionFromId(interaction.id || ""));
+//   if (fromId.length > 3 && !isGenericQuestionLabel(fromId)) {
+//     return fromId;
+//   }
+
+//   return `Question ${Number(interaction.index ?? fallbackIndex ?? 0) + 1}`;
+// }
 
 export function isReviewableInteraction(
   interaction: Pick<ScormInteractionReview, "isReviewable" | "type" | "correctResponses">
