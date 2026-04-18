@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  Avatar,
   Badge,
   Box,
   Button,
+  Divider,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
@@ -13,6 +15,7 @@ import {
   Flex,
   Grid,
   HStack,
+  Icon,
   Input,
   InputGroup,
   InputLeftElement,
@@ -20,13 +23,26 @@ import {
   Spinner,
   Stack,
   Text,
+  Tooltip,
+  VStack,
   useColorModeValue,
   useToast,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { FiArrowRight, FiBriefcase, FiGlobe, FiMail, FiPlus, FiSearch, FiShield, FiUsers } from "react-icons/fi";
+import {
+  FiArrowRight,
+  FiBriefcase,
+  FiGlobe,
+  FiLayers,
+  FiMail,
+  FiMapPin,
+  FiPlus,
+  FiSearch,
+  FiShield,
+  FiUsers,
+} from "react-icons/fi";
 import { readFileAsBase64 } from "../../config/utils/utils";
 import stores from "../../store/stores";
 import CompanyAdminWorkspace from "./component/CompanyAdminWorkspace";
@@ -48,14 +64,12 @@ const DirectoryPage = observer(() => {
   const toast = useToast();
   const selectedCompanyId = searchParams.get("company") || "";
 
-  const pageBg = useColorModeValue("#f4f8ff", "gray.900");
+  // Modern Color Palette Definitions
+  const pageBg = useColorModeValue("gray.50", "gray.900");
   const surfaceBg = useColorModeValue("white", "gray.800");
-  const subtleBg = useColorModeValue("blue.50", "whiteAlpha.50");
-  const borderColor = useColorModeValue("blue.100", "gray.700");
-  const borderHover = useColorModeValue("blue.300", "blue.300");
-  const mutedText = useColorModeValue("gray.600", "gray.400");
-  const accentText = useColorModeValue("blue.700", "blue.200");
-  const iconBg = useColorModeValue("blue.100", "blue.900");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const mutedText = useColorModeValue("gray.500", "gray.400");
+  const headingText = useColorModeValue("gray.800", "white");
 
   const {
     companyStore: { createCompany, getManagedCompanies, companies },
@@ -88,7 +102,14 @@ const DirectoryPage = observer(() => {
     }
 
     return (companies.data || []).filter((company: any) =>
-      [company.company_name, company.companyCode, company.companyType, company.tenantSlug, company.companyEmail]
+      [
+        company.company_name,
+        company.companyCode,
+        company.companyType,
+        company.tenantSlug,
+        company.companyEmail,
+        company.addressInfo?.[0]?.city,
+      ]
         .filter(Boolean)
         .some((value: string) => String(value).toLowerCase().includes(query))
     );
@@ -168,7 +189,7 @@ const DirectoryPage = observer(() => {
   if (selectedCompanyId && companies.loading && !selectedCompany) {
     return (
       <Flex minH="60vh" justify="center" align="center" bg={pageBg}>
-        <Spinner size="lg" color="blue.500" />
+        <Spinner size="xl" thickness="4px" speed="0.65s" color="blue.500" />
       </Flex>
     );
   }
@@ -184,225 +205,317 @@ const DirectoryPage = observer(() => {
   }
 
   return (
-    <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
-      <Stack spacing={6} maxW="1400px" mx="auto">
-        <Box
-          bg={surfaceBg}
-          border="1px solid"
-          borderColor={borderColor}
-          borderRadius="2xl"
-          p={{ base: 5, md: 6 }}
-          shadow="sm"
-        >
-          <Flex justify="space-between" align={{ base: "start", md: "center" }} gap={4} wrap="wrap">
-            <Box maxW="3xl">
-              <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={3} py={1}>
-                Superadmin
-              </Badge>
-              <Text mt={3} fontSize={{ base: "2xl", md: "3xl" }} fontWeight="800" color={accentText}>
-                Company directory
-              </Text>
-              <Text mt={2} color={mutedText}>
-                Select a company to manage its admins. The company workspace opens in a focused view without using dynamic routes.
-              </Text>
-            </Box>
+    <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 2 }} transition="all 0.3s ease">
+      <Stack spacing={8} maxW="1400px" mx="auto">
+        
+        {/* Simple Header */}
+        <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
+          <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="900" color={headingText}>
+            Directory
+          </Text>
+          <Button
+            size="md"
+            colorScheme="blue"
+            bg="blue.600"
+            _hover={{ bg: "blue.700", transform: "translateY(-1px)", shadow: "md" }}
+            _active={{ transform: "translateY(0)" }}
+            borderRadius="full"
+            leftIcon={<FiPlus />}
+            onClick={() => setIsCompanyDrawerOpen(true)}
+            transition="all 0.2s"
+          >
+            Create Company
+          </Button>
+        </Flex>
 
-            <Button
-              colorScheme="blue"
-              borderRadius="full"
-              leftIcon={<FiPlus />}
-              onClick={() => setIsCompanyDrawerOpen(true)}
-            >
-              Create Company
-            </Button>
-          </Flex>
-        </Box>
-
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-          <Box bg={subtleBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" p={4}>
+        {/* Colorful Stat Cards */}
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+          <Box
+            bg={surfaceBg}
+            border="1px solid"
+            borderColor={useColorModeValue("blue.100", "blue.900")}
+            borderRadius="2xl"
+            p={5}
+            shadow="sm"
+            _hover={{ shadow: "md", transform: "translateY(-2px)" }}
+            transition="all 0.2s"
+          >
             <HStack justify="space-between">
               <Box>
-                <Text fontSize="sm" color={mutedText}>Companies</Text>
-                <Text mt={1} fontSize="2xl" fontWeight="800">{totals.companies}</Text>
+                <Text fontSize="sm" fontWeight="600" color={mutedText} textTransform="uppercase" letterSpacing="wider">
+                  Total Organizations
+                </Text>
+                <Text mt={2} fontSize="3xl" fontWeight="900" color={headingText}>
+                  {totals.companies}
+                </Text>
               </Box>
-              <Box bg={iconBg} color={accentText} p={3} borderRadius="xl">
-                <FiBriefcase />
-              </Box>
+              <Flex bg={useColorModeValue("blue.50", "blue.900")} color={useColorModeValue("blue.500", "blue.200")} p={4} borderRadius="2xl">
+                <Icon as={FiBriefcase} boxSize={6} />
+              </Flex>
             </HStack>
           </Box>
-          <Box bg={subtleBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" p={4}>
+
+          <Box
+            bg={surfaceBg}
+            border="1px solid"
+            borderColor={useColorModeValue("purple.100", "purple.900")}
+            borderRadius="2xl"
+            p={5}
+            shadow="sm"
+            _hover={{ shadow: "md", transform: "translateY(-2px)" }}
+            transition="all 0.2s"
+          >
             <HStack justify="space-between">
               <Box>
-                <Text fontSize="sm" color={mutedText}>Total Admins</Text>
-                <Text mt={1} fontSize="2xl" fontWeight="800">{totals.admins}</Text>
+                <Text fontSize="sm" fontWeight="600" color={mutedText} textTransform="uppercase" letterSpacing="wider">
+                  System Admins
+                </Text>
+                <Text mt={2} fontSize="3xl" fontWeight="900" color={headingText}>
+                  {totals.admins}
+                </Text>
               </Box>
-              <Box bg={iconBg} color={accentText} p={3} borderRadius="xl">
-                <FiUsers />
-              </Box>
+              <Flex bg={useColorModeValue("purple.50", "purple.900")} color={useColorModeValue("purple.500", "purple.200")} p={4} borderRadius="2xl">
+                <Icon as={FiUsers} boxSize={6} />
+              </Flex>
             </HStack>
           </Box>
-          <Box bg={subtleBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" p={4}>
+
+          <Box
+            bg={surfaceBg}
+            border="1px solid"
+            borderColor={useColorModeValue("teal.100", "teal.900")}
+            borderRadius="2xl"
+            p={5}
+            shadow="sm"
+            _hover={{ shadow: "md", transform: "translateY(-2px)" }}
+            transition="all 0.2s"
+          >
             <HStack justify="space-between">
               <Box>
-                <Text fontSize="sm" color={mutedText}>Active Admins</Text>
-                <Text mt={1} fontSize="2xl" fontWeight="800">{totals.activeAdmins}</Text>
+                <Text fontSize="sm" fontWeight="600" color={mutedText} textTransform="uppercase" letterSpacing="wider">
+                  Active Admins
+                </Text>
+                <Text mt={2} fontSize="3xl" fontWeight="900" color={headingText}>
+                  {totals.activeAdmins}
+                </Text>
               </Box>
-              <Box bg={iconBg} color={accentText} p={3} borderRadius="xl">
-                <FiShield />
-              </Box>
+              <Flex bg={useColorModeValue("teal.50", "teal.900")} color={useColorModeValue("teal.500", "teal.200")} p={4} borderRadius="2xl">
+                <Icon as={FiShield} boxSize={6} />
+              </Flex>
             </HStack>
           </Box>
         </SimpleGrid>
 
-        <Box
-          bg={surfaceBg}
-          border="1px solid"
-          borderColor={borderColor}
-          borderRadius="2xl"
-          p={{ base: 4, md: 5 }}
-          shadow="sm"
-        >
-          <Flex justify="space-between" align={{ base: "start", md: "center" }} gap={4} wrap="wrap" mb={5}>
-            <Box>
-              <Text fontSize="xl" fontWeight="700">Companies</Text>
-              <Text mt={1} color={mutedText}>
-                Pick one company to open its admin workspace.
-              </Text>
-            </Box>
-
-            <InputGroup maxW={{ base: "100%", md: "320px" }}>
+        {/* Directory Section */}
+        <VStack spacing={6} align="stretch">
+          <Flex justify="space-between" align={{ base: "start", md: "center" }} gap={4} wrap="wrap">
+            <InputGroup maxW={{ base: "100%", md: "400px" }} size="lg">
               <InputLeftElement pointerEvents="none">
-                <FiSearch color="#94a3b8" />
+                <FiSearch color="gray.400" />
               </InputLeftElement>
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search company, code, tenant..."
+                placeholder="Search organizations..."
                 borderRadius="full"
+                bg={surfaceBg}
+                border="1px solid"
                 borderColor={borderColor}
-                _focus={{ borderColor: "blue.300", boxShadow: "0 0 0 1px #93c5fd" }}
+                _hover={{ borderColor: "blue.300" }}
+                _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px #3b82f6" }}
+                transition="all 0.2s"
               />
             </InputGroup>
           </Flex>
 
           {companies.loading ? (
-            <Flex py={14} justify="center">
-              <Spinner size="lg" color="blue.500" />
+            <Flex py={20} justify="center" align="center" direction="column" gap={4}>
+              <Spinner size="xl" thickness="4px" speed="0.65s" color="blue.500" />
+              <Text color={mutedText} fontWeight="500">Loading directory...</Text>
             </Flex>
           ) : filteredCompanies.length ? (
-            <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(3, 1fr)" }} gap={5}>
-              {filteredCompanies.map((company: any) => (
-                <Box
-                  key={company._id}
-                  bg={surfaceBg}
-                  border="1px solid"
-                  borderColor={borderColor}
-                  borderRadius="2xl"
-                  p={5}
-                  shadow="sm"
-                  transition="all 0.2s ease"
-                  _hover={{ borderColor: borderHover, boxShadow: "md" }}
-                >
-                  <HStack justify="space-between" align="start" spacing={4}>
-                    <HStack align="start" spacing={4}>
+            <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(3, 1fr)" }} gap={6}>
+              {filteredCompanies.map((company: any) => {
+                const locationStr = company.addressInfo?.[0]
+                  ? [company.addressInfo[0].city, company.addressInfo[0].country]
+                      .filter(Boolean)
+                      .join(", ")
+                  : "Location not set";
+
+                return (
+                  <Box
+                    key={company._id}
+                    role="group"
+                    bg={surfaceBg}
+                    border="1px solid"
+                    borderColor={borderColor}
+                    borderRadius="2xl"
+                    p={6}
+                    shadow="sm"
+                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                    _hover={{
+                      borderColor: "blue.300",
+                      boxShadow: "xl",
+                      transform: "translateY(-4px)",
+                    }}
+                    cursor="pointer"
+                    onClick={() => openCompanyWorkspace(company._id)}
+                    display="flex"
+                    flexDirection="column"
+                  >
+                    <HStack align="start" justify="space-between" mb={3}>
+                      <HStack align="center" spacing={4}>
+                        <Avatar
+                          size="md"
+                          name={company.company_name}
+                          src={company?.logo?.url}
+                          bgGradient="linear(to-br, blue.400, teal.400)"
+                          color="white"
+                          fontWeight="bold"
+                          borderRadius="xl"
+                        />
+                        <Box>
+                          <Tooltip label={company.company_name} placement="top" hasArrow>
+                            <Text fontSize="lg" fontWeight="800" color={headingText} noOfLines={1}>
+                              {company.company_name}
+                            </Text>
+                          </Tooltip>
+                          <HStack spacing={2} mt={1}>
+                            <Badge
+                              colorScheme={company.companyType === "school" ? "purple" : "blue"}
+                              variant="subtle"
+                              borderRadius="md"
+                              px={2}
+                              textTransform="capitalize"
+                            >
+                              {company.companyType || "Standard"}
+                            </Badge>
+                            <Text fontSize="xs" color={mutedText} fontWeight="600">
+                              #{company.companyCode || "--"}
+                            </Text>
+                          </HStack>
+                        </Box>
+                      </HStack>
+
+                      {/* Status Indicator */}
+                      <Tooltip label={company.is_active ? "Active" : "Inactive"} placement="top" hasArrow>
+                        <Box
+                          w={3}
+                          h={3}
+                          borderRadius="full"
+                          bg={company.is_active ? "green.400" : "red.400"}
+                          boxShadow={company.is_active ? "0 0 8px rgba(72, 187, 120, 0.6)" : "none"}
+                        />
+                      </Tooltip>
+                    </HStack>
+
+                    <Divider my={4} borderColor={borderColor} />
+
+                    <VStack spacing={3} align="start" mb={6} flex="1">
+                      <HStack spacing={3} color={mutedText} w="full">
+                        <Icon as={FiMapPin} color="gray.400" />
+                        <Text fontSize="sm" fontWeight="500" noOfLines={1} textTransform="capitalize">
+                          {locationStr}
+                        </Text>
+                      </HStack>
+
+                      <HStack spacing={3} color={mutedText} w="full">
+                        <Icon as={FiGlobe} color="gray.400" />
+                        <Text fontSize="sm" fontWeight="500" noOfLines={1}>
+                          {company.tenantUrl || company.customDomain || company.tenantSlug || "No domain set"}
+                        </Text>
+                      </HStack>
+
+                      <HStack spacing={3} color={mutedText} w="full">
+                        <Icon as={FiMail} color="gray.400" />
+                        <Text fontSize="sm" fontWeight="500" noOfLines={1}>
+                          {company.companyEmail || company.mobileNo || "No contact info"}
+                        </Text>
+                      </HStack>
+                      
+                      {company.departments && company.departments.length > 0 && (
+                        <HStack spacing={3} color={mutedText} w="full">
+                           <Icon as={FiLayers} color="gray.400" />
+                           <Text fontSize="sm" fontWeight="500" noOfLines={1}>
+                             {company.departments.length} Department{company.departments.length > 1 ? 's' : ''}
+                           </Text>
+                        </HStack>
+                      )}
+                    </VStack>
+
+                    <HStack
+                      justify="space-between"
+                      align="center"
+                      mt="auto"
+                      pt={3}
+                      borderTop="1px solid"
+                      borderColor="transparent"
+                      _groupHover={{ borderColor: useColorModeValue("gray.100", "gray.700") }}
+                      transition="all 0.2s"
+                    >
+                      <Text fontSize="sm" fontWeight="600" color="blue.500">
+                        Open Workspace
+                      </Text>
                       <Flex
-                        w="52px"
-                        h="52px"
-                        borderRadius="xl"
+                        w="32px"
+                        h="32px"
+                        borderRadius="full"
+                        bg={useColorModeValue("blue.50", "blue.900")}
                         align="center"
                         justify="center"
-                        bg={iconBg}
-                        color={accentText}
-                        overflow="hidden"
-                        fontWeight="800"
+                        color="blue.500"
+                        transition="all 0.3s"
+                        _groupHover={{ bg: "blue.500", color: "white", transform: "translateX(4px)" }}
                       >
-                        {company?.logo?.url ? (
-                          <img
-                            src={company.logo.url}
-                            alt={company.company_name}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        ) : (
-                          getMonogram(company.company_name)
-                        )}
+                        <Icon as={FiArrowRight} />
                       </Flex>
-                      <Box>
-                        <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={3} py={1}>
-                          {company.companyType}
-                        </Badge>
-                        <Text mt={3} fontSize="lg" fontWeight="700">
-                          {company.company_name}
-                        </Text>
-                        <Text fontSize="sm" color={mutedText}>
-                          {company.companyCode || "--"}
-                        </Text>
-                      </Box>
                     </HStack>
-
-                    <Box color={mutedText}>
-                      <FiArrowRight />
-                    </Box>
-                  </HStack>
-
-                  <Stack spacing={3} mt={5}>
-                    <HStack spacing={2} color={mutedText}>
-                      <FiGlobe />
-                      <Text fontSize="sm" noOfLines={1}>
-                        {company.tenantUrl || company.tenantSlug || "--"}
-                      </Text>
-                    </HStack>
-                    <HStack spacing={2} color={mutedText}>
-                      <FiMail />
-                      <Text fontSize="sm" noOfLines={1}>
-                        {company.companyEmail || company.mobileNo || "No primary contact"}
-                      </Text>
-                    </HStack>
-                  </Stack>
-
-                  <SimpleGrid columns={2} spacing={3} mt={5}>
-                    <Box bg={subtleBg} borderRadius="xl" p={3}>
-                      <Text fontSize="xs" color={mutedText} textTransform="uppercase" fontWeight="700">
-                        Admins
-                      </Text>
-                      <Text mt={1} fontSize="xl" fontWeight="800">
-                        {company.adminCount || 0}
-                      </Text>
-                    </Box>
-                    <Box bg={subtleBg} borderRadius="xl" p={3}>
-                      <Text fontSize="xs" color={mutedText} textTransform="uppercase" fontWeight="700">
-                        Active
-                      </Text>
-                      <Text mt={1} fontSize="xl" fontWeight="800">
-                        {company.activeAdminCount || 0}
-                      </Text>
-                    </Box>
-                  </SimpleGrid>
-
-                  <Button
-                    mt={5}
-                    w="full"
-                    colorScheme="blue"
-                    variant="outline"
-                    borderRadius="full"
-                    rightIcon={<FiArrowRight />}
-                    onClick={() => openCompanyWorkspace(company._id)}
-                  >
-                    Open Admins
-                  </Button>
-                </Box>
-              ))}
+                  </Box>
+                );
+              })}
             </Grid>
           ) : (
-            <Box border="1px dashed" borderColor={borderColor} borderRadius="2xl" p={10} textAlign="center">
-              <Text fontWeight="700" fontSize="lg">
-                No matching companies
+            <Flex
+              direction="column"
+              align="center"
+              justify="center"
+              bg={surfaceBg}
+              border="2px dashed"
+              borderColor={borderColor}
+              borderRadius="3xl"
+              p={12}
+              textAlign="center"
+            >
+              <Flex
+                w="64px"
+                h="64px"
+                bg={useColorModeValue("blue.50", "blue.900")}
+                color="blue.500"
+                borderRadius="full"
+                align="center"
+                justify="center"
+                mb={4}
+              >
+                <Icon as={FiSearch} boxSize={8} />
+              </Flex>
+              <Text fontWeight="800" fontSize="xl" color={headingText}>
+                No organizations found
               </Text>
-              <Text mt={2} color={mutedText}>
-                Try a different search or create a new company.
+              <Text mt={2} color={mutedText} maxW="sm">
+                We couldn't find any organizations matching your current search criteria. Try a different keyword.
               </Text>
-            </Box>
+              <Button
+                mt={6}
+                colorScheme="blue"
+                variant="outline"
+                borderRadius="full"
+                onClick={() => setSearchQuery("")}
+              >
+                Clear Search
+              </Button>
+            </Flex>
           )}
-        </Box>
+        </VStack>
       </Stack>
 
       <Drawer
@@ -411,11 +524,13 @@ const DirectoryPage = observer(() => {
         placement="right"
         onClose={() => setIsCompanyDrawerOpen(false)}
       >
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader>Create Company</DrawerHeader>
-          <DrawerBody pb={6}>
+        <DrawerOverlay backdropFilter="blur(4px)" />
+        <DrawerContent borderLeftRadius={{ base: "none", md: "2xl" }}>
+          <DrawerCloseButton top={4} right={4} />
+          <DrawerHeader borderBottomWidth="1px" borderColor={borderColor} py={5}>
+            <Text fontSize="2xl" fontWeight="800">Create New Company</Text>
+          </DrawerHeader>
+          <DrawerBody pb={6} pt={6}>
             <CompanyForm
               onSubmit={handleCreateCompany}
               onClose={() => setIsCompanyDrawerOpen(false)}

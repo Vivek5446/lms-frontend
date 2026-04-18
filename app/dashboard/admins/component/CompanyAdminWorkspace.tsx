@@ -4,12 +4,6 @@ import {
   Badge,
   Box,
   Button,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerHeader,
-  DrawerOverlay,
   Flex,
   HStack,
   SimpleGrid,
@@ -26,14 +20,57 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FiArrowLeft, FiGlobe, FiMail, FiMapPin, FiPlus, FiShield, FiUsers } from "react-icons/fi";
-import { replaceLabelValueObjects } from "../../../config/utils/function";
 import { readFileAsBase64 } from "../../../config/utils/utils";
 import stores from "../../../store/stores";
-import Form from "./Form";
 import UserTable from "./users/UserTable";
 import DeleteData from "./users/component/DeleteUser";
-import { initialValues } from "./utils/constant";
+import UserDrawer from "../../users/components/UserDrawer";
 
+const emptyManager = (level: number) => ({ level, selectedManager: null });
+const parseManagerLevel = (role: string) => {
+  const match = String(role || "").trim().toLowerCase().match(/^l(\d+)-manager$/i);
+  return match ? Number(match[1]) : null;
+};
+const getRequiredManagerLevels = (role: string, maxLevel: number) => {
+  const normalizedRole = String(role || "").trim().toLowerCase();
+  if (!normalizedRole || normalizedRole === "admin" || normalizedRole === "superadmin" || normalizedRole === "departmenthead") {
+    return [];
+  }
+
+  const managerLevel = parseManagerLevel(normalizedRole);
+  const startLevel = managerLevel ? managerLevel + 1 : 1;
+  if (startLevel > maxLevel) {
+    return [];
+  }
+
+  return Array.from({ length: maxLevel - startLevel + 1 }, (_, index) => index + startLevel);
+};
+const reconcileManagersForRole = (role: string, managers: any[], maxLevel: number) => {
+  const managerMap = new Map<number, any>();
+  managers.forEach((manager) => managerMap.set(Number(manager.level), manager));
+  return getRequiredManagerLevels(role, maxLevel).map((level) => managerMap.get(level) || emptyManager(level));
+};
+const createMemberForm = (companyId: string, role = "admin") => ({
+  code: "",
+  name: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  pic: { file: null, isAdd: 0, isDeleted: 0, url: "" },
+  mobileNumber: "",
+  department: "",
+  city: "",
+  state: "",
+  designation: "",
+  joiningDate: "",
+  role,
+  companyId,
+  companyName: "",
+  companyManagerLevels: 3,
+  createCompany: false,
+  resendSetupEmail: false,
+  managers: reconcileManagersForRole(role, [], 3),
+});
 const isRealFile = (value: unknown): value is File => typeof File !== "undefined" && value instanceof File;
 
 // Compact summary card with smaller font sizes and reduced padding
@@ -114,7 +151,7 @@ const CompanyAdminWorkspace = ({
   const mutedText = useColorModeValue("gray.500", "gray.400");
 
   const {
-    userStore: { createAdmin, updateUser },
+    userStore: { createManagedUser, updateManagedUser },
     auth: { user: currentUser },
     companyStore,
   } = stores;
@@ -136,35 +173,34 @@ const CompanyAdminWorkspace = ({
   const handleAddSubmit = async (formData: any) => {
     try {
       setLoading(true);
-      const values = { ...formData };
+      const payload = { ...formData, companyId: company._id };
 
-      if (isRealFile(values.pic?.file)) {
-        const buffer = await readFileAsBase64(values.pic.file);
-        values.pic = {
-          buffer,
-          filename: values.pic.file.name,
-          type: values.pic.file.type,
-          isAdd: values.pic.isAdd || 1,
+      if (payload.pic?.isDeleted) {
+        payload.pic = {
+          isDeleted: 1,
+          isAdd: 0,
         };
       }
 
-      const profileDetails = Object.fromEntries(
-        Object.entries(values).filter(([key]) => !["pic", "confirmPassword"].includes(key))
-      );
+      if (isRealFile(payload.pic?.file)) {
+        const buffer = await readFileAsBase64(payload.pic.file);
+        payload.pic = {
+          buffer,
+          filename: payload.pic.file.name,
+          type: payload.pic.file.type,
+          isAdd: 1,
+          isDeleted: payload.pic?.isDeleted || 0,
+        };
+      }
 
-      const payload = replaceLabelValueObjects({
-        ...values,
-        company: company._id,
-        title: values.title,
-        profileDetails,
+      await createManagedUser({
+        ...payload,
       });
-
-      await createAdmin(payload);
       await refreshAll();
       setDrawerState({ type: "admin-add", isOpen: false, data: null });
 
       toast({
-        title: "Admin added",
+        title: "Member added",
         description: `${formData.name} now belongs to ${company.company_name}.`,
         status: "success",
         duration: 4000,
@@ -172,8 +208,8 @@ const CompanyAdminWorkspace = ({
       });
     } catch (err: any) {
       toast({
-        title: "Failed to create admin",
-        description: err?.message || "Please review the admin details and try again.",
+        title: "Failed to create member",
+        description: err?.message || "Please review the member details and try again.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -186,45 +222,41 @@ const CompanyAdminWorkspace = ({
   const handleEditSubmit = async (values: any) => {
     try {
       setLoading(true);
-      const formData: any = { ...values, company: company._id };
+      const payload = { ...values, companyId: company._id };
 
-      if (isRealFile(formData?.pic?.file) && formData?.pic?.isAdd) {
-        const buffer = await readFileAsBase64(formData?.pic?.file);
-        formData.pic = {
-          buffer,
-          filename: formData?.pic?.file?.name,
-          type: formData?.pic?.file?.type,
-          isDeleted: formData?.pic?.isDeleted || 0,
-          isAdd: formData?.pic?.isAdd || 0,
-        };
-      } else if (formData?.pic?.isDeleted) {
-        formData.pic = {
-          isDeleted: formData?.pic?.isDeleted || 0,
-          isAdd: formData?.pic?.isAdd || 0,
+      if (payload.pic?.isDeleted) {
+        payload.pic = {
+          isDeleted: 1,
+          isAdd: 0,
         };
       }
 
-      await updateUser({
-        ...values,
-        company: company._id,
-        pic: formData?.pic,
-        title: formData?.title?.label || formData?.title || "",
-        profileDetails: { ...formData },
-      });
+      if (isRealFile(payload.pic?.file)) {
+        const buffer = await readFileAsBase64(payload.pic.file);
+        payload.pic = {
+          buffer,
+          filename: payload.pic.file.name,
+          type: payload.pic.file.type,
+          isAdd: 1,
+          isDeleted: payload.pic?.isDeleted || 0,
+        };
+      }
+
+      await updateManagedUser(values.id || values._id, payload);
 
       await refreshAll();
       setDrawerState({ type: "admin-add", isOpen: false, data: null });
 
       toast({
-        title: "Admin updated",
-        description: `${formData.name} has been updated successfully.`,
+        title: "Member updated",
+        description: `${values.name} has been updated successfully.`,
         status: "success",
         duration: 4000,
         isClosable: true,
       });
     } catch (err: any) {
       toast({
-        title: "Failed to update admin",
+        title: "Failed to update member",
         description: err?.message || "Please try again.",
         status: "error",
         duration: 5000,
@@ -238,6 +270,34 @@ const CompanyAdminWorkspace = ({
   const handleDeleteRefresh = () => {
     refreshAll().catch(() => null);
   };
+
+  const memberRoleOptions = [
+    { label: "Admin", value: "admin" },
+    { label: "Department Head", value: "departmenthead" },
+  ];
+
+  const updateRole = (nextRole: string) => {
+    setDrawerState((prev: any) => ({
+      ...prev,
+      data: {
+        ...(prev.data || createMemberForm(company._id, nextRole)),
+        role: nextRole,
+        resendSetupEmail: nextRole !== "admin" && nextRole !== "departmenthead",
+        managers: reconcileManagersForRole(nextRole, prev.data?.managers || [], 3),
+      },
+    }));
+  };
+
+  const setManagerSelection = (index: number, selectedManager: any) =>
+    setDrawerState((prev: any) => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        managers: (prev.data?.managers || []).map((manager: any, managerIndex: number) =>
+          managerIndex === index ? { ...manager, selectedManager: selectedManager || null } : manager
+        ),
+      },
+    }));
 
   const openUsersManagement = () => {
     companyStore.setSelectedCompanyId(company._id);
@@ -356,12 +416,33 @@ const CompanyAdminWorkspace = ({
                         title={`${company.company_name} - Admins`}
                         filterRole="admin"
                         filterType="admin"
-                        onAdd={() => setDrawerState({ type: "admin-add", isOpen: true, data: null })}
+                        onAdd={() =>
+                          setDrawerState({
+                            type: "admin-add",
+                            isOpen: true,
+                            data: createMemberForm(company._id, "admin"),
+                          })
+                        }
                         onEdit={(entry: any) =>
                           setDrawerState({
                             type: "admin-edit",
                             isOpen: true,
-                            data: { ...entry, ...entry?.profileDetails?.personalInfo },
+                            data: {
+                              ...createMemberForm(company._id, "admin"),
+                              id: entry._id,
+                              code: entry.code || "",
+                              name: entry.name || "",
+                              email: entry.email || entry.username || "",
+                              pic: entry.pic ? { ...entry.pic, file: null, isAdd: 0, isDeleted: 0, url: entry.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
+                              mobileNumber: entry.mobileNumber || "",
+                              department: entry.department || "",
+                              city: entry.city || "",
+                              state: entry.state || "",
+                              designation: entry.designation || "",
+                              joiningDate: entry.joiningDate ? String(entry.joiningDate).slice(0, 10) : "",
+                              role: entry.role || "admin",
+                              companyId: company._id,
+                            },
                           })
                         }
                         onDelete={(entry: any) =>
@@ -386,12 +467,33 @@ const CompanyAdminWorkspace = ({
                         title={`${company.company_name} - Dept Heads`}
                         filterRole="departmenthead"
                         filterType="admin"
-                        onAdd={() => setDrawerState({ type: "admin-add", isOpen: true, data: null })}
+                        onAdd={() =>
+                          setDrawerState({
+                            type: "admin-add",
+                            isOpen: true,
+                            data: createMemberForm(company._id, "departmenthead"),
+                          })
+                        }
                         onEdit={(entry: any) =>
                           setDrawerState({
                             type: "admin-edit",
                             isOpen: true,
-                            data: { ...entry, ...entry?.profileDetails?.personalInfo },
+                            data: {
+                              ...createMemberForm(company._id, "departmenthead"),
+                              id: entry._id,
+                              code: entry.code || "",
+                              name: entry.name || "",
+                              email: entry.email || entry.username || "",
+                              pic: entry.pic ? { ...entry.pic, file: null, isAdd: 0, isDeleted: 0, url: entry.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
+                              mobileNumber: entry.mobileNumber || "",
+                              department: entry.department || "",
+                              city: entry.city || "",
+                              state: entry.state || "",
+                              designation: entry.designation || "",
+                              joiningDate: entry.joiningDate ? String(entry.joiningDate).slice(0, 10) : "",
+                              role: entry.role || "departmenthead",
+                              companyId: company._id,
+                            },
                           })
                         }
                         onDelete={(entry: any) =>
@@ -475,39 +577,43 @@ const CompanyAdminWorkspace = ({
         </Box>
       </Stack>
 
-      {/* Drawer for add/edit */}
-      <Drawer
-        size="xl"
+      <UserDrawer
         isOpen={
           drawerState.isOpen &&
           (drawerState.type === "admin-add" || drawerState.type === "admin-edit")
         }
-        placement="right"
         onClose={() => setDrawerState({ type: "admin-add", isOpen: false, data: null })}
-      >
-        <DrawerOverlay />
-        <DrawerContent bg={surfaceBg}>
-          <DrawerCloseButton />
-          <DrawerHeader borderBottom="1px solid" borderColor={borderColor} fontSize="lg" py={4}>
-            {drawerState.type === "admin-edit" ? "Edit Member" : "Add New Member"}
-          </DrawerHeader>
-          <DrawerBody p={6}>
-            <Form
-              initialData={
-                drawerState.type === "admin-edit"
-                  ? { ...initialValues, ...drawerState.data }
-                  : initialValues
-              }
-              onSubmit={drawerState.type === "admin-edit" ? handleEditSubmit : handleAddSubmit}
-              isOpen={drawerState.isOpen}
-              onClose={() => setDrawerState({ type: "admin-add", isOpen: false, data: null })}
-              isEdit={drawerState.type === "admin-edit"}
-              isLoading={loading}
-              selectedCompany={company}
-            />
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+        userForm={
+          drawerState.data ||
+          createMemberForm(company._id, activeTab === 1 ? "departmenthead" : "admin")
+        }
+        setUserForm={(updater: any) =>
+          setDrawerState((prev: any) => ({
+            ...prev,
+            data:
+              typeof updater === "function"
+                ? updater(prev.data || createMemberForm(company._id, activeTab === 1 ? "departmenthead" : "admin"))
+                : updater,
+          }))
+        }
+        roleOptions={memberRoleOptions}
+        isSuperadmin={false}
+        managedCompanies={[]}
+        filteredCompanies={[company]}
+        borderColor={borderColor}
+        muted={mutedText}
+        currentCompanyName={company.company_name}
+        currentCompanyDepartments={company.departments || []}
+        managerCompanyId={company._id}
+        updateRole={updateRole}
+        setManagerSelection={setManagerSelection}
+        onSubmit={() =>
+          drawerState.type === "admin-edit"
+            ? handleEditSubmit(drawerState.data)
+            : handleAddSubmit(drawerState.data)
+        }
+        loading={loading}
+      />
 
       {/* Delete confirmation modal */}
       {drawerState.type === "delete" && drawerState.isOpen ? (

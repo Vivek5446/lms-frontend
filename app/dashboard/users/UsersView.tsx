@@ -10,6 +10,7 @@ import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import useDebounce from "../../component/config/component/customHooks/useDebounce";
+import { readFileAsBase64 } from "../../config/utils/utils";
 import stores from "../../store/stores";
 import BulkUploadModal from "./components/BulkUploadModal";
 import UserDetailsModal from "./components/UserDetailsModal";
@@ -27,6 +28,9 @@ type UserFormState = {
   code: string;
   name: string;
   email: string;
+  password: string;
+  confirmPassword: string;
+  pic: any;
   mobileNumber: string;
   department: string;
   city: string;
@@ -144,6 +148,9 @@ const initialForm = (): UserFormState => ({
   code: "",
   name: "",
   email: "",
+  password: "",
+  confirmPassword: "",
+  pic: { file: null, isAdd: 0, isDeleted: 0, url: "" },
   mobileNumber: "",
   department: "",
   city: "",
@@ -362,6 +369,9 @@ const UsersView = observer(() => {
       code: user.code || "",
       name: user.name || "",
       email: user.email || user.username || "",
+      password: "",
+      confirmPassword: "",
+      pic: user.pic ? { ...user.pic, file: null, isAdd: 0, isDeleted: 0, url: user.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
       mobileNumber: user.mobileNumber || "",
       department: user.department || "",
       city: user.city || "",
@@ -419,6 +429,8 @@ const UsersView = observer(() => {
       }))
       .filter((manager) => manager.managerEmail);
 
+    const needsDirectPassword = roleValue === "admin" || roleValue === "departmenthead";
+
     if (!code || !name || !email || !roleValue || !designation || !department) {
       toast({
         title: "Missing details",
@@ -439,6 +451,38 @@ const UsersView = observer(() => {
       return;
     }
 
+    if (needsDirectPassword && !userForm.id) {
+      if (!userForm.password.trim()) {
+        toast({
+          title: "Password is required",
+          description: "Enter a password for admin or department head accounts.",
+          status: "warning",
+          duration: 3000,
+        });
+        return;
+      }
+
+      if (userForm.password.trim().length < 6) {
+        toast({
+          title: "Weak password",
+          description: "Password must be at least 6 characters.",
+          status: "warning",
+          duration: 3000,
+        });
+        return;
+      }
+
+      if (userForm.password !== userForm.confirmPassword) {
+        toast({
+          title: "Passwords do not match",
+          description: "Confirm password should match the password field.",
+          status: "warning",
+          duration: 3000,
+        });
+        return;
+      }
+    }
+
     const payload: any = {
       code,
       name,
@@ -453,6 +497,28 @@ const UsersView = observer(() => {
       managers,
       resendSetupEmail: userForm.resendSetupEmail,
     };
+
+    if (userForm.pic?.isDeleted) {
+      payload.pic = {
+        isDeleted: 1,
+        isAdd: 0,
+      };
+    }
+
+    if (userForm.pic?.file instanceof File) {
+      const buffer = await readFileAsBase64(userForm.pic.file);
+      payload.pic = {
+        buffer,
+        filename: userForm.pic.file.name,
+        type: userForm.pic.file.type,
+        isAdd: 1,
+        isDeleted: userForm.pic?.isDeleted || 0,
+      };
+    }
+
+    if (needsDirectPassword) {
+      payload.password = userForm.password.trim();
+    }
 
     if (isSuperadmin) {
       if (userForm.createCompany) {

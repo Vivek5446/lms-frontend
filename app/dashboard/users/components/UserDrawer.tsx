@@ -13,17 +13,15 @@ import {
     DrawerHeader,
     DrawerOverlay,
     Flex,
-    FormControl,
-    FormLabel,
     Icon,
-    Input,
-    Select,
     SimpleGrid,
     Text,
     VStack,
     useColorModeValue,
 } from "@chakra-ui/react";
-import { Building2, Layers, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Building2, Image as ImageIcon, Layers, Lock, User } from "lucide-react";
+import CustomInput from "../../../component/config/component/customInput/CustomInput";
 import ManagerHierarchy from "./ManagerHierarchy";
 
 /* ================= SECTION CARD ================= */
@@ -80,9 +78,22 @@ const UserDrawer = ({
   onSubmit,
   loading,
 }: any) => {
+  const [preview, setPreview] = useState<string | null>(null);
   const availableDepartments = isSuperadmin
     ? filteredCompanies.find((company: any) => company?._id === userForm.companyId)?.departments || []
     : currentCompanyDepartments || [];
+  const needsDirectPassword =
+    userForm.role === "admin" || userForm.role === "departmenthead";
+
+  useEffect(() => {
+    if (userForm?.pic?.file instanceof File) {
+      const url = URL.createObjectURL(userForm.pic.file);
+      setPreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
+
+    setPreview(userForm?.pic?.url || null);
+  }, [userForm?.pic]);
 
   return (
     <Drawer isOpen={isOpen} placement="right" size="xl" onClose={onClose}>
@@ -106,160 +117,244 @@ const UserDrawer = ({
         {/* BODY */}
         <DrawerBody>
           <VStack align="stretch" spacing={6}>
+            <SectionCard title="Profile Image" icon={ImageIcon} color="purple">
+              {preview ? (
+                <Flex direction="column" gap={4}>
+                  <Box
+                    borderRadius="lg"
+                    overflow="hidden"
+                    border="1px solid"
+                    borderColor="gray.200"
+                    maxW="200px"
+                  >
+                    <img
+                      src={preview}
+                      alt="preview"
+                      style={{
+                        width: "100%",
+                        height: "150px",
+                        objectFit: "cover",
+                      }}
+                    />
+                  </Box>
+                  <Button
+                    size="sm"
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={() =>
+                      setUserForm((p: any) => ({
+                        ...p,
+                        pic: {
+                          ...p.pic,
+                          file: null,
+                          url: "",
+                          isDeleted: 1,
+                          isAdd: 0,
+                        },
+                      }))
+                    }
+                  >
+                    Remove Image
+                  </Button>
+                </Flex>
+              ) : (
+                <CustomInput
+                  type="file-drag"
+                  name="pic"
+                  accept="image/*"
+                  onChange={(e: any) => {
+                    const file = e.target.files?.[0];
+                    if (!file) {
+                      return;
+                    }
+
+                    setUserForm((p: any) => ({
+                      ...p,
+                      pic: {
+                        ...p.pic,
+                        file,
+                        isAdd: 1,
+                        isDeleted: 0,
+                        url: "",
+                      },
+                    }));
+                  }}
+                />
+              )}
+            </SectionCard>
 
             {/* EMPLOYEE */}
             <SectionCard title="Employee Details" icon={User} color="blue">
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                <FormControl isRequired>
-                  <FormLabel>Employee Code</FormLabel>
-                  <Input
-                    value={userForm.code}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({ ...p, code: e.target.value }))
-                    }
-                  />
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>Name</FormLabel>
-                  <Input
-                    value={userForm.name}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({ ...p, name: e.target.value }))
-                    }
-                  />
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>Email</FormLabel>
-                  <Input
-                    type="email"
-                    value={userForm.email}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({ ...p, email: e.target.value }))
-                    }
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel>Mobile</FormLabel>
-                  <Input
-                    value={userForm.mobileNumber}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({
-                        ...p,
-                        mobileNumber: e.target.value,
-                      }))
-                    }
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel>Designation</FormLabel>
-                  <Input
-                    value={userForm.designation}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({
-                        ...p,
-                        designation: e.target.value,
-                      }))
-                    }
-                  />
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>Role</FormLabel>
-                  <Select
-                    value={userForm.role}
-                    onChange={(e) => updateRole(e.target.value)}
-                  >
-                    {roleOptions.map((r: any) => (
-                      <option key={r.value} value={r.value}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl>
-                  <FormLabel>Department</FormLabel>
-                  <Select
-                    placeholder="Select department"
-                    value={userForm.department}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({
-                        ...p,
-                        department: e.target.value,
-                      }))
-                    }
-                  >
-                    {availableDepartments.map((department: string) => (
-                      <option key={department} value={department}>
-                        {department}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl>
-                  <FormLabel>City</FormLabel>
-                  <Input
-                    placeholder="Enter city"
-                    value={userForm.city}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({
-                        ...p,
-                        city: e.target.value,
-                      }))
-                    }
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel>State</FormLabel>
-                  <Input
-                    placeholder="Enter state"
-                    value={userForm.state}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({
-                        ...p,
-                        state: e.target.value,
-                      }))
-                    }
-                  />
-                </FormControl>
+                <CustomInput
+                  label="Employee Code"
+                  name="code"
+                  value={userForm.code}
+                  onChange={(e: any) =>
+                    setUserForm((p: any) => ({ ...p, code: e.target.value }))
+                  }
+                />
+                <CustomInput
+                  label="Name"
+                  name="name"
+                  value={userForm.name}
+                  onChange={(e: any) =>
+                    setUserForm((p: any) => ({ ...p, name: e.target.value }))
+                  }
+                />
+                <CustomInput
+                  label="Email"
+                  name="email"
+                  value={userForm.email}
+                  onChange={(e: any) =>
+                    setUserForm((p: any) => ({ ...p, email: e.target.value }))
+                  }
+                />
+                <CustomInput
+                  label="Mobile"
+                  name="mobileNumber"
+                  value={userForm.mobileNumber}
+                  onChange={(e: any) =>
+                    setUserForm((p: any) => ({ ...p, mobileNumber: e.target.value }))
+                  }
+                />
+                <CustomInput
+                  label="Designation"
+                  name="designation"
+                  value={userForm.designation}
+                  onChange={(e: any) =>
+                    setUserForm((p: any) => ({ ...p, designation: e.target.value }))
+                  }
+                />
+                <CustomInput
+                  label="Joining Date"
+                  name="joiningDate"
+                  type="date"
+                  value={userForm.joiningDate}
+                  onChange={(e: any) =>
+                    setUserForm((p: any) => ({ ...p, joiningDate: e.target.value }))
+                  }
+                />
+                <CustomInput
+                  type="select"
+                  label="Role"
+                  name="role"
+                  value={roleOptions.find((r: any) => r.value === userForm.role) || null}
+                  onChange={(option: any) => updateRole(option?.value || "user")}
+                  options={roleOptions}
+                />
+                <CustomInput
+                  type="select"
+                  label="Department"
+                  name="department"
+                  value={
+                    userForm.department
+                      ? { label: userForm.department, value: userForm.department }
+                      : null
+                  }
+                  onChange={(option: any) =>
+                    setUserForm((p: any) => ({ ...p, department: option?.value || "" }))
+                  }
+                  options={availableDepartments.map((department: string) => ({
+                    label: department,
+                    value: department,
+                  }))}
+                />
+                <CustomInput
+                  label="City"
+                  name="city"
+                  value={userForm.city}
+                  onChange={(e: any) =>
+                    setUserForm((p: any) => ({ ...p, city: e.target.value }))
+                  }
+                />
+                <CustomInput
+                  label="State"
+                  name="state"
+                  value={userForm.state}
+                  onChange={(e: any) =>
+                    setUserForm((p: any) => ({ ...p, state: e.target.value }))
+                  }
+                />
               </SimpleGrid>
 
-              <Checkbox
-                mt={4}
-                isChecked={userForm.resendSetupEmail}
-                onChange={(e) =>
-                  setUserForm((p: any) => ({
-                    ...p,
-                    resendSetupEmail: e.target.checked,
-                  }))
-                }
-              >
-                Send setup email
-              </Checkbox>
+            </SectionCard>
+
+            <SectionCard title="Authentication" icon={Lock} color="green">
+              {needsDirectPassword ? (
+                <>
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                    <CustomInput
+                      label={userForm.id ? "New Password" : "Password"}
+                      name="password"
+                      type="password"
+                      value={userForm.password}
+                      onChange={(e: any) =>
+                        setUserForm((p: any) => ({ ...p, password: e.target.value }))
+                      }
+                    />
+                    <CustomInput
+                      label={userForm.id ? "Confirm New Password" : "Confirm Password"}
+                      name="confirmPassword"
+                      type="password"
+                      value={userForm.confirmPassword}
+                      onChange={(e: any) =>
+                        setUserForm((p: any) => ({ ...p, confirmPassword: e.target.value }))
+                      }
+                    />
+                  </SimpleGrid>
+                  <Text fontSize="sm" color={muted} mt={3}>
+                    {userForm.id
+                      ? "Leave these blank if you do not want to change the password."
+                      : "Admin and department head accounts get an immediate password instead of a setup email."}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Checkbox
+                    isChecked={userForm.resendSetupEmail}
+                    onChange={(e) =>
+                      setUserForm((p: any) => ({
+                        ...p,
+                        resendSetupEmail: e.target.checked,
+                      }))
+                    }
+                  >
+                    Send setup email
+                  </Checkbox>
+                  <Text fontSize="sm" color={muted} mt={3}>
+                    Users and managers receive an email to set their own password.
+                  </Text>
+                </>
+              )}
             </SectionCard>
 
             {/* COMPANY */}
             <SectionCard title="Company" icon={Building2} color="purple">
               {isSuperadmin ? (
                 <VStack align="stretch" spacing={4}>
-                  <FormControl isRequired>
-                    <FormLabel>Select company</FormLabel>
-                    <Select
-                      placeholder="Select company"
-                      value={userForm.companyId}
-                      onChange={(e) =>
-                        setUserForm((p: any) => ({
-                          ...p,
-                          companyId: e.target.value,
-                          department: "",
-                        }))
-                      }
-                    >
-                      {filteredCompanies.map((c: any) => (
-                        <option key={c._id} value={c._id}>
-                          {c.company_name}
-                        </option>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <CustomInput
+                    type="select"
+                    label="Select company"
+                    name="companyId"
+                    value={
+                      filteredCompanies
+                        .map((c: any) => ({ label: c.company_name, value: c._id }))
+                        .find((option: any) => option.value === userForm.companyId) || null
+                    }
+                    onChange={(option: any) =>
+                      setUserForm((p: any) => ({
+                        ...p,
+                        companyId: option?.value || "",
+                        department: "",
+                      }))
+                    }
+                    options={filteredCompanies.map((c: any) => ({
+                      label: c.company_name,
+                      value: c._id,
+                    }))}
+                    isSearchable
+                  />
                 </VStack>
               ) : (
                 <Box p={3} borderRadius="md" bg="gray.100">
