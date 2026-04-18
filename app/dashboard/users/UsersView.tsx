@@ -177,8 +177,6 @@ const UsersView = observer(() => {
     createCompany: false,
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedCompanyId, setSelectedCompanyId] = useState("");
-
   const muted = useColorModeValue("gray.600", "gray.400");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const tableHeadBg = useColorModeValue("gray.50", "gray.900");
@@ -255,7 +253,7 @@ const UsersView = observer(() => {
         limit: 10,
         search: debouncedSearch,
         role: listTab,
-        ...(isSuperadmin && selectedCompanyId ? { companyId: selectedCompanyId } : {}),
+        ...(isSuperadmin && scopedCompanyId ? { companyId: scopedCompanyId } : {}),
       });
     } catch (err: any) {
       toast({
@@ -265,7 +263,7 @@ const UsersView = observer(() => {
         duration: 3500,
       });
     }
-  }, [debouncedSearch, isSuperadmin, listTab, page, selectedCompanyId, toast, userStore]);
+  }, [debouncedSearch, isSuperadmin, listTab, page, scopedCompanyId, toast, userStore]);
 
   useEffect(() => {
     fetchUsers();
@@ -282,7 +280,6 @@ const UsersView = observer(() => {
       return;
     }
 
-    setSelectedCompanyId(scopedCompanyId);
     setBulkForm((prev) =>
       prev.companyId === scopedCompanyId ? prev : { ...prev, companyId: scopedCompanyId }
     );
@@ -329,13 +326,13 @@ const UsersView = observer(() => {
   const resetForm = () =>
     setUserForm({
       ...initialForm(),
-      companyId: isSuperadmin ? selectedCompanyId : auth.company || "",
+      companyId: isSuperadmin ? scopedCompanyId : auth.company || "",
       companyManagerLevels: isSuperadmin ? 3 : currentCompanyManagerLevels,
       managers: reconcileManagersForRole("user", [], isSuperadmin ? 3 : currentCompanyManagerLevels),
     });
 
   const openCreate = () => {
-    if (isSuperadmin && !selectedCompanyId) {
+    if (isSuperadmin && !scopedCompanyId) {
       toast({
         title: "Company is required",
         description: "Select a company before creating a user or manager.",
@@ -635,7 +632,7 @@ const UsersView = observer(() => {
       setSelectedFile(null);
       userStore.bulkPreview = [];
       setBulkForm({
-        companyId: selectedCompanyId,
+        companyId: scopedCompanyId,
         companyName: "",
         companyManagerLevels: 3,
         createCompany: false,
@@ -659,22 +656,6 @@ const UsersView = observer(() => {
   const activeTabLabel =
     listTabs.find((item) => item.value === listTab)?.label || "Users";
 
-  const handleSuperadminCompanyChange = (companyId: string) => {
-    companyStore.setSelectedCompanyId(companyId);
-    setSelectedCompanyId(companyId);
-    setPage(1);
-    setListTab("user");
-    setBulkForm((prev) => ({
-      ...prev,
-      companyId,
-    }));
-    setUserForm((prev) => ({
-      ...prev,
-      companyId,
-      managers: reconcileManagersForRole(prev.role, prev.managers, selectedUserManagerLevels),
-    }));
-  };
-
   return (
     <Box minH="100vh" p={{ base: 4, md: 6 }}>
       <VStack align="stretch" spacing={6}>
@@ -684,10 +665,6 @@ const UsersView = observer(() => {
   onOpenCreate={openCreate}
   borderColor={borderColor}
   muted={muted}
-  isSuperadmin={isSuperadmin}
-  selectedCompanyId={selectedCompanyId}
-  onCompanyChange={handleSuperadminCompanyChange}
-  companies={managedCompanies}
 />
 
 <UsersTable
