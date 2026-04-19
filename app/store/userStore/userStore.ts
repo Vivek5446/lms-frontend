@@ -12,7 +12,16 @@ class UserStore {
   loading: boolean = false;
   submitting: boolean = false;
   uploadLoading: boolean = false;
+  permissionLoading: boolean = false;
+  permissionSaving: boolean = false;
   bulkPreview: any[] = [];
+  permissionConfig: any = {
+    companyId: "",
+    companyName: "",
+    catalog: [],
+    roles: [],
+    rolePermissions: {},
+  };
   user: any = {
     loading : false,
     data : [],
@@ -264,6 +273,65 @@ class UserStore {
       return Promise.reject(err?.response?.data || err.message);
     } finally {
       this.submitting = false;
+    }
+  };
+
+  fetchPermissionConfig = async (companyId?: string) => {
+    this.permissionLoading = true;
+    try {
+      const response = await axios.get("/admin/users/permissions/config", {
+        params: companyId ? { companyId } : undefined,
+      });
+      this.permissionConfig = response?.data?.data || this.permissionConfig;
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.permissionLoading = false;
+    }
+  };
+
+  updateRolePermissions = async (
+    role: string,
+    permissions: Record<string, boolean>,
+    companyId?: string
+  ) => {
+    this.permissionSaving = true;
+    try {
+      const response = await axios.put(`/admin/users/permissions/roles/${role}`, {
+        companyId,
+        permissions,
+      });
+      if (response?.data?.data?.rolePermissions) {
+        this.permissionConfig = {
+          ...this.permissionConfig,
+          companyId: response.data.data.companyId || this.permissionConfig.companyId,
+          rolePermissions: response.data.data.rolePermissions,
+        };
+      }
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.permissionSaving = false;
+    }
+  };
+
+  updateUserPermissions = async (id: string, permissions: Record<string, boolean>) => {
+    this.permissionSaving = true;
+    try {
+      const response = await axios.put(`/admin/users/${id}/permissions`, {
+        permissions,
+      });
+      const updatedUser = response?.data?.data?.user;
+      if (updatedUser?._id) {
+        this.users = this.users.map((user) => (user._id === updatedUser._id ? updatedUser : user));
+      }
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.permissionSaving = false;
     }
   };
 

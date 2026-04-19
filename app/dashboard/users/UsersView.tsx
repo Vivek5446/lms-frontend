@@ -12,6 +12,8 @@ import { useDropzone } from "react-dropzone";
 import useDebounce from "../../component/config/component/customHooks/useDebounce";
 import { readFileAsBase64 } from "../../config/utils/utils";
 import stores from "../../store/stores";
+import PermissionGate from "../../component/common/PermissionGate";
+import { PERMISSION_KEYS, hasPermission } from "../../config/utils/permissions";
 import BulkUploadModal from "./components/BulkUploadModal";
 import UserDetailsModal from "./components/UserDetailsModal";
 import UserDrawer from "./components/UserDrawer";
@@ -188,6 +190,13 @@ const UsersView = observer(() => {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const tableHeadBg = useColorModeValue("gray.50", "gray.900");
   const role = normalizeRole(auth.userType || auth.user?.role);
+  const canViewUsers = hasPermission(auth.user, PERMISSION_KEYS.VIEW_USERS);
+  const canCreateUsers = hasPermission(auth.user, PERMISSION_KEYS.CREATE_USERS);
+  const canCreateManagers = hasPermission(auth.user, PERMISSION_KEYS.CREATE_MANAGERS);
+  const canEditUsers = hasPermission(auth.user, PERMISSION_KEYS.EDIT_USERS);
+  const canAssignManagers = hasPermission(auth.user, PERMISSION_KEYS.ASSIGN_MANAGERS);
+  const canOpenCreate = canCreateUsers || canCreateManagers;
+  const canOpenBulk = canOpenCreate || canEditUsers;
   const isSuperadmin = role === "superadmin";
   const isDepartmentHead = role === "departmenthead";
   const scopedCompanyId = companyStore.getActiveCompanyId();
@@ -233,13 +242,22 @@ const UsersView = observer(() => {
   ]);
 
   const roleOptions = useMemo(() => {
-    const baseRoles = ["user", ...Array.from({ length: selectedUserManagerLevels }, (_, index) => `l${index + 1}-manager`)];
+    const baseRoles = [
+      ...(canCreateUsers ? ["user"] : []),
+      ...(canCreateManagers
+        ? Array.from({ length: selectedUserManagerLevels }, (_, index) => `l${index + 1}-manager`)
+        : []),
+    ];
+    const roleSet = new Set(baseRoles);
+    if (userForm.role) {
+      roleSet.add(userForm.role);
+    }
 
-    return baseRoles.map((item) => ({
+    return Array.from(roleSet).map((item) => ({
       value: item,
       label: formatRoleLabel(item),
     }));
-  }, [selectedUserManagerLevels]);
+  }, [canCreateManagers, canCreateUsers, selectedUserManagerLevels, userForm.role]);
 
   const listTabs = useMemo(() => {
     return [
@@ -339,6 +357,16 @@ const UsersView = observer(() => {
     });
 
   const openCreate = () => {
+    if (!canOpenCreate) {
+      toast({
+        title: "Permission required",
+        description: "Your account cannot create users with the current permission set.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
     if (isSuperadmin && !scopedCompanyId) {
       toast({
         title: "Company is required",
@@ -354,6 +382,16 @@ const UsersView = observer(() => {
   };
 
   const openEdit = (user: any) => {
+    if (!canEditUsers) {
+      toast({
+        title: "Permission required",
+        description: "Your account cannot edit users.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
     const roleValue = normalizeRole(user.role || "user");
     const mappedManagers =
       Array.isArray(user.managers) && user.managers.length > 0
@@ -445,6 +483,46 @@ const UsersView = observer(() => {
       toast({
         title: "Invalid hierarchy",
         description: "A user cannot be their own manager.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!userForm.id) {
+      if (roleValue === "user" && !canCreateUsers) {
+        toast({
+          title: "Permission required",
+          description: "Your account cannot create users.",
+          status: "warning",
+          duration: 3000,
+        });
+        return;
+      }
+
+      if (parseManagerLevel(roleValue) && !canCreateManagers) {
+        toast({
+          title: "Permission required",
+          description: "Your account cannot create managers.",
+          status: "warning",
+          duration: 3000,
+        });
+        return;
+      }
+    } else if (!canEditUsers) {
+      toast({
+        title: "Permission required",
+        description: "Your account cannot edit users.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (managers.length > 0 && !canAssignManagers) {
+      toast({
+        title: "Permission required",
+        description: "Your account cannot assign managers.",
         status: "warning",
         duration: 3000,
       });
@@ -723,6 +801,12 @@ const UsersView = observer(() => {
     listTabs.find((item) => item.value === listTab)?.label || "Users";
 
   return (
+    <PermissionGate
+      allowed={canViewUsers}
+      title="Users module is disabled"
+      description="This account does not currently have access to the users workspace."
+      fallbackHref="/dashboard/profile"
+    >
     <Box minH="100vh" p={{ base: 4, md: 6 }}>
       <VStack align="stretch" spacing={6}>
 
@@ -731,6 +815,8 @@ const UsersView = observer(() => {
   onOpenCreate={openCreate}
   borderColor={borderColor}
   muted={muted}
+  canOpenBulk={canOpenBulk}
+  canOpenCreate={canOpenCreate}
 />
 
 <UsersTable
@@ -752,11 +838,12 @@ const UsersView = observer(() => {
   onEdit={openEdit}
   onView={openView}
   formatRoleLabel={formatRoleLabel}
+  canEdit={canEditUsers}
 />
       
       </VStack>
 
-      <UserDrawer
+<UserDrawer
   isOpen={isUserDrawerOpen}
   onClose={() => setIsUserDrawerOpen(false)}
   userForm={userForm}
@@ -774,6 +861,7 @@ const UsersView = observer(() => {
   setManagerSelection={setManagerSelection}
   onSubmit={submitUser}
   loading={userStore.submitting}
+  canAssignManagers={canAssignManagers}
 />
 
 <BulkUploadModal
@@ -804,6 +892,7 @@ const UsersView = observer(() => {
   formatRoleLabel={formatRoleLabel}
 />
     </Box>
+    </PermissionGate>
   );
 });
 

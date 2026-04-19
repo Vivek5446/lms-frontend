@@ -4,6 +4,7 @@ import axios from "axios";
 import { AUTH_TOKEN, BACKEND_URL, ENCRYPT_SECRET_KEY, USER_SESSION_DATA } from "../../config/utils/variables";
 import stores from "../stores";
 import CryptoJS from "crypto-js";
+import { hasPermission as checkUserPermission } from "../../config/utils/permissions";
 
 interface Notification {
   title?: any;
@@ -256,6 +257,10 @@ class AuthStore {
     } catch (err: any) {
       return Promise.reject(err?.response?.data || err);
     }
+  };
+
+  hasPermission = (permissionKey: string) => {
+    return checkUserPermission(this.user, permissionKey);
   };
 
   // Logout user

@@ -15,6 +15,8 @@ import { observer } from "mobx-react-lite";
 import { useEffect } from "react";
 import { departmentStore } from "@/app/store/departmentStore/departmentStore";
 import stores from "@/app/store/stores";
+import PermissionGate from "@/app/component/common/PermissionGate";
+import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 import DepartmentTable from "./DepartmentTable";
 import { FiBriefcase, FiGrid } from "react-icons/fi";
 
@@ -22,6 +24,7 @@ const DepartmentsPage = observer(() => {
   const { auth, companyStore } = stores;
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isSuperadmin = role === "superadmin";
+  const canViewDepartments = hasPermission(auth.user, PERMISSION_KEYS.VIEW_DEPARTMENTS);
   
   // Colors
   const pageBg = useColorModeValue("gray.50", "gray.900");
@@ -49,6 +52,12 @@ const DepartmentsPage = observer(() => {
       : 0;
 
   return (
+    <PermissionGate
+      allowed={canViewDepartments}
+      title="Departments module is disabled"
+      description="This account does not currently have access to departments."
+      fallbackHref="/dashboard/profile"
+    >
     <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 8 }}>
       <Stack spacing={8}>
         
@@ -118,6 +127,7 @@ const DepartmentsPage = observer(() => {
         </Box>
       </Stack>
     </Box>
+    </PermissionGate>
   );
 });
 

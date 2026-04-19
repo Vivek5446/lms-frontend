@@ -77,6 +77,7 @@ const UserDrawer = ({
   setManagerSelection,
   onSubmit,
   loading,
+  canAssignManagers = true,
 }: any) => {
   const [preview, setPreview] = useState<string | null>(null);
   const availableDepartments = isSuperadmin
@@ -365,6 +366,11 @@ const UserDrawer = ({
 
             {/* HIERARCHY */}
             <SectionCard title="Manager Hierarchy" icon={Layers} color="orange">
+              {!canAssignManagers ? (
+                <Text fontSize="sm" color={muted}>
+                  Manager assignment is disabled for this account.
+                </Text>
+              ) : null}
               <ManagerHierarchy
                 managers={userForm.managers}
                 role={userForm.role}
@@ -373,6 +379,7 @@ const UserDrawer = ({
                 muted={muted}
                 borderColor={borderColor}
                 onChange={setManagerSelection}
+                isDisabled={!canAssignManagers}
               />
             </SectionCard>
 

@@ -27,6 +27,8 @@ import { observer } from "mobx-react-lite";
 import { useEffect, useMemo, useState } from "react";
 import stores from "@/app/store/stores";
 import { courseStore } from "@/app/store/courseStore/courseStore";
+import PermissionGate from "@/app/component/common/PermissionGate";
+import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -57,6 +59,7 @@ const CourseAssignmentsAuditPage = observer(() => {
   const { auth, companyStore } = stores;
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isSuperadmin = role === "superadmin";
+  const canViewCourses = hasPermission(auth.user, PERMISSION_KEYS.VIEW_COURSES);
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
   const textColor = useColorModeValue("gray.600", "gray.300");
@@ -105,6 +108,12 @@ const CourseAssignmentsAuditPage = observer(() => {
   }, [rows]);
 
   return (
+    <PermissionGate
+      allowed={canViewCourses}
+      title="Assignments audit is disabled"
+      description="This account does not currently have access to course assignment records."
+      fallbackHref="/dashboard/profile"
+    >
     <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
       <Stack spacing={6}>
         <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
@@ -213,6 +222,7 @@ const CourseAssignmentsAuditPage = observer(() => {
         )}
       </Stack>
     </Box>
+    </PermissionGate>
   );
 });
 

@@ -36,6 +36,8 @@ import { useEffect, useMemo, useState } from "react";
 import stores from "@/app/store/stores";
 import { courseStore } from "@/app/store/courseStore/courseStore";
 import AssignCourseModal from "../components/AssignCourseModal";
+import PermissionGate from "@/app/component/common/PermissionGate";
+import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 
 function getStatusColor(status: string) {
   if (status === "expired") {
@@ -66,6 +68,8 @@ const AssignedCoursesPage = observer(() => {
   const { auth, companyStore } = stores;
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isSuperadmin = role === "superadmin";
+  const canViewCourses = hasPermission(auth.user, PERMISSION_KEYS.VIEW_COURSES);
+  const canAssignCourses = hasPermission(auth.user, PERMISSION_KEYS.ASSIGN_COURSES);
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
   const textColor = useColorModeValue("gray.600", "gray.300");
@@ -185,6 +189,12 @@ const AssignedCoursesPage = observer(() => {
   };
 
   return (
+    <PermissionGate
+      allowed={canViewCourses}
+      title="Assigned courses view is disabled"
+      description="This account does not currently have access to assigned course visibility."
+      fallbackHref="/dashboard/profile"
+    >
     <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
       <Stack spacing={6}>
         <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
@@ -195,7 +205,11 @@ const AssignedCoursesPage = observer(() => {
                 Review what is already assigned to {activeCompany?.company_name || "the selected company"} and assign new courses from the full library without leaving this workspace.
               </Text>
             </Box>
-            <Button colorScheme="blue" onClick={() => openAssignModal()} isDisabled={!companyId && isSuperadmin}>
+            <Button
+              colorScheme="blue"
+              onClick={() => openAssignModal()}
+              isDisabled={!canAssignCourses || (!companyId && isSuperadmin)}
+            >
               Assign New Course
             </Button>
           </Flex>
@@ -382,7 +396,7 @@ const AssignedCoursesPage = observer(() => {
                         <Tbody>
                           {filteredLibraryCourses.map((course) => {
                             const accessibleCourse = accessibleCourseMap.get(course._id);
-                            const canAssignBase = isSuperadmin ? Boolean(companyId) : Boolean(accessibleCourse?.access?.canAssign);
+                            const canAssignBase = canAssignCourses && (isSuperadmin ? Boolean(companyId) : Boolean(accessibleCourse?.access?.canAssign));
                             const canAssign = canAssignBase && course.status === "published";
                             const isAssignedToCompany = companyAssignedCourseIds.has(course._id);
 
@@ -457,6 +471,7 @@ const AssignedCoursesPage = observer(() => {
         }}
       />
     </Box>
+    </PermissionGate>
   );
 });
 

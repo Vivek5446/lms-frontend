@@ -5,8 +5,10 @@ import { observer } from "mobx-react-lite";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import stores from "../store/stores";
+import PermissionGate from "../component/common/PermissionGate";
 import AdminLMS from "./components/LMS/AdminLMS";
 import SuperAdminLMS from "./components/LMS/SuperAdminLMS";
+import { PERMISSION_KEYS, hasPermission } from "../config/utils/permissions";
 
 const Page = observer(() => {
   const { auth } = stores;
@@ -14,13 +16,14 @@ const Page = observer(() => {
   
   // Normalized role check
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
+  const canViewDashboard = hasPermission(auth.user, PERMISSION_KEYS.VIEW_DASHBOARD);
   const isLoading = auth.isLoading;
 
   useEffect(() => {
-    if (!isLoading && role && !["admin", "superadmin"].includes(role)) {
+    if (!isLoading && role && (!["admin", "superadmin"].includes(role) || !canViewDashboard)) {
       router.replace("/");
     }
-  }, [isLoading, role, router]);
+  }, [canViewDashboard, isLoading, role, router]);
 
   if (isLoading) {
     return (
@@ -55,11 +58,18 @@ const Page = observer(() => {
   const pageBg = useColorModeValue("gray.50", "gray.900");
 
   return (
-    <Box minH="100vh" bg={pageBg}>
-      <Container maxW="container.2xl" py={8}>
-        <RenderDashboard />
-      </Container>
-    </Box>
+    <PermissionGate
+      allowed={canViewDashboard}
+      title="Dashboard access is disabled"
+      description="This account does not currently have access to the dashboard."
+      fallbackHref="/dashboard/profile"
+    >
+      <Box minH="100vh" bg={pageBg}>
+        <Container maxW="container.2xl" py={8}>
+          <RenderDashboard />
+        </Container>
+      </Box>
+    </PermissionGate>
   );
 });
 

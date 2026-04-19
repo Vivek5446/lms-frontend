@@ -27,6 +27,7 @@ import { FiSearch } from "react-icons/fi";
 import stores from "@/app/store/stores";
 import { batchStore } from "@/app/store/batchStore/batchStore";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
+import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 import BatchCard from "./BatchCard";
 import BatchCreationModal from "./BatchCreationModal";
 import BatchDetailsDrawer from "./BatchDetailsDrawer";
@@ -47,8 +48,8 @@ const BatchesWorkspace = observer(
     const toast = useToast();
     const isLearner = isLearnerRole(role);
     const isSuperadmin = role === "superadmin";
-    const canCreate = ["superadmin", "admin", "departmenthead"].includes(role);
-    const canManage = ["superadmin", "admin", "departmenthead"].includes(role);
+    const canCreate = hasPermission(auth.user, PERMISSION_KEYS.MANAGE_BATCHES);
+    const canManage = hasPermission(auth.user, PERMISSION_KEYS.MANAGE_BATCHES);
     const creationDisclosure = useDisclosure();
     const detailsDisclosure = useDisclosure();
     const editDisclosure = useDisclosure();

@@ -15,11 +15,14 @@ import { FaSearch } from "react-icons/fa";
 import debounce from "lodash.debounce";
 import Link from "next/link";
 import { sidebarDatas } from "../../../../SidebarLayout/utils/SidebarItems";
+import stores from "@/app/store/stores";
+import { hasPermission } from "@/app/config/utils/permissions";
 
 const SearchBar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const user = stores.auth.user;
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -44,8 +47,10 @@ const SearchBar = () => {
       return;
     }
 
-    const filtered = sidebarDatas.filter((item: any) =>
-      item?.name?.toLowerCase()?.includes(query.toLowerCase())
+    const filtered = sidebarDatas.filter(
+      (item: any) =>
+        item?.name?.toLowerCase()?.includes(query.toLowerCase()) &&
+        (!item.permissionKey || hasPermission(user, item.permissionKey))
     );
     setResults(filtered);
   };

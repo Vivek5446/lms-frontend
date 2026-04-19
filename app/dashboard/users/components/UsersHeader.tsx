@@ -7,6 +7,8 @@ type Props = {
   onOpenCreate: () => void;
   borderColor: string;
   muted: string;
+  canOpenBulk?: boolean;
+  canOpenCreate?: boolean;
 };
 
 const UsersHeader = ({
@@ -14,6 +16,8 @@ const UsersHeader = ({
   onOpenCreate,
   borderColor,
   muted,
+  canOpenBulk = true,
+  canOpenCreate = true,
 }: Props) => {
   return (
     <Box
@@ -45,12 +49,16 @@ const UsersHeader = ({
           flexWrap="wrap"
           justify={{ base: "stretch", md: "flex-end" }}
         >
-          <Button colorScheme="purple" variant="outline" onClick={onOpenBulk}>
-            Excel Upload
-          </Button>
-          <Button colorScheme="blue" onClick={onOpenCreate}>
-            Add User
-          </Button>
+          {canOpenBulk ? (
+            <Button colorScheme="purple" variant="outline" onClick={onOpenBulk}>
+              Excel Upload
+            </Button>
+          ) : null}
+          {canOpenCreate ? (
+            <Button colorScheme="blue" onClick={onOpenCreate}>
+              Add User
+            </Button>
+          ) : null}
         </HStack>
       </Flex>
     </Box>

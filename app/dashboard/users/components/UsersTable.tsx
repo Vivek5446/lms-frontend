@@ -37,6 +37,7 @@ type Props = {
   onEdit: (user: any) => void;
   onView: (user: any) => void;
   formatRoleLabel: (role: string) => string;
+  canEdit?: boolean;
 };
 
 const UsersTable = ({
@@ -55,6 +56,7 @@ const UsersTable = ({
   onEdit,
   onView,
   formatRoleLabel,
+  canEdit = true,
 }: Props) => {
   const columns = [
     {
@@ -277,7 +279,7 @@ const UsersTable = ({
               showAddButton: false,
             },
             editKey: {
-              showEditButton: true,
+              showEditButton: canEdit,
               title: "Edit User",
               function: (user: any) => onEdit(user),
             },

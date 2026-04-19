@@ -14,6 +14,8 @@ import { buildCourseAssetUrl, CourseLaunchSection, isScormLaunchSection } from "
 import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore";
 import stores from "@/app/store/stores";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
+import PermissionGate from "@/app/component/common/PermissionGate";
+import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 
 function CoursePage() {
   const [view, setView] = useState<"gallery" | "create" | "details">("gallery");
@@ -30,6 +32,9 @@ function CoursePage() {
   const router = useRouter();
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
   const isLearner = isLearnerRole(role);
+  const canViewCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.VIEW_COURSES);
+  const canManageCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.MANAGE_COURSES);
+  const canAssignCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.ASSIGN_COURSES);
 
   useEffect(() => {
     if (isLearner) {
@@ -37,8 +42,10 @@ function CoursePage() {
       return;
     }
 
-    courseStore.fetchCourses();
-  }, [isLearner, router]);
+    if (canViewCourses) {
+      courseStore.fetchCourses();
+    }
+  }, [canViewCourses, isLearner, router]);
 
   const handleCreateSuccess = () => {
     courseStore.fetchCourses();
@@ -80,7 +87,7 @@ function CoursePage() {
           course={activeCourse}
           onBack={() => setView("gallery")}
           onLaunchSection={(launchSection) => handleLaunchScorm(launchSection)}
-          onAssignCourse={role === "superadmin" ? () => setIsAssignModalOpen(true) : undefined}
+          onAssignCourse={canAssignCourses ? () => setIsAssignModalOpen(true) : undefined}
         />
 
         <AnimatePresence>
@@ -133,6 +140,12 @@ function CoursePage() {
 
   // ─── Gallery View ──────────────────────────────────────────
   return (
+    <PermissionGate
+      allowed={canViewCourses}
+      title="Courses module is disabled"
+      description="This account does not currently have access to the course workspace."
+      fallbackHref="/dashboard/profile"
+    >
     <div style={{ minHeight: "100vh", background: pageBg, padding: "32px 24px" }}>
       <div>
 
@@ -180,7 +193,7 @@ function CoursePage() {
                   : "Assign Courses"}
             </motion.button>
 
-            {!isLearner ? (
+            {!isLearner && canManageCourses ? (
               <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
@@ -221,20 +234,22 @@ function CoursePage() {
             <p style={{ fontSize: 40, marginBottom: 8 }}>📚</p>
             <p style={{ fontSize: 18, fontWeight: 600, color: titleColor }}>No courses yet</p>
             <p style={{ fontSize: 14, color: mutedTextColor, marginBottom: 24 }}>Create your first course to get started!</p>
-            <button
-              onClick={() => setView("create")}
-              style={{
-                padding: "10px 24px",
-                borderRadius: 10,
-                background: "#4F46E5",
-                color: "#fff",
-                border: "none",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Create First Course
-            </button>
+            {canManageCourses ? (
+              <button
+                onClick={() => setView("create")}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 10,
+                  background: "#4F46E5",
+                  color: "#fff",
+                  border: "none",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Create First Course
+              </button>
+            ) : null}
           </div>
         ) : (
           <div
@@ -354,6 +369,7 @@ function CoursePage() {
         )}
       </div>
     </div>
+    </PermissionGate>
   );
 }
 

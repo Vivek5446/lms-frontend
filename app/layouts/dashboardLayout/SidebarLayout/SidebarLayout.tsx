@@ -38,6 +38,7 @@ import {
   mediumSidebarWidth,
   sidebarWidth,
 } from "../../../component/config/utils/variable";
+import { hasPermission } from "@/app/config/utils/permissions";
 
 export interface SidebarItem {
   id: number;
@@ -450,6 +451,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
     const { colorMode } = useColorMode();
 
     const [sidebarData, setSidebarData] = useState<SidebarItem[]>([]);
+    const [footerItems, setFooterItems] = useState<SidebarItem[]>([]);
     const [activeItemId, setActiveItemId] = useState<number | null>(1);
 
     useEffect(() => {
@@ -468,7 +470,12 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
               .flatMap((item: string) => [item, String(item).toLowerCase()])
           )
         );
-        setSidebarData(getSidebarDataByRole(roles));
+        setSidebarData(getSidebarDataByRole(roles, user));
+        setFooterItems(
+          sidebarFooterData.filter(
+            (item: any) => !item.permissionKey || hasPermission(user, item.permissionKey)
+          )
+        );
       }
 
       const companyColors = user?.companyDetails?.sidebarColors;
@@ -612,7 +619,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
             >
               {isCollapsed ? (
                 <VStack align="start" spacing={0.5} px={1}>
-                  {sidebarFooterData.map((item) => (
+                  {footerItems.map((item) => (
                     <SidebarPopover
                       key={item.id}
                       item={item}
@@ -626,7 +633,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
                 </VStack>
               ) : (
                 <SidebarAccordion
-                  items={sidebarFooterData}
+                  items={footerItems}
                   onClick={onItemClick}
                   onLeafClick={handleLeafItemClick}
                   activeItemId={activeItemId}

@@ -2,6 +2,11 @@
 
 import ScormQuizReviewContent from "@/app/dashboard/course/scorm/ScormQuizReviewContent";
 import {
+  clampLearningProgress,
+  getLearningProgressState,
+  getLearningStatusMeta,
+} from "@/app/dashboard/course/scorm/progressPresentation";
+import {
   estimateCompletedSections,
   ScormAnswerSectionRecord,
   summarizeAnswerSections,
@@ -15,11 +20,6 @@ import {
   getFirstPlayableLaunchSection,
   isScormLaunchSection,
 } from "@/app/dashboard/course/scorm/sectionTracking";
-import {
-  clampLearningProgress,
-  getLearningProgressState,
-  getLearningStatusMeta,
-} from "@/app/dashboard/course/scorm/progressPresentation";
 import {
   Accordion,
   AccordionButton,
@@ -308,7 +308,7 @@ export default function CourseDetails({
         px={{ base: 4, md: 6 }}
         py={3}
       >
-        <Container maxW="container.xl">
+        <Container maxW="container.2xl">
           <Flex align="center" gap={4}>
             <MotionButton
               whileHover={{ scale: 1.05 }}
@@ -352,7 +352,7 @@ export default function CourseDetails({
         </Container>
       </Box>
 
-      <Container maxW="container.xl" py={8}>
+      <Container maxW="container.2xl" py={8}>
         <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
           {/* Main content */}
           <Stack spacing={8}>

@@ -25,6 +25,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import stores from '@/app/store/stores';
 import { isLearnerRole, isManagerRole } from '@/app/config/utils/roleAccess';
+import { PERMISSION_KEYS, hasPermission } from '@/app/config/utils/permissions';
 import UserProfileDrawer from './UserProfileDrawer';
 
 interface NavLink {
@@ -44,7 +45,15 @@ const Header: React.FC = observer(() => {
   const isLoggedIn = Boolean(user);
   const isLearner = isLoggedIn && isLearnerRole(role);
   const isManagerUser = isLoggedIn && isManagerRole(role);
-  const appHref = role === 'superadmin' ? '/dashboard/admins' : role === 'admin' || role === 'departmenthead' ? '/dashboard/users' : '/course';
+  const appHref = hasPermission(user, PERMISSION_KEYS.VIEW_COMPANIES)
+    ? '/dashboard/admins'
+    : hasPermission(user, PERMISSION_KEYS.VIEW_USERS)
+      ? '/dashboard/users'
+      : hasPermission(user, PERMISSION_KEYS.VIEW_COURSES)
+        ? '/dashboard/course'
+        : hasPermission(user, PERMISSION_KEYS.VIEW_BATCHES)
+          ? '/dashboard/batches'
+          : '/course';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);

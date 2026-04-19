@@ -26,6 +26,7 @@ type Props = {
   muted: string;
   borderColor: string;
   onChange: (index: number, value: any) => void;
+  isDisabled?: boolean;
 };
 
 const ManagerHierarchy = ({
@@ -36,6 +37,7 @@ const ManagerHierarchy = ({
   muted,
   borderColor,
   onChange,
+  isDisabled = false,
 }: Props) => {
   const normalizeEmail = (value: any) =>
     String(value || "").trim().toLowerCase();
@@ -104,7 +106,7 @@ const ManagerHierarchy = ({
               isSearchable
               isClear
               onChange={(val: any) => onChange(index, val)}
-              disabled={!managerCompanyId && createCompany}
+              disabled={isDisabled || (!managerCompanyId && createCompany)}
             />
 
             {!managerCompanyId && createCompany && (
