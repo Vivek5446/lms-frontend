@@ -61,14 +61,14 @@ const DepartmentsPage = observer(() => {
           borderBottom="1px solid" 
           borderColor={dividerColor}
         >
-          <Box>
+          {/* <Box>
             <Heading size="lg" fontWeight="700" letterSpacing="tight">
               Departments
             </Heading>
             <Text fontSize="md" color={secondaryTextColor} mt={1}>
               Structure and management for <b>{activeCompany?.company_name || "ABC"}</b>
             </Text>
-          </Box>
+          </Box> */}
 
           {/* Inline Stats */}
           <Flex align="center" gap={8} mt={{ base: 4, md: 0 }}>

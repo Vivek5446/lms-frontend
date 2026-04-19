@@ -1,37 +1,37 @@
+import { departmentStore } from "@/app/store/departmentStore/departmentStore";
 import {
-  Box,
-  Flex,
-  Text,
-  Button,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  IconButton,
-  Spinner,
-  Badge,
-  useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-} from "@chakra-ui/react";
-import {
-  EditIcon,
-  DeleteIcon,
   AddIcon,
   ChevronRightIcon,
+  DeleteIcon,
+  EditIcon,
 } from "@chakra-ui/icons";
+import {
+  Badge,
+  Box,
+  Button,
+  Flex,
+  IconButton,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Spinner,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
+  useDisclosure,
+} from "@chakra-ui/react";
+import { ChevronLeftIcon } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
-import { ChevronLeftIcon } from "lucide-react";
-import { departmentStore } from "@/app/store/departmentStore/departmentStore";
 import AddDepartmentModal from "./AddDepartment";
 
 type DepartmentTableProps = {
