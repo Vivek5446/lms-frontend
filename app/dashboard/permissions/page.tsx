@@ -223,7 +223,7 @@ const PermissionsPage = observer(() => {
               {permissions.map((permission: any) => (
                 <div
                   key={permission.key}
-                  className="group flex items-start justify-between gap-5 rounded-3xl border border-gray-100 bg-white p-5 transition-all duration-200 hover:border-violet-200 hover:bg-gradient-to-br hover:from-white hover:to-violet-50"
+                  className="group flex items-start justify-between gap-5 rounded-3xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:border-violet-200 hover:bg-gradient-to-br hover:from-white hover:to-violet-50"
                 >
                   <div className="flex-1">
                     <div className="text-base font-semibold text-gray-900 group-hover:text-violet-700 transition-colors">

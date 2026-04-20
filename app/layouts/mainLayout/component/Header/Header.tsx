@@ -1,17 +1,19 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react';
-import { observer } from 'mobx-react-lite';
+import { PERMISSION_KEYS, hasPermission } from '@/app/config/utils/permissions';
+import { isLearnerRole, isManagerRole } from '@/app/config/utils/roleAccess';
+import stores from '@/app/store/stores';
+import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import {
   Avatar,
   Box,
   Button,
+  Link as ChakraLink,
   Container,
   Flex,
   HStack,
   IconButton,
   Image,
-  Link as ChakraLink,
   Menu,
   MenuButton,
   MenuItem,
@@ -20,12 +22,10 @@ import {
   Text,
   useColorMode,
 } from '@chakra-ui/react';
+import { observer } from 'mobx-react-lite';
 import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { MoonIcon, SunIcon } from '@chakra-ui/icons';
-import stores from '@/app/store/stores';
-import { isLearnerRole, isManagerRole } from '@/app/config/utils/roleAccess';
-import { PERMISSION_KEYS, hasPermission } from '@/app/config/utils/permissions';
+import { useEffect, useMemo, useState } from 'react';
 import UserProfileDrawer from './UserProfileDrawer';
 
 interface NavLink {
@@ -233,7 +233,7 @@ const Header: React.FC = observer(() => {
                         <Text fontWeight="bold" noOfLines={1}>{displayName}</Text>
                         <Text fontSize="sm" color="gray.500" noOfLines={1}>{user?.username || ''}</Text>
                       </Box>
-                      <MenuItem borderRadius="xl" onClick={() => setIsProfileOpen(true)}>
+                      <MenuItem borderRadius="xl" onClick={() => router.push('/user-profile')}>
                         View profile
                       </MenuItem>
                       <MenuItem borderRadius="xl" as={NextLink} href={appHref}>
