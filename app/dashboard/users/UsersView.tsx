@@ -263,14 +263,25 @@ const UsersView = observer(() => {
   }, [canCreateManagers, canCreateUsers, selectedUserManagerLevels, userForm.role]);
 
   const listTabs = useMemo(() => {
-    return [
-      { label: "Users", value: "user" },
-      ...visibleManagerLevels.map((level) => ({
+    const tabs = [{ label: "Users", value: "user" }];
+
+    visibleManagerLevels.forEach((level) => {
+      tabs.push({
         label: `L${level} Managers`,
         value: `l${level}-manager`,
-      })),
-    ];
-  }, [visibleManagerLevels]);
+      });
+    });
+
+    if (isSuperadmin) {
+      tabs.push({ label: "Admins", value: "admin" });
+    }
+
+    if (isSuperadmin || role === "admin") {
+      tabs.push({ label: "Department Heads", value: "departmenthead" });
+    }
+
+    return tabs;
+  }, [isSuperadmin, role, visibleManagerLevels]);
 
   const activeTabIndex = Math.max(0, listTabs.findIndex((item) => item.value === listTab));
 
@@ -471,11 +482,12 @@ const UsersView = observer(() => {
       .filter((manager) => manager.managerEmail);
 
     const needsDirectPassword = roleValue === "admin" || roleValue === "departmenthead";
+    const isDepartmentRequired = roleValue !== "admin" && roleValue !== "superadmin";
 
-    if (!code || !name || !email || !roleValue || !designation || !department) {
+    if (!code || !name || !email || !roleValue || !designation || (isDepartmentRequired && !department)) {
       toast({
         title: "Missing details",
-        description: "Employee code, name, email, designation, department, and role are required.",
+        description: `Employee code, name, email, designation, ${isDepartmentRequired ? "department, " : ""}and role are required.`,
         status: "warning",
         duration: 3000,
       });
