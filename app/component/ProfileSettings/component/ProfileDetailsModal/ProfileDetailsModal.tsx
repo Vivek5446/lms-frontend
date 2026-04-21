@@ -57,11 +57,6 @@ const DetailItem = ({ label, value, icon }) => (
 );
 
 const ProfileDetailsModal = observer(({ isOpen, onClose, user }: any) => {
-  const [schedule, setSchedule] = useState(
-    user?.companyDetails?.operatingHours?.length > 0
-      ? user.companyDetails.operatingHours
-      : getDefaultSchedule()
-  );
   const [isSaving, setIsSaving] = useState(false);
   const { companyStore } = stores;
   const toast = useToast();
@@ -75,8 +70,7 @@ const ProfileDetailsModal = observer(({ isOpen, onClose, user }: any) => {
     }));
 
     try {
-      const response = await companyStore.updateOperatingHours({
-        operatingHours: payload,
+      const response = await companyStore.updateCompanyPreferences({
         sidebarColors: stores.themeStore.themeConfig.sidebarColors,
       });
 
@@ -176,7 +170,6 @@ const ProfileDetailsModal = observer(({ isOpen, onClose, user }: any) => {
           <Tabs isFitted variant="enclosed" colorScheme="blue" defaultIndex={0}>
             <TabList px={4} pt={4}>
               <Tab fontWeight="bold">Profile</Tab>
-              <Tab fontWeight="bold">Operating Hours</Tab>
               <Tab fontWeight="bold">Sidebar</Tab>
             </TabList>
 
@@ -216,10 +209,7 @@ const ProfileDetailsModal = observer(({ isOpen, onClose, user }: any) => {
                 </VStack>
               </TabPanel>
 
-              {/* TAB 2: Operating Hours (Placeholder) */}
-              <TabPanel p={6}>
-                <OperatingHours schedule={schedule} setSchedule={setSchedule} />
-              </TabPanel>
+
 
               {/* TAB 3: Sidebar Settings */}
               <TabPanel p={6}>
