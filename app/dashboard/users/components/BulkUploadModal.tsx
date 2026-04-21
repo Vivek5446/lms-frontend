@@ -4,11 +4,8 @@ import {
   Badge,
   Box,
   Button,
-  Checkbox,
-  Flex,
   FormControl,
   FormLabel,
-  Input,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -16,7 +13,6 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Select,
   Table,
   TableContainer,
   Tbody,
@@ -26,9 +22,9 @@ import {
   Thead,
   Tr,
   VStack,
+  useColorModeValue,
 } from "@chakra-ui/react";
-
-const COLORS = ["blue", "purple", "orange", "green", "pink", "cyan"];
+import ReactSelect from "react-select";
 
 type Props = {
   isOpen: boolean;
@@ -74,6 +70,31 @@ const BulkUploadModal = ({
   loading,
   onUpload,
 }: Props) => {
+  const selectStyles = {
+    control: (base: any) => ({
+      ...base,
+      borderRadius: "12px",
+      borderColor: "inherit",
+      "&:hover": {
+        borderColor: "inherit",
+      },
+    }),
+    menu: (base: any) => ({
+      ...base,
+      borderRadius: "12px",
+      zIndex: 9999,
+    }),
+  };
+
+  const companyOptions = filteredCompanies.map((c: any) => ({
+    label: c.company_name,
+    value: c._id,
+  }));
+
+  const selectedOption = companyOptions.find(
+    (opt) => opt.value === bulkForm.companyId
+  );
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="6xl">
       <ModalOverlay backdropFilter="blur(6px)" />
@@ -84,213 +105,181 @@ const BulkUploadModal = ({
 
         <ModalBody>
           <VStack align="stretch" spacing={5}>
-            
-            {/* ================= COMPANY ================= */}
+            {/* ================= COMPANY SELECTION ================= */}
             {isSuperadmin && (
-              <Box borderWidth="1px" borderColor={borderColor} p={4} borderRadius="xl">
-                <VStack align="stretch" spacing={4}>
-                  <Checkbox
-                    isChecked={bulkForm.createCompany}
-                    onChange={(e) =>
+              <Box
+                borderWidth="1px"
+                borderColor={borderColor}
+                p={4}
+                borderRadius="xl"
+              >
+                <FormControl isRequired>
+                  <FormLabel fontWeight="bold">Select Company</FormLabel>
+                  <ReactSelect
+                    placeholder="Search and choose company..."
+                    options={companyOptions}
+                    value={selectedOption}
+                    onChange={(opt: any) =>
                       setBulkForm((p: any) => ({
                         ...p,
-                        createCompany: e.target.checked,
-                        companyId: "",
+                        companyId: opt?.value || "",
+                        createCompany: false,
                       }))
                     }
-                  >
-                    Create company for upload
-                  </Checkbox>
-
-                  {bulkForm.createCompany ? (
-                    <Flex gap={4}>
-                      <FormControl isRequired>
-                        <FormLabel>Company Name</FormLabel>
-                        <Input
-                          value={bulkForm.companyName}
-                          onChange={(e) =>
-                            setBulkForm((p: any) => ({
-                              ...p,
-                              companyName: e.target.value,
-                            }))
-                          }
-                        />
-                      </FormControl>
-
-                      <FormControl isRequired>
-                        <FormLabel>Manager Levels</FormLabel>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={bulkForm.companyManagerLevels}
-                          onChange={(e) =>
-                            setBulkForm((p: any) => ({
-                              ...p,
-                              companyManagerLevels:
-                                Number(e.target.value) || 1,
-                            }))
-                          }
-                        />
-                      </FormControl>
-                    </Flex>
-                  ) : (
-                    <FormControl isRequired>
-                      <FormLabel>Select Company</FormLabel>
-                      <Select
-                        placeholder="Choose company"
-                        value={bulkForm.companyId}
-                        onChange={(e) =>
-                          setBulkForm((p: any) => ({
-                            ...p,
-                            companyId: e.target.value,
-                          }))
-                        }
-                      >
-                        {filteredCompanies.map((c: any) => (
-                          <option key={c._id} value={c._id}>
-                            {c.company_name}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
-                </VStack>
+                    styles={selectStyles}
+                  />
+                </FormControl>
               </Box>
             )}
 
             {/* ================= DROPZONE ================= */}
-            <Box
-              {...getRootProps()}
-              borderWidth="2px"
-              borderStyle="dashed"
-              borderColor={isDragActive ? "blue.400" : borderColor}
-              borderRadius="2xl"
-              p={8}
-              textAlign="center"
-              cursor="pointer"
-              bg={isDragActive ? "blue.50" : "transparent"}
-            >
-              <input {...getInputProps()} />
+            {bulkForm.companyId ? (
+              <Box
+                {...getRootProps()}
+                borderWidth="2px"
+                borderStyle="dashed"
+                borderColor={isDragActive ? "blue.400" : borderColor}
+                borderRadius="2xl"
+                p={8}
+                textAlign="center"
+                cursor="pointer"
+                bg={isDragActive ? "blue.50" : "transparent"}
+                _hover={{ bg: useColorModeValue("gray.50", "whiteAlpha.50") }}
+                transition="all 0.2s"
+              >
+                <input {...getInputProps()} />
 
-              <Text fontWeight="bold">
-                Drag & drop Excel file here
-              </Text>
+                <Text fontWeight="bold">Drag & drop Excel file here</Text>
 
-              <Text fontSize="sm" color={muted} mt={2}>
-                Upload `.xlsx` / `.xls` with columns like Employee Code, Employee Name, Email ID, Department, City, State, Designation and manager email fields.
-              </Text>
-
-              {selectedFile && (
-                <Text mt={3} color="blue.500" fontSize="sm">
-                  {selectedFile.name}
+                <Text fontSize="sm" color={muted} mt={2}>
+                  Upload `.xlsx` / `.xls` with columns like Employee Code,
+                  Employee Name, Email ID, Department, City, State, Designation
+                  and manager email fields.
                 </Text>
-              )}
-            </Box>
 
-            {/* ================= PREVIEW ================= */}
-            <Box>
-              <Text fontWeight="bold" mb={3}>
-                Preview
-              </Text>
-
-              <TableContainer
+                {selectedFile && (
+                  <Text mt={3} color="blue.500" fontSize="sm" fontWeight="semibold">
+                    Selected: {selectedFile.name}
+                  </Text>
+                )}
+              </Box>
+            ) : (
+              <Box
                 borderWidth="1px"
                 borderColor={borderColor}
-                borderRadius="xl"
-                maxH="400px"
-                overflowY="auto"
+                p={8}
+                borderRadius="2xl"
+                bg={useColorModeValue("gray.50", "whiteAlpha.50")}
+                textAlign="center"
               >
-                <Table size="sm">
-                  <Thead bg={tableHeadBg}>
-                    <Tr>
-                      <Th>Row</Th>
-                      <Th>Name</Th>
-                      <Th>Email</Th>
-                      <Th>Department</Th>
-                      <Th>City</Th>
-                      <Th>State</Th>
-                      <Th>Role</Th>
-                      <Th>Company</Th>
-                      <Th>Managers</Th>
-                      <Th>Action</Th>
-                      <Th>Errors</Th>
-                    </Tr>
-                  </Thead>
+                <Text color={muted} fontStyle="italic">
+                  Please select a company above to enable file upload.
+                </Text>
+              </Box>
+            )}
 
-                  <Tbody>
-                    {loading ? (
+            {/* ================= PREVIEW ================= */}
+            {preview.length > 0 && (
+              <Box>
+                <Text fontWeight="bold" mb={3}>
+                  Preview ({preview.length} rows)
+                </Text>
+
+                <TableContainer
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                  borderRadius="xl"
+                  maxH="400px"
+                  overflowY="auto"
+                >
+                  <Table size="sm">
+                    <Thead bg={tableHeadBg}>
                       <Tr>
-                        <Td colSpan={11} textAlign="center" py={6}>
-                          Loading preview...
-                        </Td>
+                        <Th>Row</Th>
+                        <Th>Name</Th>
+                        <Th>Email</Th>
+                        <Th>Department</Th>
+                        <Th>City</Th>
+                        <Th>State</Th>
+                        <Th>Role</Th>
+                        <Th>Company Status</Th>
+                        <Th>Managers</Th>
+                        <Th>Action</Th>
+                        <Th>Errors</Th>
                       </Tr>
-                    ) : preview.length === 0 ? (
-                      <Tr>
-                        <Td colSpan={11} textAlign="center" py={6}>
-                          No preview data
-                        </Td>
-                      </Tr>
-                    ) : (
-                      preview.map((row: any) => (
-                        <Tr key={row.rowNumber}>
-                          <Td>{row.rowNumber}</Td>
-                          <Td>{row.name}</Td>
-                          <Td>{row.email}</Td>
-                          <Td>{row.department || "--"}</Td>
-                          <Td>{row.city || "--"}</Td>
-                          <Td>{row.state || "--"}</Td>
-                          <Td>{row.role}</Td>
+                    </Thead>
 
-                          <Td>
-                            <Badge
-                              colorScheme={
-                                row.companyStatus === "EXISTS"
-                                  ? "green"
-                                  : "purple"
-                              }
-                            >
-                              {row.company}
-                            </Badge>
-                          </Td>
-
-                          <Td>
-                            <VStack align="start">
-                              {(row.managers || []).map((m: any) => (
-                                <Text key={m.level} fontSize="sm">
-                                  L{m.level}: {m.managerEmail}
-                                </Text>
-                              ))}
-                            </VStack>
-                          </Td>
-
-                          <Td>
-                            <Badge
-                              colorScheme={
-                                row.action === "CREATE" ? "blue" : "red"
-                              }
-                            >
-                              {row.action}
-                            </Badge>
-                          </Td>
-
-                          <Td>
-                            {row.errors?.length > 0 ? (
-                              <Text color="red.500" fontSize="sm">
-                                {row.errors.join(", ")}
-                              </Text>
-                            ) : (
-                              <Text fontSize="sm" color={muted}>
-                                No errors
-                              </Text>
-                            )}
+                    <Tbody>
+                      {loading ? (
+                        <Tr>
+                          <Td colSpan={11} textAlign="center" py={6}>
+                            Loading preview...
                           </Td>
                         </Tr>
-                      ))
-                    )}
-                  </Tbody>
-                </Table>
-              </TableContainer>
-            </Box>
+                      ) : (
+                        preview.map((row: any) => (
+                          <Tr key={row.rowNumber}>
+                            <Td>{row.rowNumber}</Td>
+                            <Td fontWeight="medium">{row.name}</Td>
+                            <Td>{row.email}</Td>
+                            <Td>{row.department || "--"}</Td>
+                            <Td>{row.city || "--"}</Td>
+                            <Td>{row.state || "--"}</Td>
+                            <Td>
+                              <Badge variant="outline">{row.role}</Badge>
+                            </Td>
+
+                            <Td>
+                              <Badge
+                                colorScheme={
+                                  row.companyStatus === "EXISTS"
+                                    ? "green"
+                                    : "purple"
+                                }
+                              >
+                                {row.company}
+                              </Badge>
+                            </Td>
+
+                            <Td>
+                              <VStack align="start" spacing={0}>
+                                {(row.managers || []).map((m: any) => (
+                                  <Text key={m.level} fontSize="xs">
+                                    L{m.level}: {m.managerEmail}
+                                  </Text>
+                                ))}
+                              </VStack>
+                            </Td>
+
+                            <Td>
+                              <Badge
+                                colorScheme={
+                                  row.action === "CREATE" ? "blue" : "red"
+                                }
+                              >
+                                {row.action}
+                              </Badge>
+                            </Td>
+
+                            <Td>
+                              {row.errors?.length > 0 ? (
+                                <Text color="red.500" fontSize="xs">
+                                  {row.errors.join(", ")}
+                                </Text>
+                              ) : (
+                                <Text fontSize="xs" color={muted}>
+                                  Ready
+                                </Text>
+                              )}
+                            </Td>
+                          </Tr>
+                        ))
+                      )}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            )}
           </VStack>
         </ModalBody>
 
@@ -309,6 +298,8 @@ const BulkUploadModal = ({
             colorScheme="purple"
             onClick={onUpload}
             isLoading={loading}
+            isDisabled={!selectedFile || !bulkForm.companyId}
+            ml={3}
           >
             Upload Users
           </Button>

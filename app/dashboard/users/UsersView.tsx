@@ -14,6 +14,7 @@ import { readFileAsBase64 } from "../../config/utils/utils";
 import stores from "../../store/stores";
 import PermissionGate from "../../component/common/PermissionGate";
 import { PERMISSION_KEYS, hasPermission } from "../../config/utils/permissions";
+import BulkUploadResultModal from "./components/BulkUploadResultModal";
 import BulkUploadModal from "./components/BulkUploadModal";
 import UserDetailsModal from "./components/UserDetailsModal";
 import UserDrawer from "./components/UserDrawer";
@@ -178,6 +179,8 @@ const UsersView = observer(() => {
   const [isUserDrawerOpen, setIsUserDrawerOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [uploadResults, setUploadResults] = useState<any | null>(null);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [userForm, setUserForm] = useState<UserFormState>(initialForm());
   const [bulkForm, setBulkForm] = useState<BulkFormState>({
     companyId: "",
@@ -762,13 +765,16 @@ const UsersView = observer(() => {
 
       const response = await userStore.uploadUsers(selectedFile, bulkUploadOptions);
       const createdCount = response?.data?.createdCount || 0;
-      const updatedCount = response?.data?.updatedCount || 0;
       const failedCount = response?.data?.failedCount || 0;
+
+      setUploadResults(response?.data);
+      setIsResultModalOpen(true);
+
       toast({
         title: failedCount > 0 ? "Partial success" : "Bulk upload complete",
         description:
           response?.message ||
-          `${createdCount} created, ${updatedCount} updated, and ${failedCount} failed.`,
+          `${createdCount} created and ${failedCount} skipped/failed.`,
         status: failedCount > 0 ? "info" : "success",
         duration: 4500,
       });
@@ -890,6 +896,15 @@ const UsersView = observer(() => {
   onClose={() => setSelectedUser(null)}
   user={selectedUser}
   formatRoleLabel={formatRoleLabel}
+/>
+
+<BulkUploadResultModal
+  isOpen={isResultModalOpen}
+  onClose={() => setIsResultModalOpen(false)}
+  results={uploadResults}
+  borderColor={borderColor}
+  tableHeadBg={tableHeadBg}
+  muted={muted}
 />
     </Box>
     </PermissionGate>
