@@ -14,6 +14,14 @@ import {
   Stack,
   Text,
   useToast,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo, useState } from "react";
@@ -36,17 +44,17 @@ function buildPermissionDraft(catalog: any[], source: Record<string, boolean> = 
 const getCategoryStyle = (category: string) => {
   switch (category) {
     case "Navigation":
-      return { Icon: FiGrid, gradient: "from-teal-400 to-cyan-500" };
+      return { Icon: FiGrid, gradient: "from-teal-400 to-cyan-500", bgGradient: "linear(to-r, teal.400, cyan.500)" };
     case "Users":
-      return { Icon: FiUsers, gradient: "from-violet-400 to-fuchsia-500" };
+      return { Icon: FiUsers, gradient: "from-violet-400 to-fuchsia-500", bgGradient: "linear(to-r, violet.400, fuchsia.500)" };
     case "Courses":
-      return { Icon: FiBarChart2, gradient: "from-blue-400 to-indigo-500" };
+      return { Icon: FiBarChart2, gradient: "from-blue-400 to-indigo-500", bgGradient: "linear(to-r, blue.400, indigo.500)" };
     case "Batches":
-      return { Icon: FiDatabase, gradient: "from-pink-400 to-rose-500" };
+      return { Icon: FiDatabase, gradient: "from-pink-400 to-rose-500", bgGradient: "linear(to-r, pink.400, rose.500)" };
     case "Permissions":
-      return { Icon: FiShield, gradient: "from-amber-400 to-orange-500" };
+      return { Icon: FiShield, gradient: "from-amber-400 to-orange-500", bgGradient: "linear(to-r, amber.400, orange.500)" };
     default:
-      return { Icon: FiGrid, gradient: "from-teal-400 to-cyan-500" };
+      return { Icon: FiGrid, gradient: "from-teal-400 to-cyan-500", bgGradient: "linear(to-r, teal.400, cyan.500)" };
   }
 };
 
@@ -59,6 +67,31 @@ const PermissionsPage = observer(() => {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [roleDraft, setRoleDraft] = useState<Record<string, boolean>>({});
   const [userDraft, setUserDraft] = useState<Record<string, boolean>>({});
+
+  // Dark mode color values
+  const bgColor = useColorModeValue("gray.50", "gray.900");
+  const cardBgColor = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.100", "gray.700");
+  const headerBgColor = useColorModeValue("from-violet-50 to-teal-50", "from-gray-800 to-gray-700");
+  const headerBorderColor = useColorModeValue("violet.100", "gray.600");
+  const textColor = useColorModeValue("gray.900", "white");
+  const textSecondaryColor = useColorModeValue("gray.600", "gray.400");
+  const textMutedColor = useColorModeValue("gray.500", "gray.500");
+  const tableHeaderBg = useColorModeValue("gray.50", "gray.700");
+  const tableRowHoverBg = useColorModeValue("gray.50", "gray.700");
+  const categoryHeaderBg = useColorModeValue("gray.50", "gray.700");
+  const infoBoxBg = useColorModeValue("from-amber-50 to-yellow-50", "from-gray-700 to-gray-600");
+  const infoBoxBorderColor = useColorModeValue("amber.100", "gray.600");
+  const infoBoxTextColor = useColorModeValue("amber.700", "amber.300");
+  const badgeBgColor = useColorModeValue("teal.100", "teal.900");
+  const badgeTextColor = useColorModeValue("teal.700", "teal.300");
+  const userBadgeBgColor = useColorModeValue("amber.100", "amber.900");
+  const userBadgeTextColor = useColorModeValue("amber.700", "amber.300");
+  const selectBgColor = useColorModeValue("white", "gray.700");
+  const selectBorderColor = useColorModeValue("gray.200", "gray.600");
+  const dashedBorderColor = useColorModeValue("gray.200", "gray.700");
+  const emptyStateBgColor = useColorModeValue("gray.50", "gray.800");
+  const emptyStateTextColor = useColorModeValue("gray.400", "gray.500");
 
   useEffect(() => {
     companyStore.getManagedCompanies().catch(() => undefined);
@@ -183,7 +216,7 @@ const PermissionsPage = observer(() => {
         className={`h-7 w-12 rounded-3xl transition-all duration-200
           ${checked 
             ? `bg-gradient-to-r ${gradient} shadow-inner` 
-            : "bg-gray-200"}`}
+            : "bg-gray-200 dark:bg-gray-600"}`}
       />
       <div
         className={`absolute left-1 top-1 h-5 w-5 rounded-3xl bg-white shadow transition-all duration-200
@@ -192,62 +225,73 @@ const PermissionsPage = observer(() => {
     </label>
   );
 
-  const permissionCards = (
+  const permissionTable = (
     draft: Record<string, boolean>,
     onToggle: (key: string, value: boolean) => void
   ) => (
-    <div className="space-y-10">
-      {Object.entries(groupedCatalog).map(([category, permissions]:any) => {
-        const { Icon: CategoryIcon, gradient } = getCategoryStyle(category);
-        return (
-          <div key={category}>
-            {/* Category header with React Icon + per-category gradient */}
-            <div className="mb-5 flex items-center gap-3">
-              <div
-                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white text-xl shadow-sm`}
-              >
-                <CategoryIcon size={24} />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold tracking-tight text-gray-900">
-                  {category}
-                </h3>
-                <div className="text-xs font-medium uppercase tracking-widest text-violet-600">
-                  {permissions.length} permission{permissions.length !== 1 ? "s" : ""}
-                </div>
-              </div>
-            </div>
-
-            {/* 3 columns on desktop */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              {permissions.map((permission: any) => (
-                <div
-                  key={permission.key}
-                  className="group flex items-start justify-between gap-5 rounded-3xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:border-violet-200 hover:bg-gradient-to-br hover:from-white hover:to-violet-50"
-                >
-                  <div className="flex-1">
-                    <div className="text-base font-semibold text-gray-900 group-hover:text-violet-700 transition-colors">
-                      {permission.label}
+    <TableContainer>
+      <Table variant="simple">
+        <Thead>
+          <Tr bg={tableHeaderBg}>
+            <Th width="30%" color={textColor} borderColor={borderColor}>Permission</Th>
+            <Th width="50%" color={textColor} borderColor={borderColor}>Description</Th>
+            <Th width="20%" textAlign="center" color={textColor} borderColor={borderColor}>Status</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {Object.entries(groupedCatalog).map(([category, permissions]: any) => {
+            const { Icon: CategoryIcon, bgGradient } = getCategoryStyle(category);
+            
+            // Category header row
+            return [
+              <Tr key={`${category}-header`} bg={categoryHeaderBg}>
+                <Td colSpan={3} p={3} borderColor={borderColor}>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-r ${getCategoryStyle(category).gradient} text-white`}
+                    >
+                      <CategoryIcon size={18} />
                     </div>
-                    <p className="mt-1 text-sm leading-relaxed text-gray-500">
+                    <div>
+                      <Text fontWeight="bold" fontSize="md" color={textColor}>
+                        {category}
+                      </Text>
+                      <Text fontSize="xs" color={textMutedColor}>
+                        {permissions.length} permission{permissions.length !== 1 ? "s" : ""}
+                      </Text>
+                    </div>
+                  </div>
+                </Td>
+              </Tr>,
+              // Permission rows for this category
+              ...permissions.map((permission: any) => (
+                <Tr key={permission.key} _hover={{ bg: tableRowHoverBg }}>
+                  <Td borderColor={borderColor}>
+                    <Text fontWeight="semibold" color={textColor}>
+                      {permission.label}
+                    </Text>
+                  </Td>
+                  <Td borderColor={borderColor}>
+                    <Text fontSize="sm" color={textSecondaryColor}>
                       {permission.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-1">
-                    <CustomSwitch
-                      checked={Boolean(draft?.[permission.key])}
-                      onChange={(value) => onToggle(permission.key, value)}
-                      gradient={gradient}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+                    </Text>
+                  </Td>
+                  <Td textAlign="center" borderColor={borderColor}>
+                    <div className="flex justify-center">
+                      <CustomSwitch
+                        checked={Boolean(draft?.[permission.key])}
+                        onChange={(value) => onToggle(permission.key, value)}
+                        gradient={getCategoryStyle(category).gradient}
+                      />
+                    </div>
+                  </Td>
+                </Tr>
+              ))
+            ];
+          })}
+        </Tbody>
+      </Table>
+    </TableContainer>
   );
 
   return (
@@ -257,23 +301,24 @@ const PermissionsPage = observer(() => {
       description="Only Super Admins with permission management access can edit these settings."
       fallbackHref="/dashboard/profile"
     >
-      <Box minH="100vh" bg="gray.50">
+      <Box minH="100vh" bg={bgColor}>
         <div className="px-6 lg:px-2">
           <Stack spacing={6}>
             {/* Header */}
             <Box
-              className="rounded-3xl bg-gradient-to-r from-violet-50 to-teal-50 border border-violet-100 p-6"
+              className={`rounded-3xl bg-gradient-to-r ${headerBgColor} border p-6`}
+              borderColor={headerBorderColor}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <Heading size="xl" className="tracking-tighter text-gray-900">
+                  <Heading size="xl" className="tracking-tighter" color={textColor}>
                     Permissions
                   </Heading>
-                  <Text className="mt-1 text-base text-gray-600">
+                  <Text className="mt-1 text-base" color={textSecondaryColor}>
                     Role defaults + user overrides
                   </Text>
                 </div>
-                <div className="hidden items-center gap-2 rounded-3xl bg-white px-4 py-1.5 text-xs font-semibold text-teal-700 shadow-sm md:flex">
+                <div className="hidden items-center gap-2 rounded-3xl bg-white dark:bg-gray-800 px-4 py-1.5 text-xs font-semibold text-teal-700 dark:text-teal-400 shadow-sm md:flex">
                   <div className="h-2 w-2 animate-pulse rounded-full bg-teal-500" />
                   LIVE SYNC
                 </div>
@@ -283,32 +328,35 @@ const PermissionsPage = observer(() => {
             {/* Role Defaults */}
             <Box
               borderRadius="3xl"
-              bg="white"
+              bg={cardBgColor}
               borderWidth="1px"
-              borderColor="gray.100"
+              borderColor={borderColor}
               p={6}
               shadow="sm"
             >
               <Stack spacing={7}>
                 <div className="flex items-center justify-between">
-                  <Heading size="md" className="flex items-center gap-3 text-gray-900">
-                    {/* <span className="text-3xl drop-shadow-sm">👑</span> */}
+                  <Heading size="md" className="flex items-center gap-3" color={textColor}>
                     Role Defaults
                   </Heading>
-                  <span className="rounded-3xl bg-teal-100 px-4 py-1 text-xs font-semibold text-teal-700">
+                  <span className={`rounded-3xl ${badgeBgColor} px-4 py-1 text-xs font-semibold ${badgeTextColor}`}>
                     COMPANY-WIDE
                   </span>
                 </div>
 
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={5}>
-             
-
                   <FormControl>
-                    <FormLabel className="text-sm font-semibold text-gray-500">Role</FormLabel>
+                    <FormLabel className="text-sm font-semibold" color={textMutedColor}>
+                      Role
+                    </FormLabel>
                     <Select
                       value={selectedRole}
                       onChange={(event) => setSelectedRole(event.target.value)}
-                      className="h-11 rounded-3xl border-gray-200 text-base focus:border-teal-300 focus:ring-teal-300"
+                      bg={selectBgColor}
+                      borderColor={selectBorderColor}
+                      color={textColor}
+                      _hover={{ borderColor: "teal.300" }}
+                      className="h-11 rounded-3xl text-base focus:border-teal-300 focus:ring-teal-300"
                     >
                       {roles.map((role: any) => (
                         <option key={role.value} value={role.value}>
@@ -324,7 +372,7 @@ const PermissionsPage = observer(() => {
                     <Spinner size="xl" color="teal.400" />
                   </div>
                 ) : (
-                  permissionCards(roleDraft, handleRoleToggle)
+                  permissionTable(roleDraft, handleRoleToggle)
                 )}
 
                 <Button
@@ -346,30 +394,36 @@ const PermissionsPage = observer(() => {
             {/* User Overrides */}
             <Box
               borderRadius="3xl"
-              bg="white"
+              bg={cardBgColor}
               borderWidth="1px"
-              borderColor="gray.100"
+              borderColor={borderColor}
               p={7}
               shadow="sm"
             >
               <Stack spacing={7}>
                 <div className="flex items-center justify-between">
-                  <Heading size="lg" className="flex items-center gap-3 text-gray-900">
+                  <Heading size="lg" className="flex items-center gap-3" color={textColor}>
                     <span className="text-3xl drop-shadow-sm">👤</span>
                     User Overrides
                   </Heading>
-                  <span className="rounded-3xl bg-amber-100 px-4 py-1 text-xs font-semibold text-amber-700">
+                  <span className={`rounded-3xl ${userBadgeBgColor} px-4 py-1 text-xs font-semibold ${userBadgeTextColor}`}>
                     INDIVIDUAL
                   </span>
                 </div>
 
                 <FormControl>
-                  <FormLabel className="text-sm font-semibold text-gray-500">User</FormLabel>
+                  <FormLabel className="text-sm font-semibold" color={textMutedColor}>
+                    User
+                  </FormLabel>
                   <Select
                     placeholder="Select a user to override"
                     value={selectedUserId}
                     onChange={(event) => setSelectedUserId(event.target.value)}
-                    className="h-11 rounded-3xl border-gray-200 text-base focus:border-teal-300 focus:ring-teal-300"
+                    bg={selectBgColor}
+                    borderColor={selectBorderColor}
+                    color={textColor}
+                    _hover={{ borderColor: "teal.300" }}
+                    className="h-11 rounded-3xl text-base focus:border-teal-300 focus:ring-teal-300"
                   >
                     {userStore.users.map((user: any) => (
                       <option key={user._id} value={user._id}>
@@ -381,14 +435,14 @@ const PermissionsPage = observer(() => {
 
                 {selectedUser ? (
                   <>
-                    <div className="rounded-2xl bg-gradient-to-r from-amber-50 to-yellow-50 p-4 text-sm flex items-center gap-3 border border-amber-100">
+                    <div className={`rounded-2xl bg-gradient-to-r ${infoBoxBg} p-4 text-sm flex items-center gap-3 border ${infoBoxBorderColor}`}>
                       <span className="text-2xl">⚡</span>
-                      <span className="text-amber-700">
+                      <span className={infoBoxTextColor}>
                         Overrides applied <span className="font-semibold">on top</span> of role defaults
                       </span>
                     </div>
 
-                    {permissionCards(userDraft, handleUserToggle)}
+                    {permissionTable(userDraft, handleUserToggle)}
 
                     <Button
                       alignSelf="flex-start"
@@ -405,8 +459,8 @@ const PermissionsPage = observer(() => {
                     </Button>
                   </>
                 ) : (
-                  <div className="flex h-56 flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 text-center">
-                    <Text color="gray.400" fontSize="lg">
+                  <div className={`flex h-56 flex-col items-center justify-center rounded-3xl border border-dashed ${dashedBorderColor} ${emptyStateBgColor} text-center`}>
+                    <Text color={emptyStateTextColor} fontSize="lg">
                       Select a user above to edit overrides
                     </Text>
                   </div>
