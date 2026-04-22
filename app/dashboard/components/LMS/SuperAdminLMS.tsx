@@ -12,7 +12,26 @@ import {
   Spinner,
   Text,
   VStack,
-  useColorModeValue
+  useColorModeValue,
+  SimpleGrid,
+  Grid,
+  GridItem,
+  Divider,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  Progress,
+  Wrap,
+  WrapItem,
+  Avatar,
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Heading,
+  Tag,
+  Tooltip as ChakraTooltip
 } from "@chakra-ui/react";
 import {
   ArcElement,
@@ -27,14 +46,26 @@ import {
   Title,
   Tooltip,
 } from "chart.js";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowUpRight,
   BarChart3,
   BookOpen,
   Building2,
   Globe,
-  GraduationCap
+  GraduationCap,
+  TrendingUp,
+  Users,
+  Award,
+  Calendar,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Target,
+  Zap,
+  Activity,
+  PieChart,
+  TrendingDown
 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
@@ -60,6 +91,7 @@ ChartJS.register(
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
+const MotionSimpleGrid = motion(SimpleGrid);
 
 interface StatCardProps {
   label: string;
@@ -69,56 +101,78 @@ interface StatCardProps {
   color: string;
   isLoading?: boolean;
   size?: "sm" | "md";
+  trend?: "up" | "down" | "neutral";
 }
 
-const StatCard = ({ label, value, icon: StatIcon, growth, color, isLoading, size = "md" }: StatCardProps) => {
+const StatCard = ({ label, value, icon: StatIcon, growth, color, isLoading, size = "md", trend = "up" }: StatCardProps) => {
   const bg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const borderColor = useColorModeValue("gray.100", "gray.700");
   const iconBg = useColorModeValue(`${color}.50`, `${color}.900`);
   const iconColor = useColorModeValue(`${color}.600`, `${color}.200`);
+  const gradientBg = useColorModeValue(
+    `linear-gradient(135deg, ${color}.50 0%, white 100%)`,
+    `linear-gradient(135deg, ${color}.900 0%, gray.800 100%)`
+  );
 
   const isSmall = size === "sm";
+  const trendColor = trend === "up" ? "green.500" : trend === "down" ? "red.500" : "gray.500";
+  const TrendIcon = trend === "up" ? ArrowUpRight : trend === "down" ? TrendingDown : Activity;
 
   return (
     <MotionBox
-      whileHover={{ y: -4, shadow: "lg" }}
-      transition={{ duration: 0.2 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      transition={{ duration: 0.2, type: "spring", stiffness: 300 }}
       bg={bg}
-      p={isSmall ? 4 : 5}
-      rounded="xl"
+      p={isSmall ? 4 : 6}
+      rounded="2xl"
       borderWidth="1px"
       borderColor={borderColor}
-      shadow="sm"
+      shadow="lg"
+      position="relative"
+      overflow="hidden"
+      _before={{
+        content: '""',
+        position: "absolute",
+        top: 0,
+        right: 0,
+        width: "100px",
+        height: "100px",
+        background: gradientBg,
+        borderRadius: "full",
+        opacity: 0.1,
+        transform: "translate(30px, -30px)",
+      }}
     >
-      <VStack align="start" spacing={isSmall ? 2 : 3} h="full">
+      <VStack align="start" spacing={isSmall ? 3 : 4} h="full" position="relative" zIndex={1}>
         <Flex
-          p={isSmall ? 2 : 2.5}
+          p={isSmall ? 2.5 : 3}
           bg={iconBg}
           color={iconColor}
-          rounded="lg"
+          rounded="xl"
           align="center"
           justify="center"
+          shadow="sm"
         >
-          <Icon as={StatIcon} boxSize={isSmall ? 4 : 5} />
+          <Icon as={StatIcon} boxSize={isSmall ? 5 : 6} />
         </Flex>
 
         <Box flex={1}>
-          <Text color="gray.500" fontSize={isSmall ? "xs" : "sm"} fontWeight="medium">
+          <Text color="gray.500" fontSize={isSmall ? "xs" : "sm"} fontWeight="600" textTransform="uppercase" letterSpacing="wide">
             {label}
           </Text>
           {isLoading ? (
-            <Spinner size="sm" mt={1} />
+            <Spinner size={isSmall ? "sm" : "md"} mt={2} />
           ) : (
-            <Text fontSize={isSmall ? "lg" : "xl"} fontWeight="bold" mt={1} lineHeight="tight">
+            <Text fontSize={isSmall ? "2xl" : "3xl"} fontWeight="800" mt={2} lineHeight="1.2">
               {typeof value === 'number' ? value.toLocaleString() : value}
             </Text>
           )}
         </Box>
 
         {growth && !isSmall && (
-          <HStack spacing={1} bg="green.50" px={2} py={1} rounded="md" w="full">
-            <Icon as={ArrowUpRight} color="green.500" boxSize={3} />
-            <Text fontSize="xs" color="green.600" fontWeight="bold">
+          <HStack spacing={2} bg={`${trendColor.replace('.500', '')}.50`} px={3} py={1.5} rounded="full" w="full" justify="center">
+            <Icon as={TrendIcon} color={trendColor} boxSize={3.5} />
+            <Text fontSize="sm" color={trendColor} fontWeight="bold">
               {growth}
             </Text>
           </HStack>
@@ -131,8 +185,8 @@ const StatCard = ({ label, value, icon: StatIcon, growth, color, isLoading, size
 const SuperAdminLMS = observer(() => {
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const sectionBg = useColorModeValue("white", "gray.800");
-  const headerBg = useColorModeValue("gray.50", "gray.700");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const headerBg = useColorModeValue("white", "gray.700");
+  const borderColor = useColorModeValue("gray.100", "gray.700");
   const textSecondary = useColorModeValue("gray.600", "gray.400");
 
   // State for dynamic data
@@ -621,7 +675,7 @@ const SuperAdminLMS = observer(() => {
   if (error) {
     return (
       <Box p={6}>
-        <Alert status="error" borderRadius="lg">
+        <Alert status="error" borderRadius="2xl" shadow="lg">
           <AlertIcon />
           {error}
         </Alert>
@@ -630,9 +684,9 @@ const SuperAdminLMS = observer(() => {
   }
 
   return (
-    <Box bg={pageBg} minH="100vh">
-      <VStack spacing={6} align="stretch">
-        {/* Main Header */}
+    <Box bg={pageBg} minH="100vh" py={6} px={4}>
+      <VStack spacing={8} align="stretch" maxW="1400px" mx="auto">
+        {/* Main Header - Enhanced */}
         <MotionFlex
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -641,90 +695,137 @@ const SuperAdminLMS = observer(() => {
           align="center"
           wrap="wrap"
           gap={4}
+          bg={sectionBg}
+          p={6}
+          rounded="2xl"
+          shadow="lg"
+          borderWidth="1px"
+          borderColor={borderColor}
         >
-          <VStack align="start" spacing={1}>
-            <HStack spacing={2}>
-              <Icon as={Globe} boxSize={6} color="purple.600" />
-              <Text fontSize="2xl" fontWeight="bold">LMS Analytics</Text>
+          <VStack align="start" spacing={2}>
+            <HStack spacing={3}>
+              <Box p={2} bg="purple.100" rounded="xl" color="purple.600">
+                <Icon as={Globe} boxSize={7} />
+              </Box>
+              <Box>
+                <Text fontSize="2xl" fontWeight="800" bgGradient="linear(to-r, purple.600, pink.600)" bgClip="text">
+                  LMS Analytics
+                </Text>
+                <Text fontSize="sm" color={textSecondary}>
+                  Real-time insights & performance metrics
+                </Text>
+              </Box>
             </HStack>
-            <Text fontSize="sm" color={textSecondary}>
-              System Status: <Badge colorScheme="green" size="sm" ml={2}>● Online</Badge>
-            </Text>
+            <HStack spacing={2}>
+              <Badge colorScheme="green" variant="solid" rounded="full" px={3} py={1}>
+                <HStack spacing={1}>
+                  <Box w={2} h={2} rounded="full" bg="green.400" />
+                  <Text fontSize="xs">System Online</Text>
+                </HStack>
+              </Badge>
+              <Badge colorScheme="purple" variant="outline" rounded="full" px={3} py={1}>
+                v2.0.1
+              </Badge>
+            </HStack>
           </VStack>
           
-          <HStack spacing={3}>
-            <Box bg={headerBg} p={3} rounded="lg" textAlign="center">
-              <Text fontSize="xs" color="gray.500" fontWeight="medium">ACTIVE BATCHES</Text>
-              <Text fontSize="xl" fontWeight="bold">{batchStatusStats.active}</Text>
+          <HStack spacing={4}>
+            <Box bg={headerBg} p={4} rounded="xl" textAlign="center" minW="100px" shadow="sm">
+              <Text fontSize="xs" color="gray.500" fontWeight="600" textTransform="uppercase" letterSpacing="wide">
+                Active Batches
+              </Text>
+              <Text fontSize="2xl" fontWeight="800" color="purple.600">
+                {batchStatusStats.active}
+              </Text>
             </Box>
-            <Box bg={headerBg} p={3} rounded="lg" textAlign="center">
-              <Text fontSize="xs" color="gray.500" fontWeight="medium">UPTIME</Text>
-              <Text fontSize="xl" fontWeight="bold">99.98%</Text>
+            <Box bg={headerBg} p={4} rounded="xl" textAlign="center" minW="100px" shadow="sm">
+              <Text fontSize="xs" color="gray.500" fontWeight="600" textTransform="uppercase" letterSpacing="wide">
+                Uptime
+              </Text>
+              <Text fontSize="2xl" fontWeight="800" color="green.600">
+                99.98%
+              </Text>
             </Box>
           </HStack>
         </MotionFlex>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation - Enhanced */}
         <MotionBox
-          whileHover={{ y: -2 }}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
           bg={sectionBg}
-          p={4}
-          rounded="lg"
+          p={5}
+          rounded="2xl"
           borderWidth="1px"
           borderColor={borderColor}
-          shadow="sm"
+          shadow="lg"
         >
-          <Flex justify="space-between" align="center" wrap="wrap" gap={3}>
+          <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
             <Box>
-              <Text fontWeight="bold" fontSize="md">Analysis View</Text>
-              <Text fontSize="xs" color={textSecondary}>Select a focused analytics dashboard</Text>
+              <Heading size="sm" mb={1}>Analysis Dashboard</Heading>
+              <Text fontSize="sm" color={textSecondary}>Select a focused analytics view</Text>
             </Box>
-            <Flex gap={2} flexWrap="wrap">
+            <Wrap spacing={3}>
               {[
-                { key: "overview", label: "Overview", icon: BarChart3 },
-                { key: "courses", label: "Courses", icon: BookOpen },
-                { key: "companies", label: "Companies", icon: Building2 },
-                { key: "batches", label: "Batches", icon: GraduationCap },
+                { key: "overview", label: "Overview", icon: BarChart3, color: "purple" },
+                { key: "courses", label: "Courses", icon: BookOpen, color: "blue" },
+                { key: "companies", label: "Companies", icon: Building2, color: "teal" },
+                { key: "batches", label: "Batches", icon: GraduationCap, color: "orange" },
               ].map((option) => (
-                <Button
-                  key={option.key}
-                  variant={analysisView === option.key ? "solid" : "outline"}
-                  colorScheme={analysisView === option.key ? "purple" : "gray"}
-                  onClick={() => setAnalysisView(option.key as any)}
-                  leftIcon={<Icon as={option.icon} boxSize={4} />}
-                  size="sm"
-                >
-                  {option.label}
-                </Button>
+                <WrapItem key={option.key}>
+                  <Button
+                    variant={analysisView === option.key ? "solid" : "ghost"}
+                    colorScheme={option.color}
+                    onClick={() => setAnalysisView(option.key as any)}
+                    leftIcon={<Icon as={option.icon} boxSize={4} />}
+                    size="md"
+                    rounded="full"
+                    px={6}
+                    shadow={analysisView === option.key ? "md" : "none"}
+                  >
+                    {option.label}
+                  </Button>
+                </WrapItem>
               ))}
-            </Flex>
+            </Wrap>
           </Flex>
         </MotionBox>
 
-        {/* Tab Content */}
-        {analysisView === "overview" && (
-          <OverviewTab
-            isLoading={isLoading}
-            stats={stats}
-            batchStatusStats={batchStatusStats}
-            courseAssignmentStats={courseAssignmentStats}
-            categoryStats={categoryStats}
-            courseDistributionData={courseDistributionData}
-            isLoadingCourseStats={isLoadingCourseStats}
-            unassignedCourseCount={unassignedCourseCount}
-            averageBatchSize={averageBatchSize}
-            activeInstructorCount={activeInstructorCount}
-            assignmentTypeStats={assignmentTypeStats}
-            topCompaniesByBatches={topCompaniesByBatches}
-            topCompaniesByAssignments={topCompaniesByAssignments}
-            getActivities={getActivities}
-            getTopCourses={getTopCourses}
-          />
-        )}
+        {/* Tab Content with Animation */}
+        <AnimatePresence mode="wait">
+          <MotionBox
+            key={analysisView}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {analysisView === "overview" && (
+              <OverviewTab
+                isLoading={isLoading}
+                stats={stats}
+                batchStatusStats={batchStatusStats}
+                courseAssignmentStats={courseAssignmentStats}
+                categoryStats={categoryStats}
+                courseDistributionData={courseDistributionData}
+                isLoadingCourseStats={isLoadingCourseStats}
+                unassignedCourseCount={unassignedCourseCount}
+                averageBatchSize={averageBatchSize}
+                activeInstructorCount={activeInstructorCount}
+                assignmentTypeStats={assignmentTypeStats}
+                topCompaniesByBatches={topCompaniesByBatches}
+                topCompaniesByAssignments={topCompaniesByAssignments}
+                getActivities={getActivities}
+                getTopCourses={getTopCourses}
+              />
+            )}
 
-        {analysisView === "courses" && <CoursesAnalytics />}
-        {analysisView === "companies" && <CompaniesAnalytics />}
-        {analysisView === "batches" && <BatchesAnalytics />}
+            {analysisView === "courses" && <CoursesAnalytics />}
+            {analysisView === "companies" && <CompaniesAnalytics />}
+            {analysisView === "batches" && <BatchesAnalytics />}
+          </MotionBox>
+        </AnimatePresence>
       </VStack>
     </Box>
   );

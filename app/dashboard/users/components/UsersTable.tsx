@@ -12,11 +12,30 @@ import {
   Text,
   Tooltip,
   VStack,
+  Avatar,
+  Icon,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  SimpleGrid,
+  useColorModeValue,
 } from "@chakra-ui/react";
-import { FiBriefcase, FiMapPin, FiUser, FiUsers } from "react-icons/fi";
+import { 
+  FiBriefcase, 
+  FiMapPin, 
+  FiUser, 
+  FiUsers, 
+  FiMail, 
+  FiShield,
+  FiTrendingUp,
+  FiCheckCircle,
+  FiClock,
+  FiAward
+} from "react-icons/fi";
 import CustomTable from "../../../component/config/component/CustomTable/CustomTable";
 
-const COLORS = ["blue", "purple", "orange", "green", "pink", "cyan"];
+const COLORS = ["blue", "purple", "orange", "green", "pink", "cyan", "teal", "red"];
 
 type Props = {
   users: any[];
@@ -58,53 +77,69 @@ const UsersTable = ({
   formatRoleLabel,
   canEdit = true,
 }: Props) => {
+  // Statistics calculations
+  const stats = {
+    total: pagination.total || 0,
+    active: users.filter((u: any) => u.isActive).length,
+    pending: users.filter((u: any) => !u.isActive).length,
+    passwordSet: users.filter((u: any) => u.passwordStatus === "SET").length,
+  };
+
+  const cardBg = useColorModeValue("white", "gray.800");
+  const borderColorLight = useColorModeValue("gray.100", "gray.700");
+
   const columns = [
     {
-      headerName: "Name",
+      headerName: "User",
       key: "name",
       type: "component",
+      width: "280px",
       metaData: {
         component: (user: any) => (
           <HStack spacing={3}>
-            <Box color="blue.500">
-              <FiUser size={18} />
-            </Box>
+            <Avatar
+              size="sm"
+              name={user.name || "User"}
+              bgGradient="linear(to-br, blue.400, purple.500)"
+              color="white"
+              fontWeight="bold"
+              fontSize="sm"
+            >
+              {user.name?.charAt(0) || "U"}
+            </Avatar>
             <VStack align="start" spacing={0}>
-              <Text fontWeight="semibold">{user.name || "--"}</Text>
-              <Text fontSize="xs" color={muted}>
-                {user.code || "No code"}
+              <Text fontWeight="semibold" fontSize="sm">
+                {user.name || "--"}
               </Text>
+              <HStack spacing={1}>
+                <Icon as={FiMail} boxSize={3} color={muted} />
+                <Text fontSize="xs" color={muted}>
+                  {user.email || "No email"}
+                </Text>
+              </HStack>
             </VStack>
           </HStack>
         ),
       },
     },
     {
-      headerName: "Email",
-      key: "email",
-      type: "component",
-      metaData: {
-        component: (user: any) => (
-          <Text fontSize="sm" color="gray.600">
-            {user.email || "--"}
-          </Text>
-        ),
-      },
-    },
-    {
-      headerName: "Department",
+      headerName: "Location",
       key: "department",
       type: "component",
+      width: "200px",
       metaData: {
         component: (user: any) => (
           <VStack align="start" spacing={0.5}>
-            <HStack fontSize="sm">
-              <FiMapPin color="#718096" />
-              <Text>{user.department || "--"}</Text>
+            <HStack spacing={1} fontSize="sm">
+              <Icon as={FiBriefcase} boxSize={3} color="purple.500" />
+              <Text fontWeight="medium">{user.department || "--"}</Text>
             </HStack>
-            <Text fontSize="xs" color={muted}>
-              {[user.city, user.state].filter(Boolean).join(", ") || "No location"}
-            </Text>
+            <HStack spacing={1}>
+              <Icon as={FiMapPin} boxSize={3} color={muted} />
+              <Text fontSize="xs" color={muted}>
+                {[user.city, user.state].filter(Boolean).join(", ") || "No location"}
+              </Text>
+            </HStack>
           </VStack>
         ),
       },
@@ -113,13 +148,19 @@ const UsersTable = ({
       headerName: "Company",
       key: "company",
       type: "component",
+      width: "180px",
       metaData: {
         component: (user: any) => (
           <HStack spacing={2}>
-            <Box color="purple.500">
-              <FiBriefcase size={16} />
+            <Box
+              p={1.5}
+              borderRadius="lg"
+              bg="purple.50"
+              _dark={{ bg: "purple.900" }}
+            >
+              <Icon as={FiBriefcase} boxSize={3} color="purple.600" />
             </Box>
-            <Text fontSize="sm">
+            <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
               {user.company?.name || user.company?.company_name || "Unassigned"}
             </Text>
           </HStack>
@@ -130,18 +171,30 @@ const UsersTable = ({
       headerName: "Role",
       key: "role",
       type: "component",
+      width: "140px",
       metaData: {
         component: (user: any) => (
-          <Badge colorScheme="blue" variant="subtle" px={3} py={1} borderRadius="full" fontWeight="medium">
+          <Badge
+            variant="solid"
+            bgGradient="linear(to-r, blue.500, purple.600)"
+            color="white"
+            px={3}
+            py={1.5}
+            borderRadius="full"
+            fontWeight="medium"
+            fontSize="xs"
+            textTransform="capitalize"
+          >
             {formatRoleLabel(user.role)}
           </Badge>
         ),
       },
     },
     {
-      headerName: "Managers",
+      headerName: "Manager Hierarchy",
       key: "managers",
       type: "component",
+      width: "200px",
       metaData: {
         component: (user: any) => {
           const managers = user.managers || [];
@@ -150,9 +203,12 @@ const UsersTable = ({
 
           if (managers.length === 0) {
             return (
-              <Text fontSize="sm" color={muted} fontStyle="italic">
-                No managers assigned
-              </Text>
+              <HStack spacing={1}>
+                <Icon as={FiUsers} boxSize={3} color={muted} />
+                <Text fontSize="xs" color={muted} fontStyle="italic">
+                  No managers assigned
+                </Text>
+              </HStack>
             );
           }
 
@@ -160,22 +216,44 @@ const UsersTable = ({
             <Tooltip
               hasArrow
               placement="top-start"
+              bg="gray.900"
+              color="white"
+              p={3}
+              borderRadius="xl"
+              boxShadow="xl"
               label={
-                <VStack align="stretch" spacing={3} p={1}>
+                <VStack align="stretch" spacing={3}>
                   <HStack>
-                    <FiUsers size={18} />
-                    <Text fontWeight="bold">Manager Hierarchy</Text>
+                    <Icon as={FiAward} size={16} />
+                    <Text fontWeight="bold" fontSize="sm">
+                      Reporting Hierarchy
+                    </Text>
                   </HStack>
-                  <Divider />
+                  <Divider borderColor="gray.700" />
                   {managers.map((manager: any, index: number) => (
-                    <Flex key={`${user._id}-${manager.level}`} justify="space-between" align="center" gap={3}>
-                      <HStack>
-                        <Badge colorScheme={COLORS[index % COLORS.length]} borderRadius="full">
+                    <Flex
+                      key={`${user._id}-${manager.level}`}
+                      justify="space-between"
+                      align="center"
+                      gap={3}
+                    >
+                      <HStack spacing={2}>
+                        <Badge
+                          colorScheme={COLORS[index % COLORS.length]}
+                          borderRadius="full"
+                          variant="solid"
+                          fontSize="xs"
+                          px={2}
+                        >
                           L{manager.level}
                         </Badge>
-                        <Text>{manager.managerEmail}</Text>
+                        <Text fontSize="sm">{manager.managerEmail}</Text>
                       </HStack>
-                      <Badge colorScheme={manager.status === "ASSIGNED" ? "green" : "orange"}>
+                      <Badge
+                        size="sm"
+                        variant="subtle"
+                        colorScheme={manager.status === "ASSIGNED" ? "green" : "orange"}
+                      >
                         {manager.status}
                       </Badge>
                     </Flex>
@@ -183,24 +261,31 @@ const UsersTable = ({
                 </VStack>
               }
             >
-              <HStack spacing={1} cursor="pointer">
+              <HStack spacing={1.5} cursor="pointer">
                 {visibleManagers.map((manager: any, index: number) => (
                   <Badge
                     key={`${user._id}-${manager.level}`}
                     colorScheme={COLORS[index % COLORS.length]}
                     borderRadius="full"
                     px={2.5}
-                    py={0.5}
+                    py={1}
                     fontSize="xs"
+                    variant="subtle"
                   >
                     L{manager.level}
                   </Badge>
                 ))}
-                {extraCount > 0 ? (
-                  <Badge variant="outline" borderRadius="full" px={2} fontSize="xs">
+                {extraCount > 0 && (
+                  <Badge
+                    variant="solid"
+                    colorScheme="gray"
+                    borderRadius="full"
+                    px={2}
+                    fontSize="xs"
+                  >
                     +{extraCount}
                   </Badge>
-                ) : null}
+                )}
               </HStack>
             </Tooltip>
           );
@@ -211,23 +296,56 @@ const UsersTable = ({
       headerName: "Status",
       key: "status",
       type: "component",
+      width: "120px",
       metaData: {
         component: (user: any) => (
-          <Badge colorScheme={user.isActive ? "green" : "orange"} px={3} py={1} borderRadius="full">
-            {user.isActive ? "Active" : "Pending"}
-          </Badge>
+          <HStack spacing={1}>
+            <Box
+              w="2"
+              h="2"
+              borderRadius="full"
+              bg={user.isActive ? "green.500" : "orange.500"}
+              boxShadow={`0 0 0 2px ${user.isActive ? "rgba(72, 187, 120, 0.2)" : "rgba(237, 137, 54, 0.2)"}`}
+            />
+            <Badge
+              variant="subtle"
+              colorScheme={user.isActive ? "green" : "orange"}
+              px={2.5}
+              py={1}
+              borderRadius="full"
+              fontSize="xs"
+            >
+              {user.isActive ? "Active" : "Pending"}
+            </Badge>
+          </HStack>
         ),
       },
     },
     {
-      headerName: "Password",
+      headerName: "Security",
       key: "passwordStatus",
       type: "component",
+      width: "120px",
       metaData: {
         component: (user: any) => (
-          <Badge colorScheme={user.passwordStatus === "SET" ? "green" : "red"} px={3} py={1} borderRadius="full">
-            {user.passwordStatus === "SET" ? "Set" : "Not Set"}
-          </Badge>
+          <Tooltip
+            label={user.passwordStatus === "SET" ? "Password configured" : "Password not set"}
+            hasArrow
+          >
+            <Badge
+              variant="solid"
+              colorScheme={user.passwordStatus === "SET" ? "green" : "red"}
+              px={2.5}
+              py={1}
+              borderRadius="full"
+              fontSize="xs"
+            >
+              <HStack spacing={1}>
+                <Icon as={FiShield} boxSize={3} />
+                <Text>{user.passwordStatus === "SET" ? "Secure" : "Insecure"}</Text>
+              </HStack>
+            </Badge>
+          </Tooltip>
         ),
       },
     },
@@ -235,89 +353,221 @@ const UsersTable = ({
       headerName: "Actions",
       key: "table-actions",
       type: "table-actions",
+      width: "100px",
       props: {
-        row: { minW: 140, textAlign: "center" },
+        row: { minW: 100, textAlign: "center" },
         column: { textAlign: "center" },
       },
     },
   ];
 
   return (
-    <Box>
-      <Flex justify="space-between" align="center" mb={6} flexWrap="wrap" gap={4}>
-        <Tabs
-          variant="soft-rounded"
-          colorScheme="blue"
-          size={'sm'}
-          index={activeTabIndex}
-          onChange={(index) => {
-            setListTab(listTabs[index]?.value || "user");
-            setPage(1);
-          }}
+    <VStack spacing={6} align="stretch">
+      {/* Statistics Cards */}
+      <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+        <Box
+          bg={cardBg}
+          p={4}
+          borderRadius="2xl"
+          borderWidth="1px"
+          borderColor={borderColorLight}
+          boxShadow="sm"
+          transition="all 0.2s"
+          _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
         >
-          <TabList gap={2} flexWrap="wrap">
-            {listTabs.map((tab) => (
-              <Tab key={tab.value}>{tab.label}</Tab>
-            ))}
-          </TabList>
-        </Tabs>
+          <Stat>
+            <StatLabel color={muted} fontSize="sm">
+              Total Users
+            </StatLabel>
+            <StatNumber fontSize="2xl" fontWeight="bold">
+              {stats.total}
+            </StatNumber>
+            <StatHelpText fontSize="xs" color={muted}>
+              <Icon as={FiTrendingUp} mr={1} />
+              Across all roles
+            </StatHelpText>
+          </Stat>
+        </Box>
 
-        <Text fontSize="sm" color={muted} fontWeight="medium">
-          {pagination.total} total {activeTabLabel.toLowerCase()}
-        </Text>
-      </Flex>
+        <Box
+          bg={cardBg}
+          p={4}
+          borderRadius="2xl"
+          borderWidth="1px"
+          borderColor={borderColorLight}
+          boxShadow="sm"
+          transition="all 0.2s"
+          _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
+        >
+          <Stat>
+            <StatLabel color={muted} fontSize="sm">
+              Active Users
+            </StatLabel>
+            <StatNumber fontSize="2xl" fontWeight="bold" color="green.600">
+              {stats.active}
+            </StatNumber>
+            <StatHelpText fontSize="xs" color={muted}>
+              <Icon as={FiCheckCircle} mr={1} />
+              {((stats.active / stats.total) * 100).toFixed(1)}% active rate
+            </StatHelpText>
+          </Stat>
+        </Box>
 
-      <CustomTable
-        title="User Directory"
-        // subTitle={`Viewing ${activeTabLabel.toLowerCase()} records`}
-        data={users}
-        columns={columns}
-        loading={loading}
-        actions={{
-          actionBtn: {
-            addKey: {
-              showAddButton: false,
-            },
-            editKey: {
-              showEditButton: canEdit,
-              title: "Edit User",
-              function: (user: any) => onEdit(user),
-            },
-            viewKey: {
-              showViewButton: true,
-              title: "View User",
-              function: (user: any) => onView(user),
-            },
-            deleteKey: {
-              showDeleteButton: false,
-            },
-          },
-          search: {
-            show: true,
-            placeholder: "Search by name, email, role, or creator",
-            searchValue: search,
-            onSearchChange: (event: any) => {
-              setSearch(event.target.value);
+        <Box
+          bg={cardBg}
+          p={4}
+          borderRadius="2xl"
+          borderWidth="1px"
+          borderColor={borderColorLight}
+          boxShadow="sm"
+          transition="all 0.2s"
+          _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
+        >
+          <Stat>
+            <StatLabel color={muted} fontSize="sm">
+              Pending
+            </StatLabel>
+            <StatNumber fontSize="2xl" fontWeight="bold" color="orange.600">
+              {stats.pending}
+            </StatNumber>
+            <StatHelpText fontSize="xs" color={muted}>
+              <Icon as={FiClock} mr={1} />
+              Awaiting activation
+            </StatHelpText>
+          </Stat>
+        </Box>
+
+        <Box
+          bg={cardBg}
+          p={4}
+          borderRadius="2xl"
+          borderWidth="1px"
+          borderColor={borderColorLight}
+          boxShadow="sm"
+          transition="all 0.2s"
+          _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
+        >
+          <Stat>
+            <StatLabel color={muted} fontSize="sm">
+              Password Secure
+            </StatLabel>
+            <StatNumber fontSize="2xl" fontWeight="bold" color="purple.600">
+              {stats.passwordSet}
+            </StatNumber>
+            <StatHelpText fontSize="xs" color={muted}>
+              <Icon as={FiShield} mr={1} />
+              {((stats.passwordSet / stats.total) * 100).toFixed(1)}% secured
+            </StatHelpText>
+          </Stat>
+        </Box>
+      </SimpleGrid>
+
+      {/* Tabs Section */}
+      <Box>
+        <Flex
+          justify="space-between"
+          align="center"
+          mb={6}
+          flexWrap="wrap"
+          gap={4}
+        >
+          <Tabs
+            variant="soft-rounded"
+            colorScheme="blue"
+            size="sm"
+            index={activeTabIndex}
+            onChange={(index) => {
+              setListTab(listTabs[index]?.value || "user");
               setPage(1);
+            }}
+          >
+            <TabList gap={2} flexWrap="wrap" bg="gray.50" p={1} borderRadius="full">
+              {listTabs.map((tab, idx) => (
+                <Tab
+                  key={tab.value}
+                  _selected={{
+                    bgGradient: "linear(to-r, blue.500, purple.600)",
+                    color: "white",
+                    boxShadow: "md",
+                  }}
+                  borderRadius="full"
+                  px={6}
+                  fontSize="sm"
+                  fontWeight="medium"
+                  transition="all 0.2s"
+                >
+                  {tab.label}
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
+
+          <Box
+            bg="blue.50"
+            _dark={{ bg: "blue.900" }}
+            px={4}
+            py={2}
+            borderRadius="full"
+          >
+            <Text fontSize="sm" fontWeight="semibold" color="blue.700">
+              📊 {pagination.total} total {activeTabLabel.toLowerCase()}
+              {pagination.total !== 1 ? "s" : ""}
+            </Text>
+          </Box>
+        </Flex>
+
+        {/* Custom Table */}
+        <CustomTable
+          title="User Directory"
+          data={users}
+          columns={columns}
+          loading={loading}
+          actions={{
+            actionBtn: {
+              addKey: {
+                showAddButton: false,
+              },
+              editKey: {
+                showEditButton: canEdit,
+                title: "Edit User",
+                function: (user: any) => onEdit(user),
+              },
+              viewKey: {
+                showViewButton: true,
+                title: "View User",
+                function: (user: any) => onView(user),
+              },
+              deleteKey: {
+                showDeleteButton: false,
+              },
             },
-          },
-          resetData: {
-            show: true,
-            text: "Clear Filters",
-            function: () => {
-              setSearch("");
-              setPage(1);
+            search: {
+              show: true,
+              placeholder: "🔍 Search by name, email, role, or creator...",
+              searchValue: search,
+              onSearchChange: (event: any) => {
+                setSearch(event.target.value);
+                setPage(1);
+              },
             },
-          },
-          pagination: {
-            show: true,
-            currentPage: page,
-            totalPages: pagination.totalPages || 1,
-            onClick: (nextPage: number) => setPage(nextPage),
-          },
-        }}
-      />
-    </Box>
+            resetData: {
+              show: true,
+              text: "Clear Filters",
+              function: () => {
+                setSearch("");
+                setPage(1);
+              },
+            },
+            pagination: {
+              show: true,
+              currentPage: page,
+              totalPages: pagination.totalPages || 1,
+              onClick: (nextPage: number) => setPage(nextPage),
+            },
+          }}
+        />
+      </Box>
+    </VStack>
   );
 };
 

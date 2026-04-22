@@ -16,10 +16,44 @@ import {
   Text,
   useColorModeValue,
   useToast,
+  Icon,
+  Avatar,
+  Divider,
+  Tooltip,
+  VStack,
+  Heading,
+  Container,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  StatArrow,
+  Card,
+  CardBody,
+  CardHeader,
+  IconButton,
+  Wrap,
+  WrapItem,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FiArrowLeft, FiGlobe, FiMail, FiMapPin, FiPlus, FiShield, FiUsers } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiGlobe,
+  FiMail,
+  FiMapPin,
+  FiPlus,
+  FiShield,
+  FiUsers,
+  FiBriefcase,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiExternalLink,
+  FiMoreVertical,
+  FiUserPlus,
+  FiBookOpen,
+  FiHome,
+} from "react-icons/fi";
 import { readFileAsBase64 } from "../../../config/utils/utils";
 import stores from "../../../store/stores";
 import UserTable from "./users/UserTable";
@@ -73,61 +107,97 @@ const createMemberForm = (companyId: string, role = "admin") => ({
 });
 const isRealFile = (value: unknown): value is File => typeof File !== "undefined" && value instanceof File;
 
-// Compact summary card with smaller font sizes and reduced padding
-const SummaryCard = ({
+// Modern Stat Card with gradient accent
+const StatCard = ({
   label,
   value,
+  subtext,
+  icon: IconEl,
+  trend,
 }: {
   label: string;
   value: string | number;
+  subtext?: string;
+  icon: any;
+  trend?: { value: number; isUp: boolean };
 }) => {
-  const mutedText = useColorModeValue("gray.500", "gray.400");
+  const bgHover = useColorModeValue("gray.50", "gray.700");
   const borderColor = useColorModeValue("gray.100", "gray.700");
 
   return (
     <Box
+      p={5}
+      bg={useColorModeValue("white", "gray.800")}
+      borderRadius="2xl"
       border="1px solid"
       borderColor={borderColor}
-      borderRadius="lg"
-      px={4}
-      py={3}
       transition="all 0.2s"
-      _hover={{ borderColor: "blue.200" }}
+      _hover={{ transform: "translateY(-2px)", shadow: "md", borderColor: "blue.200" }}
+      position="relative"
+      overflow="hidden"
     >
-      <Text fontSize="xs" fontWeight="500" color={mutedText} textTransform="uppercase" letterSpacing="0.05em">
-        {label}
-      </Text>
-      <Text mt={1} fontSize="xl" fontWeight="600" lineHeight="1.2">
-        {value}
-      </Text>
+      <Box position="absolute" top={0} left={0} right={0} h="3px" bgGradient="linear(to-r, blue.400, teal.400)" />
+      <HStack justify="space-between" align="flex-start">
+        <Box>
+          <Text fontSize="xs" fontWeight="600" color="gray.500" textTransform="uppercase" letterSpacing="wider">
+            {label}
+          </Text>
+          <Text fontSize="3xl" fontWeight="800" mt={2} letterSpacing="tight">
+            {value}
+          </Text>
+          {trend && (
+            <HStack spacing={1} mt={1}>
+              <StatArrow type={trend.isUp ? "increase" : "decrease"} />
+              <Text fontSize="xs" color={trend.isUp ? "green.500" : "red.500"} fontWeight="500">
+                {Math.abs(trend.value)}%
+              </Text>
+              {subtext && <Text fontSize="xs" color="gray.500">vs last month</Text>}
+            </HStack>
+          )}
+          {subtext && !trend && <Text fontSize="xs" color="gray.500" mt={1}>{subtext}</Text>}
+        </Box>
+        <Flex
+          bg={useColorModeValue("blue.50", "blue.900")}
+          p={3}
+          borderRadius="xl"
+          color="blue.500"
+        >
+          <IconEl size={20} />
+        </Flex>
+      </HStack>
     </Box>
   );
 };
 
-// Compact detail item with smaller icon and text
-const DetailItem = ({
+// Compact Info Row Component
+const InfoRow = ({
   label,
   value,
-  icon: Icon,
+  icon: IconEl,
 }: {
   label: string;
   value: string;
   icon: any;
 }) => {
-  const mutedText = useColorModeValue("gray.500", "gray.400");
-  const iconColor = useColorModeValue("blue.400", "blue.300");
-
   return (
-    <HStack align="start" spacing={3}>
-      <Box color={iconColor} mt={0.5}>
-        <Icon size={14} />
-      </Box>
+    <HStack spacing={3} align="flex-start">
+      <Flex
+        w="28px"
+        h="28px"
+        bg={useColorModeValue("gray.100", "gray.700")}
+        borderRadius="lg"
+        align="center"
+        justify="center"
+        color={useColorModeValue("blue.500", "blue.300")}
+      >
+        <IconEl size={14} />
+      </Flex>
       <Box>
-        <Text fontSize="xs" fontWeight="500" color={mutedText} textTransform="uppercase" letterSpacing="0.05em">
+        <Text fontSize="xs" fontWeight="600" color="gray.500" textTransform="uppercase" letterSpacing="wide">
           {label}
         </Text>
-        <Text mt={0.5} fontSize="sm" fontWeight="500">
-          {value || "--"}
+        <Text fontSize="sm" fontWeight="500" color={useColorModeValue("gray.700", "gray.200")}>
+          {value || "—"}
         </Text>
       </Box>
     </HStack>
@@ -147,8 +217,9 @@ const CompanyAdminWorkspace = ({
   const toast = useToast();
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const surfaceBg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.100", "gray.700");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
   const mutedText = useColorModeValue("gray.500", "gray.400");
+  const cardBg = useColorModeValue("white", "gray.800");
 
   const {
     userStore: { createManagedUser, updateManagedUser },
@@ -319,47 +390,74 @@ const CompanyAdminWorkspace = ({
       ]
         .filter(Boolean)
         .join(", ")
-    : "--";
+    : "—";
+
+  // Get initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      ?.split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "CO";
+  };
 
   return (
-    <Box minH="100vh" bg={pageBg} py={{ base: 4, md: 6 }}>
-      <Stack spacing={6} maxW="1400px" mx="auto" px={{ base: 4, md: 6 }}>
-        {/* Header Section - compact and clean */}
-        <Box>
-          <Flex justify="space-between" align={{ base: "start", md: "center" }} gap={4} wrap="wrap">
-            <Box>
-              <Button
+    <Box minH="100vh" bg={pageBg}>
+      <Container maxW="1400px" px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
+        <VStack spacing={6} align="stretch">
+          {/* Header Section - Enhanced */}
+          <Flex justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} gap={4}>
+            <HStack spacing={4}>
+              <IconButton
+                aria-label="Go back"
+                icon={<FiArrowLeft />}
                 variant="ghost"
-                colorScheme="blue"
-                leftIcon={<FiArrowLeft />}
                 size="sm"
-                px={0}
-                mb={2}
                 onClick={onBack}
-                _hover={{ bg: "transparent", textDecoration: "underline" }}
-              >
-                Back to Companies
-              </Button>
-              <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="700" lineHeight="1.2">
-                {company?.company_name}
-              </Text>
-              <Text mt={1} fontSize="sm" color={mutedText}>
-                Manage your organization’s admins, department heads, and users.
-              </Text>
-            </Box>
+                borderRadius="full"
+              />
+              <Avatar
+                size="md"
+                name={company?.company_name}
+                src={company?.logo?.url}
+                bgGradient="linear(to-br, blue.500, teal.500)"
+                color="white"
+                fontWeight="bold"
+              />
+              <Box>
+                <Heading as="h1" size="lg" fontWeight="800">
+                  {company?.company_name}
+                </Heading>
+                <HStack spacing={2} mt={1}>
+                  <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={2} py={0.5}>
+                    {company?.companyType || "Company"}
+                  </Badge>
+                  <Badge
+                    colorScheme={company?.is_active ? "green" : "red"}
+                    variant="subtle"
+                    borderRadius="full"
+                    px={2}
+                    py={0.5}
+                  >
+                    {company?.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </HStack>
+              </Box>
+            </HStack>
 
             <HStack spacing={3}>
-              <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={3} py={1} fontSize="xs">
-                {company?.companyType || "Company"}
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                borderRadius="full"
-                onClick={openAssignedCourses}
-              >
-                Assigned Courses
-              </Button>
+              <Tooltip label="Assigned Courses" placement="top">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  borderRadius="full"
+                  leftIcon={<FiBookOpen />}
+                  onClick={openAssignedCourses}
+                >
+                  Courses
+                </Button>
+              </Tooltip>
               <Button
                 colorScheme="blue"
                 size="sm"
@@ -377,206 +475,234 @@ const CompanyAdminWorkspace = ({
               </Button>
             </HStack>
           </Flex>
-        </Box>
 
-        {/* Tabs and Tables - no background/shadow on tables */}
-        <Box>
-          <Tabs
-            variant="soft-rounded"
-            colorScheme="blue"
-            index={activeTab}
-            onChange={(index) => setActiveTab(index)}
-            size="sm"
-          >
-            <TabList mb={4} gap={2}>
-              {currentUser?.role !== "departmenthead" && (
-                <Tab fontSize="sm" fontWeight="500">
-                  Admins
-                </Tab>
-              )}
-              {currentUser?.role !== "departmenthead" && (
-                <Tab fontSize="sm" fontWeight="500">
-                  Dept Heads
-                </Tab>
-              )}
-              <Tab fontSize="sm" fontWeight="500">
-                Users
-              </Tab>
-            </TabList>
-
-            <TabPanels>
-              {currentUser?.role !== "departmenthead" && (
-                <TabPanel p={0}>
-                  {activeTab === 0 && (
-                    <Box bg="transparent" boxShadow="none">
-                      <UserTable
-                        key={`admin-${company._id}-${adminRefreshKey}`}
-                        companyId={company._id}
-                        companyName={company.company_name}
-                        title={`${company.company_name} - Admins`}
-                        filterRole="admin"
-                        filterType="admin"
-                        onAdd={() =>
-                          setDrawerState({
-                            type: "admin-add",
-                            isOpen: true,
-                            data: createMemberForm(company._id, "admin"),
-                          })
-                        }
-                        onEdit={(entry: any) =>
-                          setDrawerState({
-                            type: "admin-edit",
-                            isOpen: true,
-                            data: {
-                              ...createMemberForm(company._id, "admin"),
-                              id: entry._id,
-                              code: entry.code || "",
-                              name: entry.name || "",
-                              email: entry.email || entry.username || "",
-                              pic: entry.pic ? { ...entry.pic, file: null, isAdd: 0, isDeleted: 0, url: entry.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
-                              mobileNumber: entry.mobileNumber || "",
-                              department: entry.department || "",
-                              city: entry.city || "",
-                              state: entry.state || "",
-                              designation: entry.designation || "",
-                              joiningDate: entry.joiningDate ? String(entry.joiningDate).slice(0, 10) : "",
-                              role: entry.role || "admin",
-                              companyId: company._id,
-                            },
-                          })
-                        }
-                        onDelete={(entry: any) =>
-                          setDrawerState({ type: "delete", isOpen: true, data: entry })
-                        }
-                        showAddButton={false}
-                        // Assuming UserTable supports `variant="simple"` or similar; if not, remove the line
-                        variant="simple"
-                      />
-                    </Box>
-                  )}
-                </TabPanel>
-              )}
-              {currentUser?.role !== "departmenthead" && (
-                <TabPanel p={0}>
-                  {activeTab === 1 && (
-                    <Box bg="transparent" boxShadow="none">
-                      <UserTable
-                        key={`depthead-${company._id}-${adminRefreshKey}`}
-                        companyId={company._id}
-                        companyName={company.company_name}
-                        title={`${company.company_name} - Dept Heads`}
-                        filterRole="departmenthead"
-                        filterType="admin"
-                        onAdd={() =>
-                          setDrawerState({
-                            type: "admin-add",
-                            isOpen: true,
-                            data: createMemberForm(company._id, "departmenthead"),
-                          })
-                        }
-                        onEdit={(entry: any) =>
-                          setDrawerState({
-                            type: "admin-edit",
-                            isOpen: true,
-                            data: {
-                              ...createMemberForm(company._id, "departmenthead"),
-                              id: entry._id,
-                              code: entry.code || "",
-                              name: entry.name || "",
-                              email: entry.email || entry.username || "",
-                              pic: entry.pic ? { ...entry.pic, file: null, isAdd: 0, isDeleted: 0, url: entry.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
-                              mobileNumber: entry.mobileNumber || "",
-                              department: entry.department || "",
-                              city: entry.city || "",
-                              state: entry.state || "",
-                              designation: entry.designation || "",
-                              joiningDate: entry.joiningDate ? String(entry.joiningDate).slice(0, 10) : "",
-                              role: entry.role || "departmenthead",
-                              companyId: company._id,
-                            },
-                          })
-                        }
-                        onDelete={(entry: any) =>
-                          setDrawerState({ type: "delete", isOpen: true, data: entry })
-                        }
-                        showAddButton={false}
-                        variant="simple"
-                      />
-                    </Box>
-                  )}
-                </TabPanel>
-              )}
-              <TabPanel p={0}>
-                {(activeTab === (currentUser?.role === "departmenthead" ? 0 : 2)) && (
-                  <Box
-                    bg={surfaceBg}
-                    border="1px solid"
-                    borderColor={borderColor}
-                    borderRadius="xl"
-                    p={6}
-                  >
-                    <Stack spacing={3}>
-                      <Text fontSize="md" fontWeight="600">
-                        Users and managers now use the shared user-management flow.
-                      </Text>
-                      <Text fontSize="sm" color={mutedText}>
-                        This opens the newer form with setup-email handling, manager hierarchy, and scoped company filtering.
-                      </Text>
-                      <Flex>
-                        <Button colorScheme="blue" onClick={openUsersManagement}>
-                          Open Users Management
-                        </Button>
-                      </Flex>
-                    </Stack>
-                  </Box>
-                )}
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </Box>
-
-        {/* Compact company stats */}
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-          <SummaryCard label="Company Code" value={company?.companyCode || "--"} />
-          <SummaryCard label="Tenant Slug" value={company?.tenantSlug || "--"} />
-          <SummaryCard label="Manager Levels" value={company?.managerLevels || 3} />
-        </SimpleGrid>
-
-        {/* Company details - minimal card style */}
-        <Box border="1px solid" borderColor={borderColor} borderRadius="lg" p={4}>
-          <Text fontSize="sm" fontWeight="600" mb={4}>
-            Company Details
-          </Text>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={5}>
-            <DetailItem
-              label="Primary Contact"
-              value={company?.companyEmail || company?.mobileNo || "--"}
-              icon={FiMail}
-            />
-            <DetailItem
-              label="Address"
-              value={addressText}
-              icon={FiMapPin}
-            />
-            <DetailItem
-              label="Website"
-              value={company?.webLink || "--"}
-              icon={FiGlobe}
-            />
-            <DetailItem
-              label="Status"
-              value={`${company?.activeAdminCount || 0} / ${company?.adminCount || 0} admins active`}
+          {/* Stats Row - Modern Cards */}
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={5}>
+            <StatCard
+              label="Total Admins"
+              value={company?.adminCount || 0}
               icon={FiUsers}
+              subtext={`${company?.activeAdminCount || 0} active`}
             />
-            <DetailItem
-              label="Tenant Access"
-              value={company?.tenantUrl || company?.tenantSlug || "--"}
+            <StatCard
+              label="Departments"
+              value={company?.departments?.length || 0}
+              icon={FiBriefcase}
+            />
+            <StatCard
+              label="Manager Levels"
+              value={company?.managerLevels || 3}
               icon={FiShield}
             />
+            <StatCard
+              label="Company Code"
+              value={company?.companyCode || "—"}
+              icon={FiCheckCircle}
+            />
           </SimpleGrid>
-        </Box>
-      </Stack>
 
+          {/* Tabs and Tables - Clean Design */}
+          <Box>
+            <Tabs
+              variant="enclosed-colored"
+              colorScheme="blue"
+              index={activeTab}
+              onChange={(index) => setActiveTab(index)}
+              size="md"
+            >
+              <TabList borderBottom="1px solid" borderColor={borderColor} mb={4} gap={1}>
+                {currentUser?.role !== "departmenthead" && (
+                  <Tab
+                    _selected={{ color: "blue.500", borderBottom: "2px solid", borderBottomColor: "blue.500", fontWeight: "600" }}
+                    fontSize="sm"
+                    fontWeight="500"
+                  >
+                    Admins
+                  </Tab>
+                )}
+                {currentUser?.role !== "departmenthead" && (
+                  <Tab
+                    _selected={{ color: "blue.500", borderBottom: "2px solid", borderBottomColor: "blue.500", fontWeight: "600" }}
+                    fontSize="sm"
+                    fontWeight="500"
+                  >
+                    Dept Heads
+                  </Tab>
+                )}
+                <Tab
+                  _selected={{ color: "blue.500", borderBottom: "2px solid", borderBottomColor: "blue.500", fontWeight: "600" }}
+                  fontSize="sm"
+                  fontWeight="500"
+                >
+                  Users
+                </Tab>
+              </TabList>
+
+              <TabPanels>
+                {currentUser?.role !== "departmenthead" && (
+                  <TabPanel px={0}>
+                    {activeTab === 0 && (
+                      <Box>
+                        <UserTable
+                          key={`admin-${company._id}-${adminRefreshKey}`}
+                          companyId={company._id}
+                          companyName={company.company_name}
+                          title={`${company.company_name} - Admins`}
+                          filterRole="admin"
+                          filterType="admin"
+                          onAdd={() =>
+                            setDrawerState({
+                              type: "admin-add",
+                              isOpen: true,
+                              data: createMemberForm(company._id, "admin"),
+                            })
+                          }
+                          onEdit={(entry: any) =>
+                            setDrawerState({
+                              type: "admin-edit",
+                              isOpen: true,
+                              data: {
+                                ...createMemberForm(company._id, "admin"),
+                                id: entry._id,
+                                code: entry.code || "",
+                                name: entry.name || "",
+                                email: entry.email || entry.username || "",
+                                pic: entry.pic ? { ...entry.pic, file: null, isAdd: 0, isDeleted: 0, url: entry.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
+                                mobileNumber: entry.mobileNumber || "",
+                                department: entry.department || "",
+                                city: entry.city || "",
+                                state: entry.state || "",
+                                designation: entry.designation || "",
+                                joiningDate: entry.joiningDate ? String(entry.joiningDate).slice(0, 10) : "",
+                                role: entry.role || "admin",
+                                companyId: company._id,
+                              },
+                            })
+                          }
+                          onDelete={(entry: any) =>
+                            setDrawerState({ type: "delete", isOpen: true, data: entry })
+                          }
+                          showAddButton={false}
+                        />
+                      </Box>
+                    )}
+                  </TabPanel>
+                )}
+                {currentUser?.role !== "departmenthead" && (
+                  <TabPanel px={0}>
+                    {activeTab === 1 && (
+                      <Box>
+                        <UserTable
+                          key={`depthead-${company._id}-${adminRefreshKey}`}
+                          companyId={company._id}
+                          companyName={company.company_name}
+                          title={`${company.company_name} - Dept Heads`}
+                          filterRole="departmenthead"
+                          filterType="admin"
+                          onAdd={() =>
+                            setDrawerState({
+                              type: "admin-add",
+                              isOpen: true,
+                              data: createMemberForm(company._id, "departmenthead"),
+                            })
+                          }
+                          onEdit={(entry: any) =>
+                            setDrawerState({
+                              type: "admin-edit",
+                              isOpen: true,
+                              data: {
+                                ...createMemberForm(company._id, "departmenthead"),
+                                id: entry._id,
+                                code: entry.code || "",
+                                name: entry.name || "",
+                                email: entry.email || entry.username || "",
+                                pic: entry.pic ? { ...entry.pic, file: null, isAdd: 0, isDeleted: 0, url: entry.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
+                                mobileNumber: entry.mobileNumber || "",
+                                department: entry.department || "",
+                                city: entry.city || "",
+                                state: entry.state || "",
+                                designation: entry.designation || "",
+                                joiningDate: entry.joiningDate ? String(entry.joiningDate).slice(0, 10) : "",
+                                role: entry.role || "departmenthead",
+                                companyId: company._id,
+                              },
+                            })
+                          }
+                          onDelete={(entry: any) =>
+                            setDrawerState({ type: "delete", isOpen: true, data: entry })
+                          }
+                          showAddButton={false}
+                        />
+                      </Box>
+                    )}
+                  </TabPanel>
+                )}
+                <TabPanel px={0}>
+                  {(activeTab === (currentUser?.role === "departmenthead" ? 0 : 2)) && (
+                    <Card
+                      bg={cardBg}
+                      border="1px solid"
+                      borderColor={borderColor}
+                      borderRadius="2xl"
+                      shadow="sm"
+                    >
+                      <CardBody>
+                        <VStack spacing={4} align="flex-start">
+                          <Icon as={FiExternalLink} boxSize={8} color="blue.400" />
+                          <Heading size="md">Unified User Management</Heading>
+                          <Text color={mutedText}>
+                            Users and managers now use the shared user-management flow with enhanced
+                            capabilities including setup-email handling, manager hierarchy, and scoped company filtering.
+                          </Text>
+                          <Button
+                            leftIcon={<FiUsers />}
+                            colorScheme="blue"
+                            variant="solid"
+                            onClick={openUsersManagement}
+                            borderRadius="full"
+                            size="sm"
+                          >
+                            Open Users Management
+                          </Button>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  )}
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+          </Box>
+
+          {/* Company Details Section - Enhanced Grid */}
+          <Card bg={cardBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" shadow="sm">
+            <CardHeader pb={0}>
+              <Heading size="sm" fontWeight="700">
+                Company Information
+              </Heading>
+            </CardHeader>
+            <CardBody>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                <InfoRow label="Primary Contact" value={company?.companyEmail || company?.mobileNo || "—"} icon={FiMail} />
+                <InfoRow label="Website" value={company?.webLink || "—"} icon={FiGlobe} />
+                <InfoRow label="Tenant Slug" value={company?.tenantSlug || "—"} icon={FiShield} />
+                <InfoRow label="Address" value={addressText} icon={FiMapPin} />
+                <InfoRow
+                  label="Admin Activity"
+                  value={`${company?.activeAdminCount || 0} / ${company?.adminCount || 0} active`}
+                  icon={FiUsers}
+                />
+                <InfoRow
+                  label="Tenant Access"
+                  value={company?.tenantUrl || company?.tenantSlug || "—"}
+                  icon={FiGlobe}
+                />
+              </SimpleGrid>
+            </CardBody>
+          </Card>
+        </VStack>
+      </Container>
+
+      {/* Drawers and Modals - Unchanged to preserve logic */}
       <UserDrawer
         isOpen={
           drawerState.isOpen &&
@@ -615,7 +741,6 @@ const CompanyAdminWorkspace = ({
         loading={loading}
       />
 
-      {/* Delete confirmation modal */}
       {drawerState.type === "delete" && drawerState.isOpen ? (
         <DeleteData
           getData={handleDeleteRefresh}
