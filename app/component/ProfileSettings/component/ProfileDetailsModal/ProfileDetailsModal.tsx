@@ -60,6 +60,8 @@ const ProfileDetailsModal = observer(({ isOpen, onClose, user }: any) => {
   const [isSaving, setIsSaving] = useState(false);
   const { companyStore } = stores;
   const toast = useToast();
+  const [schedule, setSchedule] = useState(getDefaultSchedule());
+
 
   const handleSave = async () => {
     setIsSaving(true);

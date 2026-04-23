@@ -250,7 +250,7 @@ const UserDrawer = ({
                   type="select"
                   label="Department"
                   name="department"
-                  isRequired={isDepartmentRequired}
+                  required={isDepartmentRequired}
                   value={
                     userForm.department
                       ? { label: userForm.department, value: userForm.department }
