@@ -30,7 +30,7 @@ import {
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { getSidebarDataByRole, sidebarFooterData } from "./utils/SidebarItems";
 import { observer } from "mobx-react-lite";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import SidebarLogo from "./component/SidebarLogo";
 import stores from "../../../store/stores";
 import { FaCircle } from "react-icons/fa";
@@ -141,6 +141,20 @@ const checkIsActive = (
   if (item.children)
     return item.children.some((child) => checkIsActive(child, activeItemId));
   return false;
+};
+
+const findItemIdByUrl = (
+  items: SidebarItem[],
+  url: string,
+): number | null => {
+  for (let item of items) {
+    if (item.url === url) return item.id;
+    if (item.children) {
+      const found = findItemIdByUrl(item.children, url);
+      if (found !== null) return found;
+    }
+  }
+  return null;
 };
 
 const SidebarPopover = observer(
@@ -447,6 +461,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
       themeStore: { themeConfig },
     } = stores;
     const router = useRouter();
+    const pathname = usePathname();
     const isMobile = useBreakpointValue({ base: true, lg: false }) ?? false;
     const { colorMode } = useColorMode();
 
@@ -488,6 +503,16 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
         }
       }
     }, [user, themeConfig.sidebarColors]);
+
+    // Update active item based on current URL pathname
+    useEffect(() => {
+      if (sidebarData.length > 0 && pathname) {
+        const itemId = findItemIdByUrl(sidebarData, pathname);
+        if (itemId !== null) {
+          setActiveItemId(itemId);
+        }
+      }
+    }, [pathname, sidebarData]);
 
     useEffect(() => {
       if (activeItemId !== null && typeof window !== "undefined") {
