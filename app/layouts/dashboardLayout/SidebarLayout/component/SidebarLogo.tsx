@@ -15,7 +15,11 @@ const fadeSlide = keyframes`
 `;
 
 /* ── component ── */
-const SidebarLogo: React.FC = observer(() => {
+interface SidebarLogoProps {
+  showBrand?: boolean;
+}
+
+const SidebarLogo: React.FC<SidebarLogoProps> = observer(({ showBrand = false }) => {
   const router = useRouter();
   const {
     layout: { isCallapse },
@@ -30,6 +34,8 @@ const SidebarLogo: React.FC = observer(() => {
     .slice(0, 2)
     .map((w: string) => w[0]?.toUpperCase())
     .join("");
+
+  const shouldShowBrand = !isCallapse || showBrand;
 
   return (
     <LogoWrapper
@@ -54,7 +60,7 @@ const SidebarLogo: React.FC = observer(() => {
       </AvatarRing>
 
       {/* Brand text */}
-      {!isCallapse && (
+      {shouldShowBrand && (
         <BrandText>
           <CompanyName>{companyName}</CompanyName>
           <TagLine>Dashboard</TagLine>

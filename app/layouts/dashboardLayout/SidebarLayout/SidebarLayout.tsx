@@ -557,7 +557,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
               mt={2}
               _focus={{ boxShadow: "none" }}
             />
-            <SidebarLogo />
+            <SidebarLogo showBrand />
             <DrawerBody px={2} className="customScrollBar">
               <SidebarAccordion
                 items={sidebarData}

@@ -19,9 +19,10 @@ const HeaderNavbar = observer(() => {
   return (
     <Flex
       display="flex"
-      justifyContent="space-around"
+      justifyContent="flex-end"
       alignItems="center"
-      width={isLargerThan1020 ? "12%" : "10%"}
+      width="auto"
+      gap={3}
     >
       {isLargerThan1020 ? (
         <>

@@ -41,7 +41,7 @@ import {
 import { ChevronLeftIcon } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
-import {  FiHash, FiTrash2, FiEdit2, FiPlus } from "react-icons/fi";
+import { FiHash, FiTrash2, FiEdit2, FiPlus } from "react-icons/fi";
 import AddDepartmentModal from "./AddDepartment";
 
 type DepartmentTableProps = {
@@ -67,11 +67,29 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const headerBg = useColorModeValue("gray.800", "gray.900");
   const rowHoverBg = useColorModeValue("blue.50", "blue.900");
+  const statTextColor = useColorModeValue("gray.500", "gray.400");
+  const statNumberColor = useColorModeValue("blue.600", "blue.400");
+  const statNumberPurple = useColorModeValue("purple.600", "purple.400");
+  const statNumberOrange = useColorModeValue("orange.600", "orange.400");
+  const emptyStateBg = useColorModeValue("gray.50", "gray.700");
+  const emptyStateBorder = useColorModeValue("gray.200", "gray.600");
+  const emptyStateText = useColorModeValue("gray.600", "gray.300");
+  const emptyStateSubtext = useColorModeValue("gray.500", "gray.400");
+  const modalBg = useColorModeValue("white", "gray.800");
+  const modalCloseBtnColor = useColorModeValue("gray.500", "gray.400");
+  const modalDeleteBg = useColorModeValue("red.50", "red.900");
+  const modalDeleteColor = useColorModeValue("red.500", "red.400");
+  const modalTextColor = useColorModeValue("gray.500", "gray.400");
+  const paginationTextColor = useColorModeValue("gray.500", "gray.400");
+  const tableRowEvenBg = useColorModeValue("white", "gray.800");
+  const tableRowOddBg = useColorModeValue("gray.50", "gray.700");
 
   useEffect(() => {
-    departmentStore
-      .fetchDepartments(companyId, page, limit)
-      .catch(() => undefined);
+    if (companyId) {
+      departmentStore
+        .fetchDepartments(companyId, page, limit)
+        .catch(() => undefined);
+    }
   }, [companyId, page]);
 
   const totalPages = Math.max(
@@ -152,13 +170,13 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
             _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
           >
             <Stat>
-              <StatLabel color="gray.500" fontSize="sm">
+              <StatLabel color={statTextColor} fontSize="sm">
                 Total Departments
               </StatLabel>
-              <StatNumber fontSize="2xl" fontWeight="bold" color="blue.600">
+              <StatNumber fontSize="2xl" fontWeight="bold" color={statNumberColor}>
                 {stats.total}
               </StatNumber>
-              <StatHelpText fontSize="xs" color="gray.500">
+              <StatHelpText fontSize="xs" color={statTextColor}>
                 <Icon as={FiHash} mr={1} />
                 Across organization
               </StatHelpText>
@@ -176,13 +194,13 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
             _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
           >
             <Stat>
-              <StatLabel color="gray.500" fontSize="sm">
+              <StatLabel color={statTextColor} fontSize="sm">
                 Current Page
               </StatLabel>
-              <StatNumber fontSize="2xl" fontWeight="bold" color="purple.600">
+              <StatNumber fontSize="2xl" fontWeight="bold" color={statNumberPurple}>
                 {stats.currentPage}
               </StatNumber>
-              <StatHelpText fontSize="xs" color="gray.500">
+              <StatHelpText fontSize="xs" color={statTextColor}>
                 <Icon as={FiHash} mr={1} />
                 Showing {stats.currentPage} departments
               </StatHelpText>
@@ -200,13 +218,13 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
             _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
           >
             <Stat>
-              <StatLabel color="gray.500" fontSize="sm">
+              <StatLabel color={statTextColor} fontSize="sm">
                 Page Navigation
               </StatLabel>
-              <StatNumber fontSize="2xl" fontWeight="bold" color="orange.600">
+              <StatNumber fontSize="2xl" fontWeight="bold" color={statNumberOrange}>
                 {page} / {stats.totalPages}
               </StatNumber>
-              <StatHelpText fontSize="xs" color="gray.500">
+              <StatHelpText fontSize="xs" color={statTextColor}>
                 Page {page} of {stats.totalPages}
               </StatHelpText>
             </Stat>
@@ -255,10 +273,18 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                   <Icon as={FiHash} boxSize={5} />
                 </Box>
                 <Box>
-                  <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
+                  <Text 
+                    fontSize={{ base: "xl", md: "2xl" }} 
+                    fontWeight="bold"
+                    color={useColorModeValue("gray.800", "white")}
+                  >
                     Departments
                   </Text>
-                  <Text fontSize="sm" color="gray.500" mt={1}>
+                  <Text 
+                    fontSize="sm" 
+                    color={statTextColor} 
+                    mt={1}
+                  >
                     {companyName
                       ? `Managing departments for ${companyName}`
                       : "Select a company to view and manage departments"}
@@ -305,12 +331,12 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
           ) : departmentStore.error ? (
             <Box
               p={4}
-              bg="red.50"
+              bg={useColorModeValue("red.50", "red.900")}
               borderRadius="xl"
               borderWidth="1px"
-              borderColor="red.200"
+              borderColor={useColorModeValue("red.200", "red.700")}
             >
-              <Text color="red.600" textAlign="center">
+              <Text color={useColorModeValue("red.600", "red.300")} textAlign="center">
                 {departmentStore.error}
               </Text>
             </Box>
@@ -318,17 +344,17 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
             <Box
               p={12}
               textAlign="center"
-              bg="gray.50"
+              bg={emptyStateBg}
               borderRadius="xl"
               borderWidth="2px"
-              borderColor="gray.200"
+              borderColor={emptyStateBorder}
               borderStyle="dashed"
             >
-              <Icon as={FiHash} boxSize={12} color="gray.400" mb={3} />
-              <Text fontSize="lg" fontWeight="semibold" color="gray.600">
+              <Icon as={FiHash} boxSize={12} color={statTextColor} mb={3} />
+              <Text fontSize="lg" fontWeight="semibold" color={emptyStateText}>
                 No departments found
               </Text>
-              <Text fontSize="sm" color="gray.500" mt={2}>
+              <Text fontSize="sm" color={emptyStateSubtext} mt={2}>
                 {companyName
                   ? `No departments have been created for ${companyName} yet`
                   : "Please select a company to view its departments"}
@@ -358,15 +384,15 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                     height: "8px",
                   },
                   "&::-webkit-scrollbar-track": {
-                    background: "#f1f1f1",
+                    background: useColorModeValue("#f1f1f1", "#2d3748"),
                     borderRadius: "10px",
                   },
                   "&::-webkit-scrollbar-thumb": {
-                    background: "#888",
+                    background: useColorModeValue("#888", "#4a5568"),
                     borderRadius: "10px",
                   },
                   "&::-webkit-scrollbar-thumb:hover": {
-                    background: "#555",
+                    background: useColorModeValue("#555", "#718096"),
                   },
                 }}
               >
@@ -389,10 +415,7 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                     {departmentStore.departments.map((dept, index) => (
                       <Tr
                         key={dept._id}
-                        bg={index % 2 === 0 ? "white" : "gray.50"}
-                        _dark={{
-                          bg: index % 2 === 0 ? "gray.800" : "gray.700",
-                        }}
+                        bg={index % 2 === 0 ? tableRowEvenBg : tableRowOddBg}
                         _hover={{
                           bg: rowHoverBg,
                           transition: "background 0.2s",
@@ -422,7 +445,11 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                             >
                               {dept.departmentName?.charAt(0).toUpperCase()}
                             </Box>
-                            <Text fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
+                            <Text 
+                              fontWeight="600" 
+                              fontSize={{ base: "sm", md: "md" }}
+                              color={useColorModeValue("gray.800", "white")}
+                            >
                               {dept.departmentName}
                             </Text>
                           </HStack>
@@ -456,7 +483,7 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                                 colorScheme="blue"
                                 onClick={() => handleEdit(dept)}
                                 _hover={{
-                                  bg: "blue.100",
+                                  bg: useColorModeValue("blue.100", "blue.900"),
                                   transform: "scale(1.1)",
                                 }}
                                 transition="all 0.2s"
@@ -472,7 +499,7 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                                 colorScheme="red"
                                 onClick={() => handleDeleteClick(dept._id)}
                                 _hover={{
-                                  bg: "red.100",
+                                  bg: useColorModeValue("red.100", "red.900"),
                                   transform: "scale(1.1)",
                                 }}
                                 transition="all 0.2s"
@@ -497,7 +524,7 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                 gap={4}
                 direction={{ base: "column", sm: "row" }}
               >
-                <Text fontSize="sm" color="gray.500">
+                <Text fontSize="sm" color={paginationTextColor}>
                   Showing page {page} of {totalPages} • Total{" "}
                   {departmentStore.pagination?.total || 0} departments
                 </Text>
@@ -589,27 +616,27 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
       {/* Delete Confirmation Modal */}
       <Modal isOpen={isDeleteOpen} onClose={onDeleteClose} isCentered>
         <ModalOverlay backdropFilter="blur(10px)" />
-        <ModalContent borderRadius="2xl">
+        <ModalContent borderRadius="2xl" bg={modalBg}>
           <ModalHeader bgGradient="linear(to-r, red.500, pink.500)" bgClip="text">
             Delete Department
           </ModalHeader>
-          <ModalCloseButton />
+          <ModalCloseButton color={modalCloseBtnColor} />
 
           <ModalBody>
             <Flex align="center" justify="center" direction="column" py={4}>
               <Box
                 p={4}
                 borderRadius="full"
-                bg="red.50"
-                color="red.500"
+                bg={modalDeleteBg}
+                color={modalDeleteColor}
                 mb={4}
               >
                 <Icon as={FiTrash2} boxSize={8} />
               </Box>
-              <Text fontSize="lg" fontWeight="semibold" textAlign="center">
+              <Text fontSize="lg" fontWeight="semibold" textAlign="center" color={useColorModeValue("gray.800", "white")}>
                 Are you sure you want to delete this department?
               </Text>
-              <Text fontSize="sm" color="gray.500" mt={2} textAlign="center">
+              <Text fontSize="sm" color={modalTextColor} mt={2} textAlign="center">
                 This action cannot be undone. All related data will be permanently removed.
               </Text>
             </Flex>

@@ -47,7 +47,7 @@ const HeaderProfile = observer(() => {
 
   return user ? (
     <>
-      <Menu closeOnSelect={false} placement="bottom-end">
+      <Menu closeOnSelect={true} placement="bottom-end">
         <MenuButton
           as={IconButton}
           aria-label="User Menu"
@@ -63,7 +63,7 @@ const HeaderProfile = observer(() => {
           variant="ghost"
         />
         <Portal>
-          <MenuList minWidth="220px" boxShadow="md" borderRadius="md" zIndex={10} p={2}>
+          <MenuList minWidth="220px" boxShadow="md" borderRadius="md" zIndex={9999} p={2}>
             <VStack spacing={2}>
               <Box textAlign="center">
                 <Avatar src={user?.pic?.url || undefined} size="lg" name={user?.name} />
@@ -107,7 +107,7 @@ const HeaderProfile = observer(() => {
       <ProfileDetailsModal isOpen={profileIsOpen} onClose={profileOnClose} user={user} />
     </>
   ) : (
-    <Menu closeOnSelect={false} placement="bottom-end">
+    <Menu closeOnSelect={true} placement="bottom-end">
       <MenuButton
         as={IconButton}
         aria-label="User Menu"
@@ -116,7 +116,7 @@ const HeaderProfile = observer(() => {
         variant="ghost"
       />
       <Portal>
-        <MenuList minWidth="220px" boxShadow="md" borderRadius="md" zIndex={10} p={2}>
+        <MenuList minWidth="220px" boxShadow="md" borderRadius="md" zIndex={9999} p={2}>
           <VStack spacing={2}>
             <MenuItem onClick={() => router.push(authentication.login)}>
               <Icon as={FaUser} boxSize={6} mr={2} color="blue.500" />

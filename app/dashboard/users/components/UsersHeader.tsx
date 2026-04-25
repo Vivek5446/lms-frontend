@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Flex, HStack, Text, Icon, Badge } from "@chakra-ui/react";
+import { Box, Button, Flex, HStack, Text, Icon, Badge, useColorModeValue } from "@chakra-ui/react";
 import { FiUpload, FiUserPlus, FiUsers, FiShield } from "react-icons/fi";
 
 type Props = {
@@ -24,9 +24,23 @@ const UsersHeader = ({
   totalUsers = 0,
   activeUsers = 0,
 }: Props) => {
+  // Dark mode compatible color values
+  const bgColor = useColorModeValue("white", "gray.800");
+  const iconBg = useColorModeValue("blue.50", "gray.700");
+  const iconColor = useColorModeValue("blue.600", "blue.300");
+  const gradientFrom = useColorModeValue("blue.600", "blue.400");
+  const gradientTo = useColorModeValue("purple.600", "purple.400");
+  const statLabelColor = useColorModeValue("gray.500", "gray.400");
+  const statValueColor = useColorModeValue("gray.700", "gray.100");
+  const badgeBg = useColorModeValue("purple.50", "gray.700");
+  const badgeColor = useColorModeValue("purple.600", "purple.300");
+  const outlineButtonColor = useColorModeValue("purple.600", "purple.300");
+  const outlineButtonBorder = useColorModeValue("purple.400", "purple.500");
+  const outlineButtonHoverBg = useColorModeValue("purple.50", "gray.700");
+
   return (
     <Box
-      bg="white"
+      bg={bgColor}
       borderRadius="2xl"
       borderWidth="1px"
       borderColor={borderColor}
@@ -59,17 +73,17 @@ const UsersHeader = ({
               <Flex
                 align="center"
                 justify="center"
-                bg="blue.50"
+                bg={iconBg}
                 p={2}
                 borderRadius="xl"
               >
-                <Icon as={FiUsers} boxSize={6} color="blue.600" />
+                <Icon as={FiUsers} boxSize={6} color={iconColor} />
               </Flex>
               <Box>
                 <Text
                   fontSize={{ base: "2xl", md: "3xl" }}
                   fontWeight="extrabold"
-                  bgGradient="linear(to-r, blue.600, purple.600)"
+                  bgGradient={`linear(to-r, ${gradientFrom}, ${gradientTo})`}
                   bgClip="text"
                 >
                   Users Management
@@ -80,15 +94,15 @@ const UsersHeader = ({
               </Box>
             </Flex>
 
-            {/* Stats Section */}
+            {/* Stats Section - Only show if there is data */}
             {(totalUsers > 0 || activeUsers > 0) && (
               <HStack spacing={4} mt={3} ml={12}>
                 {totalUsers > 0 && (
                   <Flex align="center" gap={2}>
-                    <Icon as={FiUsers} boxSize={4} color="gray.500" />
-                    <Text fontSize="sm" color={muted}>
+                    <Icon as={FiUsers} boxSize={4} color={statLabelColor} />
+                    <Text fontSize="sm" color={statLabelColor}>
                       Total:{" "}
-                      <Text as="span" fontWeight="bold" color="gray.700">
+                      <Text as="span" fontWeight="bold" color={statValueColor}>
                         {totalUsers}
                       </Text>
                     </Text>
@@ -103,17 +117,17 @@ const UsersHeader = ({
                       borderRadius="full"
                       boxShadow="0 0 0 2px rgba(72, 187, 120, 0.2)"
                     />
-                    <Text fontSize="sm" color={muted}>
+                    <Text fontSize="sm" color={statLabelColor}>
                       Active:{" "}
-                      <Text as="span" fontWeight="bold" color="gray.700">
+                      <Text as="span" fontWeight="bold" color={statValueColor}>
                         {activeUsers}
                       </Text>
                     </Text>
                   </Flex>
                 )}
                 <Badge
-                  colorScheme="purple"
-                  variant="subtle"
+                  bg={badgeBg}
+                  color={badgeColor}
                   borderRadius="full"
                   px={3}
                   py={1}
@@ -142,11 +156,11 @@ const UsersHeader = ({
                 size={{ base: "md", md: "lg" }}
                 px={{ base: 4, md: 6 }}
                 borderWidth="2px"
-                borderColor="purple.400"
-                color="purple.600"
+                borderColor={outlineButtonBorder}
+                color={outlineButtonColor}
                 _hover={{
-                  bg: "purple.50",
-                  borderColor: "purple.500",
+                  bg: outlineButtonHoverBg,
+                  borderColor: useColorModeValue("purple.500", "purple.400"),
                   transform: "translateY(-2px)",
                   boxShadow: "md",
                 }}
@@ -164,10 +178,10 @@ const UsersHeader = ({
                 onClick={onOpenCreate}
                 size={{ base: "md", md: "lg" }}
                 px={{ base: 4, md: 6 }}
-                bgGradient="linear(to-r, blue.500, purple.600)"
+                bgGradient={`linear(to-r, ${gradientFrom}, ${gradientTo})`}
                 color="white"
                 _hover={{
-                  bgGradient: "linear(to-r, blue.600, purple.700)",
+                  bgGradient: `linear(to-r, ${useColorModeValue("blue.600", "blue.500")}, ${useColorModeValue("purple.700", "purple.600")})`,
                   transform: "translateY(-2px)",
                   boxShadow: "lg",
                 }}

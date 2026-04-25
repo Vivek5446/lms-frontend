@@ -2,7 +2,7 @@
 
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Input, Select, HStack, Button } from "@chakra-ui/react";
+import { Box, Input, Select, HStack, Button, useColorModeValue } from "@chakra-ui/react";
 import { batchStore } from "@/app/store/batchStore/batchStore";
 import CustomTable from "../../../component/config/component/CustomTable/CustomTable"; // adjust path
 
@@ -112,10 +112,18 @@ const Page = observer(() => {
     { headerName: "Users", key: "users" }, // <-- Users column
   ];
 
+  // Dark mode values
+  const bgColor = useColorModeValue("gray.50", "gray.900");
+  const filterBg = useColorModeValue("white", "gray.800");
+  const inputBg = useColorModeValue("white", "gray.700");
+  const inputBorder = useColorModeValue("gray.200", "gray.600");
+  const inputText = useColorModeValue("gray.800", "white");
+  const buttonHoverBg = useColorModeValue("blue.600", "blue.500");
+
   return (
-    <Box p={6} bg="gray.50" minH="100vh">
+    <Box p={6} bg={bgColor} minH="100vh">
       {/* --- Filters UI --- */}
-      <Box mb={4} p={4} bg="white" borderRadius="md" shadow="sm">
+      <Box mb={4} p={4} bg={filterBg} borderRadius="md" shadow="sm">
         <HStack spacing={3} flexWrap="wrap">
           <Input
             type="date"
@@ -124,6 +132,10 @@ const Page = observer(() => {
             onChange={(e) => handleFilterChange("startDate", e.target.value)}
             size="sm"
             maxW="140px"
+            bg={inputBg}
+            borderColor={inputBorder}
+            color={inputText}
+            _placeholder={{ color: useColorModeValue("gray.400", "gray.500") }}
           />
           <Input
             type="date"
@@ -132,6 +144,10 @@ const Page = observer(() => {
             onChange={(e) => handleFilterChange("endDate", e.target.value)}
             size="sm"
             maxW="140px"
+            bg={inputBg}
+            borderColor={inputBorder}
+            color={inputText}
+            _placeholder={{ color: useColorModeValue("gray.400", "gray.500") }}
           />
           <Select
             placeholder="Status"
@@ -139,6 +155,9 @@ const Page = observer(() => {
             onChange={(e) => handleFilterChange("status", e.target.value)}
             size="sm"
             maxW="140px"
+            bg={inputBg}
+            borderColor={inputBorder}
+            color={inputText}
           >
             <option value="active">Active</option>
             <option value="expired">Expired</option>
@@ -152,6 +171,10 @@ const Page = observer(() => {
             onChange={(e) => handleFilterChange("courseMin", e.target.value)}
             size="sm"
             maxW="100px"
+            bg={inputBg}
+            borderColor={inputBorder}
+            color={inputText}
+            _placeholder={{ color: useColorModeValue("gray.400", "gray.500") }}
           />
           <Input
             type="number"
@@ -160,6 +183,10 @@ const Page = observer(() => {
             onChange={(e) => handleFilterChange("courseMax", e.target.value)}
             size="sm"
             maxW="100px"
+            bg={inputBg}
+            borderColor={inputBorder}
+            color={inputText}
+            _placeholder={{ color: useColorModeValue("gray.400", "gray.500") }}
           />
           <Input
             type="number"
@@ -168,6 +195,10 @@ const Page = observer(() => {
             onChange={(e) => handleFilterChange("completionPercentage", e.target.value)}
             size="sm"
             maxW="120px"
+            bg={inputBg}
+            borderColor={inputBorder}
+            color={inputText}
+            _placeholder={{ color: useColorModeValue("gray.400", "gray.500") }}
           />
           <Button
             colorScheme="blue"
@@ -182,6 +213,7 @@ const Page = observer(() => {
                 courseMax: "",
               })
             }
+            _hover={{ bg: buttonHoverBg }}
           >
             Reset
           </Button>

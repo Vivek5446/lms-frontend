@@ -87,6 +87,17 @@ const UsersTable = ({
 
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColorLight = useColorModeValue("gray.100", "gray.700");
+  const statNumberColor = useColorModeValue("gray.800", "white");
+  const activeNumberColor = useColorModeValue("green.600", "green.400");
+  const pendingNumberColor = useColorModeValue("orange.600", "orange.400");
+  const secureNumberColor = useColorModeValue("purple.600", "purple.400");
+  const iconBoxBg = useColorModeValue("purple.50", "gray.700");
+  const iconBoxDarkBg = useColorModeValue("purple.50", "purple.900");
+  const tabListBg = useColorModeValue("gray.50", "gray.700");
+  const statsBg = useColorModeValue("blue.50", "blue.900");
+  const statsTextColor = useColorModeValue("blue.700", "blue.200");
+  const tooltipBg = useColorModeValue("gray.900", "gray.700");
+  const tooltipColor = useColorModeValue("white", "white");
 
   const columns = [
     {
@@ -108,7 +119,7 @@ const UsersTable = ({
               {user.name?.charAt(0) || "U"}
             </Avatar>
             <VStack align="start" spacing={0}>
-              <Text fontWeight="semibold" fontSize="sm">
+              <Text fontWeight="semibold" fontSize="sm" color={useColorModeValue("gray.800", "white")}>
                 {user.name || "--"}
               </Text>
               <HStack spacing={1}>
@@ -132,7 +143,9 @@ const UsersTable = ({
           <VStack align="start" spacing={0.5}>
             <HStack spacing={1} fontSize="sm">
               <Icon as={FiBriefcase} boxSize={3} color="purple.500" />
-              <Text fontWeight="medium">{user.department || "--"}</Text>
+              <Text fontWeight="medium" color={useColorModeValue("gray.700", "gray.200")}>
+                {user.department || "--"}
+              </Text>
             </HStack>
             <HStack spacing={1}>
               <Icon as={FiMapPin} boxSize={3} color={muted} />
@@ -155,12 +168,12 @@ const UsersTable = ({
             <Box
               p={1.5}
               borderRadius="lg"
-              bg="purple.50"
+              bg={iconBoxBg}
               _dark={{ bg: "purple.900" }}
             >
               <Icon as={FiBriefcase} boxSize={3} color="purple.600" />
             </Box>
-            <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
+            <Text fontSize="sm" fontWeight="medium" noOfLines={1} color={useColorModeValue("gray.700", "gray.200")}>
               {user.company?.name || user.company?.company_name || "Unassigned"}
             </Text>
           </HStack>
@@ -216,8 +229,8 @@ const UsersTable = ({
             <Tooltip
               hasArrow
               placement="top-start"
-              bg="gray.900"
-              color="white"
+              bg={tooltipBg}
+              color={tooltipColor}
               p={3}
               borderRadius="xl"
               boxShadow="xl"
@@ -379,7 +392,7 @@ const UsersTable = ({
             <StatLabel color={muted} fontSize="sm">
               Total Users
             </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold">
+            <StatNumber fontSize="2xl" fontWeight="bold" color={statNumberColor}>
               {stats.total}
             </StatNumber>
             <StatHelpText fontSize="xs" color={muted}>
@@ -403,12 +416,12 @@ const UsersTable = ({
             <StatLabel color={muted} fontSize="sm">
               Active Users
             </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold" color="green.600">
+            <StatNumber fontSize="2xl" fontWeight="bold" color={activeNumberColor}>
               {stats.active}
             </StatNumber>
             <StatHelpText fontSize="xs" color={muted}>
               <Icon as={FiCheckCircle} mr={1} />
-              {((stats.active / stats.total) * 100).toFixed(1)}% active rate
+              {stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : "0"}% active rate
             </StatHelpText>
           </Stat>
         </Box>
@@ -427,7 +440,7 @@ const UsersTable = ({
             <StatLabel color={muted} fontSize="sm">
               Pending
             </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold" color="orange.600">
+            <StatNumber fontSize="2xl" fontWeight="bold" color={pendingNumberColor}>
               {stats.pending}
             </StatNumber>
             <StatHelpText fontSize="xs" color={muted}>
@@ -451,12 +464,12 @@ const UsersTable = ({
             <StatLabel color={muted} fontSize="sm">
               Password Secure
             </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold" color="purple.600">
+            <StatNumber fontSize="2xl" fontWeight="bold" color={secureNumberColor}>
               {stats.passwordSet}
             </StatNumber>
             <StatHelpText fontSize="xs" color={muted}>
               <Icon as={FiShield} mr={1} />
-              {((stats.passwordSet / stats.total) * 100).toFixed(1)}% secured
+              {stats.total > 0 ? ((stats.passwordSet / stats.total) * 100).toFixed(1) : "0"}% secured
             </StatHelpText>
           </Stat>
         </Box>
@@ -481,7 +494,7 @@ const UsersTable = ({
               setPage(1);
             }}
           >
-            <TabList gap={2} flexWrap="wrap" bg="gray.50" p={1} borderRadius="full">
+            <TabList gap={2} flexWrap="wrap" bg={tabListBg} p={1} borderRadius="full">
               {listTabs.map((tab, idx) => (
                 <Tab
                   key={tab.value}
@@ -495,6 +508,7 @@ const UsersTable = ({
                   fontSize="sm"
                   fontWeight="medium"
                   transition="all 0.2s"
+                  color={useColorModeValue("gray.600", "gray.300")}
                 >
                   {tab.label}
                 </Tab>
@@ -503,13 +517,12 @@ const UsersTable = ({
           </Tabs>
 
           <Box
-            bg="blue.50"
-            _dark={{ bg: "blue.900" }}
+            bg={statsBg}
             px={4}
             py={2}
             borderRadius="full"
           >
-            <Text fontSize="sm" fontWeight="semibold" color="blue.700">
+            <Text fontSize="sm" fontWeight="semibold" color={statsTextColor}>
               📊 {pagination.total} total {activeTabLabel.toLowerCase()}
               {pagination.total !== 1 ? "s" : ""}
             </Text>
