@@ -37,6 +37,12 @@ type Props = {
   borderColor: string;
   tableHeadBg: string;
   muted: string;
+  selectedBulkManagerLevels: number;
+  uploadRoleOptions: Array<{
+    value: string;
+    label: string;
+    description: string;
+  }>;
 
   getRootProps: any;
   getInputProps: any;
@@ -48,6 +54,7 @@ type Props = {
   preview: any[];
   loading: boolean;
 
+  onDownloadTemplate: () => void;
   onUpload: () => void;
 };
 
@@ -61,6 +68,8 @@ const BulkUploadModal = ({
   borderColor,
   tableHeadBg,
   muted,
+  selectedBulkManagerLevels,
+  uploadRoleOptions,
   getRootProps,
   getInputProps,
   isDragActive,
@@ -68,6 +77,7 @@ const BulkUploadModal = ({
   setSelectedFile,
   preview,
   loading,
+  onDownloadTemplate,
   onUpload,
 }: Props) => {
   const selectStyles = {
@@ -94,6 +104,47 @@ const BulkUploadModal = ({
   const selectedOption = companyOptions.find(
     (opt) => opt.value === bulkForm.companyId
   );
+  const selectedUploadOption = uploadRoleOptions.find(
+    (opt) => opt.value === bulkForm.uploadRole
+  );
+  const parseManagerLevel = (role: string) => {
+    const match = String(role || "").trim().toLowerCase().match(/^l(\d+)-manager$/);
+    return match ? Number(match[1]) : null;
+  };
+  const managerLevel = parseManagerLevel(bulkForm.uploadRole);
+  const expectedManagerLevels =
+    bulkForm.uploadRole === "user"
+      ? Array.from({ length: selectedBulkManagerLevels }, (_, index) => index + 1)
+      : managerLevel
+        ? Array.from(
+            { length: Math.max(0, selectedBulkManagerLevels - managerLevel) },
+            (_, index) => managerLevel + index + 1
+          )
+        : [];
+  const expectedColumns = [
+    "Employee Code",
+    "Employee Name",
+    "Email ID",
+    "Contact Number",
+    "Branch",
+    "City",
+    "State",
+    ...(bulkForm.uploadRole === "user" ? ["Designation", "Joining Date"] : []),
+    ...expectedManagerLevels.map((level) => `L${level} Manager Email ID`),
+  ];
+  const companyReady = Boolean(bulkForm.companyId);
+  const getUniqueManagers = (managers: any[] = []) => {
+    const seen = new Set<string>();
+    return managers.filter((manager) => {
+      const key = `${manager?.level || ""}:${String(manager?.managerEmail || "").trim().toLowerCase()}`;
+      if (!key || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="6xl">
@@ -132,8 +183,60 @@ const BulkUploadModal = ({
               </Box>
             )}
 
-            {/* ================= DROPZONE ================= */}
-            {bulkForm.companyId ? (
+            <Box
+              borderWidth="1px"
+              borderColor={borderColor}
+              p={4}
+              borderRadius="xl"
+            >
+              <FormControl isRequired>
+                <FormLabel fontWeight="bold">Select User Type</FormLabel>
+                <ReactSelect
+                  placeholder="Select the user level you want to create..."
+                  options={uploadRoleOptions}
+                  value={
+                    selectedUploadOption
+                      ? {
+                          label: selectedUploadOption.label,
+                          value: selectedUploadOption.value,
+                        }
+                      : null
+                  }
+                  onChange={(opt: any) =>
+                    setBulkForm((prev: any) => ({
+                      ...prev,
+                      uploadRole: opt?.value || "",
+                    }))
+                  }
+                  styles={selectStyles}
+                />
+              </FormControl>
+
+              {selectedUploadOption && (
+                <VStack align="start" spacing={1} mt={3}>
+                  <Text fontSize="sm" fontWeight="semibold">
+                    {selectedUploadOption.label}
+                  </Text>
+                  <Text fontSize="sm" color={muted}>
+                    {selectedUploadOption.description}
+                  </Text>
+                  <Text fontSize="xs" color={muted}>
+                    Expected columns: {expectedColumns.join(", ")}
+                  </Text>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onDownloadTemplate}
+                    isDisabled={!companyReady || !bulkForm.uploadRole}
+                  >
+                    Download Dummy Template
+                  </Button>
+                </VStack>
+              )}
+            </Box>
+
+            {/* ================= DROPZONE ================= */}            
+            {companyReady && bulkForm.uploadRole ? (
               <Box
                 {...getRootProps()}
                 borderWidth="2px"
@@ -152,9 +255,7 @@ const BulkUploadModal = ({
                 <Text fontWeight="bold">Drag & drop Excel file here</Text>
 
                 <Text fontSize="sm" color={muted} mt={2}>
-                  Upload `.xlsx` / `.xls` with columns like Employee Code,
-                  Employee Name, Email ID, Department, City, State, Designation
-                  and manager email fields.
+                  Upload `.xlsx` / `.xls` for <strong>{selectedUploadOption?.label || "the selected hierarchy level"}</strong>.
                 </Text>
 
                 {selectedFile && (
@@ -173,7 +274,7 @@ const BulkUploadModal = ({
                 textAlign="center"
               >
                 <Text color={muted} fontStyle="italic">
-                  Please select a company above to enable file upload.
+                  Please select a company and the user type you want to create before uploading the Excel file.
                 </Text>
               </Box>
             )}
@@ -243,8 +344,8 @@ const BulkUploadModal = ({
 
                             <Td>
                               <VStack align="start" spacing={0}>
-                                {(row.managers || []).map((m: any) => (
-                                  <Text key={m.level} fontSize="xs">
+                                {getUniqueManagers(row.managers || []).map((m: any) => (
+                                  <Text key={`${m.level}-${m.managerEmail}`} fontSize="xs">
                                     L{m.level}: {m.managerEmail}
                                   </Text>
                                 ))}
@@ -298,7 +399,7 @@ const BulkUploadModal = ({
             colorScheme="purple"
             onClick={onUpload}
             isLoading={loading}
-            isDisabled={!selectedFile || !bulkForm.companyId}
+            isDisabled={!selectedFile || !companyReady || !bulkForm.uploadRole}
             ml={3}
           >
             Upload Users

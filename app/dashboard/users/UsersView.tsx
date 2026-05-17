@@ -54,6 +54,7 @@ type BulkFormState = {
   companyName: string;
   companyManagerLevels: number;
   createCompany: boolean;
+  uploadRole: string;
 };
 
 const COLORS = ["blue", "purple", "orange", "green", "pink", "cyan"];
@@ -95,6 +96,35 @@ const formatRoleLabel = (role: string) => {
 const parseManagerLevel = (role: string) => {
   const match = normalizeRole(role).match(/^l(\d+)-manager$/i);
   return match ? Number(match[1]) : null;
+};
+
+const getBulkUploadRoleOptions = (managerLevels: number) => {
+  const totalLevels = Math.max(1, Number(managerLevels) || 3);
+  const options = [];
+
+  for (let level = totalLevels; level >= 1; level -= 1) {
+    const requiredManagers = Array.from(
+      { length: Math.max(0, totalLevels - level) },
+      (_, index) => `L${level + index + 1}`
+    );
+
+    options.push({
+      value: `l${level}-manager`,
+      label: `Level ${level} Managers`,
+      description:
+        requiredManagers.length === 0
+          ? "Top-level managers without any assigned manager."
+          : `Requires ${requiredManagers.join(", ")} manager email${requiredManagers.length > 1 ? "s" : ""}.`,
+    });
+  }
+
+  options.push({
+    value: "user",
+    label: "Employees / Users",
+    description: `Requires L1 to L${totalLevels} manager emails.`,
+  });
+
+  return options;
 };
 
 const optionFromManager = (manager: any) => {
@@ -187,6 +217,7 @@ const UsersView = observer(() => {
     companyName: "",
     companyManagerLevels: 3,
     createCompany: false,
+    uploadRole: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const muted = useColorModeValue("gray.600", "gray.400");
@@ -229,6 +260,10 @@ const UsersView = observer(() => {
   const selectedBulkManagerLevels = bulkForm.createCompany
     ? Math.max(1, Number(bulkForm.companyManagerLevels) || 3)
     : getCompanyManagerLevels(selectedBulkCompany || { managerLevels: currentCompanyManagerLevels });
+  const bulkUploadRoleOptions = useMemo(
+    () => getBulkUploadRoleOptions(selectedBulkManagerLevels),
+    [selectedBulkManagerLevels]
+  );
 
   const visibleManagerLevels = useMemo(() => {
     const companyLevels = isSuperadmin
@@ -315,14 +350,34 @@ const UsersView = observer(() => {
   }, [companyStore, isSuperadmin]);
 
   useEffect(() => {
-    if (!isSuperadmin) {
+    setBulkForm((prev) =>
+      prev.companyId === (scopedCompanyId || auth.company || "")
+        ? prev
+        : { ...prev, companyId: scopedCompanyId || auth.company || "" }
+    );
+  }, [auth.company, scopedCompanyId]);
+
+  useEffect(() => {
+    const validRoles = new Set(bulkUploadRoleOptions.map((option) => option.value));
+
+    setBulkForm((prev) =>
+      validRoles.has(prev.uploadRole)
+        ? prev
+        : {
+            ...prev,
+            uploadRole: "",
+          }
+    );
+  }, [bulkUploadRoleOptions, selectedBulkManagerLevels]);
+
+  useEffect(() => {
+    if (!isBulkModalOpen) {
       return;
     }
 
-    setBulkForm((prev) =>
-      prev.companyId === scopedCompanyId ? prev : { ...prev, companyId: scopedCompanyId }
-    );
-  }, [isSuperadmin, scopedCompanyId]);
+    setSelectedFile(null);
+    userStore.bulkPreview = [];
+  }, [bulkForm.companyId, bulkForm.uploadRole, isBulkModalOpen, userStore]);
 
   useEffect(() => {
     if (!isUserDrawerOpen) {
@@ -369,6 +424,27 @@ const UsersView = observer(() => {
       companyManagerLevels: isSuperadmin ? 3 : currentCompanyManagerLevels,
       managers: reconcileManagersForRole("user", [], isSuperadmin ? 3 : currentCompanyManagerLevels),
     });
+
+  const resetBulkUploadState = useCallback(() => {
+    setSelectedFile(null);
+    userStore.bulkPreview = [];
+    setBulkForm((prev) => ({
+      ...prev,
+      companyId: isSuperadmin ? scopedCompanyId || prev.companyId : auth.company || prev.companyId,
+      companyManagerLevels: isSuperadmin ? prev.companyManagerLevels : currentCompanyManagerLevels,
+      uploadRole: "",
+    }));
+  }, [auth.company, currentCompanyManagerLevels, isSuperadmin, scopedCompanyId, userStore]);
+
+  const openBulkUpload = () => {
+    resetBulkUploadState();
+    setIsBulkModalOpen(true);
+  };
+
+  const closeBulkUpload = () => {
+    resetBulkUploadState();
+    setIsBulkModalOpen(false);
+  };
 
   const openCreate = () => {
     if (!canOpenCreate) {
@@ -695,6 +771,16 @@ const UsersView = observer(() => {
         return;
       }
 
+      if (!bulkForm.uploadRole) {
+        toast({
+          title: "Upload type is required",
+          description: "Choose which hierarchy level this Excel file belongs to.",
+          status: "warning",
+          duration: 3000,
+        });
+        return;
+      }
+
       setSelectedFile(file);
       try {
         const bulkUploadOptions = isSuperadmin
@@ -702,12 +788,18 @@ const UsersView = observer(() => {
             ? {
                 companyName: bulkForm.companyName.trim(),
                 companyManagerLevels: bulkForm.companyManagerLevels,
+                uploadRole: bulkForm.uploadRole,
               }
             : {
                 companyId: bulkForm.companyId,
                 companyManagerLevels: selectedBulkManagerLevels,
+                uploadRole: bulkForm.uploadRole,
               }
-        : {};
+        : {
+            companyId: bulkForm.companyId,
+            companyManagerLevels: selectedBulkManagerLevels,
+            uploadRole: bulkForm.uploadRole,
+          };
 
         await userStore.previewUploadUsers(file, bulkUploadOptions);
       } catch (err: any) {
@@ -719,7 +811,17 @@ const UsersView = observer(() => {
         });
       }
     },
-    [bulkForm.companyId, bulkForm.companyManagerLevels, bulkForm.companyName, bulkForm.createCompany, isSuperadmin, toast, userStore]
+    [
+      bulkForm.companyId,
+      bulkForm.companyManagerLevels,
+      bulkForm.companyName,
+      bulkForm.createCompany,
+      bulkForm.uploadRole,
+      isSuperadmin,
+      selectedBulkManagerLevels,
+      toast,
+      userStore,
+    ]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -762,18 +864,34 @@ const UsersView = observer(() => {
       return;
     }
 
+    if (!bulkForm.uploadRole) {
+      toast({
+        title: "Upload type is required",
+        description: "Choose which hierarchy level this Excel file belongs to.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
     try {
       const bulkUploadOptions = isSuperadmin
           ? bulkForm.createCompany
             ? {
                 companyName: bulkForm.companyName.trim(),
                 companyManagerLevels: bulkForm.companyManagerLevels,
+                uploadRole: bulkForm.uploadRole,
               }
             : {
                 companyId: bulkForm.companyId,
                 companyManagerLevels: selectedBulkManagerLevels,
+                uploadRole: bulkForm.uploadRole,
               }
-          : {};
+          : {
+              companyId: bulkForm.companyId,
+              companyManagerLevels: selectedBulkManagerLevels,
+              uploadRole: bulkForm.uploadRole,
+            };
 
       const response = await userStore.uploadUsers(selectedFile, bulkUploadOptions);
       const createdCount = response?.data?.createdCount || 0;
@@ -798,11 +916,49 @@ const UsersView = observer(() => {
         companyName: "",
         companyManagerLevels: 3,
         createCompany: false,
+        uploadRole: "",
       });
       fetchUsers();
     } catch (err: any) {
       toast({
         title: "Bulk upload failed",
+        description: err?.error || err?.message || "Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    if (isSuperadmin && !bulkForm.companyId) {
+      toast({
+        title: "Company is required",
+        description: "Select a company before downloading the template.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!bulkForm.uploadRole) {
+      toast({
+        title: "User type is required",
+        description: "Select the user type you want to create first.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      await userStore.downloadBulkUploadTemplate({
+        companyId: bulkForm.companyId,
+        companyManagerLevels: selectedBulkManagerLevels,
+        uploadRole: bulkForm.uploadRole,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Template download failed",
         description: err?.error || err?.message || "Please try again.",
         status: "error",
         duration: 4000,
@@ -829,7 +985,7 @@ const UsersView = observer(() => {
       <VStack align="stretch" spacing={6}>
 
         <UsersHeader
-  onOpenBulk={() => setIsBulkModalOpen(true)}
+  onOpenBulk={openBulkUpload}
   onOpenCreate={openCreate}
   borderColor={borderColor}
   muted={muted}
@@ -884,7 +1040,7 @@ const UsersView = observer(() => {
 
 <BulkUploadModal
   isOpen={isBulkModalOpen}
-  onClose={() => setIsBulkModalOpen(false)}
+  onClose={closeBulkUpload}
   bulkForm={bulkForm}
   setBulkForm={setBulkForm}
   isSuperadmin={isSuperadmin}
@@ -893,6 +1049,8 @@ const UsersView = observer(() => {
   borderColor={borderColor}
   tableHeadBg={tableHeadBg}
   muted={muted}
+  selectedBulkManagerLevels={selectedBulkManagerLevels}
+  uploadRoleOptions={bulkUploadRoleOptions}
   getRootProps={getRootProps}
   getInputProps={getInputProps}
   isDragActive={isDragActive}
@@ -900,6 +1058,7 @@ const UsersView = observer(() => {
   setSelectedFile={setSelectedFile}
   preview={userStore.bulkPreview}
   loading={userStore.uploadLoading}
+  onDownloadTemplate={handleDownloadTemplate}
   onUpload={handleBulkUpload}
 />
 

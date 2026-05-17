@@ -1,36 +1,34 @@
 'use client';
 
-import React from 'react';
-import NextLink from 'next/link';
 import {
+  Badge,
   Box,
-  Heading,
-  Text,
   Button,
-  Stack,
+  Circle,
+  Container,
   Flex,
+  Heading,
+  HStack,
+  Icon,
   Image,
   SimpleGrid,
-  Container,
-  Badge,
-  Icon,
-  HStack,
-  Circle,
-  VStack,
-  Divider,
+  Stack,
+  Text,
   useColorModeValue,
+  VStack
 } from '@chakra-ui/react';
-import { 
-  FaUserGraduate, 
-  FaRocket, 
-  FaStar, 
-  FaPlayCircle, 
-  FaCheckCircle,
-  FaArrowRight,
-  FaClock,
-  FaBookOpen
-} from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import NextLink from 'next/link';
+import {
+  FaArrowRight,
+  FaBookOpen,
+  FaCheckCircle,
+  FaClock,
+  FaPlayCircle,
+  FaRocket,
+  FaStar,
+  FaUserGraduate
+} from 'react-icons/fa';
 
 const MotionBox = motion(Box);
 

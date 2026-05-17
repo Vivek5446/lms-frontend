@@ -247,6 +247,35 @@ class UserStore {
     }
   };
 
+  downloadBulkUploadTemplate = async (options: any = {}) => {
+    try {
+      const response = await axios.get("/admin/users/bulk/template", {
+        params: options,
+        responseType: "blob",
+      });
+
+      const disposition = response.headers?.["content-disposition"] || "";
+      const match = disposition.match(/filename="?([^"]+)"?/i);
+      const fileName = match?.[1] || `bulk-upload-template.xlsx`;
+      const blob = new Blob([response.data], {
+        type:
+          response.data?.type ||
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      return true;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    }
+  };
+
   checkManagedUserExists = async (email: string) => {
     try {
       const response: any = await axios.get("/admin/users", {
