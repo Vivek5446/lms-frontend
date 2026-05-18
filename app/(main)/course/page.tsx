@@ -109,9 +109,9 @@ const CoursesPage = observer(function CoursesPage() {
   const drawerBg = useColorModeValue("white", "gray.800");
 
   useEffect(() => {
-    courseStore.fetchPublicCourses().catch(() => undefined);
+    stores.courseStore.fetchPublicCourses().catch(() => undefined);
     if (isLearner) {
-      courseStore.fetchMyCourses().catch(() => undefined);
+      stores.courseStore.fetchMyCourses().catch(() => undefined);
     }
   }, [isLearner]);
 
@@ -119,8 +119,8 @@ const CoursesPage = observer(function CoursesPage() {
     setSearchQuery(initialSearch);
   }, [initialSearch]);
 
-  const publicCourses = courseStore.publicCourses || [];
-  const assignedCourses = courseStore.myCourses || [];
+  const publicCourses = stores.courseStore.publicCourses || [];
+  const assignedCourses = stores.courseStore.myCourses || [];
 
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -466,7 +466,7 @@ const CoursesPage = observer(function CoursesPage() {
           </Button>
         </Flex>
 
-        {courseStore.isPublicCoursesLoading ? (
+        {stores.courseStore.isPublicCoursesLoading ? (
           <HStack justify="center" py={20}>
             <Spinner color="blue.500" />
             <Text color={mutedText}>Loading public courses...</Text>
@@ -663,3 +663,4 @@ const CoursesPage = observer(function CoursesPage() {
 });
 
 export default CoursesPage;
+
