@@ -1,25 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useColorModeValue } from "@chakra-ui/react";
-import { 
-  FiGrid, 
-  FiPlus, 
-  FiTrash2, 
-  FiEye, 
-  FiBookOpen, 
-  FiAward, 
-  FiDollarSign, 
-  FiLoader,
-  FiChevronRight,
-  FiUsers,
-  FiSettings,
+import {
+  FiBookOpen,
   FiChevronLeft,
-  FiChevronsLeft,
-  FiChevronsRight
+  FiChevronRight,
+  FiDollarSign,
+  FiEye,
+  FiFilter,
+  FiGlobe,
+  FiGrid,
+  FiLoader,
+  FiLock,
+  FiPlus,
+  FiSearch,
+  FiSettings,
+  FiTrash2,
+  FiTrendingUp,
+  FiUsers,
 } from "react-icons/fi";
 import CourseList from "./CourseList";
 import CourseDetails from "./CourseDetails";
@@ -33,21 +35,80 @@ import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import PermissionGate from "@/app/component/common/PermissionGate";
 import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 
+const MotionButton = motion.button;
+
+type CatalogSort = "latest" | "popularity" | "price_asc" | "price_desc" | "title_az";
+
+function formatCurrency(value?: number | null) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return "Free";
+  }
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(numericValue);
+}
+
+function StatCard({
+  label,
+  value,
+  helper,
+  accent,
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  accent: string;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 20,
+        border: "1px solid rgba(148, 163, 184, 0.18)",
+        padding: "18px 18px 16px",
+        background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.92) 100%)",
+        boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+      }}
+    >
+      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#64748B", textTransform: "uppercase" }}>
+        {label}
+      </p>
+      <p style={{ margin: "10px 0 4px", fontSize: 28, fontWeight: 800, color: accent }}>{value}</p>
+      <p style={{ margin: 0, fontSize: 13, color: "#64748B", lineHeight: 1.5 }}>{helper}</p>
+    </div>
+  );
+}
+
 function CoursePage() {
   const [view, setView] = useState<"gallery" | "create" | "details">("gallery");
   const [activeCourse, setActiveCourse] = useState<CourseListItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const pageBg = useColorModeValue("#F9FAFB", "#0F172A");
-  const cardBg = useColorModeValue("#FFFFFF", "#1f2937");
-  const surfaceBg = useColorModeValue("#FFFFFF", "#111827");
-  const borderColor = useColorModeValue("#E5E7EB", "#334155");
-  const titleColor = useColorModeValue("#111827", "#F8FAFC");
-  const textColor = useColorModeValue("#6B7280", "#CBD5E1");
-  const mutedTextColor = useColorModeValue("#9CA3AF", "#94A3B8");
-  const tableHeaderBg = useColorModeValue("#F9FAFB", "#1E293B");
   const [playerSection, setPlayerSection] = useState<CourseLaunchSection | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [visibilityFilter, setVisibilityFilter] = useState<"all" | "private" | "public">("all");
+  const [pricingFilter, setPricingFilter] = useState<"all" | "free" | "paid">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
+  const [courseTypeFilter, setCourseTypeFilter] = useState<"all" | "standard" | "scorm">("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [languageFilter, setLanguageFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<CatalogSort>("latest");
+
+  const pageBg = useColorModeValue("#F8FAFC", "#0F172A");
+  const cardBg = useColorModeValue("#FFFFFF", "#111827");
+  const surfaceBg = useColorModeValue("#FFFFFF", "#111827");
+  const borderColor = useColorModeValue("#E2E8F0", "#334155");
+  const titleColor = useColorModeValue("#0F172A", "#F8FAFC");
+  const textColor = useColorModeValue("#475569", "#CBD5E1");
+  const mutedTextColor = useColorModeValue("#64748B", "#94A3B8");
+  const tableHeaderBg = useColorModeValue("#F8FAFC", "#172033");
+  const filterSurface = useColorModeValue("rgba(255,255,255,0.92)", "rgba(15,23,42,0.78)");
+  const rowHoverBg = useColorModeValue("#F8FAFC", "#172033");
+
   const router = useRouter();
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
   const isLearner = isLearnerRole(role);
@@ -62,12 +123,12 @@ function CoursePage() {
     }
 
     if (canViewCourses) {
-      courseStore.fetchCourses();
+      courseStore.fetchCourses().catch(() => undefined);
     }
   }, [canViewCourses, isLearner, router]);
 
   const handleCreateSuccess = () => {
-    courseStore.fetchCourses();
+    courseStore.fetchCourses().catch(() => undefined);
     setView("gallery");
   };
 
@@ -76,68 +137,153 @@ function CoursePage() {
     setView("details");
   };
 
-  const handleLaunchScorm = (launchSection: CourseLaunchSection) => {
-    setPlayerSection(launchSection);
-  };
+  const availableCategories = useMemo(() => {
+    const categories = new Set<string>();
+    courseStore.courses.forEach((course) => {
+      (course.taxonomy?.categories || []).forEach((category) => {
+        if (category) categories.add(category);
+      });
+    });
+    return ["all", ...Array.from(categories).sort((left, right) => left.localeCompare(right))];
+  }, [courseStore.courses]);
 
-  const handleBackFromPlayer = () => {
-    setPlayerSection(null);
-  };
+  const availableLanguages = useMemo(() => {
+    const languages = new Set<string>();
+    courseStore.courses.forEach((course) => {
+      (course.taxonomy?.languages || []).forEach((language) => {
+        if (language) languages.add(language);
+      });
+    });
+    return ["all", ...Array.from(languages).sort((left, right) => left.localeCompare(right))];
+  }, [courseStore.courses]);
 
-  // Pagination calculations
-  const totalCourses = courseStore.courses.length;
-  const totalPages = Math.ceil(totalCourses / itemsPerPage);
+  const filteredCourses = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const nextCourses = courseStore.courses.filter((course) => {
+      const visibilityType = course.visibility?.type || "private";
+      const pricingModel = course.commerce?.pricingModel || "free";
+      const courseType = course.courseType || (course.scormFilePath ? "scorm" : "standard");
+      const categories = course.taxonomy?.categories || [];
+      const languages = course.taxonomy?.languages || [];
+      const searchableText = [
+        course.title,
+        course.slug,
+        course.taxonomy?.level,
+        visibilityType,
+        pricingModel,
+        courseType,
+        ...categories,
+        ...languages,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (query && !searchableText.includes(query)) {
+        return false;
+      }
+
+      if (visibilityFilter !== "all" && visibilityType !== visibilityFilter) {
+        return false;
+      }
+
+      if (pricingFilter !== "all" && pricingModel !== pricingFilter) {
+        return false;
+      }
+
+      if (statusFilter !== "all" && course.status !== statusFilter) {
+        return false;
+      }
+
+      if (courseTypeFilter !== "all" && courseType !== courseTypeFilter) {
+        return false;
+      }
+
+      if (categoryFilter !== "all" && !categories.includes(categoryFilter)) {
+        return false;
+      }
+
+      if (languageFilter !== "all" && !languages.includes(languageFilter)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    nextCourses.sort((left, right) => {
+      if (sortBy === "popularity") {
+        return (right.metrics?.popularityScore || 0) - (left.metrics?.popularityScore || 0);
+      }
+
+      if (sortBy === "price_asc") {
+        return Number(left.commerce?.amountInRupees || 0) - Number(right.commerce?.amountInRupees || 0);
+      }
+
+      if (sortBy === "price_desc") {
+        return Number(right.commerce?.amountInRupees || 0) - Number(left.commerce?.amountInRupees || 0);
+      }
+
+      if (sortBy === "title_az") {
+        return String(left.title || "").localeCompare(String(right.title || ""));
+      }
+
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    });
+
+    return nextCourses;
+  }, [
+    categoryFilter,
+    courseStore.courses,
+    courseTypeFilter,
+    languageFilter,
+    pricingFilter,
+    searchQuery,
+    sortBy,
+    statusFilter,
+    visibilityFilter,
+  ]);
+
+  const summary = useMemo(() => {
+    const allCourses = courseStore.courses || [];
+    const published = allCourses.filter((course) => course.status === "published").length;
+    const privateCount = allCourses.filter((course) => (course.visibility?.type || "private") === "private").length;
+    const publicCount = allCourses.filter((course) => course.visibility?.type === "public").length;
+    const paidCount = allCourses.filter((course) => course.commerce?.pricingModel === "paid").length;
+
+    return {
+      total: allCourses.length,
+      published,
+      privateCount,
+      publicCount,
+      paidCount,
+    };
+  }, [courseStore.courses]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [itemsPerPage, searchQuery, visibilityFilter, pricingFilter, statusFilter, courseTypeFilter, categoryFilter, languageFilter, sortBy]);
+
+  const totalCourses = filteredCourses.length;
+  const totalPages = Math.max(1, Math.ceil(totalCourses / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentCourses = courseStore.courses.slice(startIndex, endIndex);
-
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-  };
-
-  const goToFirstPage = () => setCurrentPage(1);
-  const goToLastPage = () => setCurrentPage(totalPages);
-  const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
-  const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
-
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    
-    if (endPage - startPage + 1 < maxVisible) {
-      startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    return pages;
-  };
+  const currentCourses = filteredCourses.slice(startIndex, endIndex);
 
   if (isLearner) {
     return null;
   }
 
-  // ─── Create View ───────────────────────────────────────────
   if (view === "create") {
-    return (
-      <CourseList
-        onSuccess={handleCreateSuccess}
-        onCancel={() => setView("gallery")}
-      />
-    );
+    return <CourseList onSuccess={handleCreateSuccess} onCancel={() => setView("gallery")} />;
   }
 
-  // ─── Details View (with player overlay) ───────────────────
   if (view === "details" && activeCourse) {
     return (
       <>
         <CourseDetails
           course={activeCourse}
           onBack={() => setView("gallery")}
-          onLaunchSection={(launchSection) => handleLaunchScorm(launchSection)}
+          onLaunchSection={(launchSection) => setPlayerSection(launchSection)}
           onAssignCourse={canAssignCourses ? () => setIsAssignModalOpen(true) : undefined}
         />
 
@@ -148,11 +294,7 @@ function CoursePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 1400,
-              }}
+              style={{ position: "fixed", inset: 0, zIndex: 1400 }}
             >
               <CoursePlayer
                 courseId={activeCourse._id}
@@ -162,7 +304,7 @@ function CoursePage() {
                 courseUrl={buildCourseAssetUrl(playerSection.assetPath)}
                 moduleId={playerSection.moduleId}
                 sectionId={playerSection.sectionId}
-                onBack={handleBackFromPlayer}
+                onBack={() => setPlayerSection(null)}
               />
             </motion.div>
           ) : playerSection ? (
@@ -170,7 +312,7 @@ function CoursePage() {
               assetKind={playerSection.contentKind}
               assetUrl={buildCourseAssetUrl(playerSection.assetPath)}
               title={playerSection.sectionTitle || activeCourse.title}
-              onBack={handleBackFromPlayer}
+              onBack={() => setPlayerSection(null)}
             />
           ) : null}
         </AnimatePresence>
@@ -189,7 +331,6 @@ function CoursePage() {
     );
   }
 
-  // ─── Gallery View (Table Layout with Pagination) ──────────────────────────
   return (
     <PermissionGate
       allowed={canViewCourses}
@@ -197,478 +338,617 @@ function CoursePage() {
       description="This account does not currently have access to the course workspace."
       fallbackHref="/dashboard/profile"
     >
-    <div style={{ minHeight: "100vh", background: pageBg, padding: "32px 32px" }}>
-      <div>
+      <div style={{ minHeight: "100vh", background: pageBg, padding: "32px" }}>
+        <div style={{ maxWidth: 1480, margin: "0 auto" }}>
+          <div
+            style={{
+              borderRadius: 30,
+              padding: "30px 30px 26px",
+              background: "linear-gradient(135deg, #0F172A 0%, #1E3A8A 55%, #0EA5E9 100%)",
+              color: "#FFFFFF",
+              boxShadow: "0 30px 80px rgba(15, 23, 42, 0.28)",
+              marginBottom: 26,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
+              <div style={{ maxWidth: 760 }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 14px",
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.14)",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  <FiFilter />
+                  Super Admin Course Management
+                </div>
+                <h1 style={{ margin: "16px 0 10px", fontSize: 34, lineHeight: 1.08, fontWeight: 800 }}>
+                  Search, filter, and manage every course from one workspace
+                </h1>
+                <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.84)" }}>
+                  Private and public catalogs now live side by side. Use the filters below to isolate visibility,
+                  pricing, delivery type, language, category, and publishing status in seconds.
+                </p>
+              </div>
 
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: titleColor, letterSpacing: "-0.01em" }}>
-              Course Hub
-            </h1>
-            <p style={{ margin: "8px 0 0", fontSize: 15, color: textColor }}>
-              Manage your interactive learning adventures
-            </p>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <MotionButton
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() =>
+                    router.push(
+                      role === "superadmin" ? "/dashboard/course/assigned" : "/dashboard/course/access-management"
+                    )
+                  }
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    background: "rgba(255,255,255,0.08)",
+                    color: "#FFFFFF",
+                    padding: "12px 18px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                  }}
+                >
+                  <FiUsers size={16} />
+                  {role === "superadmin" ? "Assigned Courses" : "Assign Courses"}
+                </MotionButton>
+
+                {canManageCourses ? (
+                  <MotionButton
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setView("create")}
+                    style={{
+                      borderRadius: 16,
+                      border: "none",
+                      background: "#FFFFFF",
+                      color: "#0F172A",
+                      padding: "12px 18px",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      cursor: "pointer",
+                      boxShadow: "0 14px 35px rgba(15, 23, 42, 0.18)",
+                    }}
+                  >
+                    <FiPlus size={16} />
+                    Add New Course
+                  </MotionButton>
+                ) : null}
+              </div>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() =>
-                router.push(
-                  isLearner
-                    ? "/course"
-                    : role === "superadmin"
-                      ? "/dashboard/course/assigned"
-                      : "/dashboard/course/access-management"
-                )
-              }
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: 16,
+              marginBottom: 22,
+            }}
+          >
+            <StatCard label="Total Courses" value={summary.total} helper="Every course in your scoped library." accent="#2563EB" />
+            <StatCard label="Published" value={summary.published} helper="Ready for assignment or public discovery." accent="#0F766E" />
+            <StatCard label="Private" value={summary.privateCount} helper="Restricted and assignable through the access flow." accent="#1D4ED8" />
+            <StatCard label="Public" value={summary.publicCount} helper="Visible without login for self-serve learners." accent="#059669" />
+            <StatCard label="Paid" value={summary.paidCount} helper="Commercial catalog with direct pricing enabled." accent="#C2410C" />
+          </div>
+
+          <div
+            style={{
+              borderRadius: 24,
+              border: `1px solid ${borderColor}`,
+              background: filterSurface,
+              backdropFilter: "blur(14px)",
+              padding: 18,
+              boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+              marginBottom: 18,
+            }}
+          >
+            <div
               style={{
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: "minmax(240px, 2fr) repeat(6, minmax(140px, 1fr))",
+                gap: 12,
                 alignItems: "center",
-                gap: 8,
-                padding: "10px 20px",
-                borderRadius: 12,
-                border: `1px solid ${borderColor}`,
-                background: cardBg,
-                color: titleColor,
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "all 0.2s",
               }}
             >
-              <FiUsers size={16} />
-              {role === "superadmin"
-                ? "Assigned Courses"
-                : isLearner
-                  ? "My Courses"
-                  : "Assign Courses"}
-            </motion.button>
-
-            {!isLearner && canManageCourses ? (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setView("create")}
+              <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
-                  padding: "10px 24px",
-                  borderRadius: 12,
-                  border: "none",
-                  background: "#4F46E5",
-                  color: "#fff",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(79,70,229,0.25)",
+                  gap: 10,
+                  borderRadius: 14,
+                  border: `1px solid ${borderColor}`,
+                  background: surfaceBg,
+                  padding: "0 14px",
+                  height: 46,
                 }}
               >
-                <FiPlus size={16} strokeWidth={2.5} />
-                Add New Course
-              </motion.button>
-            ) : null}
-          </div>
-        </div>
+                <FiSearch style={{ color: mutedTextColor }} />
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search by title, slug, category, level, language, or visibility"
+                  style={{
+                    border: "none",
+                    outline: "none",
+                    background: "transparent",
+                    width: "100%",
+                    color: titleColor,
+                    fontSize: 14,
+                  }}
+                />
+              </div>
 
-        {/* Items Per Page Selector */}
-        {courseStore.courses.length > 0 && (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16, gap: 12, alignItems: "center" }}>
-            <span style={{ fontSize: 13, color: textColor }}>Show:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              style={{
-                padding: "6px 12px",
-                borderRadius: 8,
-                border: `1px solid ${borderColor}`,
-                background: surfaceBg,
-                color: titleColor,
-                fontSize: 13,
-                cursor: "pointer",
-              }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
-            <span style={{ fontSize: 13, color: textColor }}>
-              Total: <strong style={{ color: titleColor }}>{totalCourses}</strong> courses
-            </span>
-          </div>
-        )}
-
-        {/* Course Table */}
-        {courseStore.isLoading ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 80, gap: 16 }}>
-            <FiLoader size={40} style={{ color: "#4F46E5", animation: "spin 0.8s linear infinite" }} />
-            <p style={{ color: textColor, fontSize: 14 }}>Loading courses...</p>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          </div>
-        ) : courseStore.courses.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "80px 0", background: surfaceBg, borderRadius: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <FiBookOpen size={48} style={{ color: mutedTextColor, marginBottom: 16 }} />
-            <p style={{ fontSize: 18, fontWeight: 600, color: titleColor }}>No courses yet</p>
-            <p style={{ fontSize: 14, color: mutedTextColor, marginBottom: 24 }}>Create your first course to get started!</p>
-            {canManageCourses ? (
-              <button
-                onClick={() => setView("create")}
-                style={{
-                  padding: "10px 24px",
-                  borderRadius: 10,
-                  background: "#4F46E5",
-                  color: "#fff",
-                  border: "none",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Create First Course
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          <>
-            <div style={{ 
-              background: surfaceBg, 
-              borderRadius: 20, 
-              border: `1px solid ${borderColor}`,
-              overflow: "auto",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
-            }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${borderColor}`, background: tableHeaderBg }}>
-                    <th style={{ textAlign: "left", padding: "16px 20px", fontWeight: 600, color: titleColor, fontSize: 13, letterSpacing: "0.03em" }}>COURSE</th>
-                    <th style={{ textAlign: "left", padding: "16px 20px", fontWeight: 600, color: titleColor, fontSize: 13, letterSpacing: "0.03em" }}>TYPE</th>
-                    <th style={{ textAlign: "left", padding: "16px 20px", fontWeight: 600, color: titleColor, fontSize: 13, letterSpacing: "0.03em" }}>STATUS</th>
-                    <th style={{ textAlign: "left", padding: "16px 20px", fontWeight: 600, color: titleColor, fontSize: 13, letterSpacing: "0.03em" }}>MODULES</th>
-                    <th style={{ textAlign: "left", padding: "16px 20px", fontWeight: 600, color: titleColor, fontSize: 13, letterSpacing: "0.03em" }}>PRICE</th>
-                    <th style={{ textAlign: "center", padding: "16px 20px", fontWeight: 600, color: titleColor, fontSize: 13, letterSpacing: "0.03em" }}>ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <AnimatePresence>
-                    {currentCourses.map((course, index) => (
-                      <motion.tr
-                        key={course._id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ delay: index * 0.03 }}
-                        style={{ borderBottom: `1px solid ${borderColor}`, transition: "background 0.2s" }}
-                        onMouseEnter={(e) => {
-                          const bg = useColorModeValue("#F9FAFB", "#1E293B");
-                          e.currentTarget.style.background = bg;
-                        }}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                      >
-                        {/* Course Info */}
-                        <td style={{ padding: "16px 20px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                            <div style={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: 12,
-                              background: "linear-gradient(135deg, #EEF2FF, #FDF2F8)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              overflow: "hidden",
-                              flexShrink: 0
-                            }}>
-                              {course.thumbnailUrl ? (
-                                <img src={course.thumbnailUrl} alt={course.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                              ) : (
-                                <FiBookOpen size={24} style={{ color: "#4F46E5" }} />
-                              )}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 600, color: titleColor, fontSize: 15, marginBottom: 4 }}>{course.title}</div>
-                              <div style={{ fontSize: 12, color: mutedTextColor }}>ID: {course._id.slice(-8)}</div>
-                            </div>
-                          </div>
-                        </td>
-                        
-                        {/* Type */}
-                        <td style={{ padding: "16px 20px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            {course.scormFilePath ? (
-                              <>
-                                <FiSettings size={14} style={{ color: "#4F46E5" }} />
-                                <span style={{ fontSize: 13, fontWeight: 500, color: "#4F46E5" }}>SCORM</span>
-                              </>
-                            ) : (
-                              <>
-                                <FiAward size={14} style={{ color: "#10B981" }} />
-                                <span style={{ fontSize: 13, fontWeight: 500, color: "#10B981" }}>Standard</span>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                        
-                        {/* Status */}
-                        <td style={{ padding: "16px 20px" }}>
-                          <span style={{
-                            display: "inline-block",
-                            padding: "4px 12px",
-                            borderRadius: 20,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            background: course.status === "published" ? "#D1FAE5" : "#FEF3C7",
-                            color: course.status === "published" ? "#065F46" : "#B45309",
-                          }}>
-                            {course.status === "published" ? "Published" : "Draft"}
-                          </span>
-                        </td>
-                        
-                        {/* Modules */}
-                        <td style={{ padding: "16px 20px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <FiGrid size={14} style={{ color: mutedTextColor }} />
-                            <span style={{ fontSize: 14, color: titleColor }}>{course.curriculum?.totalModules || 0}</span>
-                          </div>
-                        </td>
-                        
-                        {/* Price */}
-                        <td style={{ padding: "16px 20px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <FiDollarSign size={14} style={{ color: mutedTextColor }} />
-                            <span style={{ fontSize: 14, fontWeight: 500, color: course.commerce?.pricingModel === "paid" ? titleColor : "#10B981" }}>
-                              {course.commerce?.pricingModel === "paid"
-                                ? `₹${course.commerce.amountInRupees}`
-                                : "Free"}
-                            </span>
-                          </div>
-                        </td>
-                        
-                        {/* Actions */}
-                        <td style={{ padding: "12px 20px", textAlign: "center" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDetails(course);
-                              }}
-                              style={{
-                                padding: "6px 12px",
-                                borderRadius: 8,
-                                border: `1px solid ${borderColor}`,
-                                background: surfaceBg,
-                                color: titleColor,
-                                fontSize: 12,
-                                fontWeight: 500,
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 6,
-                              }}
-                            >
-                              <FiEye size={12} />
-                              View
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (confirm("Delete this course?")) {
-                                  await courseStore.deleteCourse(course._id);
-                                }
-                              }}
-                              style={{
-                                padding: "6px 12px",
-                                borderRadius: 8,
-                                border: `1px solid ${borderColor}`,
-                                background: surfaceBg,
-                                color: "#EF4444",
-                                fontSize: 12,
-                                fontWeight: 500,
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 6,
-                              }}
-                            >
-                              <FiTrash2 size={12} />
-                              Delete
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDetails(course);
-                              }}
-                              style={{
-                                padding: "6px 12px",
-                                borderRadius: 8,
-                                border: `1px solid ${borderColor}`,
-                                background: "#4F46E5",
-                                color: "#fff",
-                                fontSize: 12,
-                                fontWeight: 500,
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 6,
-                              }}
-                            >
-                              <FiChevronRight size={12} />
-                              Manage
-                            </motion.button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                </tbody>
-              </table>
+              {[
+                {
+                  value: visibilityFilter,
+                  onChange: setVisibilityFilter,
+                  options: [
+                    ["all", "All visibility"],
+                    ["private", "Private"],
+                    ["public", "Public"],
+                  ],
+                },
+                {
+                  value: pricingFilter,
+                  onChange: setPricingFilter,
+                  options: [
+                    ["all", "All pricing"],
+                    ["free", "Free"],
+                    ["paid", "Paid"],
+                  ],
+                },
+                {
+                  value: courseTypeFilter,
+                  onChange: setCourseTypeFilter,
+                  options: [
+                    ["all", "All types"],
+                    ["standard", "Standard"],
+                    ["scorm", "SCORM"],
+                  ],
+                },
+                {
+                  value: statusFilter,
+                  onChange: setStatusFilter,
+                  options: [
+                    ["all", "All status"],
+                    ["published", "Published"],
+                    ["draft", "Draft"],
+                  ],
+                },
+                {
+                  value: categoryFilter,
+                  onChange: setCategoryFilter,
+                  options: availableCategories.map((category) => [category, category === "all" ? "All categories" : category]),
+                },
+                {
+                  value: languageFilter,
+                  onChange: setLanguageFilter,
+                  options: availableLanguages.map((language) => [language, language === "all" ? "All languages" : language]),
+                },
+              ].map((config, index) => (
+                <select
+                  key={`${index}-${config.value}`}
+                  value={config.value}
+                  onChange={(event) => config.onChange(event.target.value as never)}
+                  style={{
+                    height: 46,
+                    borderRadius: 14,
+                    border: `1px solid ${borderColor}`,
+                    background: surfaceBg,
+                    color: titleColor,
+                    fontSize: 13,
+                    padding: "0 12px",
+                    outline: "none",
+                  }}
+                >
+                  {config.options.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              ))}
             </div>
 
-            {/* Pagination Component */}
-            {totalPages > 1 && (
-              <div style={{ 
-                display: "flex", 
-                justifyContent: "space-between", 
-                alignItems: "center", 
-                marginTop: 24,
-                flexWrap: "wrap",
-                gap: 16
-              }}>
-                <div style={{ fontSize: 13, color: textColor }}>
-                  Showing <strong style={{ color: titleColor }}>{startIndex + 1}</strong> to <strong style={{ color: titleColor }}>{Math.min(endIndex, totalCourses)}</strong> of <strong style={{ color: titleColor }}>{totalCourses}</strong> courses
-                </div>
-                
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {/* First Page Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={goToFirstPage}
-                    disabled={currentPage === 1}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginTop: 14 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {[
+                  ["latest", "Latest"],
+                  ["popularity", "Popularity"],
+                  ["price_asc", "Price low-high"],
+                  ["price_desc", "Price high-low"],
+                  ["title_az", "Title A-Z"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSortBy(value as CatalogSort)}
                     style={{
-                      padding: "8px 12px",
-                      borderRadius: 8,
-                      border: `1px solid ${borderColor}`,
-                      background: surfaceBg,
-                      color: currentPage === 1 ? mutedTextColor : titleColor,
-                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                      opacity: currentPage === 1 ? 0.5 : 1,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
+                      padding: "10px 14px",
+                      borderRadius: 12,
+                      border: sortBy === value ? "none" : `1px solid ${borderColor}`,
+                      background: sortBy === value ? "#2563EB" : surfaceBg,
+                      color: sortBy === value ? "#FFFFFF" : titleColor,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
                     }}
                   >
-                    <FiChevronsLeft size={14} />
-                  </motion.button>
-                  
-                  {/* Previous Page Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={goToPrevPage}
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 13, color: textColor }}>Show</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(event) => setItemsPerPage(Number(event.target.value))}
+                  style={{
+                    height: 40,
+                    borderRadius: 12,
+                    border: `1px solid ${borderColor}`,
+                    background: surfaceBg,
+                    color: titleColor,
+                    fontSize: 13,
+                    padding: "0 12px",
+                  }}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {courseStore.error && !courseStore.isLoading ? (
+            <div
+              style={{
+                marginBottom: 18,
+                padding: "14px 16px",
+                borderRadius: 16,
+                border: "1px solid #FECACA",
+                background: "#FEF2F2",
+                color: "#991B1B",
+                fontSize: 14,
+                lineHeight: 1.5,
+              }}
+            >
+              {courseStore.error}
+            </div>
+          ) : null}
+
+          {courseStore.isLoading ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 90, gap: 14 }}>
+              <FiLoader size={42} style={{ color: "#2563EB", animation: "spin 0.8s linear infinite" }} />
+              <p style={{ margin: 0, color: textColor }}>Loading courses...</p>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          ) : filteredCourses.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "90px 24px",
+                background: surfaceBg,
+                borderRadius: 24,
+                border: `1px solid ${borderColor}`,
+                boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+              }}
+            >
+              <FiBookOpen size={44} style={{ color: mutedTextColor, margin: "0 auto 14px" }} />
+              <p style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: titleColor }}>No courses match these filters</p>
+              <p style={{ margin: 0, fontSize: 14, color: textColor }}>
+                Try clearing one or two filters, or create a new course to expand the catalog.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  borderRadius: 24,
+                  border: `1px solid ${borderColor}`,
+                  background: surfaceBg,
+                  overflow: "hidden",
+                  boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+                }}
+              >
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1160 }}>
+                    <thead>
+                      <tr style={{ background: tableHeaderBg, borderBottom: `1px solid ${borderColor}` }}>
+                        {["Course", "Visibility", "Type", "Status", "Assessment", "Price", "Popularity", "Actions"].map((label) => (
+                          <th
+                            key={label}
+                            style={{
+                              textAlign: label === "Actions" ? "center" : "left",
+                              padding: "16px 18px",
+                              fontSize: 12,
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              color: mutedTextColor,
+                            }}
+                          >
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentCourses.map((course, index) => {
+                        const visibilityType = course.visibility?.type || "private";
+                        const courseType = course.courseType || (course.scormFilePath ? "scorm" : "standard");
+                        const assessment = course.assessment;
+
+                        return (
+                          <tr
+                            key={course._id}
+                            style={{
+                              borderBottom: `1px solid ${borderColor}`,
+                              transition: "background 0.2s ease",
+                            }}
+                            onMouseEnter={(event) => {
+                              event.currentTarget.style.background = rowHoverBg;
+                            }}
+                            onMouseLeave={(event) => {
+                              event.currentTarget.style.background = "transparent";
+                            }}
+                          >
+                            <td style={{ padding: "16px 18px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                <div
+                                  style={{
+                                    width: 54,
+                                    height: 54,
+                                    borderRadius: 16,
+                                    background: "linear-gradient(135deg, #DBEAFE 0%, #ECFEFF 100%)",
+                                    overflow: "hidden",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {course.thumbnailUrl ? (
+                                    <img src={course.thumbnailUrl} alt={course.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  ) : (
+                                    <FiBookOpen size={24} style={{ color: "#2563EB" }} />
+                                  )}
+                                </div>
+                                <div>
+                                  <div style={{ fontSize: 15, fontWeight: 700, color: titleColor }}>{course.title}</div>
+                                  <div style={{ marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap", fontSize: 12, color: mutedTextColor }}>
+                                    <span>{course.taxonomy?.level || "Beginner"}</span>
+                                    {(course.taxonomy?.categories || []).slice(0, 2).map((category) => (
+                                      <span key={`${course._id}-${category}`}>{category}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: "16px 18px" }}>
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  padding: "7px 12px",
+                                  borderRadius: 999,
+                                  background: visibilityType === "public" ? "#ECFDF5" : "#EFF6FF",
+                                  color: visibilityType === "public" ? "#047857" : "#1D4ED8",
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {visibilityType === "public" ? <FiGlobe size={12} /> : <FiLock size={12} />}
+                                {visibilityType === "public" ? "Public" : "Private"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "16px 18px" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: titleColor, fontSize: 13, fontWeight: 600 }}>
+                                {courseType === "scorm" ? <FiSettings size={14} color="#2563EB" /> : <FiGrid size={14} color="#059669" />}
+                                {courseType === "scorm" ? "SCORM" : "Standard"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "16px 18px" }}>
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "7px 12px",
+                                  borderRadius: 999,
+                                  background: course.status === "published" ? "#DCFCE7" : "#FEF3C7",
+                                  color: course.status === "published" ? "#166534" : "#92400E",
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {course.status === "published" ? "Published" : "Draft"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "16px 18px" }}>
+                              <div style={{ fontSize: 13, color: titleColor, fontWeight: 600 }}>
+                                {assessment?.totalMarks && assessment?.passingMarks
+                                  ? `${assessment.passingMarks}/${assessment.totalMarks} to pass`
+                                  : "Not configured"}
+                              </div>
+                              <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
+                                {(course.taxonomy?.languages || []).slice(0, 2).join(", ") || "No language tags"}
+                              </div>
+                            </td>
+                            <td style={{ padding: "16px 18px" }}>
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: titleColor }}>
+                                <FiDollarSign size={14} color="#0F766E" />
+                                {formatCurrency(course.commerce?.amountInRupees)}
+                              </div>
+                              <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
+                                {course.commerce?.pricingModel === "paid" ? "Paid course" : "Free course"}
+                              </div>
+                            </td>
+                            <td style={{ padding: "16px 18px" }}>
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: titleColor }}>
+                                <FiTrendingUp size={14} color="#7C3AED" />
+                                {course.metrics?.popularityScore || course.enrollmentCount || 0}
+                              </div>
+                              <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
+                                {course.metrics?.averageRating ? `${course.metrics.averageRating.toFixed(1)} rated` : "Awaiting ratings"}
+                              </div>
+                            </td>
+                            <td style={{ padding: "14px 18px", textAlign: "center" }}>
+                              <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+                                <MotionButton
+                                  whileHover={{ scale: 1.03 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={() => handleOpenDetails(course)}
+                                  style={{
+                                    borderRadius: 12,
+                                    border: `1px solid ${borderColor}`,
+                                    background: surfaceBg,
+                                    color: titleColor,
+                                    padding: "8px 12px",
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  <FiEye size={12} />
+                                  View
+                                </MotionButton>
+
+                                <MotionButton
+                                  whileHover={{ scale: 1.03 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={async () => {
+                                    if (confirm("Delete this course?")) {
+                                      await courseStore.deleteCourse(course._id);
+                                    }
+                                  }}
+                                  style={{
+                                    borderRadius: 12,
+                                    border: `1px solid ${borderColor}`,
+                                    background: surfaceBg,
+                                    color: "#DC2626",
+                                    padding: "8px 12px",
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  <FiTrash2 size={12} />
+                                  Delete
+                                </MotionButton>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap", alignItems: "center", marginTop: 18 }}>
+                <p style={{ margin: 0, color: textColor, fontSize: 13 }}>
+                  Showing <strong style={{ color: titleColor }}>{totalCourses === 0 ? 0 : startIndex + 1}</strong> to{" "}
+                  <strong style={{ color: titleColor }}>{Math.min(endIndex, totalCourses)}</strong> of{" "}
+                  <strong style={{ color: titleColor }}>{totalCourses}</strong> filtered courses
+                </p>
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                     disabled={currentPage === 1}
                     style={{
-                      padding: "8px 12px",
-                      borderRadius: 8,
+                      borderRadius: 12,
                       border: `1px solid ${borderColor}`,
                       background: surfaceBg,
                       color: currentPage === 1 ? mutedTextColor : titleColor,
-                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                      opacity: currentPage === 1 ? 0.5 : 1,
-                      display: "flex",
+                      padding: "9px 12px",
+                      display: "inline-flex",
                       alignItems: "center",
-                      gap: 4,
+                      gap: 6,
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      opacity: currentPage === 1 ? 0.55 : 1,
                     }}
                   >
                     <FiChevronLeft size={14} />
                     Prev
-                  </motion.button>
-                  
-                  {/* Page Numbers */}
+                  </button>
+
                   <div style={{ display: "flex", gap: 6 }}>
-                    {getPageNumbers().map(page => (
-                      <motion.button
-                        key={page}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => goToPage(page)}
-                        style={{
-                          padding: "8px 14px",
-                          borderRadius: 8,
-                          border: currentPage === page ? "none" : `1px solid ${borderColor}`,
-                          background: currentPage === page ? "#4F46E5" : surfaceBg,
-                          color: currentPage === page ? "#fff" : titleColor,
-                          fontWeight: currentPage === page ? 600 : 500,
-                          cursor: "pointer",
-                          minWidth: 40,
-                        }}
-                      >
-                        {page}
-                      </motion.button>
-                    ))}
+                    {Array.from({ length: totalPages }, (_, index) => index + 1)
+                      .slice(Math.max(0, currentPage - 3), Math.max(0, currentPage - 3) + 5)
+                      .map((pageNumber) => (
+                        <button
+                          key={pageNumber}
+                          type="button"
+                          onClick={() => setCurrentPage(pageNumber)}
+                          style={{
+                            minWidth: 40,
+                            padding: "9px 12px",
+                            borderRadius: 12,
+                            border: currentPage === pageNumber ? "none" : `1px solid ${borderColor}`,
+                            background: currentPage === pageNumber ? "#2563EB" : surfaceBg,
+                            color: currentPage === pageNumber ? "#FFFFFF" : titleColor,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {pageNumber}
+                        </button>
+                      ))}
                   </div>
-                  
-                  {/* Next Page Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={goToNextPage}
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                     disabled={currentPage === totalPages}
                     style={{
-                      padding: "8px 12px",
-                      borderRadius: 8,
+                      borderRadius: 12,
                       border: `1px solid ${borderColor}`,
                       background: surfaceBg,
                       color: currentPage === totalPages ? mutedTextColor : titleColor,
-                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-                      opacity: currentPage === totalPages ? 0.5 : 1,
-                      display: "flex",
+                      padding: "9px 12px",
+                      display: "inline-flex",
                       alignItems: "center",
-                      gap: 4,
+                      gap: 6,
+                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                      opacity: currentPage === totalPages ? 0.55 : 1,
                     }}
                   >
                     Next
                     <FiChevronRight size={14} />
-                  </motion.button>
-                  
-                  {/* Last Page Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={goToLastPage}
-                    disabled={currentPage === totalPages}
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: 8,
-                      border: `1px solid ${borderColor}`,
-                      background: surfaceBg,
-                      color: currentPage === totalPages ? mutedTextColor : titleColor,
-                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-                      opacity: currentPage === totalPages ? 0.5 : 1,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <FiChevronsRight size={14} />
-                  </motion.button>
+                  </button>
                 </div>
               </div>
-            )}
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
     </PermissionGate>
   );
 }

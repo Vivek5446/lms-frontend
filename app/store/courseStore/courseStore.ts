@@ -4,6 +4,27 @@ import { makeAutoObservable, runInAction } from "mobx";
 const COURSE_ASSET_CHUNK_SIZE_BYTES = 3.5 * 1024 * 1024;
 const COURSE_UPLOAD_PROGRESS_MAX = 82;
 
+export interface CourseVisibilityConfig {
+  type: "private" | "public";
+}
+
+export interface CourseAssessmentConfig {
+  totalMarks: number | null;
+  passingMarks: number | null;
+}
+
+export interface CourseAssessmentSummary extends CourseAssessmentConfig {
+  earnedMarks: number | null;
+  scorePercentage: number | null;
+  outcome: "passed" | "failed" | "pending" | "not_configured";
+}
+
+export interface CourseMetrics {
+  averageRating: number | null;
+  popularityScore: number;
+  totalEnrollments: number;
+}
+
 export interface CourseListItem {
   _id: string;
   title: string;
@@ -11,6 +32,17 @@ export interface CourseListItem {
   thumbnailUrl?: string;
   scormFilePath?: string;
   status: string;
+  taxonomy?: {
+    categories?: string[];
+    languages?: string[];
+    level?: string;
+  };
+  progression?: {
+    completionWindowDays?: number | null;
+    dripEnabled?: boolean;
+    certificateEnabled?: boolean;
+    mandatoryModules?: boolean;
+  };
   curriculum: {
     totalModules: number;
     totalSections: number;
@@ -19,6 +51,12 @@ export interface CourseListItem {
     pricingModel: string;
     amountInRupees: number | null;
   };
+  visibility?: CourseVisibilityConfig;
+  assessment?: CourseAssessmentConfig;
+  metrics?: CourseMetrics;
+  price?: number;
+  courseType?: "standard" | "scorm";
+  enrollmentCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -149,6 +187,20 @@ export interface MyCourseItem {
   validTill?: string | null;
   isExpired: boolean;
   visibilityStatus: "active" | "expired" | "expiring_soon";
+  taxonomy?: {
+    categories?: string[];
+    languages?: string[];
+    level?: string;
+  };
+  progression?: {
+    completionWindowDays?: number | null;
+    dripEnabled?: boolean;
+    certificateEnabled?: boolean;
+    mandatoryModules?: boolean;
+  };
+  visibility?: CourseVisibilityConfig;
+  assessment?: CourseAssessmentConfig;
+  assessmentSummary?: CourseAssessmentSummary;
 }
 
 export interface MyCourseSectionProgressItem {
@@ -202,7 +254,15 @@ export interface MyCourseDetailItem extends CourseListItem {
   validTill?: string | null;
   isExpired: boolean;
   visibilityStatus: "active" | "expired" | "expiring_soon";
+  assessmentSummary?: CourseAssessmentSummary;
   progressModules?: MyCourseModuleProgressItem[];
+}
+
+export interface PublicCourseItem extends CourseListItem {
+  description?: {
+    text?: string;
+    html?: string;
+  };
 }
 
 export interface CourseAssignmentAuditItem {
@@ -418,12 +478,14 @@ function createClientUploadId() {
 
 class CourseStoreClass {
   courses: CourseListItem[] = [];
+  publicCourses: PublicCourseItem[] = [];
   accessibleCourses: AccessibleCourseItem[] = [];
   assignedCourseAccesses: AssignedCourseAccessItem[] = [];
   myCourses: MyCourseItem[] = [];
   courseAssignmentAudit: CourseAssignmentAuditItem[] = [];
   currentCourse: MyCourseDetailItem | null = null;
   isLoading: boolean = false;
+  isPublicCoursesLoading: boolean = false;
   isAccessLoading: boolean = false;
   isAssignedCoursesLoading: boolean = false;
   isMyCoursesLoading: boolean = false;
@@ -442,11 +504,11 @@ class CourseStoreClass {
     makeAutoObservable(this);
   }
 
-  fetchCourses = async () => {
+  fetchCourses = async (params: Record<string, unknown> = {}) => {
     this.isLoading = true;
     this.error = null;
     try {
-      const { data } = await axios.get("/course");
+      const { data } = await axios.get("/course", { params });
       runInAction(() => {
         this.courses = data.data || [];
       });
@@ -775,6 +837,27 @@ class CourseStoreClass {
       return data?.data || null;
     } catch (err: any) {
       return Promise.reject(err?.response?.data || err);
+    }
+  };
+
+  fetchPublicCourses = async (params: Record<string, unknown> = {}) => {
+    this.isPublicCoursesLoading = true;
+    this.error = null;
+    try {
+      const { data } = await axios.get("/course/public", { params });
+      runInAction(() => {
+        this.publicCourses = data.data || [];
+      });
+      return data.data || [];
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err?.response?.data?.error || "Failed to fetch public courses";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isPublicCoursesLoading = false;
+      });
     }
   };
 

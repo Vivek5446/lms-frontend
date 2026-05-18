@@ -33,9 +33,10 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
     if (value.descriptionText.trim()) filled++;
     if (value.thumbnail) filled++;
     if (value.categories.length > 0) filled++;
-    filled++;
+    if (value.languages.length > 0) filled++;
+    if (value.totalMarks.trim() && value.passingMarks.trim()) filled++;
 
-    onProgressChange?.(Math.round((filled / 5) * 100));
+    onProgressChange?.(Math.round((filled / 6) * 100));
   }, [value, onProgressChange]);
 
   const onDrop = useCallback(
@@ -417,6 +418,120 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 24 }}>
+          <label style={{ ...labelStyle, marginBottom: 12 }}>Course Visibility Type</label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 14,
+            }}
+          >
+            {[
+              {
+                key: "private",
+                title: "Private Course",
+                description: "Only users assigned by the Super Admin can access this course.",
+                accent: "#2563EB",
+                bg: "#EFF6FF",
+              },
+              {
+                key: "public",
+                title: "Public Course",
+                description: "Visible to everyone and ready for self-enrollment or purchase.",
+                accent: "#059669",
+                bg: "#ECFDF5",
+              },
+            ].map((option) => {
+              const active = value.visibilityType === option.key;
+
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => updateBasicInfo({ visibilityType: option.key as CourseBasicInfo["visibilityType"] })}
+                  style={{
+                    textAlign: "left",
+                    padding: "18px 18px 16px",
+                    borderRadius: 16,
+                    border: active ? `2px solid ${option.accent}` : "1.5px solid #E5E7EB",
+                    background: active ? option.bg : "#FFFFFF",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      background: active ? option.accent : "#F3F4F6",
+                      color: active ? "#FFFFFF" : "#6B7280",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      marginBottom: 12,
+                    }}
+                  >
+                    {active ? "ON" : "OFF"}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>{option.title}</p>
+                  <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.5, color: "#6B7280" }}>
+                    {option.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 24 }}>
+          <label style={{ ...labelStyle, marginBottom: 12 }}>Assessment Thresholds</label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 20,
+            }}
+          >
+            <div>
+              <label style={labelStyle}>Total Marks</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="e.g., 100"
+                value={value.totalMarks}
+                onChange={(event) => updateBasicInfo({ totalMarks: event.target.value })}
+                style={inputStyle}
+                onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
+                onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
+              />
+              <p style={{ margin: "6px 0 0 2px", fontSize: 12, color: "#9CA3AF" }}>
+                Used as the final assessment total for pass/fail evaluation.
+              </p>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Passing Marks</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="e.g., 40"
+                value={value.passingMarks}
+                onChange={(event) => updateBasicInfo({ passingMarks: event.target.value })}
+                style={inputStyle}
+                onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
+                onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
+              />
+              <p style={{ margin: "6px 0 0 2px", fontSize: 12, color: "#9CA3AF" }}>
+                Learners below this threshold will be marked as failed.
+              </p>
+            </div>
           </div>
         </div>
       </div>

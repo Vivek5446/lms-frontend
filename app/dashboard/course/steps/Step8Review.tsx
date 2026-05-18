@@ -38,7 +38,9 @@ export default function Step8Review({
       icon: FileText,
       label: "Basic Info",
       status: courseForm.basicInfo.courseName
-        ? `${courseForm.basicInfo.courseName} - ${courseForm.basicInfo.level}`
+        ? `${courseForm.basicInfo.courseName} - ${courseForm.basicInfo.level} - ${
+            courseForm.basicInfo.visibilityType === "public" ? "Public" : "Private"
+          }`
         : "Course title is still empty",
       colorClass: "text-step-1",
       bgClass: "bg-step-1/15",
@@ -79,6 +81,18 @@ export default function Step8Review({
       bgClass: "bg-step-4/15",
       complete: true,
       stepIndex: 3,
+    },
+    {
+      icon: CheckCircle2,
+      label: "Assessment",
+      status:
+        courseForm.basicInfo.totalMarks.trim() && courseForm.basicInfo.passingMarks.trim()
+          ? `${courseForm.basicInfo.passingMarks}/${courseForm.basicInfo.totalMarks} required to pass`
+          : "Assessment marks not configured yet",
+      colorClass: "text-step-2",
+      bgClass: "bg-step-2/15",
+      complete: Boolean(courseForm.basicInfo.totalMarks.trim() && courseForm.basicInfo.passingMarks.trim()),
+      stepIndex: 0,
     },
   ];
 

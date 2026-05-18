@@ -67,6 +67,27 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
       : statusColorKey === "yellow"
         ? "#eab308"
         : "#ef4444";
+  const assessmentOutcome = String(course.assessmentSummary?.outcome || "").trim().toLowerCase();
+  const assessmentLabel =
+    assessmentOutcome === "passed"
+      ? "Passed"
+      : assessmentOutcome === "failed"
+        ? "Failed"
+        : assessmentOutcome === "pending"
+          ? "Assessment Pending"
+          : "";
+  const assessmentBg =
+    assessmentOutcome === "passed"
+      ? "green.50"
+      : assessmentOutcome === "failed"
+        ? "red.50"
+        : "orange.50";
+  const assessmentText =
+    assessmentOutcome === "passed"
+      ? "green.600"
+      : assessmentOutcome === "failed"
+        ? "red.600"
+        : "orange.600";
 
   return (
     <MotionBox
@@ -172,6 +193,25 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
             {truncateText(course.description?.text, 55)}
           </Text>
         </VStack>
+
+        {assessmentLabel ? (
+          <Box
+            mb={3}
+            px={3}
+            py={2}
+            borderRadius="full"
+            bg={assessmentBg}
+            color={assessmentText}
+            fontSize="12px"
+            fontWeight="700"
+            display="inline-flex"
+            alignItems="center"
+            gap={2}
+          >
+            <Icon as={FiStar} boxSize={3.5} />
+            {assessmentLabel}
+          </Box>
+        ) : null}
 
         {/* Progress */}
         <Box mb={4}>

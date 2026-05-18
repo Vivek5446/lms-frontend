@@ -330,6 +330,19 @@ export default function CourseDetails({
                 <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
                   {course.taxonomy?.level || "Beginner"}
                 </Badge>
+                {course.assessmentSummary?.outcome === "passed" ? (
+                  <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
+                    Passed
+                  </Badge>
+                ) : course.assessmentSummary?.outcome === "failed" ? (
+                  <Badge colorScheme="red" borderRadius="full" px={3} py={1}>
+                    Failed
+                  </Badge>
+                ) : course.assessmentSummary?.outcome === "pending" ? (
+                  <Badge colorScheme="orange" borderRadius="full" px={3} py={1}>
+                    Assessment Pending
+                  </Badge>
+                ) : null}
                 {course.taxonomy?.categories?.slice(0, 2).map((cat: string, idx: number) => (
                   <Badge key={idx} colorScheme="gray" variant="subtle" borderRadius="full" px={3} py={1}>
                     {cat}
@@ -402,6 +415,36 @@ export default function CourseDetails({
                           {course.progression?.certificateEnabled
                             ? "Certificate included"
                             : "No certificate"}
+                        </Text>
+                      </Box>
+                    </Flex>
+                    <Flex align="center" gap={3} p={3} bg={accentLight} borderRadius="xl">
+                      <Icon as={Star} boxSize={5} color={accentColor} />
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" color={textMuted}>
+                          Passing Threshold
+                        </Text>
+                        <Text fontWeight="bold">
+                          {course.assessment?.passingMarks && course.assessment?.totalMarks
+                            ? `${course.assessment.passingMarks}/${course.assessment.totalMarks}`
+                            : "Not configured"}
+                        </Text>
+                      </Box>
+                    </Flex>
+                    <Flex align="center" gap={3} p={3} bg={accentLight} borderRadius="xl">
+                      <Icon as={CheckCircle} boxSize={5} color={accentColor} />
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" color={textMuted}>
+                          Assessment Result
+                        </Text>
+                        <Text fontWeight="bold">
+                          {course.assessmentSummary?.outcome === "passed"
+                            ? "Passed"
+                            : course.assessmentSummary?.outcome === "failed"
+                              ? "Failed"
+                              : course.assessmentSummary?.outcome === "pending"
+                                ? "Awaiting final score"
+                                : "Not configured"}
                         </Text>
                       </Box>
                     </Flex>

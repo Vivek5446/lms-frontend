@@ -27,6 +27,9 @@ export interface CourseBasicInfo {
   languages: string[];
   categories: string[];
   level: string;
+  visibilityType: "private" | "public";
+  totalMarks: string;
+  passingMarks: string;
 }
 
 export interface CourseModuleSectionInput {
@@ -176,6 +179,9 @@ export const initialCourseFormState: CourseFormState = {
     languages: ["English"],
     categories: [],
     level: "Beginner",
+    visibilityType: "private",
+    totalMarks: "",
+    passingMarks: "",
   },
   structure: {
     quizMode: "per-module",
@@ -288,6 +294,8 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
   const amount = courseForm.pricing.isPaid ? parseNumericValue(courseForm.pricing.amount) : null;
   const accessDurationDays = parseNumericValue(courseForm.pricing.accessDurationDays);
   const completionDays = parseNumericValue(courseForm.progress.completionDays);
+  const totalMarks = parseNumericValue(courseForm.basicInfo.totalMarks);
+  const passingMarks = parseNumericValue(courseForm.basicInfo.passingMarks);
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
 
   return {
@@ -304,6 +312,13 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
         languages: courseForm.basicInfo.languages,
         categories: courseForm.basicInfo.categories,
         level: courseForm.basicInfo.level,
+      },
+      visibility: {
+        type: courseForm.basicInfo.visibilityType,
+      },
+      assessment: {
+        totalMarks,
+        passingMarks,
       },
       media: {
         thumbnail: summarizeFile(courseForm.basicInfo.thumbnail),

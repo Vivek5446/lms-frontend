@@ -4,576 +4,657 @@ import MyCoursesBoard from "@/app/(main)/course/component/MyCoursesBoard";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import stores from "@/app/store/stores";
 import {
+  Badge,
   Box,
   Button,
-  Checkbox,
-  Circle,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
+  Flex,
+  Grid,
+  Heading,
+  HStack,
+  Icon,
+  Image,
   Input,
+  Select,
+  SimpleGrid,
+  Spinner,
   Stack,
   Text,
   useColorModeValue,
   useDisclosure,
-  VStack
+  VStack,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import {
+  FiArrowRight,
+  FiBookOpen,
+  FiClock,
+  FiDollarSign,
+  FiFilter,
+  FiGlobe,
+  FiSearch,
+  FiStar,
+  FiTrendingUp
+} from "react-icons/fi";
+
+type CatalogSort = "latest" | "popularity" | "price_asc" | "price_desc" | "highest_rated";
 
 const MotionBox = motion(Box);
 
-// --- Extended Data ---
-type CourseLevel = "Beginner" | "Intermediate" | "Advanced";
-interface Course {
-  id: number;
-  title: string;
-  category: string;
-  rating: number;
-  duration: string;
-  students: string;
-  image: string;
-  description: string;
-  modules: string[];
-  price: number;
-  level: CourseLevel;
+function formatCurrency(value?: number | null) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return "Free";
+  }
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(numericValue);
 }
 
-const COURSES: Course[] = [
-  {
-    id: 1,
-    title: "MSME Lending & Credit Appraisal",
-    category: "Banking",
-    rating: 4.9,
-    duration: "12h",
-    students: "1.2k",
-    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600",
-    description: "Comprehensive analysis of MSME credit life cycles.",
-    modules: [
-      "Macro Environment",
-      "Financial Statement Analysis",
-      "Credit Scoring Models",
-    ],
-    price: 4999,
-    level: "Intermediate",
-  },
-  {
-    id: 2,
-    title: "Affordable Housing Finance",
-    category: "NBFC",
-    rating: 4.8,
-    duration: "10h",
-    students: "850",
-    image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600",
-    description: "Explore the NHB guidelines for the informal housing sector.",
-    modules: ["Policy Framework", "Technical Appraisal"],
-    price: 3499,
-    level: "Beginner",
-  },
-  {
-    id: 3,
-    title: "Operational Risk Management",
-    category: "Risk",
-    rating: 4.7,
-    duration: "8h",
-    students: "2.1k",
-    image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600",
-    description: "Strategic mitigation of operational failures.",
-    modules: ["Internal Controls", "Fraud Prevention"],
-    price: 5999,
-    level: "Advanced",
-  },
-  {
-    id: 4,
-    title: "Digital Banking 2.0",
-    category: "Technology",
-    rating: 4.9,
-    duration: "6h",
-    students: "3k",
-    image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600",
-    description: "Traditional branch banking to digital ecosystems.",
-    modules: ["Neo-Banking", "Cybersecurity"],
-    price: 2999,
-    level: "Beginner",
-  },
-  {
-    id: 5,
-    title: "Wealth Management & Fintech",
-    category: "Banking",
-    rating: 4.6,
-    duration: "15h",
-    students: "1.1k",
-    image: "https://images.unsplash.com/photo-1611974714658-058f40da23fb?w=600",
-    description: "Modern portfolio theory meets automated advisory.",
-    modules: ["Asset Allocation", "Robo-Advisors"],
-    price: 7499,
-    level: "Advanced",
-  },
-  {
-    id: 6,
-    title: "Microfinance Operations",
-    category: "NBFC",
-    rating: 4.5,
-    duration: "9h",
-    students: "900",
-    image: "https://images.unsplash.com/photo-1591033594798-33227a05780d?w=600",
-    description: "Understanding JLG and SHG models in rural India.",
-    modules: ["Group Lending", "Social Impact"],
-    price: 1999,
-    level: "Beginner",
-  },
-  {
-    id: 7,
-    title: "Cybersecurity in Finance",
-    category: "Technology",
-    rating: 4.9,
-    duration: "20h",
-    students: "4.5k",
-    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600",
-    description: "Protecting financial assets in a digital world.",
-    modules: ["Encryption", "Threat Detection"],
-    price: 8999,
-    level: "Advanced",
-  },
-  {
-    id: 8,
-    title: "Anti-Money Laundering (AML)",
-    category: "Risk",
-    rating: 4.8,
-    duration: "14h",
-    students: "1.8k",
-    image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600",
-    description: "Regulatory compliance and suspicious activity reporting.",
-    modules: ["KYC Norms", "Transaction Monitoring"],
-    price: 6500,
-    level: "Intermediate",
-  },
-  {
-    id: 9,
-    title: "Corporate Finance Basics",
-    category: "Banking",
-    rating: 4.4,
-    duration: "11h",
-    students: "2.3k",
-    image: "https://images.unsplash.com/photo-1543286386-713bdd548da4?w=600",
-    description: "Capital budgeting and financial modeling.",
-    modules: ["NPV & IRR", "WACC Calculation"],
-    price: 3200,
-    level: "Beginner",
-  },
-  {
-    id: 10,
-    title: "Blockchain for Payments",
-    category: "Technology",
-    rating: 4.7,
-    duration: "13h",
-    students: "1.5k",
-    image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=600",
-    description: "Revolutionizing cross-border settlements.",
-    modules: ["Smart Contracts", "DeFi Protocols"],
-    price: 5200,
-    level: "Intermediate",
-  },
-];
+function AssessmentBadge({ summary }: { summary?: any }) {
+  if (!summary || summary.outcome === "not_configured") {
+    return null;
+  }
 
-const CATEGORIES = ["All", "Banking", "NBFC", "Risk", "Technology"];
+  const colorScheme = summary.outcome === "passed" ? "green" : summary.outcome === "failed" ? "red" : "orange";
+  const label =
+    summary.outcome === "passed"
+      ? "Passed"
+      : summary.outcome === "failed"
+        ? "Failed"
+        : "Assessment Pending";
+
+  return (
+    <Badge colorScheme={colorScheme} borderRadius="full" px={3} py={1}>
+      {label}
+    </Badge>
+  );
+}
 
 const CoursesPage = observer(function CoursesPage() {
-  const role = String(
-    stores.auth.userType || stores.auth.user?.role || "",
-  ).toLowerCase();
-  const isLearner = Boolean(stores.auth.user) && isLearnerRole(role);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [sortBy, setSortBy] = useState<"price" | "rating" | "default">(
-    "default",
-  );
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const filteredCourses = useMemo(() => {
-    let result = COURSES.filter((c) => {
-      const matchesSearch = c.title
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesCat =
-        activeCategory === "All" || c.category === activeCategory;
-      return matchesSearch && matchesCat;
-    });
-    if (sortBy === "price") result.sort((a, b) => a.price - b.price);
-    if (sortBy === "rating") result.sort((a, b) => b.rating - a.rating);
-    return result;
-  }, [searchQuery, activeCategory, sortBy]);
+  const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
+  const isLearner = Boolean(stores.auth.user) && isLearnerRole(role);
+  const requestedCourseId = String(searchParams.get("courseId") || "").trim();
+  const initialSearch = String(searchParams.get("search") || "").trim();
 
-  const FilterContent = () => (
-    <VStack align="start" spacing={7} w="full">
-      <Box w="full">
-        <Text
-          fontWeight="800"
-          mb={3}
-          fontSize="xs"
-          color="gray.400"
-          letterSpacing="wider"
-        >
-          SEARCH
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [pricingFilter, setPricingFilter] = useState<"all" | "free" | "paid">("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [courseTypeFilter, setCourseTypeFilter] = useState<"all" | "standard" | "scorm">("all");
+  const [languageFilter, setLanguageFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<CatalogSort>("latest");
+  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
+
+  const heroBg = useColorModeValue("linear-gradient(135deg, #F8FAFC 0%, #E0F2FE 52%, #DBEAFE 100%)", "linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)");
+  const pageBg = useColorModeValue("#F8FAFC", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const mutedText = useColorModeValue("gray.600", "gray.300");
+  const softText = useColorModeValue("gray.500", "gray.400");
+  const drawerBg = useColorModeValue("white", "gray.800");
+
+  useEffect(() => {
+    courseStore.fetchPublicCourses().catch(() => undefined);
+    if (isLearner) {
+      courseStore.fetchMyCourses().catch(() => undefined);
+    }
+  }, [isLearner]);
+
+  useEffect(() => {
+    setSearchQuery(initialSearch);
+  }, [initialSearch]);
+
+  const publicCourses = courseStore.publicCourses || [];
+  const assignedCourses = courseStore.myCourses || [];
+
+  const availableCategories = useMemo(() => {
+    const categories = new Set<string>();
+    publicCourses.forEach((course) => {
+      (course.taxonomy?.categories || []).forEach((category) => {
+        if (category) categories.add(category);
+      });
+    });
+    return ["all", ...Array.from(categories).sort((left, right) => left.localeCompare(right))];
+  }, [publicCourses]);
+
+  const availableLanguages = useMemo(() => {
+    const languages = new Set<string>();
+    publicCourses.forEach((course) => {
+      (course.taxonomy?.languages || []).forEach((language) => {
+        if (language) languages.add(language);
+      });
+    });
+    return ["all", ...Array.from(languages).sort((left, right) => left.localeCompare(right))];
+  }, [publicCourses]);
+
+  const filteredPublicCourses = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const nextCourses = publicCourses.filter((course) => {
+      const searchableText = [
+        course.title,
+        course.description?.text,
+        course.taxonomy?.level,
+        ...(course.taxonomy?.categories || []),
+        ...(course.taxonomy?.languages || []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (query && !searchableText.includes(query)) {
+        return false;
+      }
+
+      if (pricingFilter !== "all" && course.commerce?.pricingModel !== pricingFilter) {
+        return false;
+      }
+
+      if (categoryFilter !== "all" && !(course.taxonomy?.categories || []).includes(categoryFilter)) {
+        return false;
+      }
+
+      if (courseTypeFilter !== "all" && course.courseType !== courseTypeFilter) {
+        return false;
+      }
+
+      if (languageFilter !== "all" && !(course.taxonomy?.languages || []).includes(languageFilter)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    nextCourses.sort((left, right) => {
+      if (sortBy === "popularity") {
+        return (right.metrics?.popularityScore || 0) - (left.metrics?.popularityScore || 0);
+      }
+
+      if (sortBy === "price_asc") {
+        return Number(left.commerce?.amountInRupees || 0) - Number(right.commerce?.amountInRupees || 0);
+      }
+
+      if (sortBy === "price_desc") {
+        return Number(right.commerce?.amountInRupees || 0) - Number(left.commerce?.amountInRupees || 0);
+      }
+
+      if (sortBy === "highest_rated") {
+        return (right.metrics?.averageRating || 0) - (left.metrics?.averageRating || 0);
+      }
+
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    });
+
+    return nextCourses;
+  }, [categoryFilter, courseTypeFilter, languageFilter, pricingFilter, publicCourses, searchQuery, sortBy]);
+
+  const featuredAssignedCourses = useMemo(() => assignedCourses.slice(0, 3), [assignedCourses]);
+
+  if (isLearner && requestedCourseId) {
+    return (
+      <Box minH="100vh" bg={pageBg} px={{ base: 4, md: 6 }}>
+        <MyCoursesBoard basePath="/course" />
+      </Box>
+    );
+  }
+
+  const FilterPanel = (
+    <VStack align="stretch" spacing={4}>
+      <Box>
+        <Text fontSize="xs" fontWeight="700" letterSpacing="0.08em" color={softText} textTransform="uppercase" mb={2}>
+          Search
         </Text>
         <Input
-          placeholder="What do you want to learn?"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          variant="filled"
-          bg="gray.50"
-          _focus={{ bg: "white", borderColor: "blue.400" }}
-          h="45px"
-          borderRadius="lg"
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search by course name, language, or category"
+          bg={cardBg}
+          borderColor={borderColor}
+          h="46px"
         />
       </Box>
 
-      <Box w="full">
-        <Text
-          fontWeight="800"
-          mb={3}
-          fontSize="xs"
-          color="gray.400"
-          letterSpacing="wider"
-        >
-          CATEGORIES
-        </Text>
-        <VStack align="start" spacing={1} w="full">
-          {CATEGORIES.map((cat) => (
-            <Button
-              key={cat}
-              variant={activeCategory === cat ? "solid" : "ghost"}
-              colorScheme="blue"
-              justifyContent="space-between"
-              w="full"
-              size="md"
-              fontWeight={activeCategory === cat ? "bold" : "medium"}
-              borderRadius="lg"
-              onClick={() => {
-                setActiveCategory(cat);
-                onClose();
-              }}
-            >
-              {cat}
-              {activeCategory === cat && (
-                <Circle
-                  size="6px"
-                  bg={useColorModeValue("white", "gray.600")}
-                />
-              )}
-            </Button>
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+        <Select value={pricingFilter} onChange={(event) => setPricingFilter(event.target.value as typeof pricingFilter)} bg={cardBg} borderColor={borderColor} h="46px">
+          <option value="all">Paid / Free</option>
+          <option value="free">Free</option>
+          <option value="paid">Paid</option>
+        </Select>
+        <Select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} bg={cardBg} borderColor={borderColor} h="46px">
+          {availableCategories.map((category) => (
+            <option key={category} value={category}>
+              {category === "all" ? "Category" : category}
+            </option>
           ))}
-        </VStack>
-      </Box>
+        </Select>
+        <Select value={courseTypeFilter} onChange={(event) => setCourseTypeFilter(event.target.value as typeof courseTypeFilter)} bg={cardBg} borderColor={borderColor} h="46px">
+          <option value="all">Course Type</option>
+          <option value="standard">Standard</option>
+          <option value="scorm">SCORM</option>
+        </Select>
+        <Select value={languageFilter} onChange={(event) => setLanguageFilter(event.target.value)} bg={cardBg} borderColor={borderColor} h="46px">
+          {availableLanguages.map((language) => (
+            <option key={language} value={language}>
+              {language === "all" ? "Language" : language}
+            </option>
+          ))}
+        </Select>
+      </SimpleGrid>
 
-      <Box w="full">
-        <Text
-          fontWeight="800"
-          mb={3}
-          fontSize="xs"
-          color="gray.400"
-          letterSpacing="wider"
-        >
-          EXPERIENCE LEVEL
-        </Text>
-        <Stack spacing={3}>
-          <Checkbox colorScheme="blue" size="md" defaultChecked>
-            Beginner
-          </Checkbox>
-          <Checkbox colorScheme="blue" size="md">
-            Intermediate
-          </Checkbox>
-          <Checkbox colorScheme="blue" size="md">
-            Advanced
-          </Checkbox>
-        </Stack>
-      </Box>
+      <Select value={sortBy} onChange={(event) => setSortBy(event.target.value as CatalogSort)} bg={cardBg} borderColor={borderColor} h="46px">
+        <option value="latest">Latest</option>
+        <option value="popularity">Popularity</option>
+        <option value="price_asc">Price: Low to High</option>
+        <option value="price_desc">Price: High to Low</option>
+        <option value="highest_rated">Highest Rated</option>
+      </Select>
     </VStack>
   );
 
-  const pageBg = useColorModeValue("#F8FAFC", "gray.900");
-
-  if (isLearner) {
   return (
-    <Box minH="100vh" bg={pageBg} px={{ base: 4, md: 6 }}>
-      <MyCoursesBoard basePath="/course" />
-    </Box>
-  );
-}
+    <Box minH="100vh" bg={pageBg}>
+      <Box bgImage={heroBg} borderBottomWidth="1px" borderColor={borderColor}>
+        <Box maxW="8xl" mx="auto" px={{ base: 5, md: 8 }} py={{ base: 10, md: 14 }}>
+          <Grid templateColumns={{ base: "1fr", lg: "1.25fr 0.95fr" }} gap={10} alignItems="center">
+            <Box>
+              <Badge colorScheme="blue" borderRadius="full" px={4} py={1.5}>
+                Public Course Catalog
+              </Badge>
+              <Heading mt={5} fontSize={{ base: "3xl", md: "5xl" }} lineHeight="1.05">
+                Explore public courses with
+                <Text as="span" color="blue.500"> faster discovery</Text>
+              </Heading>
+              <Text mt={4} fontSize={{ base: "md", md: "lg" }} color={mutedText} maxW="2xl" lineHeight="1.8">
+                Search by title, narrow by pricing, category, course type, and language, then sort by the signals that matter most.
+              </Text>
 
-  return (
-    <Box minH="100vh" bg={pageBg} py={{ base: 4, md: 10 }}>
-<MyCoursesBoard basePath="/course" />
-
-      {/* <Box w="100%" px={{ base: 2, md: 4 }}>
-        <AnimatePresence mode="wait">
-          {!selectedCourse ? (
-            <MotionBox
-              key="catalog"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <Flex gap={6} direction={{ base: "column", md: "row" }}>
+              <HStack mt={7} spacing={4} flexWrap="wrap">
                 <Box
-                  display={{ base: "none", md: "block" }}
-                  w="240px"
-                  position="sticky"
-                  top="100px"
-                  h="fit-content"
+                  display="flex"
+                  alignItems="center"
+                  gap={3}
+                  px={4}
+                  py={3}
+                  borderRadius="2xl"
+                  bg={cardBg}
+                  borderWidth="1px"
+                  borderColor={borderColor}
                 >
-                  <VStack
-                    align="start"
-                    p={6}
-                    bg={cardBg}
-                    borderRadius="2xl"
-                    shadow="sm"
-                    borderWidth="1px"
-                    borderColor={cardBorder}
-                  >
-                    <HStack mb={4}>
-                      <Icon as={FaFilter} color="blue.500" />
-                      <Heading size="xs" textTransform="uppercase">
-                        Filters
-                      </Heading>
-                    </HStack>
-                    <FilterContent />
-                  </VStack>
+                  <Icon as={FiBookOpen} color="blue.500" />
+                  <Box>
+                    <Text fontSize="sm" fontWeight="700">{publicCourses.length}</Text>
+                    <Text fontSize="xs" color={softText}>Public courses</Text>
+                  </Box>
                 </Box>
-
-                <Button
-                  display={{ base: "flex", md: "none" }}
-                  position="fixed"
-                  bottom="24px"
-                  right="24px"
-                  colorScheme="blue"
-                  borderRadius="full"
-                  shadow="2xl"
-                  zIndex="overlay"
-                  px={8}
-                  onClick={onOpen}
-                  leftIcon={<FaFilter />}
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={3}
+                  px={4}
+                  py={3}
+                  borderRadius="2xl"
+                  bg={cardBg}
+                  borderWidth="1px"
+                  borderColor={borderColor}
                 >
-                  {" "}
-                  Filters{" "}
-                </Button>
-
-                <Box flex="1">
-                  <Flex justify="space-between" align="flex-end" mb={8} px={2}>
-                    <Box>
-                      <Heading
-                        size="xl"
-                        mb={1}
-                        letterSpacing="-0.5px"
-                        color={textColor}
-                      >
-                        Course Catalog
-                      </Heading>
-                      <Text
-                        fontSize="md"
-                        color={subtitleColor}
-                        fontWeight="medium"
-                      >
-                        Explore {filteredCourses.length} professional programs
-                      </Text>
-                    </Box>
-                    <HStack
-                      bg={useColorModeValue("gray.100", "gray.700")}
-                      p={1}
-                      borderRadius="lg"
-                    >
-                      <Button
-                        size="sm"
-                        variant={sortBy === "rating" ? "white" : "ghost"}
-                        shadow={sortBy === "rating" ? "sm" : "none"}
-                        onClick={() => setSortBy("rating")}
-                      >
-                        Top Rated
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={sortBy === "price" ? "white" : "ghost"}
-                        shadow={sortBy === "price" ? "sm" : "none"}
-                        onClick={() => setSortBy("price")}
-                      >
-                        Price
-                      </Button>
-                    </HStack>
-                  </Flex>
-
-                  <SimpleGrid
-                    columns={{ base: 1, sm: 2, lg: 3, xl: 4 }}
-                    spacing={8}
-                  >
-                    {filteredCourses.map((course) => (
-                      <CourseCard
-                        key={course.id}
-                        course={course}
-                        onClick={() => setSelectedCourse(course)}
-                      />
-                    ))}
-                  </SimpleGrid>
+                  <Icon as={FiTrendingUp} color="purple.500" />
+                  <Box>
+                    <Text fontSize="sm" fontWeight="700">
+                      {publicCourses.reduce((sum, course) => sum + Number(course.metrics?.popularityScore || 0), 0)}
+                    </Text>
+                    <Text fontSize="xs" color={softText}>Combined enrollments</Text>
+                  </Box>
                 </Box>
-              </Flex>
-            </MotionBox>
-          ) : (
-            <MotionBox
-              key="detail"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0 }}
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={3}
+                  px={4}
+                  py={3}
+                  borderRadius="2xl"
+                  bg={cardBg}
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                >
+                  <Icon as={FiGlobe} color="green.500" />
+                  <Box>
+                    <Text fontSize="sm" fontWeight="700">Open to all</Text>
+                    <Text fontSize="xs" color={softText}>Browse without login</Text>
+                  </Box>
+                </Box>
+              </HStack>
+            </Box>
+
+            <Box
+              borderRadius="3xl"
+              borderWidth="1px"
+              borderColor={borderColor}
+              bg={cardBg}
+              p={{ base: 5, md: 6 }}
+              boxShadow="0 28px 70px rgba(15, 23, 42, 0.08)"
             >
+              <HStack spacing={3} mb={4}>
+                <Icon as={FiSearch} color="blue.500" />
+                <Text fontSize="sm" fontWeight="700" textTransform="uppercase" letterSpacing="0.08em" color={softText}>
+                  Find Courses
+                </Text>
+              </HStack>
+              {FilterPanel}
               <Button
-                variant="link"
-                color="blue.600"
-                mb={8}
-                onClick={() => setSelectedCourse(null)}
-                leftIcon={<FaArrowLeft />}
+                mt={5}
+                w="full"
+                h="48px"
+                colorScheme="blue"
+                borderRadius="xl"
+                leftIcon={<FiFilter />}
+                onClick={onOpen}
               >
-                Back to Catalog
+                Refine catalog on mobile
               </Button>
+            </Box>
+          </Grid>
+        </Box>
+      </Box>
 
-              <Flex direction={{ base: "column", lg: "row" }} gap={12}>
-                <Box flex="2">
-                  <VStack align="start" spacing={6}>
-                    <HStack>
-                      <Tag size="lg" colorScheme="blue" borderRadius="full">
-                        <TagLabel>{selectedCourse.category}</TagLabel>
-                      </Tag>
-                      <Text color="gray.500" fontSize="sm">
-                        • {selectedCourse.students} students enrolled
-                      </Text>
+      <Box maxW="8xl" mx="auto" px={{ base: 5, md: 0 }} py={{ base: 8, md: 10 }}>
+        {isLearner && featuredAssignedCourses.length > 0 ? (
+          <Box mb={10}>
+            <Flex justify="space-between" align="center" mb={5} flexWrap="wrap" gap={3}>
+              <Box>
+                <Text fontSize="sm" fontWeight="700" color="blue.500" textTransform="uppercase" letterSpacing="0.08em">
+                  Assigned Private Courses
+                </Text>
+                <Heading size="lg" mt={1}>Continue learning from your dashboard picks</Heading>
+              </Box>
+              <Button
+                variant="ghost"
+                colorScheme="blue"
+                rightIcon={<FiArrowRight />}
+                onClick={() => router.push(`/course?courseId=${featuredAssignedCourses[0].courseId}`)}
+              >
+                Resume latest course
+              </Button>
+            </Flex>
+
+            <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={5}>
+              {featuredAssignedCourses.map((course) => (
+                <MotionBox
+                  key={course.courseId}
+                  whileHover={{ y: -6 }}
+                  bg={cardBg}
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                  borderRadius="3xl"
+                  overflow="hidden"
+                  boxShadow="0 18px 45px rgba(15, 23, 42, 0.06)"
+                >
+                  <Box position="relative">
+                    {course.thumbnailUrl ? (
+                      <Image src={course.thumbnailUrl} alt={course.title} h="190px" w="full" objectFit="cover" />
+                    ) : (
+                      <Box h="190px" bgGradient="linear(to-br, blue.500, cyan.400)" />
+                    )}
+                    <Badge position="absolute" top={4} left={4} colorScheme="blue" borderRadius="full" px={3} py={1}>
+                      Private
+                    </Badge>
+                  </Box>
+
+                  <Box p={5}>
+                    <HStack spacing={2} flexWrap="wrap" mb={3}>
+                      <Badge colorScheme="gray" borderRadius="full" px={3} py={1}>
+                        {course.taxonomy?.level || "Beginner"}
+                      </Badge>
+                      <AssessmentBadge summary={course.assessmentSummary} />
                     </HStack>
-                    <Heading size="2xl" lineHeight="tight" letterSpacing="-1px">
-                      {selectedCourse.title}
-                    </Heading>
-                    <Text fontSize="xl" color="gray.600" lineHeight="tall">
-                      {selectedCourse.description}
+                    <Heading size="md" mb={2}>{course.title}</Heading>
+                    <Text fontSize="sm" color={mutedText} noOfLines={2}>
+                      {course.description?.text || "Assigned privately by your organization."}
                     </Text>
 
-                    <Box w="full" pt={6}>
-                      <Heading size="md" mb={6}>
-                        What you'll learn
-                      </Heading>
-                      <SimpleGrid
-                        columns={{ base: 1, md: 2 }}
-                        spacing={4}
-                        w="full"
-                      >
-                        {selectedCourse.modules.map((m, i) => (
-                          <HStack
-                            key={i}
-                            p={5}
-                            bg={cardBg}
-                            borderRadius="xl"
-                            borderWidth="1px"
-                            borderColor={cardBorder}
-                            shadow="sm"
-                          >
-                            <Circle
-                              size="32px"
-                              bg={useColorModeValue("blue.50", "blue.900")}
-                              color={useColorModeValue("blue.600", "blue.200")}
-                              fontWeight="bold"
-                              fontSize="sm"
-                            >
-                              {i + 1}
-                            </Circle>
-                            <Text
-                              fontWeight="600"
-                              color={useColorModeValue("gray.700", "gray.200")}
-                            >
-                              {m}
-                            </Text>
-                            <Spacer />
-                            <Icon
-                              as={i === 0 ? FaPlayCircle : FaLock}
-                              color={
-                                i === 0
-                                  ? "blue.500"
-                                  : useColorModeValue("gray.300", "gray.500")
-                              }
-                            />
-                          </HStack>
-                        ))}
-                      </SimpleGrid>
-                    </Box>
-                  </VStack>
-                </Box>
-
-                <Box flex="1">
-                  <VStack
-                    p={8}
-                    bg={cardBg}
-                    borderRadius="3xl"
-                    shadow={useColorModeValue("2xl", "2xl")}
-                    borderWidth="1px"
-                    borderColor={useColorModeValue("gray.50", "gray.700")}
-                    position="sticky"
-                    top="100px"
-                    spacing={6}
-                  >
-                    <AspectRatio ratio={16 / 9} w="full">
-                      <Image
-                        src={selectedCourse.image}
-                        borderRadius="2xl"
-                        alt={selectedCourse.title}
-                      />
-                    </AspectRatio>
-                    <VStack align="start" w="full" spacing={1}>
-                      <Text fontSize="sm" color="gray.500" fontWeight="bold">
-                        INVESTMENT
+                    <HStack justify="space-between" mt={4}>
+                      <Text fontSize="sm" fontWeight="700" color="blue.500">
+                        {Math.round(Number(course.progress || 0))}% complete
                       </Text>
-                      <Heading size="xl" color="blue.700">
-                        ₹{selectedCourse.price.toLocaleString()}
-                      </Heading>
-                    </VStack>
-                    <Button
-                      colorScheme="blue"
-                      size="lg"
-                      w="full"
-                      h="60px"
-                      borderRadius="xl"
-                      shadow="lg"
-                      _hover={{ transform: "translateY(-2px)" }}
-                    >
-                      Enroll Now
-                    </Button>
-                    <VStack w="full" align="start" spacing={3} pt={4}>
-                      <HStack fontSize="sm" color="gray.600">
-                        <Icon as={FaClock} color="blue.500" />{" "}
-                        <Text>Lifetime Access</Text>
-                      </HStack>
-                      <HStack fontSize="sm" color="gray.600">
-                        <Icon as={FaCertificate} color="blue.500" />{" "}
-                        <Text>Official Certificate</Text>
-                      </HStack>
-                      <HStack fontSize="sm" color="gray.600">
-                        <Icon as={FaUserGraduate} color="blue.500" />{" "}
-                        <Text>Instructor Support</Text>
-                      </HStack>
-                    </VStack>
-                  </VStack>
-                </Box>
-              </Flex>
-            </MotionBox>
-          )}
-        </AnimatePresence>
-      </Box> */}
+                      <Text fontSize="sm" color={softText}>
+                        {course.status === "completed" ? "Completed" : "In progress"}
+                      </Text>
+                    </HStack>
 
-      {/* Drawer for Mobile (Simplified) */}
+                    <Button mt={4} w="full" colorScheme="blue" borderRadius="xl" onClick={() => router.push(`/course?courseId=${course.courseId}`)}>
+                      Continue Course
+                    </Button>
+                  </Box>
+                </MotionBox>
+              ))}
+            </SimpleGrid>
+          </Box>
+        ) : null}
+
+        <Flex justify="space-between" align="flex-end" mb={5} flexWrap="wrap" gap={4}>
+          <Box>
+            <Text fontSize="sm" fontWeight="700" color="blue.500" textTransform="uppercase" letterSpacing="0.08em">
+              Explore Courses
+            </Text>
+            <Heading size="lg" mt={1}>Public learning catalog</Heading>
+            <Text mt={2} color={mutedText}>
+              {filteredPublicCourses.length} course{filteredPublicCourses.length === 1 ? "" : "s"} match your current filters.
+            </Text>
+          </Box>
+
+          <Button
+            display={{ base: "inline-flex", md: "none" }}
+            colorScheme="blue"
+            borderRadius="full"
+            leftIcon={<FiFilter />}
+            onClick={onOpen}
+          >
+            Filters
+          </Button>
+        </Flex>
+
+        {courseStore.isPublicCoursesLoading ? (
+          <HStack justify="center" py={20}>
+            <Spinner color="blue.500" />
+            <Text color={mutedText}>Loading public courses...</Text>
+          </HStack>
+        ) : filteredPublicCourses.length === 0 ? (
+          <Box textAlign="center" py={16} borderRadius="3xl" bg={cardBg} borderWidth="1px" borderColor={borderColor}>
+            <Icon as={FiBookOpen} boxSize={8} color="gray.400" />
+            <Heading size="md" mt={4}>No public courses found</Heading>
+            <Text mt={2} color={mutedText}>Try changing your search or filters to broaden the results.</Text>
+          </Box>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={6}>
+            {filteredPublicCourses.map((course) => (
+              <MotionBox
+                key={course._id}
+                whileHover={{ y: -6 }}
+                bg={cardBg}
+                borderWidth="1px"
+                borderColor={borderColor}
+                borderRadius="3xl"
+                overflow="hidden"
+                boxShadow="0 18px 45px rgba(15, 23, 42, 0.06)"
+              >
+                <Box position="relative">
+                  {course.thumbnailUrl ? (
+                    <Image src={course.thumbnailUrl} alt={course.title} h="210px" w="full" objectFit="cover" />
+                  ) : (
+                    <Box h="210px" bgGradient="linear(to-br, blue.500, cyan.400)" />
+                  )}
+                  <HStack position="absolute" top={4} left={4} spacing={2} flexWrap="wrap">
+                    <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
+                      Public
+                    </Badge>
+                    <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
+                      {course.courseType === "scorm" ? "SCORM" : "Standard"}
+                    </Badge>
+                  </HStack>
+                </Box>
+
+                <Box p={5}>
+                  <HStack spacing={2} flexWrap="wrap" mb={3}>
+                    {(course.taxonomy?.categories || []).slice(0, 2).map((category) => (
+                      <Badge key={`${course._id}-${category}`} borderRadius="full" px={3} py={1}>
+                        {category}
+                      </Badge>
+                    ))}
+                    <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
+                      {course.taxonomy?.level || "Beginner"}
+                    </Badge>
+                  </HStack>
+
+                  <Heading size="md" mb={2}>{course.title}</Heading>
+                  <Text fontSize="sm" color={mutedText} noOfLines={3}>
+                    {course.description?.text || "Explore this course to review the curriculum, pricing, and assessment thresholds."}
+                  </Text>
+
+                  <SimpleGrid columns={2} spacing={3} mt={4}>
+                    <Box>
+                      <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Price</Text>
+                      <HStack spacing={2} mt={1}>
+                        <Icon as={FiDollarSign} color="green.500" />
+                        <Text fontWeight="700">{formatCurrency(course.commerce?.amountInRupees)}</Text>
+                      </HStack>
+                    </Box>
+                    <Box>
+                      <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Popularity</Text>
+                      <HStack spacing={2} mt={1}>
+                        <Icon as={FiTrendingUp} color="purple.500" />
+                        <Text fontWeight="700">{course.metrics?.popularityScore || 0}</Text>
+                      </HStack>
+                    </Box>
+                    <Box>
+                      <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Rating</Text>
+                      <HStack spacing={2} mt={1}>
+                        <Icon as={FiStar} color="orange.400" />
+                        <Text fontWeight="700">
+                          {course.metrics?.averageRating ? course.metrics.averageRating.toFixed(1) : "New"}
+                        </Text>
+                      </HStack>
+                    </Box>
+                    <Box>
+                      <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Language</Text>
+                      <HStack spacing={2} mt={1}>
+                        <Icon as={FiClock} color="blue.500" />
+                        <Text fontWeight="700">{course.taxonomy?.languages?.[0] || "Any"}</Text>
+                      </HStack>
+                    </Box>
+                  </SimpleGrid>
+
+                  <Button mt={5} w="full" colorScheme="blue" borderRadius="xl" rightIcon={<FiArrowRight />} onClick={() => setSelectedCourse(course)}>
+                    View Course
+                  </Button>
+                </Box>
+              </MotionBox>
+            ))}
+          </SimpleGrid>
+        )}
+      </Box>
+
       <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-        <DrawerOverlay backdropFilter="blur(4px)" />
-        <DrawerContent borderTopRadius="3xl">
+        <DrawerOverlay backdropFilter="blur(6px)" />
+        <DrawerContent borderTopRadius="3xl" bg={drawerBg}>
           <DrawerCloseButton mt={2} />
-          <DrawerHeader borderBottomWidth="1px">Filters</DrawerHeader>
-          <DrawerBody py={8}>
-            <FilterContent />
+          <DrawerHeader borderBottomWidth="1px" borderColor={borderColor}>
+            Filters and Sorting
+          </DrawerHeader>
+          <DrawerBody py={6}>{FilterPanel}</DrawerBody>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer isOpen={Boolean(selectedCourse)} placement="right" onClose={() => setSelectedCourse(null)} size="md">
+        <DrawerOverlay backdropFilter="blur(6px)" />
+        <DrawerContent bg={drawerBg}>
+          <DrawerCloseButton mt={2} />
+          <DrawerHeader borderBottomWidth="1px" borderColor={borderColor}>
+            Course Overview
+          </DrawerHeader>
+          <DrawerBody py={6}>
+            {selectedCourse ? (
+              <Stack spacing={5}>
+                {selectedCourse.thumbnailUrl ? (
+                  <Image src={selectedCourse.thumbnailUrl} alt={selectedCourse.title} borderRadius="2xl" h="220px" objectFit="cover" />
+                ) : null}
+
+                <Box>
+                  <HStack spacing={2} flexWrap="wrap" mb={3}>
+                    <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
+                      Public
+                    </Badge>
+                    <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
+                      {selectedCourse.courseType === "scorm" ? "SCORM" : "Standard"}
+                    </Badge>
+                    <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
+                      {selectedCourse.taxonomy?.level || "Beginner"}
+                    </Badge>
+                  </HStack>
+                  <Heading size="lg">{selectedCourse.title}</Heading>
+                  <Text mt={3} color={mutedText} lineHeight="1.8">
+                    {selectedCourse.description?.text || "Course description will appear here once content is available."}
+                  </Text>
+                </Box>
+
+                <SimpleGrid columns={2} spacing={4}>
+                  <Box p={4} borderRadius="2xl" bg={useColorModeValue("blue.50", "blue.900")} borderWidth="1px" borderColor={borderColor}>
+                    <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Price</Text>
+                    <Text mt={2} fontWeight="800" fontSize="lg">{formatCurrency(selectedCourse.commerce?.amountInRupees)}</Text>
+                  </Box>
+                  <Box p={4} borderRadius="2xl" bg={useColorModeValue("purple.50", "purple.900")} borderWidth="1px" borderColor={borderColor}>
+                    <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Modules</Text>
+                    <Text mt={2} fontWeight="800" fontSize="lg">{selectedCourse.curriculum?.totalModules || 0}</Text>
+                  </Box>
+                  <Box p={4} borderRadius="2xl" bg={useColorModeValue("green.50", "green.900")} borderWidth="1px" borderColor={borderColor}>
+                    <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Pass Marks</Text>
+                    <Text mt={2} fontWeight="800" fontSize="lg">
+                      {selectedCourse.assessment?.passingMarks && selectedCourse.assessment?.totalMarks
+                        ? `${selectedCourse.assessment.passingMarks}/${selectedCourse.assessment.totalMarks}`
+                        : "Not set"}
+                    </Text>
+                  </Box>
+                  <Box p={4} borderRadius="2xl" bg={useColorModeValue("orange.50", "orange.900")} borderWidth="1px" borderColor={borderColor}>
+                    <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Rating</Text>
+                    <Text mt={2} fontWeight="800" fontSize="lg">
+                      {selectedCourse.metrics?.averageRating ? selectedCourse.metrics.averageRating.toFixed(1) : "New"}
+                    </Text>
+                  </Box>
+                </SimpleGrid>
+
+                <Box>
+                  <Text fontSize="sm" fontWeight="700" textTransform="uppercase" letterSpacing="0.08em" color={softText} mb={2}>
+                    Languages
+                  </Text>
+                  <HStack spacing={2} flexWrap="wrap">
+                    {(selectedCourse.taxonomy?.languages || []).map((language: string) => (
+                      <Badge key={`${selectedCourse._id}-${language}`} borderRadius="full" px={3} py={1}>
+                        {language}
+                      </Badge>
+                    ))}
+                  </HStack>
+                </Box>
+
+                <Button colorScheme="blue" borderRadius="xl" h="48px">
+                  Enroll / Purchase Flow
+                </Button>
+                <Text fontSize="sm" color={softText}>
+                  Public visibility is enabled for this course. Hook this CTA into your checkout or self-enrollment flow when that backend is ready.
+                </Text>
+              </Stack>
+            ) : null}
           </DrawerBody>
         </DrawerContent>
       </Drawer>
@@ -582,6 +663,3 @@ const CoursesPage = observer(function CoursesPage() {
 });
 
 export default CoursesPage;
-
-// Small helper for detail view
-const Spacer = () => <Box flex="1" />;

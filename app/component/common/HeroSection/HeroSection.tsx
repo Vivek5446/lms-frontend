@@ -1,450 +1,393 @@
 'use client';
 
+import stores from "@/app/store/stores";
+import { observer } from "mobx-react-lite";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Badge,
   Box,
   Button,
   Circle,
-  Container,
   Flex,
+  Grid,
   Heading,
   HStack,
   Icon,
   Image,
+  Input,
   SimpleGrid,
+  Spinner,
   Stack,
   Text,
   useColorModeValue,
-  VStack
-} from '@chakra-ui/react';
-import { motion } from 'framer-motion';
-import NextLink from 'next/link';
+  VStack,
+} from "@chakra-ui/react";
+import { motion } from "framer-motion";
 import {
   FaArrowRight,
   FaBookOpen,
   FaCheckCircle,
-  FaClock,
-  FaPlayCircle,
-  FaRocket,
+  FaGlobe,
+  FaLock,
+  FaSearch,
   FaStar,
-  FaUserGraduate
-} from 'react-icons/fa';
+  FaUserGraduate,
+} from "react-icons/fa";
 
 const MotionBox = motion(Box);
 
-const FEATURED_COURSES = [
-  { 
-    id: 1, 
-    title: "MSME Lending & Credit Appraisal", 
-    category: "Banking", 
-    rating: 4.9, 
-    duration: "12h", 
-    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600" 
-  },
-  { 
-    id: 2, 
-    title: "Affordable Housing Finance", 
-    category: "NBFC", 
-    rating: 4.8, 
-    duration: "10h", 
-    image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600" 
-  },
-  { 
-    id: 3, 
-    title: "Operational Risk Management", 
-    category: "Risk", 
-    rating: 4.7, 
-    duration: "8h", 
-    image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600" 
-  },
-  { 
-    id: 4, 
-    title: "Digital Banking 2.0", 
-    category: "Technology", 
-    rating: 4.9, 
-    duration: "6h", 
-    image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600" 
-  },
-];
+function formatCurrency(value?: number | null) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return "Free";
+  }
 
-export default function LMSLandingPage() {
-  // ✅ Dark mode variables from reference
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(numericValue);
+}
+
+export default observer(function LMSLandingPage() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
+  const isLearner = role === "user" || role === "manager" || /^l\d+-manager$/i.test(role);
+
+  useEffect(() => {
+    stores.courseStore.fetchPublicCourses().catch(() => undefined);
+    if (isLearner) {
+      stores.courseStore.fetchMyCourses().catch(() => undefined);
+    }
+  }, [isLearner]);
+
+  const publicCourses = stores.courseStore.publicCourses || [];
+  const assignedCourses = stores.courseStore.myCourses || [];
+  const featuredPublicCourses = useMemo(() => publicCourses.slice(0, 4), [publicCourses]);
+  const featuredAssignedCourses = useMemo(() => assignedCourses.slice(0, 2), [assignedCourses]);
+
   const bgMain = useColorModeValue('white', 'gray.900');
-  const heroBg = useColorModeValue('#F8FAFC', 'gray.900');
+  const heroBg = useColorModeValue('linear-gradient(135deg, #F8FAFC 0%, #E0F2FE 45%, #DBEAFE 100%)', 'linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)');
   const cardBg = useColorModeValue('white', 'gray.800');
   const mutedBg = useColorModeValue('gray.50', 'gray.900');
   const borderColor = useColorModeValue('gray.100', 'gray.700');
   const textPrimary = useColorModeValue('gray.800', 'whiteAlpha.900');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
 
+  const handleExplore = () => {
+    const query = searchQuery.trim();
+    router.push(query ? `/course?search=${encodeURIComponent(query)}` : "/course");
+  };
+
   return (
     <Box minH="100vh" bg={bgMain}>
-      
-      {/* --- HERO SECTION --- */}
-      <Box 
-        as="section" 
-        position="relative" 
+      <Box
+        as="section"
+        position="relative"
         overflow="hidden"
-        pt={{ base: '40px', md: '80px' }}
-        pb={{ base: '60px', md: '100px' }}
-        bg={heroBg}
+        pt={{ base: '36px', md: '72px' }}
+        pb={{ base: '52px', md: '84px' }}
+        bgImage={heroBg}
       >
         <Circle
-          size="600px"
+          size="560px"
           bg="blue.500"
-          opacity="0.05"
+          opacity="0.06"
           position="absolute"
-          top="-200px"
-          right="-100px"
+          top="-180px"
+          right="-80px"
           filter="blur(100px)"
           zIndex={0}
         />
 
-        <Container maxW="1200px" position="relative" zIndex={1}>
-          <Flex
-            direction={{ base: 'column', lg: 'row' }}
-            align="center"
-            gap={{ base: 12, lg: 20 }}
-          >
-            <Box flex="1">
-              <MotionBox
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                <Badge 
-                  colorScheme="blue" 
-                  variant="subtle" 
-                  px={3} 
-                  py={1} 
-                  mb={6} 
-                  borderRadius="full"
-                  textTransform="none"
-                >
-                  <HStack spacing={2}>
-                    <Icon as={FaCheckCircle} />
-                    <Text fontWeight="medium">Pioneering State-of-the-Art Training</Text>
-                  </HStack>
-                </Badge>
-
-                <Heading
-                  as="h1"
-                  fontSize={{ base: '4xl', md: '6xl' }}
-                  fontWeight="extrabold"
-                  lineHeight="1.1"
-                  mb={6}
-                  letterSpacing="tight"
-                  color={textPrimary}
-                >
-                  Elevate Your <Text as="span" color="blue.600">Career</Text> with C.R.A.F.T. Academia
-                </Heading>
-
-                <Text fontSize="xl" color={textSecondary} mb={10}>
-                  Master Banking, NBFC, and MSME Lending through our unique 
-                  Adaptive Learning and Simulation-based video courses.
-                </Text>
-
-                <Stack direction={{ base: 'column', sm: 'row' }} spacing={5}>
-                  <NextLink href="/courses" passHref legacyBehavior>
-                    <Button
-                      as="a" 
-                      size="lg"
-                      colorScheme="blue"
-                      px={8}
-                      rounded="lg"
-                      fontWeight="bold"
-                      _hover={{ transform: 'scale(1.02)', textDecoration: 'none' }}
-                      leftIcon={<Icon as={FaRocket} />}
-                    >
-                      Explore Courses
-                    </Button>
-                  </NextLink>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    colorScheme="gray"
-                    color={textPrimary}
-                    px={8}
-                    rounded="lg"
-                    leftIcon={<Icon as={FaPlayCircle} />}
-                  >
-                    Watch Demo
-                  </Button>
-                </Stack>
-
-                <SimpleGrid columns={3} spacing={4} mt={12} pt={8} borderTopWidth="1px" borderColor={borderColor}>
-                  <Box>
-                    <Text fontSize="2xl" fontWeight="bold" color={textPrimary}>150+</Text>
-                    <Text fontSize="sm" color={textSecondary}>Video Modules</Text>
-                  </Box>
-                  <Box>
-                    <Text fontSize="2xl" fontWeight="bold" color={textPrimary}>50k+</Text>
-                    <Text fontSize="sm" color={textSecondary}>Professionals</Text>
-                  </Box>
-                  <Box>
-                    <Text fontSize="2xl" fontWeight="bold" color={textPrimary}>4.9</Text>
-                    <HStack spacing={1}>
-                      <Icon as={FaStar} color="orange.400" />
-                      <Text fontSize="sm" color={textSecondary}>Rating</Text>
-                    </HStack>
-                  </Box>
-                </SimpleGrid>
-              </MotionBox>
-            </Box>
-
-            <Box flex="1" position="relative">
-              <MotionBox
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                <Box
-                  position="relative"
-                  borderRadius="3xl"
-                  overflow="hidden"
-                  boxShadow="2xl"
-                  borderWidth="8px"
-                  borderColor={cardBg}
-                >
-                  <Image
-                    src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800"
-                    alt="Corporate Training"
-                    w="full"
-                    h={{ base: '300px', md: '500px' }}
-                    objectFit="cover"
-                  />
-                </Box>
-                
-                <MotionBox
-                  position="absolute"
-                  top="10%"
-                  left="-5%"
-                  bg={cardBg}
-                  p={4}
-                  borderRadius="xl"
-                  boxShadow="xl"
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  display={{ base: 'none', md: 'block' }}
-                >
-                  <HStack spacing={3}>
-                    <Icon as={FaUserGraduate} color="blue.500" boxSize={6} />
-                    <Box>
-                      <Text fontWeight="bold" fontSize="sm" color={textPrimary}>Corporate Expert</Text>
-                      <Text fontSize="xs" color={textSecondary}>Live Mentorship</Text>
-                    </Box>
-                  </HStack>
-                </MotionBox>
-              </MotionBox>
-            </Box>
-          </Flex>
-        </Container>
-      </Box>
-
-      {/* --- METHODOLOGY SECTION --- */}
-      <Box as="section" py={20} bg={bgMain} borderTopWidth="1px" borderColor={borderColor}>
-        <Container maxW="1200px">
-          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={16}>
-            <MotionBox
-              initial={{ opacity: 0, x: -40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <Box position="relative">
-                <Box bg="blue.600" borderRadius="2xl" p={10} color="white" boxShadow="2xl" position="relative" zIndex={2}>
-                  <Heading size="lg" mb={6}>The C.R.A.F.T. Edge</Heading>
-                  <Stack spacing={8}>
-                    <HStack spacing={5} align="start">
-                      <Circle size="48px" bg="whiteAlpha.300">
-                        <Icon as={FaBookOpen} />
-                      </Circle>
-                      <Box>
-                        <Text fontSize="lg" fontWeight="bold">Adaptive Learning</Text>
-                        <Text fontSize="md" opacity={0.9}>Content adjusts to your expertise.</Text>
-                      </Box>
-                    </HStack>
-                    <HStack spacing={5} align="start">
-                      <Circle size="48px" bg="whiteAlpha.300">
-                        <Icon as={FaPlayCircle} />
-                      </Circle>
-                      <Box>
-                        <Text fontSize="lg" fontWeight="bold">Simulated Scenarios</Text>
-                        <Text fontSize="md" opacity={0.9}>Real banking cases in digital environments.</Text>
-                      </Box>
-                    </HStack>
-                  </Stack>
-                </Box>
-              </Box>
-            </MotionBox>
-
+        <Box maxW="7xl" mx="auto" px={{ base: 5, md: 8 }} position="relative" zIndex={1}>
+          <Grid templateColumns={{ base: "1fr", lg: "1.15fr 0.95fr" }} gap={{ base: 10, lg: 14 }} alignItems="center">
             <Box>
-              <Badge colorScheme="blue" px={3} py={1} mb={4} borderRadius="md" variant="solid">Since 2018</Badge>
-              <Heading as="h2" size="xl" mb={6} color={textPrimary}>Pioneering Functional Training</Heading>
-              <Text fontSize="lg" color={textSecondary} mb={6}>Custom L&D projects for the Financial Sector.</Text>
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                <Box p={5} bg={mutedBg} borderRadius="xl" borderLeft="4px solid" borderColor="blue.500">
-                  <Text fontWeight="bold" color="blue.600">60+ Institutions</Text>
-                </Box>
-                <Box p={5} bg={mutedBg} borderRadius="xl" borderLeft="4px solid" borderColor="purple.500">
-                  <Text fontWeight="bold" color="purple.600">Expert Content</Text>
-                </Box>
+              <Badge
+                colorScheme="blue"
+                variant="subtle"
+                px={4}
+                py={1.5}
+                mb={5}
+                borderRadius="full"
+                textTransform="none"
+              >
+                <HStack spacing={2}>
+                  <Icon as={FaCheckCircle} />
+                  <Text fontWeight="medium">Public and private learning, finally in one experience</Text>
+                </HStack>
+              </Badge>
+
+              <Heading
+                as="h1"
+                fontSize={{ base: '3xl', md: '5xl', xl: '6xl' }}
+                fontWeight="extrabold"
+                lineHeight="1.02"
+                color={textPrimary}
+                letterSpacing="tight"
+              >
+                Explore public courses and keep
+                <Text as="span" color="blue.600"> assigned training </Text>
+                in view
+              </Heading>
+
+              <Text fontSize={{ base: "md", md: "xl" }} color={textSecondary} mt={5} maxW="2xl" lineHeight="1.8">
+                Search the open catalog, compare pricing and course formats, and jump back into your private assignments without leaving the homepage.
+              </Text>
+
+              <Flex
+                mt={8}
+                p={2}
+                bg={cardBg}
+                borderRadius="2xl"
+                borderWidth="1px"
+                borderColor={borderColor}
+                boxShadow="0 22px 50px rgba(15, 23, 42, 0.08)"
+                gap={2}
+                direction={{ base: "column", sm: "row" }}
+              >
+                <Flex align="center" gap={3} px={4} flex="1">
+                  <Icon as={FaSearch} color="blue.500" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search public courses by name, category, or language"
+                    border="none"
+                    _focusVisible={{ boxShadow: "none" }}
+                    px={0}
+                  />
+                </Flex>
+                <Button
+                  colorScheme="blue"
+                  borderRadius="xl"
+                  h="50px"
+                  px={8}
+                  rightIcon={<FaArrowRight />}
+                  onClick={handleExplore}
+                >
+                  Explore Courses
+                </Button>
+              </Flex>
+
+              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4} mt={8}>
+                {[
+                  { label: "Public Courses", value: publicCourses.length || "0" },
+                  { label: "Assigned to You", value: isLearner ? assignedCourses.length || "0" : "Live" },
+                  {
+                    label: "Avg Rating",
+                    value: publicCourses.some((course) => course.metrics?.averageRating)
+                      ? (
+                          publicCourses.reduce((sum, course) => sum + Number(course.metrics?.averageRating || 0), 0) /
+                          publicCourses.filter((course) => Number(course.metrics?.averageRating || 0) > 0).length
+                        ).toFixed(1)
+                      : "New",
+                  },
+                  {
+                    label: "Free Courses",
+                    value: publicCourses.filter((course) => course.commerce?.pricingModel === "free").length || "0",
+                  },
+                ].map((item) => (
+                  <Box
+                    key={item.label}
+                    p={4}
+                    borderRadius="2xl"
+                    bg="rgba(255,255,255,0.78)"
+                    border="1px solid rgba(255,255,255,0.42)"
+                    backdropFilter="blur(12px)"
+                  >
+                    <Text fontSize="2xl" fontWeight="800" color={textPrimary}>{item.value}</Text>
+                    <Text fontSize="sm" color={textSecondary}>{item.label}</Text>
+                  </Box>
+                ))}
               </SimpleGrid>
             </Box>
-          </SimpleGrid>
-        </Container>
+
+            <Stack spacing={5}>
+              <MotionBox
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55 }}
+                bg={cardBg}
+                borderRadius="3xl"
+                p={5}
+                borderWidth="1px"
+                borderColor={borderColor}
+                boxShadow="0 28px 70px rgba(15, 23, 42, 0.12)"
+              >
+                <HStack justify="space-between" mb={4}>
+                  <VStack align="start" spacing={1}>
+                    <Text fontSize="xs" color={textSecondary} textTransform="uppercase" letterSpacing="0.08em" fontWeight="700">
+                      Featured Public Courses
+                    </Text>
+                    <Heading size="md" color={textPrimary}>Open catalog highlights</Heading>
+                  </VStack>
+                  <Circle size="42px" bg="blue.50" color="blue.500">
+                    <Icon as={FaGlobe} />
+                  </Circle>
+                </HStack>
+
+                <Stack spacing={4}>
+                  {featuredPublicCourses.map((course) => (
+                    <Box
+                      key={course._id}
+                      p={4}
+                      borderRadius="2xl"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                      bg={mutedBg}
+                    >
+                      <Flex justify="space-between" gap={3}>
+                        <Box>
+                          <HStack spacing={2} flexWrap="wrap" mb={2}>
+                            <Badge colorScheme="green" borderRadius="full" px={3} py={1}>Public</Badge>
+                            <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
+                              {course.courseType === "scorm" ? "SCORM" : "Standard"}
+                            </Badge>
+                          </HStack>
+                          <Text fontWeight="700" color={textPrimary}>{course.title}</Text>
+                          <Text fontSize="sm" color={textSecondary} mt={1}>
+                            {(course.taxonomy?.categories || []).slice(0, 2).join(" • ") || "General"}
+                          </Text>
+                        </Box>
+                        <VStack align="end" spacing={1}>
+                          <Text fontWeight="800" color="blue.600">{formatCurrency(course.commerce?.amountInRupees)}</Text>
+                          <HStack spacing={1}>
+                            <Icon as={FaStar} color="orange.400" />
+                            <Text fontSize="sm" color={textSecondary}>
+                              {course.metrics?.averageRating ? course.metrics.averageRating.toFixed(1) : "New"}
+                            </Text>
+                          </HStack>
+                        </VStack>
+                      </Flex>
+                    </Box>
+                  ))}
+                </Stack>
+              </MotionBox>
+
+              {isLearner && featuredAssignedCourses.length > 0 ? (
+                <MotionBox
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.55, delay: 0.12 }}
+                  bg="linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)"
+                  borderRadius="3xl"
+                  p={5}
+                  color="white"
+                  boxShadow="0 28px 70px rgba(15, 23, 42, 0.22)"
+                >
+                  <HStack justify="space-between" mb={4}>
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize="xs" color="whiteAlpha.700" textTransform="uppercase" letterSpacing="0.08em" fontWeight="700">
+                        Assigned Private Courses
+                      </Text>
+                      <Heading size="md">Resume your learning</Heading>
+                    </VStack>
+                    <Circle size="42px" bg="whiteAlpha.200">
+                      <Icon as={FaLock} />
+                    </Circle>
+                  </HStack>
+
+                  <Stack spacing={3}>
+                    {featuredAssignedCourses.map((course) => (
+                      <Box
+                        key={course.courseId}
+                        p={4}
+                        borderRadius="2xl"
+                        bg="whiteAlpha.100"
+                        border="1px solid rgba(255,255,255,0.12)"
+                      >
+                        <Flex justify="space-between" gap={3} align="start">
+                          <Box>
+                            <Text fontWeight="700">{course.title}</Text>
+                            <Text fontSize="sm" color="whiteAlpha.700" mt={1}>
+                              {Math.round(Number(course.progress || 0))}% complete
+                            </Text>
+                          </Box>
+                          <Button
+                            size="sm"
+                            colorScheme="whiteAlpha"
+                            borderRadius="full"
+                            onClick={() => router.push(`/course?courseId=${course.courseId}`)}
+                          >
+                            Continue
+                          </Button>
+                        </Flex>
+                      </Box>
+                    ))}
+                  </Stack>
+                </MotionBox>
+              ) : null}
+            </Stack>
+          </Grid>
+        </Box>
       </Box>
 
-      {/* --- FEATURED COURSES --- */}
       <Box as="section" py={20} bg={mutedBg}>
-        <Container maxW="1200px">
-          <Flex justify="space-between" align="flex-end" mb={10}>
+        <Box maxW="7xl" mx="auto" px={{ base: 5, md: 8 }}>
+          <Flex justify="space-between" align="flex-end" mb={10} flexWrap="wrap" gap={4}>
             <VStack align="start" spacing={2}>
-              <Badge colorScheme="blue" variant="subtle">Top Enrollment</Badge>
-              <Heading size="xl" color={textPrimary}>Explore Our Catalog</Heading>
+              <Badge colorScheme="blue" variant="subtle">Explore Public Courses</Badge>
+              <Heading size="xl" color={textPrimary}>Discover what learners can join right now</Heading>
+              <Text color={textSecondary}>
+                Public courses stay open to everyone, while private assignments remain visible for your signed-in learners.
+              </Text>
             </VStack>
-            <NextLink href="/course" passHref legacyBehavior>
-              <Button as="a" variant="ghost" colorScheme="blue" rightIcon={<FaArrowRight />}>View All</Button>
-            </NextLink>
+            <Button colorScheme="blue" variant="ghost" rightIcon={<FaArrowRight />} onClick={() => router.push("/course")}>
+              Browse Full Catalog
+            </Button>
           </Flex>
 
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
-            {FEATURED_COURSES.map((course) => (
-              <MotionBox 
-                key={course.id} 
-                whileHover={{ y: -10 }} 
-                bg={cardBg} 
-                borderRadius="2xl" 
-                overflow="hidden" 
-                shadow="sm" 
-                borderWidth="1px" 
-                borderColor={borderColor}
-              >
-                <Box position="relative">
-                  <Image src={course.image} h="160px" w="full" objectFit="cover" />
-                  <Badge position="absolute" top={3} left={3} colorScheme="blue" variant="solid">{course.category}</Badge>
-                </Box>
-                <Box p={5}>
-                  <Heading size="sm" mb={4} minH="40px" color={textPrimary}>{course.title}</Heading>
-                  <Button w="full" size="sm" colorScheme="blue" variant="outline">Course Details</Button>
-                </Box>
-              </MotionBox>
-            ))}
-          </SimpleGrid>
-        </Container>
-      </Box>
+          {stores.courseStore.isPublicCoursesLoading ? (
+            <HStack justify="center" py={14}>
+              <Spinner color="blue.500" />
+              <Text color={textSecondary}>Loading course highlights...</Text>
+            </HStack>
+          ) : (
+            <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={6}>
+              {featuredPublicCourses.map((course) => (
+                <MotionBox
+                  key={course._id}
+                  whileHover={{ y: -8 }}
+                  bg={cardBg}
+                  borderRadius="3xl"
+                  overflow="hidden"
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                  boxShadow="0 18px 45px rgba(15, 23, 42, 0.07)"
+                >
+                  {course.thumbnailUrl ? (
+                    <Image src={course.thumbnailUrl} alt={course.title} h="180px" w="full" objectFit="cover" />
+                  ) : (
+                    <Box h="180px" bgGradient="linear(to-br, blue.500, cyan.400)" />
+                  )}
+                  <Box p={5}>
+                    <HStack spacing={2} flexWrap="wrap" mb={3}>
+                      <Badge colorScheme="green" borderRadius="full" px={3} py={1}>Public</Badge>
+                      <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
+                        {course.taxonomy?.level || "Beginner"}
+                      </Badge>
+                    </HStack>
+                    <Heading size="sm" minH="42px" color={textPrimary}>{course.title}</Heading>
+                    <Text mt={2} fontSize="sm" color={textSecondary} noOfLines={2}>
+                      {course.description?.text || "Open this course to inspect pricing, curriculum, and enrollment options."}
+                    </Text>
 
-      {/* --- LEARNING EXPERIENCE --- */}
-      <Box as="section" py={20} bg={bgMain}>
-        <Container maxW="1200px">
-          <VStack spacing={4} mb={16} textAlign="center">
-            <Badge colorScheme="purple" variant="subtle" px={4} py={1} borderRadius="full">
-              Seamless Experience
-            </Badge>
-            <Heading size="2xl" color={textPrimary}>Learning That Fits Your Lifestyle</Heading>
-            <Text color={textSecondary} maxW="2xl" fontSize="lg">
-              Our intuitive dashboard keeps you motivated with real-time analytics, 
-              interactive quizzes, and seamless progress syncing across all your devices.
-            </Text>
-          </VStack>
-
-          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={12} alignContent="center">
-            <VStack align="start" spacing={6}>
-              <HStack spacing={4}>
-                <Circle size="50px" bg="blue.50" color="blue.600">
-                  <Icon as={FaClock} boxSize={5} />
-                </Circle>
-                <Box>
-                  <Text fontWeight="bold" fontSize="xl" color={textPrimary}>Bite-Sized Learning</Text>
-                  <Text color={textSecondary}>10-15 minute modules designed for the busy professional.</Text>
-                </Box>
-              </HStack>
-
-              <HStack spacing={4}>
-                <Circle size="50px" bg="purple.50" color="purple.600">
-                  <Icon as={FaStar} boxSize={5} />
-                </Circle>
-                <Box>
-                  <Text fontWeight="bold" fontSize="xl" color={textPrimary}>Gamified Rewards</Text>
-                  <Text color={textSecondary}>Earn badges and certificates as you master new skills.</Text>
-                </Box>
-              </HStack>
-
-              <HStack spacing={4}>
-                <Circle size="50px" bg="green.50" color="green.600">
-                  <Icon as={FaCheckCircle} boxSize={5} />
-                </Circle>
-                <Box>
-                  <Text fontWeight="bold" fontSize="xl" color={textPrimary}>Offline Access</Text>
-                  <Text color={textSecondary}>Download resources and watch videos anywhere.</Text>
-                </Box>
-              </HStack>
-              
-              <Button 
-                mt={4} 
-                variant="link" 
-                colorScheme="blue" 
-                rightIcon={<FaArrowRight />}
-                fontSize="lg"
-              >
-                Explore all LMS features
-              </Button>
-            </VStack>
-
-            <MotionBox
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.5 }}
-              position="relative"
-            >
-              <Box
-                borderRadius="2xl"
-                overflow="hidden"
-                boxShadow="2xl"
-                borderWidth="1px"
-                borderColor={borderColor}
-                bg="gray.800"
-                p={2}
-              >
-                <Box bg="gray.700" p={2} borderTopRadius="xl" display="flex" gap={1}>
-                  <Circle size="8px" bg="red.400" />
-                  <Circle size="8px" bg="yellow.400" />
-                  <Circle size="8px" bg="green.400" />
-                </Box>
-                <Image 
-                  src="https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=800" 
-                  alt="LMS Dashboard Preview"
-                  filter={useColorModeValue('none', 'grayscale(20%)')}
-                />
-              </Box>
-              
-              <MotionBox
-                position="absolute"
-                bottom="-20px"
-                right="-20px"
-                bg={cardBg}
-                p={4}
-                borderRadius="xl"
-                shadow="2xl"
-                borderWidth="1px"
-                borderColor={borderColor}
-                initial={{ y: 20 }}
-                whileInView={{ y: 0 }}
-                display={{ base: 'none', md: 'block' }}
-              >
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="xs" color={textSecondary} fontWeight="bold">COURSE COMPLETION</Text>
-                  <Text fontSize="2xl" fontWeight="extrabold" color="blue.600">84%</Text>
-                  <Box w="100px" h="6px" bg={mutedBg} borderRadius="full" mt={2}>
-                    <Box w="84%" h="full" bg="blue.500" borderRadius="full" />
+                    <Flex justify="space-between" align="center" mt={4}>
+                      <Text fontWeight="800" color="blue.600">{formatCurrency(course.commerce?.amountInRupees)}</Text>
+                      <HStack spacing={1}>
+                        <Icon as={FaUserGraduate} color="blue.500" />
+                        <Text fontSize="sm" color={textSecondary}>{course.metrics?.popularityScore || 0}</Text>
+                      </HStack>
+                    </Flex>
                   </Box>
-                </VStack>
-              </MotionBox>
-            </MotionBox>
-          </SimpleGrid>
-        </Container>
+                </MotionBox>
+              ))}
+            </SimpleGrid>
+          )}
+        </Box>
       </Box>
     </Box>
   );
-}
+});
