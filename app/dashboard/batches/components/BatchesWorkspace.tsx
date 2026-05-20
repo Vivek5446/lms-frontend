@@ -70,6 +70,7 @@ import BatchCard from "./BatchCard";
 import BatchCreationModal from "./BatchCreationModal";
 import BatchDetailsDrawer from "./BatchDetailsDrawer";
 import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
+// import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
 
 type BatchesWorkspaceProps = {
   courseBasePath?: string;
