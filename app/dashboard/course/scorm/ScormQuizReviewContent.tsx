@@ -13,6 +13,7 @@ import {
   FormControl,
   Grid,
   HStack,
+  Image,
   Input,
   SimpleGrid,
   Skeleton,
@@ -33,6 +34,7 @@ import {
   summarizeAnswerSections,
 } from "./quizReviewTypes";
 import { toJS } from "mobx";
+import { buildCourseAssetUrl } from "./sectionTracking";
 
 type ScormQuizReviewContentProps = {
   sections: ScormAnswerSectionRecord[];
@@ -184,6 +186,34 @@ function AnswerBlock({ label, value }: { label: string; value: string }) {
       </Text>
       <Text fontSize="sm">{value}</Text>
     </Box>
+  );
+}
+
+function QuestionPromptAssets({ assetPaths = [] }: { assetPaths?: string[] }) {
+  const border = useColorModeValue("gray.200", "gray.700");
+  const normalizedPaths = Array.from(
+    new Set(assetPaths.map((assetPath) => String(assetPath || "").trim()).filter(Boolean))
+  );
+
+  if (!normalizedPaths.length) {
+    return null;
+  }
+
+  return (
+    <SimpleGrid columns={{ base: 1, md: Math.min(normalizedPaths.length, 2) }} spacing={3}>
+      {normalizedPaths.map((assetPath) => (
+        <Box key={assetPath} borderWidth="1px" borderColor={border} borderRadius="xl" overflow="hidden">
+          <Image
+            src={buildCourseAssetUrl(assetPath)}
+            alt="SCORM question prompt"
+            width="100%"
+            maxH="360px"
+            objectFit="contain"
+            bg="gray.50"
+          />
+        </Box>
+      ))}
+    </SimpleGrid>
   );
 }
 
@@ -514,6 +544,8 @@ export default function ScormQuizReviewContent({
 
                                 <AccordionPanel px={4} pb={4} pt={0}>
                                   <Stack spacing={3}>
+                                    <QuestionPromptAssets assetPaths={interaction.questionAssetPaths} />
+
                                     <Grid
                                       templateColumns={{
                                         base: "1fr",

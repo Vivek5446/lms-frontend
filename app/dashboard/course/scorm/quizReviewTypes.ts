@@ -18,6 +18,7 @@ export interface ScormInteractionReview {
   type?: string;
   question?: string;
   questionTitle?: string;
+  questionAssetPaths?: string[];
   learnerResponse?: string;
   correctResponses?: string[];
   result?: string;
