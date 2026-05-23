@@ -1,28 +1,26 @@
+import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import {
-  SimpleGrid,
-  Button,
   Box,
+  Button,
+  Divider,
+  Flex,
   Grid,
   GridItem,
-  Text,
-  Flex,
-  VStack,
   IconButton,
-  Divider,
+  SimpleGrid,
+  Text,
   useColorModeValue,
+  VStack,
 } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
 import { FieldArray, Formik, Form as FormikForm } from "formik";
+import { useEffect, useState } from "react";
+import { FiPlus, FiTrash2 } from "react-icons/fi";
 import * as Yup from "yup";
+import ShowFileUploadFile from "../../../component/common/ShowFileUploadFile/ShowFileUploadFile";
 import CustomInput from "../../../component/config/component/customInput/CustomInput";
 import { removeDataByIndex } from "../../../config/utils/utils";
-import ShowFileUploadFile from "../../../component/common/ShowFileUploadFile/ShowFileUploadFile";
-import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { titles } from "./utils/constant";
 import { generateIntialValues } from "./utils/function";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
-import CustomDrawer from "../../../component/common/Drawer/CustomDrawer";
-import MasterDataForm from "../../masters/page";
 
 const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit }: any) => {
   const [formData, setFormData] = useState<any>(initialData);
@@ -922,12 +920,6 @@ const Form = ({ initialData, onSubmit, isOpen, onClose, isEdit }: any) => {
             );
           }}
         </Formik>
-        <CustomDrawer open={isDrawerOpen} close={handleCloseDrawer}>
-          <MasterDataForm
-            showSidebar={false}
-            handleCloseDrawer={handleCloseDrawer}
-          />
-        </CustomDrawer>
       </>
     )
   );

@@ -1,17 +1,34 @@
 'use client';
 
+import {
+  Badge,
+  Box,
+  Button, Circle,
+  Container,
+  Divider,
+  Flex, FormControl, FormLabel,
+  Heading,
+  HStack, Icon,
+  Image,
+  Input,
+  SimpleGrid, Stack,
+  Text,
+  Textarea,
+  useColorModeValue,
+  useToast,
+  VStack
+} from '@chakra-ui/react';
+import { motion } from 'framer-motion';
 import React, { useState } from 'react';
 import {
-  Box, Heading, Text, Container, SimpleGrid, Stack, VStack, HStack, Icon,
-  Input, Textarea, Button, Circle, Badge, Flex, FormControl, FormLabel,
-  useToast, Divider, Image, useColorModeValue
-} from '@chakra-ui/react';
-import { 
-  FaEnvelope, FaPhoneAlt, FaMapMarkerAlt, FaPaperPlane, 
-  FaQuestionCircle, FaHeadset, FaGlobe, 
-  FaUser, FaChalkboardTeacher
+  FaChalkboardTeacher,
+  FaGlobe,
+  FaHeadset,
+  FaMapMarkerAlt, FaPaperPlane,
+  FaPhoneAlt,
+  FaQuestionCircle,
+  FaUser
 } from 'react-icons/fa';
-import { motion } from 'framer-motion';
 
 const MotionBox = motion(Box);
 

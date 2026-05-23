@@ -1,16 +1,16 @@
 // store/index.ts
 import { authStore } from "./authStore/authStore";
-import { bookingStore } from "./bookingStore/bookingStore";
 import { batchStore } from "./batchStore/batchStore";
+import { bookingStore } from "./bookingStore/bookingStore";
 import { CompanyStore } from "./companyStore/companyStore";
 import { contactStore } from "./contactStore/contactStore";
+import { courseStore } from "./courseStore/courseStore";
 import { dashboardStore } from "./dashboardStore/dashboardStore";
 import { layoutStore } from './layoutStore/LayoutStore';
 import { managerStore } from "./managerStore/managerStore";
 import { testimonialStore } from "./testimonialStore/testimonialStore";
 import { themeStore } from "./themeStore/themeStore";
 import { userStore } from "./userStore/userStore";
-import { courseStore } from "./courseStore/courseStore";
 const stores = {
   auth : authStore,
   dashboardStore : dashboardStore,
