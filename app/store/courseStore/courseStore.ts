@@ -13,6 +13,10 @@ export interface CourseAssessmentConfig {
   passingMarks: number | null;
 }
 
+export interface CourseAssessmentCriteriaInput {
+  passingMarks: number | null;
+}
+
 export interface CourseAssessmentSummary extends CourseAssessmentConfig {
   earnedMarks: number | null;
   scorePercentage: number | null;
@@ -27,6 +31,7 @@ export interface CourseMetrics {
 
 export interface CourseListItem {
   _id: string;
+  courseCode?: string;
   title: string;
   slug: string;
   thumbnailUrl?: string;
@@ -499,6 +504,7 @@ class CourseStoreClass {
   submissionDetail: string = "";
   error: string | null = null;
   accessError: string | null = null;
+  draftCourseCode: string = "";
 
   constructor() {
     makeAutoObservable(this);
@@ -572,6 +578,7 @@ class CourseStoreClass {
     departmentId?: string;
     departmentName?: string;
     userIds?: string[];
+    passingMarks?: number | null;
     allowFurtherAssignment?: boolean;
     assignToAllUsers?: boolean;
   }) => {
@@ -938,6 +945,7 @@ class CourseStoreClass {
     validTill?: string | null;
     dueDate?: string | null;
     file?: File | null;
+    assessmentCriteriaByCourse?: Record<string, CourseAssessmentCriteriaInput>;
     allowFurtherAssignment?: boolean;
   }) => {
     this.isAssignmentSubmitting = true;
@@ -952,7 +960,12 @@ class CourseStoreClass {
         }
 
         if (hasFile) {
-          body.append(key, Array.isArray(value) ? JSON.stringify(value) : String(value));
+          body.append(
+            key,
+            Array.isArray(value) || (typeof value === "object" && value !== null)
+              ? JSON.stringify(value)
+              : String(value)
+          );
           return;
         }
 
@@ -968,6 +981,7 @@ class CourseStoreClass {
       appendValue("validFrom", payload.validFrom);
       appendValue("validTill", payload.validTill);
       appendValue("dueDate", payload.dueDate);
+      appendValue("assessmentCriteriaByCourse", payload.assessmentCriteriaByCourse);
       appendValue("allowFurtherAssignment", payload.allowFurtherAssignment);
 
       if (hasFile && payload.file) {
@@ -1085,6 +1099,49 @@ class CourseStoreClass {
     }
 
     return uploads;
+  };
+
+  previewAssignmentUsers = async (payload: {
+    file: File;
+    companyId?: string;
+  }) => {
+    this.isAssignmentSubmitting = true;
+    this.accessError = null;
+    try {
+      const formData = new FormData();
+      formData.append("file", payload.file);
+      if (payload.companyId) {
+        formData.append("companyId", payload.companyId);
+      }
+
+      const { data } = await axios.post("/course-assign/preview", formData, multipartRequestConfig);
+      return data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.accessError =
+          err?.response?.data?.message || err?.response?.data?.error || "Failed to preview uploaded users";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isAssignmentSubmitting = false;
+      });
+    }
+  };
+
+  fetchNextCourseCode = async () => {
+    try {
+      const { data } = await axios.get("/course/next-course-code");
+      runInAction(() => {
+        this.draftCourseCode = data?.data?.courseCode || "";
+      });
+      return data?.data?.courseCode || "";
+    } catch (err: any) {
+      runInAction(() => {
+        this.draftCourseCode = "";
+      });
+      return Promise.reject(err?.response?.data || err);
+    }
   };
 
   createCourse = async (

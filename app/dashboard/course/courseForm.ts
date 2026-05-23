@@ -19,6 +19,7 @@ export interface StoredFile {
 }
 
 export interface CourseBasicInfo {
+  courseCode: string;
   courseName: string;
   slug: string;
   descriptionHtml: string;
@@ -29,7 +30,6 @@ export interface CourseBasicInfo {
   level: string;
   visibilityType: "private" | "public";
   totalMarks: string;
-  passingMarks: string;
 }
 
 export interface CourseModuleSectionInput {
@@ -171,6 +171,7 @@ export function createEmptyModule(): CourseModuleInput {
 
 export const initialCourseFormState: CourseFormState = {
   basicInfo: {
+    courseCode: "",
     courseName: "",
     slug: "",
     descriptionHtml: "",
@@ -181,7 +182,6 @@ export const initialCourseFormState: CourseFormState = {
     level: "Beginner",
     visibilityType: "private",
     totalMarks: "",
-    passingMarks: "",
   },
   structure: {
     quizMode: "per-module",
@@ -295,13 +295,13 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
   const accessDurationDays = parseNumericValue(courseForm.pricing.accessDurationDays);
   const completionDays = parseNumericValue(courseForm.progress.completionDays);
   const totalMarks = parseNumericValue(courseForm.basicInfo.totalMarks);
-  const passingMarks = parseNumericValue(courseForm.basicInfo.passingMarks);
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
 
   return {
     action,
     generatedAt: new Date().toISOString(),
     course: {
+      courseCode: courseForm.basicInfo.courseCode,
       title: courseForm.basicInfo.courseName.trim(),
       slug: courseForm.basicInfo.slug,
       description: {
@@ -318,7 +318,6 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
       },
       assessment: {
         totalMarks,
-        passingMarks,
       },
       media: {
         thumbnail: summarizeFile(courseForm.basicInfo.thumbnail),

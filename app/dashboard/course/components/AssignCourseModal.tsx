@@ -191,6 +191,13 @@ const AssignCourseModal = observer(
     const [userSearch, setUserSearch] = useState("");
     const [userResults, setUserResults] = useState<any[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+    const [csvFile, setCsvFile] = useState<File | null>(null);
+    const [csvPreview, setCsvPreview] = useState<{
+      fileName: string;
+      matchedUsers: any[];
+      failedEntries: any[];
+    } | null>(null);
+    const [assessmentCriteriaByCourse, setAssessmentCriteriaByCourse] = useState<Record<string, { passingMarks: string }>>({});
 
     const companies = companyStore.companies.data || [];
     const selectedCompany = companies.find((company: any) => company._id === companyId) || auth.user?.companyDetails || null;
@@ -209,6 +216,16 @@ const AssignCourseModal = observer(
       const courseMap = new Map(availableCourses.map((course) => [course._id, course]));
       return selectedCourseIds.map((courseId) => courseMap.get(courseId)).filter(Boolean);
     }, [availableCourses, selectedCourseIds]);
+
+    const combinedSelectedUsers = useMemo(
+      () =>
+        Array.from(
+          new Map(
+            [...selectedUsers, ...(csvPreview?.matchedUsers || [])].map((user: any) => [user._id, user])
+          ).values()
+        ),
+      [csvPreview?.matchedUsers, selectedUsers]
+    );
 
     const companyOptions = useMemo(() => companies.map((c: any) => ({ value: c._id, label: c.company_name })), [companies]);
     const departmentOptions = useMemo(() => departments.map((d: string) => ({ value: d, label: d })), [departments]);
@@ -239,6 +256,9 @@ const AssignCourseModal = observer(
       setUserSearch("");
       setUserResults([]);
       setSelectedUsers([]);
+      setCsvFile(null);
+      setCsvPreview(null);
+      setAssessmentCriteriaByCourse({});
     }, [companyStore, defaultCourseId, fixedCompanyId, isOpen, role]);
 
     useEffect(() => {
@@ -266,7 +286,32 @@ const AssignCourseModal = observer(
       setUserSearch("");
       setUserResults([]);
       setSelectedUsers([]);
+      setCsvFile(null);
+      setCsvPreview(null);
     }, [assignmentTarget, companyId]);
+
+    useEffect(() => {
+      setAssessmentCriteriaByCourse((current) => {
+        const next = { ...current };
+        let changed = false;
+
+        selectedCourses.forEach((course: any) => {
+          if (!next[course._id]) {
+            next[course._id] = { passingMarks: "" };
+            changed = true;
+          }
+        });
+
+        Object.keys(next).forEach((courseId) => {
+          if (!selectedCourseIds.includes(courseId)) {
+            delete next[courseId];
+            changed = true;
+          }
+        });
+
+        return changed ? next : current;
+      });
+    }, [selectedCourseIds, selectedCourses]);
 
     const canContinue = useMemo(() => {
       if (step === 0) return selectedCourseIds.length > 0;
@@ -275,10 +320,27 @@ const AssignCourseModal = observer(
         if (assignmentTarget === "department") return Boolean(departmentName);
         return true;
       }
-      if (step === 2) return noExpiry || Boolean(validTill);
-      if (assignmentTarget === "users") return selectedUsers.length > 0;
+      if (step === 2) {
+        const hasValidCriteria = selectedCourses.every((course: any) => {
+          const totalMarks = Number(course?.assessment?.totalMarks);
+          if (!Number.isFinite(totalMarks)) {
+            return true;
+          }
+
+          const passingMarks = assessmentCriteriaByCourse[course._id]?.passingMarks?.trim();
+          if (!passingMarks) {
+            return false;
+          }
+
+          const numericPassingMarks = Number(passingMarks);
+          return Number.isFinite(numericPassingMarks) && numericPassingMarks >= 0 && numericPassingMarks <= totalMarks;
+        });
+
+        return (noExpiry || Boolean(validTill)) && hasValidCriteria;
+      }
+      if (assignmentTarget === "users") return combinedSelectedUsers.length > 0;
       return true;
-    }, [assignmentTarget, companyId, departmentName, noExpiry, selectedCourseIds.length, selectedUsers.length, step, validTill]);
+    }, [assessmentCriteriaByCourse, assignmentTarget, combinedSelectedUsers.length, companyId, departmentName, noExpiry, selectedCourseIds.length, selectedCourses, step, validTill]);
 
     const toggleSelectedCourse = (courseId: string) => {
       setSelectedCourseIds((current) => 
@@ -294,6 +356,44 @@ const AssignCourseModal = observer(
       });
     };
 
+    const handlePreviewCsv = async () => {
+      if (!csvFile) {
+        return;
+      }
+
+      try {
+        const response = await courseStore.previewAssignmentUsers({
+          file: csvFile,
+          companyId,
+        });
+
+        setCsvPreview({
+          fileName: response?.data?.fileName || csvFile.name,
+          matchedUsers: response?.data?.matchedUsers || [],
+          failedEntries: response?.data?.failedEntries || [],
+        });
+
+        toast({
+          title: "File validated",
+          description: `${response?.data?.matchedCount || 0} learner${response?.data?.matchedCount === 1 ? "" : "s"} matched from the uploaded spreadsheet.`,
+          status: "success",
+          duration: 3500,
+          position: "top-right",
+          isClosable: true,
+        });
+      } catch (err: any) {
+        setCsvPreview(null);
+        toast({
+          title: "File validation failed",
+          description: err?.message || err?.error || "Unable to validate the uploaded spreadsheet.",
+          status: "error",
+          duration: 4500,
+          position: "top-right",
+          isClosable: true,
+        });
+      }
+    };
+
     const handleClose = () => {
       setStep(0);
       onClose();
@@ -307,9 +407,19 @@ const AssignCourseModal = observer(
           assignmentType: assignmentTarget,
           companyId,
           departmentName: assignmentTarget === "department" ? departmentName : undefined,
-          userIds: assignmentTarget === "users" ? selectedUsers.map((u) => u._id) : undefined,
+          userIds: assignmentTarget === "users" ? combinedSelectedUsers.map((u: any) => u._id) : undefined,
           validFrom: new Date().toISOString(),
           validTill: noExpiry ? null : new Date(validTill).toISOString(),
+          assessmentCriteriaByCourse: Object.fromEntries(
+            selectedCourseIds.map((courseId) => [
+              courseId,
+              {
+                passingMarks: assessmentCriteriaByCourse[courseId]?.passingMarks
+                  ? Number(assessmentCriteriaByCourse[courseId].passingMarks)
+                  : null,
+              },
+            ])
+          ),
           allowFurtherAssignment,
         });
 
@@ -474,7 +584,7 @@ const AssignCourseModal = observer(
                         {!isDepartmentHead && (
                           <TargetCard
                             title="Entire Company"
-                            description="All current and future learners in the organization."
+                            description="All current learners in the organization."
                             isSelected={assignmentTarget === "company"}
                             onClick={() => setAssignmentTarget("company")}
                           />
@@ -517,6 +627,47 @@ const AssignCourseModal = observer(
                 {/* STEP 2: RULES */}
                 {step === 2 && (
                   <Stack spacing={6}>
+                    <Box bg="white" p={6} borderRadius="2xl" borderWidth="1px" borderColor="gray.200" shadow="sm">
+                      <Text fontWeight="bold" fontSize="xl" color="gray.900">Passing Criteria</Text>
+                      <Text color="gray.500" fontSize="sm" mt={1}>
+                        Set the passing marks per selected course for this assignment.
+                      </Text>
+                      <Stack spacing={4} mt={5}>
+                        {selectedCourses.map((course: any) => {
+                          const totalMarks = Number(course?.assessment?.totalMarks);
+                          const hasTotalMarks = Number.isFinite(totalMarks);
+
+                          return (
+                            <Box key={course._id} borderWidth="1px" borderRadius="xl" p={4}>
+                              <Text fontWeight="semibold" color="gray.900">{course.title}</Text>
+                              <Text color="gray.500" fontSize="sm" mt={1}>
+                                {hasTotalMarks ? `Total marks: ${totalMarks}` : "No total marks configured for this course yet."}
+                              </Text>
+                              <Input
+                                mt={3}
+                                type="number"
+                                min={0}
+                                max={hasTotalMarks ? totalMarks : undefined}
+                                value={assessmentCriteriaByCourse[course._id]?.passingMarks || ""}
+                                onChange={(event) =>
+                                  setAssessmentCriteriaByCourse((current) => ({
+                                    ...current,
+                                    [course._id]: {
+                                      passingMarks: event.target.value,
+                                    },
+                                  }))
+                                }
+                                placeholder={hasTotalMarks ? `Enter passing marks out of ${totalMarks}` : "Not available"}
+                                isDisabled={!hasTotalMarks}
+                                bg="white"
+                                borderRadius="xl"
+                              />
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                    </Box>
+
                      <Box bg="white" p={6} borderRadius="2xl" borderWidth="1px" borderColor="gray.200" shadow="sm">
                       <HStack justify="space-between" align="start" mb={noExpiry ? 0 : 6}>
                         <Box>
@@ -613,30 +764,91 @@ const AssignCourseModal = observer(
                               </VStack>
                             )}
                           </Box>
+
+                          <Box mt={5} bg="white" borderRadius="xl" borderWidth="1px" borderColor="gray.200" p={4}>
+                            <Text fontWeight="semibold" color="gray.900">Upload Spreadsheet</Text>
+                            <Text color="gray.500" fontSize="sm" mt={1}>
+                              Use a CSV or Excel file with user email IDs or employee IDs. We&apos;ll match valid users first and show missing ones below.
+                            </Text>
+                            <Input
+                              mt={4}
+                              type="file"
+                              accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                              onChange={(event) => {
+                                setCsvFile(event.target.files?.[0] || null);
+                                setCsvPreview(null);
+                              }}
+                              p={1.5}
+                              bg="white"
+                            />
+                            <Button
+                              mt={3}
+                              colorScheme="blue"
+                              variant="outline"
+                              onClick={handlePreviewCsv}
+                              isDisabled={!csvFile || !companyId}
+                              isLoading={courseStore.isAssignmentSubmitting}
+                              width="full"
+                            >
+                              Validate File
+                            </Button>
+                            {csvPreview ? (
+                              <Box mt={4}>
+                                <Text fontSize="sm" fontWeight="medium" color="gray.800">
+                                  {csvPreview.fileName}
+                                </Text>
+                                <Text fontSize="sm" color="gray.600" mt={1}>
+                                  {csvPreview.matchedUsers.length} matched learner{csvPreview.matchedUsers.length === 1 ? "" : "s"} found.
+                                </Text>
+                              </Box>
+                            ) : null}
+                          </Box>
                         </Box>
 
                         {/* Selected Staging Area */}
                         <Box bg="white" p={6} borderRadius="2xl" borderWidth="1px" borderColor="gray.200" shadow="sm">
-                           <Text fontWeight="bold" fontSize="lg" mb={1} color="gray.900">Selected Learners ({selectedUsers.length})</Text>
-                           <Text color="gray.500" fontSize="sm" mb={6}>These individuals will receive the curriculum.</Text>
+                           <Text fontWeight="bold" fontSize="lg" mb={1} color="gray.900">Selected Learners ({combinedSelectedUsers.length})</Text>
+                           <Text color="gray.500" fontSize="sm" mb={6}>These learners will receive the curriculum after you confirm the assignment.</Text>
 
-                           {selectedUsers.length === 0 ? (
+                           {combinedSelectedUsers.length === 0 ? (
                               <Flex align="center" justify="center" h="200px" border="2px dashed" borderColor="gray.200" borderRadius="xl" bg="gray.50">
                                 <Text color="gray.400">No learners selected yet.</Text>
                               </Flex>
                            ) : (
                              <Wrap spacing={3}>
-                               {selectedUsers.map((user) => (
-                                 <WrapItem key={user._id}>
-                                   <Tag size="lg" borderRadius="full" variant="subtle" colorScheme="blue" pl={1} pr={3} py={1.5} boxShadow="sm">
-                                     <Avatar size="xs" name={user.name || user.email} src={user.profilePicture} mr={2} />
-                                     <TagLabel fontWeight="medium" fontSize="sm">{user.name || user.email}</TagLabel>
-                                     <TagCloseButton onClick={() => toggleSelectedUser(user)} ml={2} />
-                                   </Tag>
-                                 </WrapItem>
-                               ))}
+                               {combinedSelectedUsers.map((user: any) => {
+                                 const isManualSelection = selectedUsers.some((selectedUser) => selectedUser._id === user._id);
+                                 return (
+                                   <WrapItem key={user._id}>
+                                     <Tag size="lg" borderRadius="full" variant="subtle" colorScheme="blue" pl={1} pr={3} py={1.5} boxShadow="sm">
+                                       <Avatar size="xs" name={user.name || user.email} src={user.profilePicture} mr={2} />
+                                       <TagLabel fontWeight="medium" fontSize="sm">{user.name || user.email}</TagLabel>
+                                       {isManualSelection ? <TagCloseButton onClick={() => toggleSelectedUser(user)} ml={2} /> : null}
+                                     </Tag>
+                                   </WrapItem>
+                                  );
+                                })}
                              </Wrap>
                            )}
+
+                           {csvPreview?.failedEntries?.length ? (
+                             <Alert mt={6} status="warning" borderRadius="xl" alignItems="start">
+                               <AlertIcon mt={1} />
+                               <Box>
+                                 <AlertTitle fontSize="sm">Some users were not found</AlertTitle>
+                                 <AlertDescription fontSize="sm" mt={2}>
+                                   Add these users first, then re-upload the spreadsheet before assigning the course.
+                                 </AlertDescription>
+                                 <Stack spacing={1.5} mt={3}>
+                                   {csvPreview.failedEntries.slice(0, 8).map((entry: any, index: number) => (
+                                     <Text key={`${entry.userId || entry.email || entry.rowNumber}-${index}`} fontSize="sm" color="orange.700">
+                                       {entry.email || entry.reference || `Row ${entry.rowNumber}`}: {entry.reason}
+                                     </Text>
+                                   ))}
+                                 </Stack>
+                               </Box>
+                             </Alert>
+                           ) : null}
                         </Box>
                       </Grid>
                     )}
@@ -660,7 +872,7 @@ const AssignCourseModal = observer(
                           <Text fontWeight="bold" fontSize="lg" color="gray.900">
                             {assignmentTarget === "company" ? "Entire Company"
                               : assignmentTarget === "department" ? `Dept: ${departmentName}`
-                              : `${selectedUsers.length} Selected Learner(s)`}
+                              : `${combinedSelectedUsers.length} Selected Learner(s)`}
                           </Text>
                         </Box>
                         <Box>
@@ -668,6 +880,21 @@ const AssignCourseModal = observer(
                           <Text fontWeight="bold" fontSize="lg" color="gray.900">{noExpiry ? "Lifetime" : formatDate(validTill)}</Text>
                         </Box>
                       </SimpleGrid>
+
+                      <Wrap spacing={3} mt={6}>
+                        {selectedCourses.map((course: any) => (
+                          <WrapItem key={course._id}>
+                            <Tag borderRadius="full" colorScheme="blue" variant="subtle" px={3} py={1.5}>
+                              <TagLabel>
+                                {course.title}
+                                {Number.isFinite(Number(course?.assessment?.totalMarks))
+                                  ? ` • ${assessmentCriteriaByCourse[course._id]?.passingMarks || "--"}/${course.assessment.totalMarks}`
+                                  : ""}
+                              </TagLabel>
+                            </Tag>
+                          </WrapItem>
+                        ))}
+                      </Wrap>
                     </Box>
                   </Stack>
                 )}

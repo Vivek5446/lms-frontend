@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { observer } from "mobx-react-lite";
@@ -28,6 +28,29 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
   const [courseForm, setCourseForm] = useState<CourseFormState>(initialCourseFormState);
   const [finalAction, setFinalAction] = useState<"draft" | "publish">("publish");
   const router = useRouter();
+
+  useEffect(() => {
+    if (courseForm.basicInfo.courseCode) {
+      return;
+    }
+
+    courseStore
+      .fetchNextCourseCode()
+      .then((courseCode) => {
+        if (!courseCode) {
+          return;
+        }
+
+        setCourseForm((prev) => ({
+          ...prev,
+          basicInfo: {
+            ...prev.basicInfo,
+            courseCode,
+          },
+        }));
+      })
+      .catch(() => undefined);
+  }, [courseForm.basicInfo.courseCode]);
 
   const updateStepProgress = useCallback((step: number, progress: number) => {
     setStepProgress((prev) => {

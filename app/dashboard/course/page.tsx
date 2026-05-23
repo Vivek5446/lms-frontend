@@ -675,7 +675,7 @@ function CoursePage() {
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1160 }}>
                     <thead>
                       <tr style={{ background: tableHeaderBg, borderBottom: `1px solid ${borderColor}` }}>
-                        {["Course", "Visibility", "Type", "Status", "Assessment", "Price", "Popularity", "Actions"].map((label) => (
+                        {["Course","ID", "Visibility", "Type", "Status", "Assessment", "Price", "Popularity", "Actions"].map((label) => (
                           <th
                             key={label}
                             style={{
@@ -744,6 +744,11 @@ function CoursePage() {
                                 </div>
                               </div>
                             </td>
+                            <td>
+                                 <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
+                                {course.courseCode || (course.taxonomy?.languages || []).slice(0, 2).join(", ") || "No language tags"}
+                              </div>
+                            </td>
                             <td style={{ padding: "16px 18px" }}>
                               <span
                                 style={{
@@ -785,13 +790,11 @@ function CoursePage() {
                             </td>
                             <td style={{ padding: "16px 18px" }}>
                               <div style={{ fontSize: 13, color: titleColor, fontWeight: 600 }}>
-                                {assessment?.totalMarks && assessment?.passingMarks
-                                  ? `${assessment.passingMarks}/${assessment.totalMarks} to pass`
+                                {assessment?.totalMarks
+                                  ? `${assessment.totalMarks} total marks`
                                   : "Not configured"}
                               </div>
-                              <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
-                                {(course.taxonomy?.languages || []).slice(0, 2).join(", ") || "No language tags"}
-                              </div>
+                           
                             </td>
                             <td style={{ padding: "16px 18px" }}>
                               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: titleColor }}>

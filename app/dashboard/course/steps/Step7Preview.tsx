@@ -25,10 +25,9 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
   const accessLabel = courseForm.pricing.accessDurationDays.trim()
     ? `${courseForm.pricing.accessDurationDays} days`
     : "Open access";
-  const assessmentLabel =
-    courseForm.basicInfo.totalMarks.trim() && courseForm.basicInfo.passingMarks.trim()
-      ? `${courseForm.basicInfo.passingMarks}/${courseForm.basicInfo.totalMarks} to pass`
-      : "Not configured";
+  const assessmentLabel = courseForm.basicInfo.totalMarks.trim()
+    ? `${courseForm.basicInfo.totalMarks} total marks`
+    : "Not configured";
 
   useEffect(() => {
     onProgressChange?.(100);

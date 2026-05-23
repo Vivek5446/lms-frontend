@@ -82,14 +82,19 @@ const CourseAssignmentWorkspace = observer(() => {
   const [userResults, setUserResults] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
   const [departmentName, setDepartmentName] = useState("");
-  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadPreview, setUploadPreview] = useState<{
+    fileName: string;
+    matchedUsers: any[];
+    failedEntries: any[];
+  } | null>(null);
   const [noExpiry, setNoExpiry] = useState(true);
   const [validTill, setValidTill] = useState("");
+  const [assessmentCriteriaByCourse, setAssessmentCriteriaByCourse] = useState<Record<string, { passingMarks: string }>>({});
   const [lastResult, setLastResult] = useState<{
     successCount: number;
     failedEntries: any[];
     courseCount?: number;
-    hierarchyAccessCreatedCount?: number;
   } | null>(null);
 
   const assignableCourses = useMemo(
@@ -102,6 +107,16 @@ const CourseAssignmentWorkspace = observer(() => {
     [assignableCourses, selectedCourseIds]
   );
 
+  const combinedSelectedUsers = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          [...selectedUsers, ...(uploadPreview?.matchedUsers || [])].map((user) => [user._id, user])
+        ).values()
+      ),
+    [selectedUsers, uploadPreview]
+  );
+
   useEffect(() => {
     courseStore.fetchAccessibleCourses().catch(() => undefined);
   }, []);
@@ -111,6 +126,29 @@ const CourseAssignmentWorkspace = observer(() => {
       setDepartmentName(auth.user.department);
     }
   }, [auth.user?.department, isDepartmentHead]);
+
+  useEffect(() => {
+    setAssessmentCriteriaByCourse((current) => {
+      const next = { ...current };
+      let changed = false;
+
+      selectedCourses.forEach((course) => {
+        if (!next[course._id]) {
+          next[course._id] = { passingMarks: "" };
+          changed = true;
+        }
+      });
+
+      Object.keys(next).forEach((courseId) => {
+        if (!selectedCourseIds.includes(courseId)) {
+          delete next[courseId];
+          changed = true;
+        }
+      });
+
+      return changed ? next : current;
+    });
+  }, [selectedCourseIds, selectedCourses]);
 
   useEffect(() => {
     const timeoutId = setTimeout(async () => {
@@ -139,7 +177,7 @@ const CourseAssignmentWorkspace = observer(() => {
 
     if (step === 1) {
       if (targetMode === "users") {
-        return selectedUsers.length > 0 || Boolean(csvFile);
+        return combinedSelectedUsers.length > 0;
       }
 
       if (targetMode === "department") {
@@ -150,11 +188,26 @@ const CourseAssignmentWorkspace = observer(() => {
     }
 
     if (step === 2) {
-      return noExpiry || Boolean(validTill);
+      const hasValidCriteria = selectedCourses.every((course) => {
+        const totalMarks = Number(course?.assessment?.totalMarks);
+        if (!Number.isFinite(totalMarks)) {
+          return true;
+        }
+
+        const passingMarks = assessmentCriteriaByCourse[course._id]?.passingMarks?.trim();
+        if (!passingMarks) {
+          return false;
+        }
+
+        const numericPassingMarks = Number(passingMarks);
+        return Number.isFinite(numericPassingMarks) && numericPassingMarks >= 0 && numericPassingMarks <= totalMarks;
+      });
+
+      return (noExpiry || Boolean(validTill)) && hasValidCriteria;
     }
 
     return true;
-  }, [csvFile, departmentName, isDepartmentHead, noExpiry, selectedCourseIds.length, selectedUsers.length, step, targetMode, validTill]);
+  }, [assessmentCriteriaByCourse, combinedSelectedUsers.length, departmentName, isDepartmentHead, noExpiry, selectedCourseIds.length, selectedCourses, step, targetMode, validTill]);
 
   const toggleSelectedUser = (user: any) => {
     setSelectedUsers((current) => {
@@ -176,24 +229,63 @@ const CourseAssignmentWorkspace = observer(() => {
     setUserResults([]);
     setSelectedUsers([]);
     setDepartmentName(isDepartmentHead ? auth.user?.department || "" : "");
-    setCsvFile(null);
+    setUploadFile(null);
+    setUploadPreview(null);
     setNoExpiry(true);
     setValidTill("");
+    setAssessmentCriteriaByCourse({});
+  };
+
+  const handlePreviewUpload = async () => {
+    if (!uploadFile) {
+      return;
+    }
+
+    try {
+      const response = await courseStore.previewAssignmentUsers({ file: uploadFile });
+      setUploadPreview({
+        fileName: response?.data?.fileName || uploadFile.name,
+        matchedUsers: response?.data?.matchedUsers || [],
+        failedEntries: response?.data?.failedEntries || [],
+      });
+      toast({
+        title: "Upload validated",
+        description: `${response?.data?.matchedCount || 0} user${response?.data?.matchedCount === 1 ? "" : "s"} matched successfully.`,
+        status: "success",
+        duration: 3500,
+      });
+    } catch (err: any) {
+      setUploadPreview(null);
+      toast({
+        title: "Unable to validate upload",
+        description: err?.message || err?.error || "Please check the file and try again.",
+        status: "error",
+        duration: 4500,
+      });
+    }
   };
 
   const handleSubmit = async () => {
     try {
-      const assignmentType = targetMode === "users" && csvFile ? "csv" : targetMode;
       const response = await courseStore.assignMultipleCourses({
         courseIds: selectedCourseIds,
-        assignmentType,
-        userIds: targetMode === "users" ? selectedUsers.map((user) => user._id) : undefined,
+        assignmentType: targetMode,
+        userIds: targetMode === "users" ? combinedSelectedUsers.map((user) => user._id) : undefined,
         departmentName: targetMode === "department" ? departmentName : undefined,
         companyId: targetMode === "company" ? auth.company : undefined,
         validFrom: new Date().toISOString(),
         validTill: noExpiry ? null : new Date(validTill).toISOString(),
         dueDate: noExpiry ? null : new Date(validTill).toISOString(),
-        file: targetMode === "users" ? csvFile : null,
+        assessmentCriteriaByCourse: Object.fromEntries(
+          selectedCourseIds.map((courseId) => [
+            courseId,
+            {
+              passingMarks: assessmentCriteriaByCourse[courseId]?.passingMarks
+                ? Number(assessmentCriteriaByCourse[courseId].passingMarks)
+                : null,
+            },
+          ])
+        ),
       });
 
       setLastResult(response?.data || null);
@@ -241,7 +333,7 @@ const CourseAssignmentWorkspace = observer(() => {
       >
         <Heading size="md">Multi-Course Assignment</Heading>
         <Text mt={2} color="gray.600" maxW="3xl">
-          Assign multiple courses in one flow. The backend now auto-maintains the company-level hierarchy before department or user delivery, so downstream assignment stays consistent without extra manual steps.
+          Assign courses deliberately by company, department, or individual learners. New users added later will not inherit past company assignments automatically.
         </Text>
       </Box>
 
@@ -315,18 +407,20 @@ const CourseAssignmentWorkspace = observer(() => {
                   </FormControl>
 
                   <Wrap spacing={2}>
-                    {selectedUsers.length ? (
-                      selectedUsers.map((user) => (
+                    {combinedSelectedUsers.length ? (
+                      combinedSelectedUsers.map((user) => (
                         <WrapItem key={user._id}>
                           <Tag size="lg" borderRadius="full" colorScheme="blue">
                             <TagLabel>{user.name || user.email}</TagLabel>
-                            <TagCloseButton onClick={() => toggleSelectedUser(user)} />
+                            {selectedUsers.some((selectedUser) => selectedUser._id === user._id) ? (
+                              <TagCloseButton onClick={() => toggleSelectedUser(user)} />
+                            ) : null}
                           </Tag>
                         </WrapItem>
                       ))
                     ) : (
                       <Text color="gray.500" fontSize="sm">
-                        Selected users will appear here as chips.
+                        Matched and manually selected users will appear here for confirmation.
                       </Text>
                     )}
                   </Wrap>
@@ -334,7 +428,7 @@ const CourseAssignmentWorkspace = observer(() => {
                   <Box borderWidth="1px" borderRadius="2xl" p={3} minH="220px">
                     {userResults.length === 0 ? (
                       <Text color="gray.500" fontSize="sm">
-                        Search for users and select one or more learners, or use a CSV upload below.
+                        Search for users and select one or more learners, or validate an Excel file below.
                       </Text>
                     ) : (
                       <Stack spacing={3}>
@@ -372,18 +466,50 @@ const CourseAssignmentWorkspace = observer(() => {
                   </Box>
 
                   <FormControl>
-                    <FormLabel>CSV upload</FormLabel>
-                    <Input
-                      type="file"
-                      accept=".csv,text/csv"
-                      onChange={(event) => setCsvFile(event.target.files?.[0] || null)}
-                      p={1.5}
-                    />
+                    <FormLabel>Excel upload</FormLabel>
+                    <HStack align="start" spacing={3}>
+                      <Input
+                        type="file"
+                        accept=".xlsx,.csv,text/csv"
+                        onChange={(event) => {
+                          setUploadFile(event.target.files?.[0] || null);
+                          setUploadPreview(null);
+                        }}
+                        p={1.5}
+                      />
+                      <Button
+                        colorScheme="blue"
+                        variant="outline"
+                        onClick={handlePreviewUpload}
+                        isDisabled={!uploadFile}
+                        isLoading={courseStore.isAssignmentSubmitting}
+                      >
+                        Validate file
+                      </Button>
+                    </HStack>
                   </FormControl>
 
                   <Text color="gray.600" fontSize="sm">
-                    Upload a CSV with an <strong>email</strong> column to assign by email. Existing users only will be processed.
+                    Upload a spreadsheet with an <strong>email</strong> or <strong>employee ID / code</strong> column. We will validate existing users first, show the matched learners here, and only then submit the assignment.
                   </Text>
+
+                  {uploadPreview ? (
+                    <Box borderWidth="1px" borderRadius="2xl" p={4} bg="gray.50">
+                      <Text fontWeight="semibold">{uploadPreview.fileName}</Text>
+                      <Text color="gray.600" fontSize="sm" mt={1}>
+                        {uploadPreview.matchedUsers.length} matched user{uploadPreview.matchedUsers.length === 1 ? "" : "s"} ready for confirmation.
+                      </Text>
+                      {uploadPreview.failedEntries.length ? (
+                        <Stack spacing={2} mt={3}>
+                          {uploadPreview.failedEntries.slice(0, 6).map((entry, index) => (
+                            <Text key={`${entry.userId || entry.email || entry.rowNumber}-${index}`} fontSize="sm" color="orange.700">
+                              {entry.email || entry.reference || `Row ${entry.rowNumber}`}: {entry.reason}
+                            </Text>
+                          ))}
+                        </Stack>
+                      ) : null}
+                    </Box>
+                  ) : null}
                 </Stack>
               ) : null}
 
@@ -411,7 +537,7 @@ const CourseAssignmentWorkspace = observer(() => {
                   <Box>
                     <AlertTitle>Company-wide assignment</AlertTitle>
                     <AlertDescription>
-                      A company-level access record will be created if needed, then all learners in your company will receive the selected courses.
+                      Current learners in your company will receive the selected courses. Learners added later will not be enrolled automatically.
                     </AlertDescription>
                   </Box>
                 </Alert>
@@ -421,6 +547,49 @@ const CourseAssignmentWorkspace = observer(() => {
 
           {step === 2 ? (
             <Stack spacing={4}>
+              <Box borderWidth="1px" borderRadius="2xl" p={4}>
+                <Text fontWeight="semibold">Passing criteria</Text>
+                <Text color="gray.600" fontSize="sm" mt={1}>
+                  Set the passing marks for each selected course. These criteria are stored with the assignment and can vary by company.
+                </Text>
+                <Stack spacing={4} mt={4}>
+                  {selectedCourses.map((course) => {
+                    const totalMarks = Number(course?.assessment?.totalMarks);
+                    const hasTotalMarks = Number.isFinite(totalMarks);
+
+                    return (
+                      <Box key={course._id} borderWidth="1px" borderRadius="xl" p={4}>
+                        <Text fontWeight="semibold">{course.title}</Text>
+                        <Text color="gray.600" fontSize="sm" mt={1}>
+                          {hasTotalMarks
+                            ? `Total marks: ${totalMarks}`
+                            : "This course does not have total marks configured yet."}
+                        </Text>
+                        <FormControl mt={3} isRequired={hasTotalMarks}>
+                          <FormLabel mb={1}>Passing marks</FormLabel>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={hasTotalMarks ? totalMarks : undefined}
+                            value={assessmentCriteriaByCourse[course._id]?.passingMarks || ""}
+                            onChange={(event) =>
+                              setAssessmentCriteriaByCourse((current) => ({
+                                ...current,
+                                [course._id]: {
+                                  passingMarks: event.target.value,
+                                },
+                              }))
+                            }
+                            placeholder={hasTotalMarks ? `Enter passing marks out of ${totalMarks}` : "Not available"}
+                            isDisabled={!hasTotalMarks}
+                          />
+                        </FormControl>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </Box>
+
               <Box borderWidth="1px" borderRadius="2xl" p={4}>
                 <HStack justify="space-between">
                   <Box>
@@ -465,9 +634,9 @@ const CourseAssignmentWorkspace = observer(() => {
                         ? "Company-wide"
                         : targetMode === "department"
                           ? departmentName || "Not selected"
-                          : csvFile
-                            ? `CSV upload: ${csvFile.name}`
-                            : `${selectedUsers.length} selected user${selectedUsers.length === 1 ? "" : "s"}`}
+                          : uploadPreview
+                            ? `${combinedSelectedUsers.length} confirmed user${combinedSelectedUsers.length === 1 ? "" : "s"}`
+                            : `${combinedSelectedUsers.length} selected user${combinedSelectedUsers.length === 1 ? "" : "s"}`}
                     </Text>
                   </Box>
                   <Box>
@@ -478,14 +647,14 @@ const CourseAssignmentWorkspace = observer(() => {
                   </Box>
                   <Box>
                     <Text fontSize="sm" color="gray.500">
-                      Hierarchy handling
+                      Assignment model
                     </Text>
                     <Text fontWeight="medium">
                       {targetMode === "company"
-                        ? "Creates company-level access before delivery"
+                        ? "Current company users only"
                         : targetMode === "department"
-                          ? "Auto-creates company access, then department access"
-                          : "Auto-creates company access, then direct user enrollment"}
+                          ? "Current department users only"
+                          : "Only the confirmed learners above"}
                     </Text>
                   </Box>
                 </SimpleGrid>
@@ -494,7 +663,12 @@ const CourseAssignmentWorkspace = observer(() => {
                   {selectedCourses.map((course) => (
                     <WrapItem key={course._id}>
                       <Tag borderRadius="full" colorScheme="blue" variant="subtle">
-                        <TagLabel>{course.title}</TagLabel>
+                        <TagLabel>
+                          {course.title}
+                          {Number.isFinite(Number(course?.assessment?.totalMarks))
+                            ? ` • ${assessmentCriteriaByCourse[course._id]?.passingMarks || "--"}/${course.assessment.totalMarks}`
+                            : ""}
+                        </TagLabel>
                       </Tag>
                     </WrapItem>
                   ))}
@@ -527,11 +701,6 @@ const CourseAssignmentWorkspace = observer(() => {
             {lastResult.successCount} course enrollments were created or updated across{" "}
             {lastResult.courseCount || 0} course{(lastResult.courseCount || 0) === 1 ? "" : "s"}.
           </Text>
-          {typeof lastResult.hierarchyAccessCreatedCount === "number" ? (
-            <Text mt={2} color="gray.600" fontSize="sm">
-              {lastResult.hierarchyAccessCreatedCount} hierarchy access record{lastResult.hierarchyAccessCreatedCount === 1 ? "" : "s"} were auto-created to keep the company-first assignment model intact.
-            </Text>
-          ) : null}
           {lastResult.failedEntries?.length ? (
             <Stack spacing={2} mt={4}>
               {lastResult.failedEntries.slice(0, 8).map((entry, index) => (

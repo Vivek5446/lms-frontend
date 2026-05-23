@@ -422,12 +422,14 @@ export default function CourseDetails({
                       <Icon as={Star} boxSize={5} color={accentColor} />
                       <Box>
                         <Text fontSize="sm" fontWeight="medium" color={textMuted}>
-                          Passing Threshold
+                          Passing Criteria
                         </Text>
                         <Text fontWeight="bold">
-                          {course.assessment?.passingMarks && course.assessment?.totalMarks
+                          {course.assessment?.passingMarks !== null && course.assessment?.passingMarks !== undefined && course.assessment?.totalMarks
                             ? `${course.assessment.passingMarks}/${course.assessment.totalMarks}`
-                            : "Not configured"}
+                            : course.assessment?.totalMarks
+                              ? `Total ${course.assessment.totalMarks} marks`
+                              : "Not configured"}
                         </Text>
                       </Box>
                     </Flex>

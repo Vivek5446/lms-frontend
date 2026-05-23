@@ -86,12 +86,12 @@ export default function Step8Review({
       icon: CheckCircle2,
       label: "Assessment",
       status:
-        courseForm.basicInfo.totalMarks.trim() && courseForm.basicInfo.passingMarks.trim()
-          ? `${courseForm.basicInfo.passingMarks}/${courseForm.basicInfo.totalMarks} required to pass`
+        courseForm.basicInfo.totalMarks.trim()
+          ? `${courseForm.basicInfo.totalMarks} total marks. Passing criteria will be set during assignment.`
           : "Assessment marks not configured yet",
       colorClass: "text-step-2",
       bgClass: "bg-step-2/15",
-      complete: Boolean(courseForm.basicInfo.totalMarks.trim() && courseForm.basicInfo.passingMarks.trim()),
+      complete: Boolean(courseForm.basicInfo.totalMarks.trim()),
       stepIndex: 0,
     },
   ];

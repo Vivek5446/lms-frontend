@@ -34,7 +34,7 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
     if (value.thumbnail) filled++;
     if (value.categories.length > 0) filled++;
     if (value.languages.length > 0) filled++;
-    if (value.totalMarks.trim() && value.passingMarks.trim()) filled++;
+    if (value.totalMarks.trim()) filled++;
 
     onProgressChange?.(Math.round((filled / 6) * 100));
   }, [value, onProgressChange]);
@@ -137,6 +137,23 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
               onFocus={(event) => (event.currentTarget.style.borderColor = "#6B21A8")}
               onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
             />
+          </div>
+          <div>
+            <label style={labelStyle}>Course ID</label>
+            <input
+              type="text"
+              value={value.courseCode || "Generating..."}
+              readOnly
+              style={{
+                ...inputStyle,
+                background: "#F3F4F6",
+                color: "#6B7280",
+                cursor: "default",
+              }}
+            />
+            <p style={{ margin: "5px 0 0 2px", fontSize: 12, color: "#9CA3AF" }}>
+              Auto-generated unique course ID
+            </p>
           </div>
           <div>
             <label style={labelStyle}>Pretty URL Slug</label>
@@ -491,12 +508,10 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
         </div>
 
         <div style={{ marginTop: 24 }}>
-          <label style={{ ...labelStyle, marginBottom: 12 }}>Assessment Thresholds</label>
+          <label style={{ ...labelStyle, marginBottom: 12 }}>Assessment Setup</label>
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 20,
+              maxWidth: 420,
             }}
           >
             <div>
@@ -512,24 +527,7 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
                 onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
               />
               <p style={{ margin: "6px 0 0 2px", fontSize: 12, color: "#9CA3AF" }}>
-                Used as the final assessment total for pass/fail evaluation.
-              </p>
-            </div>
-
-            <div>
-              <label style={labelStyle}>Passing Marks</label>
-              <input
-                type="number"
-                min="0"
-                placeholder="e.g., 40"
-                value={value.passingMarks}
-                onChange={(event) => updateBasicInfo({ passingMarks: event.target.value })}
-                style={inputStyle}
-                onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
-                onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
-              />
-              <p style={{ margin: "6px 0 0 2px", fontSize: 12, color: "#9CA3AF" }}>
-                Learners below this threshold will be marked as failed.
+                Passing marks will be configured later when this course is assigned to a company or learner group.
               </p>
             </div>
           </div>

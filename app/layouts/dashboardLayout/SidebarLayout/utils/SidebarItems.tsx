@@ -2,6 +2,10 @@ import { PlusSquareIcon } from "@chakra-ui/icons";
 import { FaChartPie, FaCog, FaUserAstronaut, FaUsers, FaUserTie } from "react-icons/fa";
 import { expandRoleAliases } from "@/app/config/utils/roleAccess";
 import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
+import { FaPeopleGroup } from "react-icons/fa6";
+import { HiOutlineComputerDesktop } from "react-icons/hi2";
+import { LucideBriefcaseBusiness } from "lucide-react";
+import { BiCategory } from "react-icons/bi";
 
 interface SidebarItem {
   id: number;
@@ -33,7 +37,7 @@ const sidebarDatas: SidebarItem[] = [
   {
     id: 101,
     name: "Departments",
-    icon: <FaUserTie />,
+    icon: <BiCategory />,
     url: "/dashboard/departments",
     role: ["admin", "superadmin", "departmenthead"],
     permissionKey: PERMISSION_KEYS.VIEW_DEPARTMENTS,
@@ -41,7 +45,7 @@ const sidebarDatas: SidebarItem[] = [
   {
     id: 12,
     name: "Companies",
-    icon: <FaUserAstronaut />,
+    icon: <LucideBriefcaseBusiness />,
     url: "/dashboard/admins",
     role: ["superadmin"],
     permissionKey: PERMISSION_KEYS.VIEW_COMPANIES,
@@ -57,7 +61,7 @@ const sidebarDatas: SidebarItem[] = [
   {
     id: 17,
     name: "Courses",
-    icon: <PlusSquareIcon />,
+    icon: <HiOutlineComputerDesktop />,
     url: "/dashboard/course",
     role: ["superadmin", "admin", "departmenthead"],
     permissionKey: PERMISSION_KEYS.VIEW_COURSES,
@@ -91,7 +95,7 @@ const sidebarDatas: SidebarItem[] = [
   {
   id: 18,
   name: "Batches",
-  icon: <PlusSquareIcon />,
+  icon: <FaPeopleGroup />,
   url: "/dashboard/batches",
   role: ["superadmin", "admin", "departmenthead"],
   permissionKey: PERMISSION_KEYS.VIEW_BATCHES,
