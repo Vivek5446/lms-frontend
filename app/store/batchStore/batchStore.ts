@@ -70,6 +70,71 @@ export interface BatchDetailsItem {
   }>;
 }
 
+export interface BatchUploadPreviewUser {
+  _id: string;
+  name: string;
+  email?: string;
+  username?: string;
+  code?: string;
+  department?: string;
+}
+
+export interface BatchUploadPreviewCourseError {
+  rowNumber?: number;
+  courseCode?: string;
+  courseId?: string;
+  reason: string;
+}
+
+export interface BatchUploadPreviewUserError {
+  rowNumber?: number;
+  email?: string;
+  employeeId?: string;
+  userId?: string;
+  reason: string;
+}
+
+export interface BatchUploadPreviewFailure {
+  email?: string;
+  reason: string;
+  rowNumber?: number;
+  userId?: string;
+  courseId?: string;
+}
+
+export interface BatchUploadPreviewCourseSummary {
+  courseId: string;
+  courseCode: string;
+  title: string;
+}
+
+export interface BatchUploadPreviewSummary {
+  totalRows: number;
+  validRows: number;
+  failedRows: number;
+  courseRows: number;
+  userRows: number;
+  validCourseRows: number;
+  validUserRows: number;
+  failedCourseRows: number;
+  failedUserRows: number;
+}
+
+export interface BatchUploadPreviewData {
+  fileName: string;
+  matchedUsers: BatchUploadPreviewUser[];
+  matchedCourses: BatchUploadPreviewCourseSummary[];
+  courseErrors: BatchUploadPreviewCourseError[];
+  userErrors: BatchUploadPreviewUserError[];
+  failedEntries: BatchUploadPreviewFailure[];
+  matchedCount: number;
+  courseCount: number;
+  failedCount: number;
+  totalRows: number;
+  validRowCount: number;
+  summary: BatchUploadPreviewSummary;
+}
+
 class BatchStoreClass {
   batches: BatchListItem[] = [];
   myBatches: BatchListItem[] = [];
@@ -78,6 +143,7 @@ class BatchStoreClass {
   isMyBatchesLoading = false;
   isDetailsLoading = false;
   isSubmitting = false;
+  isPreviewSubmitting = false;
   error: string | null = null;
 
   constructor() {
@@ -154,7 +220,7 @@ class BatchStoreClass {
   createBatch = async (payload: {
     name: string;
     companyId?: string;
-    courseIds: string[];
+    courseIds?: string[];
     userIds?: string[];
     startDate: string;
     endDate?: string | null;
@@ -181,7 +247,7 @@ class BatchStoreClass {
 
       appendValue("name", payload.name);
       appendValue("companyId", payload.companyId);
-      appendValue("courseIds", payload.courseIds);
+      appendValue("courseIds", payload.courseIds || []);
       appendValue("userIds", payload.userIds || []);
       appendValue("startDate", payload.startDate);
       appendValue("endDate", payload.endDate);
@@ -286,6 +352,38 @@ class BatchStoreClass {
     } finally {
       runInAction(() => {
         this.isSubmitting = false;
+      });
+    }
+  };
+
+  previewBatchUpload = async (payload: {
+    file: File;
+    companyId?: string;
+  }) => {
+    this.isPreviewSubmitting = true;
+    this.error = null;
+    try {
+      const formData = new FormData();
+      formData.append("file", payload.file);
+      if (payload.companyId) {
+        formData.append("companyId", payload.companyId);
+      }
+
+      const { data } = await axios.post("/batches/preview-upload", formData, {
+        headers: {
+          "Content-Type": undefined,
+        },
+      });
+
+      return data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err?.response?.data?.message || err?.response?.data?.error || "Failed to validate uploaded batch file";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isPreviewSubmitting = false;
       });
     }
   };

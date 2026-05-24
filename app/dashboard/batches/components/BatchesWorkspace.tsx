@@ -1,75 +1,67 @@
 "use client";
 
+import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
+import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
+import { isLearnerRole } from "@/app/config/utils/roleAccess";
+import { batchStore } from "@/app/store/batchStore/batchStore";
+import stores from "@/app/store/stores";
 import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
+  Badge,
   Box,
   Button,
+  Divider,
+  Flex,
   HStack,
   Heading,
   Icon,
-  Input,
-  InputGroup,
-  InputLeftElement,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   SimpleGrid,
   Spinner,
   Stack,
-  Text,
-  useDisclosure,
-  useToast,
-  VStack,
-  Badge,
-  Flex,
   Stat,
+  StatHelpText,
   StatLabel,
   StatNumber,
-  StatHelpText,
-  Divider,
   Table,
-  Thead,
   Tbody,
-  Tr,
-  Th,
   Td,
-  useColorModeValue,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  IconButton,
+  Text,
+  Th,
+  Thead,
   Tooltip,
+  Tr,
+  VStack,
+  useColorModeValue,
+  useDisclosure,
+  useToast
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  FiSearch,
-  FiPlus,
-  FiUsers,
+  FiAward,
   FiBookOpen,
   FiCalendar,
-  FiTrendingUp,
-  FiAward,
+  FiCheckCircle,
+  FiClock,
+  FiEdit2,
   FiGrid,
   FiList,
   FiMoreVertical,
-  FiEdit2,
+  FiPlus,
+  FiSearch,
   FiTrash2,
+  FiTrendingUp,
   FiUserPlus,
-  FiClock,
-  FiCheckCircle,
-  FiXCircle,
+  FiUsers
 } from "react-icons/fi";
-import stores from "@/app/store/stores";
-import { batchStore } from "@/app/store/batchStore/batchStore";
-import { isLearnerRole } from "@/app/config/utils/roleAccess";
-import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 import BatchCard from "./BatchCard";
 import BatchCreationModal from "./BatchCreationModal";
 import BatchDetailsDrawer from "./BatchDetailsDrawer";
-import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
 // import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
 
 type BatchesWorkspaceProps = {
@@ -298,14 +290,14 @@ const BatchesWorkspace = observer(
               "linear-gradient(135deg, #f5f7fa 0%, #eef2f6 100%)",
               "linear-gradient(135deg, #1a202c 0%, #2d3748 100%)"
             )}
-        p={{ base: 4, md: 6, lg: 8 }}
+        p={{lg: 2 }}
       >
         <Stack spacing={6} w="100%">
           {/* Hero Header Section - Full Width */}
           <Box
             borderRadius="3xl"
-            px={{ base: 5, md: 8, lg: 10 }}
-            py={{ base: 6, md: 8, lg: 10 }}
+            px={{ base: 5, md: 8 }}
+            py={{ base: 6, md: 6 }}
             bg={
               isLearner
                 ? "linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)"
@@ -316,7 +308,7 @@ const BatchesWorkspace = observer(
             }
             borderWidth="1px"
             borderColor={isLearner ? "transparent" : useColorModeValue("blue.100", "blue.900")}
-            boxShadow={isLearner ? "2xl" : "xl"}
+            boxShadow={"md"}
             color={isLearner ? "white" : useColorModeValue("inherit", "white")}
             position="relative"
             overflow="hidden"
@@ -334,10 +326,10 @@ const BatchesWorkspace = observer(
                   <HStack spacing={3} flexWrap="wrap">
                     <Icon 
                       as={FiGrid} 
-                      boxSize={{ base: 6, md: 8 }} 
+                      boxSize={{ base: 4, md: 6 }} 
                       color={isLearner ? "blue.300" : "blue.600"}
                     />
-                    <Heading size={{ base: "md", md: "lg" }} fontWeight="bold">
+                    <Heading size={'md'} fontWeight="bold">
                       {isLearner ? "My Learning Batches" : "Batch Management"}
                     </Heading>
                     {stats.totalBatches > 0 && (
@@ -368,10 +360,11 @@ const BatchesWorkspace = observer(
                   <Button
                     leftIcon={<Icon as={FiPlus} />}
                     colorScheme="blue"
-                    size={{ base: "md", md: "lg" }}
+                    rounded="2xl"
+                    // size={{ base: "md", md: "lg" }}
                     onClick={creationDisclosure.onOpen}
                     isDisabled={!companyId && isSuperadmin}
-                    boxShadow="lg"
+                    // boxShadow="lg"
                     _hover={{
                       transform: "translateY(-2px)",
                       boxShadow: "xl",
