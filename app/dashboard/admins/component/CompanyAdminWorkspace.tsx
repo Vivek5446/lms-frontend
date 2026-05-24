@@ -34,6 +34,12 @@ import {
   IconButton,
   Wrap,
   WrapItem,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerHeader,
+  DrawerOverlay,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -53,12 +59,14 @@ import {
   FiUserPlus,
   FiBookOpen,
   FiHome,
+  FiEdit2,
 } from "react-icons/fi";
 import { readFileAsBase64 } from "../../../config/utils/utils";
 import stores from "../../../store/stores";
 import UserTable from "./users/UserTable";
 import DeleteData from "./users/component/DeleteUser";
 import UserDrawer from "../../users/components/UserDrawer";
+import CompanyForm from "./CompanyForm";
 
 const emptyManager = (level: number) => ({ level, selectedManager: null });
 const parseManagerLevel = (role: string) => {
@@ -224,7 +232,7 @@ const CompanyAdminWorkspace = ({
   const {
     userStore: { createManagedUser, updateManagedUser },
     auth: { user: currentUser },
-    companyStore,
+    companyStore: { setSelectedCompanyId, updateManagedCompany },
   } = stores;
 
   const [adminRefreshKey, setAdminRefreshKey] = useState(0);
@@ -235,6 +243,7 @@ const CompanyAdminWorkspace = ({
     data: null,
   });
   const [activeTab, setActiveTab] = useState(0);
+  const [isEditCompanyOpen, setIsEditCompanyOpen] = useState(false);
 
   const refreshAll = async () => {
     await onCompanyRefresh();
@@ -371,13 +380,77 @@ const CompanyAdminWorkspace = ({
     }));
 
   const openUsersManagement = () => {
-    companyStore.setSelectedCompanyId(company._id);
+    setSelectedCompanyId(company._id);
     router.push("/dashboard/users");
   };
 
   const openAssignedCourses = () => {
-    companyStore.setSelectedCompanyId(company._id);
+    setSelectedCompanyId(company._id);
     router.push("/dashboard/course/assigned");
+  };
+
+  const handleCompanyEditSubmit = async (values: any) => {
+    try {
+      setLoading(true);
+
+      const existingLogoUrl = company?.logo?.url || "";
+      const nextLogo = values?.logo || {};
+      const nextFile = nextLogo?.file;
+      const removedExistingLogo = !nextFile && !nextLogo?.url && Boolean(existingLogoUrl);
+      const shouldReplaceLogo = isRealFile(nextFile);
+
+      const companyDetails: any = {
+        company_name: values.company_name,
+        companyCode: values.companyCode,
+        companyType: values.companyType,
+        tenantSlug: values.tenantSlug || values.company_name,
+        customDomain: values.customDomain,
+        companyEmail: values.companyEmail,
+        managerLevels: Number(values.managerLevels) || 3,
+        mobileNo: values.mobileNo,
+        workNo: values.workNo,
+        webLink: values.webLink,
+        bio: values.bio,
+        verified_email_allowed: Boolean(values.verified_email_allowed),
+        addressInfo: values.addressInfo || [],
+        deletedFiles: removedExistingLogo && existingLogoUrl ? [existingLogoUrl] : [],
+        isLogoEdit: shouldReplaceLogo,
+      };
+
+      if (shouldReplaceLogo) {
+        const buffer = await readFileAsBase64(nextFile);
+        companyDetails.logo = {
+          buffer,
+          filename: nextFile.name,
+          type: nextFile.type,
+        };
+      } else if (removedExistingLogo) {
+        companyDetails.logo = null;
+      }
+
+      const response = await updateManagedCompany(company._id, { companyDetails });
+
+      await refreshAll();
+      setIsEditCompanyOpen(false);
+
+      toast({
+        title: "Company updated",
+        description: response?.data?.message || `${values.company_name} has been updated successfully.`,
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Failed to update company",
+        description: err?.message || "Please review the company details and try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addressText = company?.addressInfo?.[0]
@@ -447,6 +520,15 @@ const CompanyAdminWorkspace = ({
             </HStack>
 
             <HStack spacing={3}>
+              <Button
+                variant="outline"
+                size="sm"
+                borderRadius="full"
+                leftIcon={<FiEdit2 />}
+                onClick={() => setIsEditCompanyOpen(true)}
+              >
+                Edit Company
+              </Button>
               <Tooltip label="Assigned Courses" placement="top">
                 <Button
                   variant="outline"
@@ -749,6 +831,35 @@ const CompanyAdminWorkspace = ({
           onClose={() => setDrawerState({ type: "admin-add", isOpen: false, data: null })}
         />
       ) : null}
+
+      <Drawer
+        size="xl"
+        isOpen={isEditCompanyOpen}
+        placement="right"
+        onClose={() => setIsEditCompanyOpen(false)}
+      >
+        <DrawerOverlay backdropFilter="blur(8px)" bg="blackAlpha.300" />
+        <DrawerContent borderLeftRadius={{ base: "none", md: "3xl" }} shadow="2xl">
+          <DrawerCloseButton top={4} right={4} size="lg" />
+          <DrawerHeader borderBottomWidth="1px" borderColor={borderColor} py={6} px={8}>
+            <Text fontSize="2xl" fontWeight="800">
+              Edit Company
+            </Text>
+            <Text fontSize="sm" color={mutedText} mt={1}>
+              Update the company profile, tenant, and contact details.
+            </Text>
+          </DrawerHeader>
+          <DrawerBody pb={8} pt={6} px={8}>
+            <CompanyForm
+              initialValues={company}
+              onSubmit={handleCompanyEditSubmit}
+              onClose={() => setIsEditCompanyOpen(false)}
+              isLoading={loading}
+              submitLabel="Save Changes"
+            />
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </Box>
   );
 };

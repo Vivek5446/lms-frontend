@@ -125,6 +125,18 @@ class CompanyStores {
     }
   };
 
+  updateManagedCompany = async (companyId: string, payload: any) => {
+    this.isLoading = true;
+    try {
+      const response = await axios.put(`/company/${companyId}`, payload);
+      return response;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.isLoading = false;
+    }
+  };
+
   getManagedCompanies = async (params: any = {}) => {
     this.companies.loading = true;
     try {

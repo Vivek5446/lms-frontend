@@ -126,7 +126,7 @@ const BulkUploadModal = ({
     "Employee Name",
     "Email ID",
     "Contact Number",
-    "Branch",
+    bulkForm.uploadRole === "user" ? "Branch (Optional)" : "Branch",
     "City",
     "State",
     ...(bulkForm.uploadRole === "user" ? ["Designation", "Joining Date"] : []),

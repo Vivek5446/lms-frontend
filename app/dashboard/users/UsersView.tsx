@@ -558,7 +558,8 @@ const UsersView = observer(() => {
       .filter((manager) => manager.managerEmail);
 
     const needsDirectPassword = roleValue === "admin" || roleValue === "departmenthead";
-    const isDepartmentRequired = roleValue !== "admin" && roleValue !== "superadmin";
+    const isDepartmentRequired =
+      roleValue === "departmenthead" || Boolean(parseManagerLevel(roleValue));
 
     if (!code || !name || !email || !roleValue || !designation || (isDepartmentRequired && !department)) {
       toast({

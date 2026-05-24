@@ -86,7 +86,7 @@ const UserDrawer = ({
   const needsDirectPassword =
     userForm.role === "admin" || userForm.role === "departmenthead";
   const isDepartmentRequired =
-    userForm.role !== "admin" && userForm.role !== "superadmin";
+    userForm.role === "departmenthead" || /^l\d+-manager$/i.test(String(userForm.role || ""));
 
   useEffect(() => {
     if (userForm?.pic?.file instanceof File) {

@@ -4,6 +4,7 @@ import {
   Badge,
   Box,
   Button,
+  Checkbox,
   Divider,
   Flex,
   Grid,
@@ -88,6 +89,7 @@ const buildTenantPreview = (slug: string, customDomain?: string) => {
 
 /* ================= INITIAL ================= */
 export const companyInitialValues = {
+  _id: "",
   company_name: "",
   companyCode: "",
   companyType: "company",
@@ -112,8 +114,39 @@ export const companyInitialValues = {
   ],
 };
 
+const createCompanyFormValues = (company?: any) => ({
+  ...companyInitialValues,
+  ...company,
+  _id: company?._id || "",
+  company_name: company?.company_name || "",
+  companyCode: company?.companyCode || "",
+  companyType: company?.companyType || "company",
+  tenantSlug: company?.tenantSlug || "",
+  customDomain: company?.customDomain || "",
+  companyEmail: company?.companyEmail || "",
+  managerLevels: company?.managerLevels || 3,
+  mobileNo: company?.mobileNo || "",
+  workNo: company?.workNo || "",
+  webLink: company?.webLink || "",
+  bio: company?.bio || "",
+  verified_email_allowed: Boolean(company?.verified_email_allowed),
+  logo: company?.logo
+    ? { ...company.logo, file: null }
+    : { file: null },
+  addressInfo:
+    company?.addressInfo?.length
+      ? company.addressInfo.map((address: any) => ({
+          address: address?.address || "",
+          city: address?.city || "",
+          state: address?.state || "",
+          country: address?.country || "",
+          pinCode: address?.pinCode || "",
+        }))
+      : companyInitialValues.addressInfo,
+});
+
 /* ================= FORM ================= */
-const CompanyForm = ({ onSubmit, onClose, isLoading }: any) => {
+const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel = "Create Company" }: any) => {
   const [preview, setPreview] = useState<string | null>(null);
 
   /* ✅ SAFE PREVIEW */
@@ -137,14 +170,20 @@ const CompanyForm = ({ onSubmit, onClose, isLoading }: any) => {
 
   return (
     <Formik
-      initialValues={companyInitialValues}
+      initialValues={createCompanyFormValues(initialValues)}
+      enableReinitialize
       validationSchema={validationSchema}
       onSubmit={onSubmit}
     >
       {({ values, handleChange, handleSubmit, setFieldValue }: any) => {
         useEffect(() => {
-          handlePreview(values?.logo?.file);
-        }, [values?.logo?.file]);
+          const cleanup = handlePreview(values?.logo?.file);
+          if (!values?.logo?.file) {
+            setPreview(values?.logo?.url || null);
+          }
+
+          return cleanup;
+        }, [values?.logo?.file, values?.logo?.url]);
 
         const address = values.addressInfo?.[0] || {};
         const slug = slugifyTenant(values.tenantSlug || values.company_name || "");
@@ -224,9 +263,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading }: any) => {
                       size="sm"
                       colorScheme="red"
                       variant="outline"
-                      onClick={() =>
-                        setFieldValue("logo", { file: null })
-                      }
+                      onClick={() => setFieldValue("logo", { file: null, url: "" })}
                     >
                       Remove Logo
                     </Button>
@@ -263,6 +300,17 @@ const CompanyForm = ({ onSubmit, onClose, isLoading }: any) => {
                     onChange={handleChange}
                   />
                 </SimpleGrid>
+
+                <Box mt={4}>
+                  <Checkbox
+                    isChecked={Boolean(values.verified_email_allowed)}
+                    onChange={(e) =>
+                      setFieldValue("verified_email_allowed", e.target.checked)
+                    }
+                  >
+                    Require email verification before activating users
+                  </Checkbox>
+                </Box>
 
                 <Box mt={4}>
                   <CustomInput
@@ -332,7 +380,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading }: any) => {
                   Cancel
                 </Button>
                 <Button type="submit" colorScheme="brand" isLoading={isLoading}>
-                  Create Company
+                  {submitLabel}
                 </Button>
               </Flex>
             </Flex>
@@ -344,3 +392,4 @@ const CompanyForm = ({ onSubmit, onClose, isLoading }: any) => {
 };
 
 export default CompanyForm;
+export { createCompanyFormValues };
