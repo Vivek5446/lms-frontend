@@ -100,7 +100,10 @@ const CoursesPage = observer(function CoursesPage() {
   const [sortBy, setSortBy] = useState<CatalogSort>("latest");
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
 
-  const heroBg = useColorModeValue("linear-gradient(135deg, #F8FAFC 0%, #E0F2FE 52%, #DBEAFE 100%)", "linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)");
+  const heroBg = useColorModeValue(
+    "linear-gradient(135deg, var(--chakra-colors-blue-50) 0%, var(--chakra-colors-blue-100) 52%, var(--chakra-colors-blue-200) 100%)",
+    "linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, var(--chakra-colors-blue-900) 100%)"
+  );
   const pageBg = useColorModeValue("#F8FAFC", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -406,7 +409,7 @@ const CoursesPage = observer(function CoursesPage() {
                     {course.thumbnailUrl ? (
                       <Image src={course.thumbnailUrl} alt={course.title} h="190px" w="full" objectFit="cover" />
                     ) : (
-                      <Box h="190px" bgGradient="linear(to-br, blue.500, cyan.400)" />
+                      <Box h="190px" bgGradient="linear(to-br, blue.600, blue.300)" />
                     )}
                     <Badge position="absolute" top={4} left={4} colorScheme="blue" borderRadius="full" px={3} py={1}>
                       Private
@@ -494,7 +497,7 @@ const CoursesPage = observer(function CoursesPage() {
                   {course.thumbnailUrl ? (
                     <Image src={course.thumbnailUrl} alt={course.title} h="210px" w="full" objectFit="cover" />
                   ) : (
-                    <Box h="210px" bgGradient="linear(to-br, blue.500, cyan.400)" />
+                    <Box h="210px" bgGradient="linear(to-br, blue.600, blue.300)" />
                   )}
                   <HStack position="absolute" top={4} left={4} spacing={2} flexWrap="wrap">
                     <Badge colorScheme="green" borderRadius="full" px={3} py={1}>

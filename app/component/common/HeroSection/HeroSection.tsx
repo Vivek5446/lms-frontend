@@ -69,7 +69,10 @@ export default observer(function LMSLandingPage() {
   const featuredAssignedCourses = useMemo(() => assignedCourses.slice(0, 2), [assignedCourses]);
 
   const bgMain = useColorModeValue('white', 'gray.900');
-  const heroBg = useColorModeValue('linear-gradient(135deg, #F8FAFC 0%, #E0F2FE 45%, #DBEAFE 100%)', 'linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)');
+  const heroBg = useColorModeValue(
+    "linear-gradient(135deg, var(--chakra-colors-blue-50) 0%, var(--chakra-colors-blue-100) 45%, var(--chakra-colors-blue-200) 100%)",
+    "linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, var(--chakra-colors-blue-900) 100%)"
+  );
   const cardBg = useColorModeValue('white', 'gray.800');
   const mutedBg = useColorModeValue('gray.50', 'gray.900');
   const borderColor = useColorModeValue('gray.100', 'gray.700');

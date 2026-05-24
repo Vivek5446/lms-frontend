@@ -117,7 +117,7 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
             />
           ) : (
             <Box
-              bgGradient="linear(135deg, #667eea 0%, #764ba2 55%, #f093fb 100%)"
+              bgGradient="linear(to-br, blue.700, blue.400)"
               w="full"
               h="full"
             />
@@ -236,7 +236,7 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
             bg={useColorModeValue("gray.100", "whiteAlpha.100")}
             sx={{
               "& > div": {
-                background: "linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)",
+                background: "linear-gradient(90deg, var(--chakra-colors-blue-600) 0%, var(--chakra-colors-blue-300) 100%)",
                 borderRadius: "full",
               },
             }}

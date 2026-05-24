@@ -215,7 +215,10 @@ const [tempForm, setTempForm] = useState({
   const pageHeadingColor = useColorModeValue("gray.900", "gray.50");
   const pageSubColor = useColorModeValue("gray.500", "gray.500");
   const location = [form.city, form.state].filter(Boolean).join(", ");
-  const accentGradient = "linear(to-br, blue.400, purple.500)";
+  const accentGradient = useColorModeValue(
+    "linear(to-br, blue.500, blue.300)",
+    "linear(to-br, blue.300, blue.500)"
+  );
   const cardBg = useColorModeValue("white", "gray.800");
   const glassBg = useColorModeValue("rgba(255, 255, 255, 0.8)", "rgba(26, 32, 44, 0.8)");
 
@@ -259,10 +262,10 @@ const [tempForm, setTempForm] = useState({
               borderRadius="8px"
               fontSize="13px"
               fontWeight="600"
-              bg={useColorModeValue("blue.500", "gray.100")}
+              bg={useColorModeValue("blue.500", "blue.300")}
               color={useColorModeValue("white", "gray.900")}
               _hover={{
-                bg: useColorModeValue("gray.700", "gray.200"),
+                bg: useColorModeValue("blue.600", "blue.200"),
               }}
             >
               Edit Profile
@@ -305,7 +308,10 @@ const [tempForm, setTempForm] = useState({
             p="6px"
             borderRadius="full"
             bgGradient={accentGradient}
-            boxShadow="0px 10px 25px -5px rgba(66, 153, 225, 0.4)"
+            boxShadow={useColorModeValue(
+              "0px 10px 25px -5px rgba(15, 23, 42, 0.18)",
+              "0px 10px 25px -5px rgba(0, 0, 0, 0.42)"
+            )}
           >
             <Avatar
               name={fullName}
@@ -390,7 +396,7 @@ const [tempForm, setTempForm] = useState({
             { icon: FiUser, label: "Designation", value: s(user?.designation), color: "orange.400" },
             { icon: FiHash, label: "Employee Code", value: s(user?.code), color: "red.400" },
             { icon: FiCalendar, label: "Joined Date", value: fmtDate(user?.joiningDate), color: "teal.400" },
-            { icon: HiOutlineOfficeBuilding, label: "Company", value: s(user?.companyDetails?.company_name), color: "cyan.400" },
+            { icon: HiOutlineOfficeBuilding, label: "Company", value: s(user?.companyDetails?.company_name), color: "blue.400" },
           ].map((item, idx) => (
             <HStack key={idx} spacing={4} _hover={{ transform: "translateX(5px)" }} transition="0.2s">
               <Flex 

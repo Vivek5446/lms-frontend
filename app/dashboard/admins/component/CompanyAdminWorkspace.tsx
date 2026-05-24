@@ -479,6 +479,7 @@ const CompanyAdminWorkspace = ({
         workNo: values.workNo,
         webLink: values.webLink,
         bio: values.bio,
+        primaryThemeColor: values.primaryThemeColor,
         verified_email_allowed: Boolean(values.verified_email_allowed),
         addressInfo: values.addressInfo || [],
         deletedFiles: removedExistingLogo && existingLogoUrl ? [existingLogoUrl] : [],

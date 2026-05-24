@@ -136,7 +136,7 @@ const Header: React.FC = observer(() => {
                       fontWeight="600"
                       borderRadius="full"
                       color={isActive ? (colorMode === 'light' ? 'blue.700' : 'blue.300') : (colorMode === 'light' ? 'gray.600' : 'gray.300')}
-                      bg={isActive ? (colorMode === 'light' ? 'rgba(66, 153, 225, 0.2)' : 'rgba(66, 153, 225, 0.3)') : 'transparent'}
+                      bg={isActive ? (colorMode === 'light' ? 'blue.50' : 'blue.900') : 'transparent'}
                       boxShadow={isActive ? 'sm' : 'none'}
                       transition="all 0.25s ease"
                       _hover={{

@@ -2,14 +2,13 @@
 
 import { observer } from "mobx-react-lite";
 import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
-import { theme } from "./theme/theme";
-import { lato } from "./theme/theme";
+import { buildAppTheme, lato } from "./theme/theme";
 import "./globals.css";
 import MainLayout from "./layouts/mainLayout/MainLayout";
 import AuthenticationLayout from "./layouts/authenticationLayout/AuthenticationLayout";
 import DashboardLayout from "./layouts/dashboardLayout/DashboardLayout";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import stores from "./store/stores";
 import Notification from "./component/common/Notification/Notification";
 import { Montserrat } from "next/font/google";
@@ -24,6 +23,7 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
   const {
     companyStore: { getCompanyDetails },
     auth: { user },
+    themeStore: { themeConfig },
   } = stores;
   const pathname = usePathname();
   const [metadata, setMetadata] = useState<PageMetadata>({
@@ -68,6 +68,19 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
   };
 
   const LayoutComponent = getLayout();
+  const isLearnerThemeEnabled = !pathname?.startsWith("/dashboard");
+  const themeConfigSnapshot = isLearnerThemeEnabled
+    ? "{}"
+    : JSON.stringify(themeConfig || {});
+  const activeTheme = useMemo(
+    () =>
+      buildAppTheme({
+        enableLearnerBranding: isLearnerThemeEnabled,
+        learnerPrimaryColor: user?.companyDetails?.primaryThemeColor,
+        themeConfig: isLearnerThemeEnabled ? {} : JSON.parse(themeConfigSnapshot),
+      }),
+    [isLearnerThemeEnabled, themeConfigSnapshot, user?.companyDetails?.primaryThemeColor]
+  );
 
   return (
     <html lang="en">
@@ -83,7 +96,7 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
         <ColorModeScript initialColorMode="light" />
       </head>
       <body className={`${lato.className} ${montserrat.className}`}>
-        <ChakraProvider theme={theme}>
+        <ChakraProvider theme={activeTheme}>
           <Notification />
           <LayoutComponent>{children}</LayoutComponent>
         </ChakraProvider>

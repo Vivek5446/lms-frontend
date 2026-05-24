@@ -9,6 +9,7 @@ import {
   Flex,
   Grid,
   GridItem,
+  HStack,
   Icon,
   SimpleGrid,
   Text,
@@ -18,13 +19,16 @@ import { Formik, Form as FormikForm } from "formik";
 import {
   Building2,
   Globe,
-  MapPin
+  MapPin,
+  Palette,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
 
+import BrandColorField from "../../../component/common/BrandColorField/BrandColorField";
 import CustomInput from "../../../component/config/component/customInput/CustomInput";
 import { SITE_URL } from "../../../config/utils/variables";
+import { DEFAULT_LEARNER_PRIMARY_COLOR, normalizeHexColor } from "../../../theme/theme";
 
 /* ================= SECTION CARD ================= */
 const SectionCard = ({ title, icon, children, color }: any) => {
@@ -87,6 +91,16 @@ const buildTenantPreview = (slug: string, customDomain?: string) => {
   }
 };
 
+const getContrastTextColor = (hexColor?: string) => {
+  const normalizedColor = normalizeHexColor(hexColor, DEFAULT_LEARNER_PRIMARY_COLOR).replace("#", "");
+  const red = Number.parseInt(normalizedColor.slice(0, 2), 16);
+  const green = Number.parseInt(normalizedColor.slice(2, 4), 16);
+  const blue = Number.parseInt(normalizedColor.slice(4, 6), 16);
+  const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
+
+  return luminance >= 150 ? "gray.900" : "white";
+};
+
 /* ================= INITIAL ================= */
 export const companyInitialValues = {
   _id: "",
@@ -101,6 +115,7 @@ export const companyInitialValues = {
   workNo: "",
   webLink: "",
   bio: "",
+  primaryThemeColor: DEFAULT_LEARNER_PRIMARY_COLOR,
   verified_email_allowed: false,
   logo: { file: null },
   addressInfo: [
@@ -129,6 +144,10 @@ const createCompanyFormValues = (company?: any) => ({
   workNo: company?.workNo || "",
   webLink: company?.webLink || "",
   bio: company?.bio || "",
+  primaryThemeColor: normalizeHexColor(
+    company?.primaryThemeColor,
+    DEFAULT_LEARNER_PRIMARY_COLOR
+  ),
   verified_email_allowed: Boolean(company?.verified_email_allowed),
   logo: company?.logo
     ? { ...company.logo, file: null }
@@ -166,6 +185,9 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
     managerLevels: Yup.number().min(1).max(20).required(),
     mobileNo: Yup.string().required(),
     bio: Yup.string().required(),
+    primaryThemeColor: Yup.string()
+      .matches(/^#(?:[0-9A-Fa-f]{3}){1,2}$/, "Enter a valid hex color")
+      .required(),
   });
 
   return (
@@ -188,6 +210,11 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
         const address = values.addressInfo?.[0] || {};
         const slug = slugifyTenant(values.tenantSlug || values.company_name || "");
         const previewUrl = buildTenantPreview(slug, values.customDomain);
+        const resolvedThemeColor = normalizeHexColor(
+          values.primaryThemeColor,
+          DEFAULT_LEARNER_PRIMARY_COLOR
+        );
+        const previewTextColor = getContrastTextColor(resolvedThemeColor);
 
         return (
           <FormikForm onSubmit={handleSubmit}>
@@ -240,6 +267,38 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                   <Badge colorScheme="purple">{previewUrl || "—"}</Badge>
                   <Badge colorScheme="blue">{values.managerLevels || 3} levels</Badge>
                 </Flex>
+              </SectionCard>
+
+              <SectionCard title="Learner Branding" icon={Palette} color="blue">
+                <BrandColorField
+                  value={resolvedThemeColor}
+                  onChange={(nextColor) => setFieldValue("primaryThemeColor", nextColor)}
+                  helperText="This applies only to the learner-side portal for now. The admin dashboard keeps its current styling."
+                />
+
+                <HStack mt={4} spacing={3} flexWrap="wrap">
+                  <Text fontSize="sm">Preview:</Text>
+                  <Badge
+                    px={4}
+                    py={2}
+                    borderRadius="full"
+                    bg={resolvedThemeColor}
+                    color={previewTextColor}
+                    textTransform="none"
+                  >
+                    Learning Portal
+                  </Badge>
+                  <Badge
+                    px={3}
+                    py={2}
+                    borderRadius="full"
+                    variant="outline"
+                    borderColor={resolvedThemeColor}
+                    color={resolvedThemeColor}
+                  >
+                    {resolvedThemeColor}
+                  </Badge>
+                </HStack>
               </SectionCard>
 
               {/* PROFILE */}
