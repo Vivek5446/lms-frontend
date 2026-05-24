@@ -52,7 +52,7 @@ import {
 import stores from "@/app/store/stores";
 import { courseStore } from "@/app/store/courseStore/courseStore";
 import PermissionGate from "@/app/component/common/PermissionGate";
-import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
+import { hasAnyCourseViewPermission } from "@/app/config/utils/permissions";
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -89,7 +89,7 @@ const CourseAssignmentsAuditPage = observer(() => {
   const { auth, companyStore } = stores;
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isSuperadmin = role === "superadmin";
-  const canViewCourses = hasPermission(auth.user, PERMISSION_KEYS.VIEW_COURSES);
+  const canViewCourses = hasAnyCourseViewPermission(auth.user);
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
   const textColor = useColorModeValue("gray.600", "gray.300");
@@ -106,6 +106,10 @@ const CourseAssignmentsAuditPage = observer(() => {
   }, [companyStore, isSuperadmin]);
 
   useEffect(() => {
+    if (!canViewCourses) {
+      return;
+    }
+
     if (!companyId && isSuperadmin) {
       return;
     }
@@ -115,7 +119,7 @@ const CourseAssignmentsAuditPage = observer(() => {
       courseId: courseFilter || undefined,
       userId: userFilter || undefined,
     }).catch(() => undefined);
-  }, [companyId, courseFilter, isSuperadmin, userFilter]);
+  }, [canViewCourses, companyId, courseFilter, isSuperadmin, userFilter]);
 
   const rows = courseStore.courseAssignmentAudit || [];
   
@@ -177,7 +181,7 @@ const CourseAssignmentsAuditPage = observer(() => {
               <Heading size="md">Assignment Audit</Heading>
             </HStack>
             <Text mt={2} color={textColor}>
-              Trace direct and batch-based course assignments for the active company context.
+              Trace direct and batch-based course assignments for the active scope.
             </Text>
           </Box>
 

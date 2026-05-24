@@ -53,7 +53,11 @@ import stores from "@/app/store/stores";
 import { courseStore } from "@/app/store/courseStore/courseStore";
 import AssignCourseModal from "../components/AssignCourseModal";
 import PermissionGate from "@/app/component/common/PermissionGate";
-import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
+import {
+  PERMISSION_KEYS,
+  hasAnyCourseViewPermission,
+  hasPermission,
+} from "@/app/config/utils/permissions";
 
 function getStatusColor(status: string) {
   if (status === "expired") {
@@ -86,7 +90,7 @@ const AssignedCoursesPage = observer(() => {
   const { auth, companyStore } = stores;
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isSuperadmin = role === "superadmin";
-  const canViewCourses = hasPermission(auth.user, PERMISSION_KEYS.VIEW_COURSES);
+  const canViewCourses = hasAnyCourseViewPermission(auth.user);
   const canAssignCourses = hasPermission(auth.user, PERMISSION_KEYS.ASSIGN_COURSES);
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
@@ -112,18 +116,26 @@ const AssignedCoursesPage = observer(() => {
   }, [companyStore, isSuperadmin]);
 
   useEffect(() => {
+    if (!canViewCourses) {
+      return;
+    }
+
     courseStore.fetchCourses().catch(() => undefined);
     courseStore.fetchAccessibleCourses().catch(() => undefined);
-  }, []);
+  }, [canViewCourses]);
 
   useEffect(() => {
+    if (!canViewCourses) {
+      return;
+    }
+
     if (!companyId && isSuperadmin) {
       return;
     }
     courseStore.fetchAssignedCourseAccesses({
       companyId: companyId || undefined,
     }).catch(() => undefined);
-  }, [companyId, isSuperadmin]);
+  }, [canViewCourses, companyId, isSuperadmin]);
 
   const rows = courseStore.assignedCourseAccesses || [];
   const filteredRows = useMemo(() => {
@@ -220,7 +232,7 @@ const AssignedCoursesPage = observer(() => {
                   <Heading size="md">Assigned Courses</Heading>
                 </HStack>
                 <Text mt={2} color={textColor}>
-                  Review what is already assigned to {activeCompany?.company_name || "the selected company"} and assign new courses from the full library without leaving this workspace.
+                  Review what is already assigned to {activeCompany?.company_name || "the selected company"} and assign new courses from the scoped library without leaving this workspace.
                 </Text>
               </Box>
               <Button

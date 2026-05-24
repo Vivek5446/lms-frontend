@@ -48,7 +48,6 @@ const sidebarDatas: SidebarItem[] = [
     icon: <LucideBriefcaseBusiness />,
     url: "/dashboard/admins",
     role: ["superadmin"],
-    permissionKey: PERMISSION_KEYS.VIEW_COMPANIES,
   },
   {
     id: 13,
@@ -56,7 +55,6 @@ const sidebarDatas: SidebarItem[] = [
     icon: <FaCog />,
     url: "/dashboard/permissions",
     role: ["superadmin"],
-    permissionKey: PERMISSION_KEYS.MANAGE_PERMISSIONS,
   },
   {
     id: 17,
@@ -64,7 +62,7 @@ const sidebarDatas: SidebarItem[] = [
     icon: <HiOutlineComputerDesktop />,
     url: "/dashboard/course",
     role: ["superadmin", "admin", "departmenthead"],
-    permissionKey: PERMISSION_KEYS.VIEW_COURSES,
+    permissionKey: PERMISSION_KEYS.VIEW_ASSIGNED_COURSES,
     children: [
       {
         id: 171,
@@ -72,7 +70,7 @@ const sidebarDatas: SidebarItem[] = [
         icon: <PlusSquareIcon />,
         url: "/dashboard/course",
         role: ["superadmin", "admin", "departmenthead"],
-        permissionKey: PERMISSION_KEYS.VIEW_COURSES,
+        permissionKey: PERMISSION_KEYS.VIEW_ASSIGNED_COURSES,
       },
       {
         id: 172,
@@ -80,7 +78,7 @@ const sidebarDatas: SidebarItem[] = [
         icon: <PlusSquareIcon />,
         url: "/dashboard/course/assigned",
         role: ["superadmin", "admin", "departmenthead"],
-        permissionKey: PERMISSION_KEYS.VIEW_COURSES,
+        permissionKey: PERMISSION_KEYS.VIEW_ASSIGNED_COURSES,
       },
       {
         id: 174,
@@ -88,7 +86,7 @@ const sidebarDatas: SidebarItem[] = [
         icon: <PlusSquareIcon />,
         url: "/dashboard/course/assignments",
         role: ["superadmin", "admin", "departmenthead"],
-        permissionKey: PERMISSION_KEYS.VIEW_COURSES,
+        permissionKey: PERMISSION_KEYS.VIEW_ASSIGNED_COURSES,
       },
     ],
   },

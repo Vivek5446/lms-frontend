@@ -33,7 +33,11 @@ import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore
 import stores from "@/app/store/stores";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import PermissionGate from "@/app/component/common/PermissionGate";
-import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
+import {
+  PERMISSION_KEYS,
+  hasAnyCourseViewPermission,
+  hasPermission,
+} from "@/app/config/utils/permissions";
 
 const MotionButton = motion.button;
 
@@ -112,9 +116,24 @@ function CoursePage() {
   const router = useRouter();
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
   const isLearner = isLearnerRole(role);
-  const canViewCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.VIEW_COURSES);
-  const canManageCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.MANAGE_COURSES);
+  const canViewCourses = hasAnyCourseViewPermission(stores.auth.user);
+  const canCreateCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.CREATE_COURSES);
+  const canDeleteCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.DELETE_COURSES);
   const canAssignCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.ASSIGN_COURSES);
+  const scopeBadgeLabel =
+    role === "superadmin"
+      ? "Platform Course Library"
+      : role === "admin"
+        ? "Company Course Library"
+        : role === "departmenthead"
+          ? "Department Course Library"
+          : "Course Library";
+  const scopeDescription =
+    role === "superadmin"
+      ? "Review and manage the full platform catalog, including global, assigned, and company-created courses."
+      : role === "admin"
+        ? "Review and manage the course catalog available to your company, including assigned and company-created courses."
+        : "Review the courses available to your department and manage the items your role is allowed to maintain.";
 
   useEffect(() => {
     if (isLearner) {
@@ -367,14 +386,14 @@ function CoursePage() {
                   }}
                 >
                   <FiFilter />
-                  Super Admin Course Management
+                  {scopeBadgeLabel}
                 </div>
                 <h1 style={{ margin: "16px 0 10px", fontSize: 34, lineHeight: 1.08, fontWeight: 800 }}>
-                  Search, filter, and manage every course from one workspace
+                  Search, filter, and manage courses within your scope
                 </h1>
                 <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.84)" }}>
-                  Private and public catalogs now live side by side. Use the filters below to isolate visibility,
-                  pricing, delivery type, language, category, and publishing status in seconds.
+                  {scopeDescription} Use the filters below to isolate visibility, pricing, delivery type, language,
+                  category, and publishing status in seconds.
                 </p>
               </div>
 
@@ -405,7 +424,7 @@ function CoursePage() {
                   {role === "superadmin" ? "Assigned Courses" : "Assign Courses"}
                 </MotionButton>
 
-                {canManageCourses ? (
+                {canCreateCourses ? (
                   <MotionButton
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -441,7 +460,7 @@ function CoursePage() {
               marginBottom: 22,
             }}
           >
-            <StatCard label="Total Courses" value={summary.total} helper="Every course in your scoped library." accent="#2563EB" />
+            <StatCard label="Total Courses" value={summary.total} helper="Every course in your current scope." accent="#2563EB" />
             <StatCard label="Published" value={summary.published} helper="Ready for assignment or public discovery." accent="#0F766E" />
             <StatCard label="Private" value={summary.privateCount} helper="Restricted and assignable through the access flow." accent="#1D4ED8" />
             <StatCard label="Public" value={summary.publicCount} helper="Visible without login for self-serve learners." accent="#059669" />
@@ -838,31 +857,33 @@ function CoursePage() {
                                   View
                                 </MotionButton>
 
-                                <MotionButton
-                                  whileHover={{ scale: 1.03 }}
-                                  whileTap={{ scale: 0.98 }}
-                                  onClick={async () => {
-                                    if (confirm("Delete this course?")) {
-                                      await courseStore.deleteCourse(course._id);
-                                    }
-                                  }}
-                                  style={{
-                                    borderRadius: 12,
-                                    border: `1px solid ${borderColor}`,
-                                    background: surfaceBg,
-                                    color: "#DC2626",
-                                    padding: "8px 12px",
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 6,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  <FiTrash2 size={12} />
-                                  Delete
-                                </MotionButton>
+                                {canDeleteCourses ? (
+                                  <MotionButton
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={async () => {
+                                      if (confirm("Delete this course?")) {
+                                        await courseStore.deleteCourse(course._id);
+                                      }
+                                    }}
+                                    style={{
+                                      borderRadius: 12,
+                                      border: `1px solid ${borderColor}`,
+                                      background: surfaceBg,
+                                      color: "#DC2626",
+                                      padding: "8px 12px",
+                                      fontSize: 12,
+                                      fontWeight: 600,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 6,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    <FiTrash2 size={12} />
+                                    Delete
+                                  </MotionButton>
+                                ) : null}
                               </div>
                             </td>
                           </tr>

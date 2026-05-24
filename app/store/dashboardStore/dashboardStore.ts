@@ -3,6 +3,10 @@ import axios from "axios";
 import { authStore } from "../authStore/authStore";
 
 class DashboardStore {
+  scopedSummary: any = null;
+  scopedSummaryLoading = false;
+  scopedSummaryError: string | null = null;
+
   count : any = {
     data: {},
     loading: false,
@@ -56,6 +60,24 @@ class DashboardStore {
   constructor() {
     makeAutoObservable(this);
   }
+
+  fetchScopedSummary = async () => {
+    this.scopedSummaryLoading = true;
+    this.scopedSummaryError = null;
+    try {
+      const { data } = await axios.get(`/dashboard/summary`);
+      this.scopedSummary = data?.data || null;
+      return this.scopedSummary;
+    } catch (err: any) {
+      this.scopedSummaryError =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Failed to load dashboard summary";
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      this.scopedSummaryLoading = false;
+    }
+  };
 
   getNotifications = async (type?: string | boolean, page: number = 1, limit: number = 10) => {
     this.notification.loading = true;

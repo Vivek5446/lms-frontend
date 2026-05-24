@@ -44,6 +44,7 @@ import {
   FiUsers,
 } from "react-icons/fi";
 import { readFileAsBase64 } from "../../config/utils/utils";
+import PermissionGate from "@/app/component/common/PermissionGate";
 import stores from "../../store/stores";
 import CompanyAdminWorkspace from "./component/CompanyAdminWorkspace";
 import CompanyForm from "./component/CompanyForm";
@@ -62,6 +63,7 @@ const DirectoryPage = observer(() => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
   const selectedCompanyId = searchParams.get("company") || "";
 
   // Modern Color Palette Definitions
@@ -205,7 +207,13 @@ const DirectoryPage = observer(() => {
   }
 
   return (
-    <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 8 }} transition="all 0.3s ease">
+    <PermissionGate
+      allowed={role === "superadmin"}
+      title="Companies module is restricted"
+      description="Only Super Admins can access company management."
+      fallbackHref="/dashboard"
+    >
+      <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 8 }} transition="all 0.3s ease">
       <Stack spacing={10} maxW="1400px" mx="auto">
         
         {/* Elegant Header Section */}
@@ -599,6 +607,7 @@ const DirectoryPage = observer(() => {
         }
       `}</style>
     </Box>
+    </PermissionGate>
   );
 });
 

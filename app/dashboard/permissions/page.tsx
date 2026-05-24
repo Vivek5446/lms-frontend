@@ -1,6 +1,5 @@
 "use client";
 import PermissionGate from "@/app/component/common/PermissionGate";
-import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 import stores from "@/app/store/stores";
 import {
   Box,
@@ -61,7 +60,8 @@ const getCategoryStyle = (category: string) => {
 const PermissionsPage = observer(() => {
   const toast = useToast();
   const { auth, companyStore, userStore } = stores;
-  const canManagePermissions = hasPermission(auth.user, PERMISSION_KEYS.MANAGE_PERMISSIONS);
+  const role = String(auth.userType || auth.user?.role || "").toLowerCase();
+  const canManagePermissions = role === "superadmin";
   const companyId = companyStore.getActiveCompanyId();
   const [selectedRole, setSelectedRole] = useState("admin");
   const [selectedUserId, setSelectedUserId] = useState("");
@@ -94,8 +94,12 @@ const PermissionsPage = observer(() => {
   const emptyStateTextColor = useColorModeValue("gray.400", "gray.500");
 
   useEffect(() => {
+    if (!canManagePermissions) {
+      return;
+    }
+
     companyStore.getManagedCompanies().catch(() => undefined);
-  }, [companyStore]);
+  }, [canManagePermissions, companyStore]);
 
   useEffect(() => {
     if (!companyId || !canManagePermissions) {
@@ -112,10 +116,17 @@ const PermissionsPage = observer(() => {
   const config = userStore.permissionConfig;
   const catalog = config?.catalog || [];
   const roles = config?.roles || [];
+  const configurableUsers = useMemo(
+    () =>
+      userStore.users.filter((user: any) =>
+        ["admin", "departmenthead"].includes(String(user?.role || "").toLowerCase())
+      ),
+    [userStore.users]
+  );
 
   const selectedUser = useMemo(
-    () => userStore.users.find((user) => user._id === selectedUserId) || null,
-    [selectedUserId, userStore.users]
+    () => configurableUsers.find((user: any) => user._id === selectedUserId) || null,
+    [configurableUsers, selectedUserId]
   );
 
   const groupedCatalog = useMemo(() => {
@@ -144,6 +155,12 @@ const PermissionsPage = observer(() => {
       buildPermissionDraft(catalog, selectedUser?.permissionOverrides || {})
     );
   }, [catalog, selectedUser]);
+
+  useEffect(() => {
+    if (selectedUserId && !selectedUser) {
+      setSelectedUserId("");
+    }
+  }, [selectedUser, selectedUserId]);
 
   const handleRoleToggle = (key: string, value: boolean) => {
     setRoleDraft((prev) => ({ ...prev, [key]: value }));
@@ -298,7 +315,7 @@ const PermissionsPage = observer(() => {
     <PermissionGate
       allowed={canManagePermissions}
       title="Permissions access is disabled"
-      description="Only Super Admins with permission management access can edit these settings."
+      description="Only Super Admins can edit role defaults and user permission overrides."
       fallbackHref="/dashboard/profile"
     >
       <Box minH="100vh" bg={bgColor}>
@@ -425,7 +442,7 @@ const PermissionsPage = observer(() => {
                     _hover={{ borderColor: "teal.300" }}
                     className="h-11 rounded-3xl text-base focus:border-teal-300 focus:ring-teal-300"
                   >
-                    {userStore.users.map((user: any) => (
+                    {configurableUsers.map((user: any) => (
                       <option key={user._id} value={user._id}>
                         {user.name} ({user.email}) — {user.role}
                       </option>

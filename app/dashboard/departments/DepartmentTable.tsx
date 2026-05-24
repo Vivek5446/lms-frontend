@@ -1,9 +1,8 @@
 import { departmentStore } from "@/app/store/departmentStore/departmentStore";
+import stores from "@/app/store/stores";
 import {
   AddIcon,
   ChevronRightIcon,
-  DeleteIcon,
-  EditIcon,
 } from "@chakra-ui/icons";
 import {
   Badge,
@@ -50,6 +49,8 @@ type DepartmentTableProps = {
 };
 
 const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
+  const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
+  const canManageDepartments = role === "superadmin" || role === "admin";
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isDeleteOpen,
@@ -286,15 +287,21 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                     mt={1}
                   >
                     {companyName
-                      ? `Managing departments for ${companyName}`
-                      : "Select a company to view and manage departments"}
+                      ? `${canManageDepartments ? "Managing" : "Viewing"} departments for ${companyName}`
+                      : `Select a company to ${canManageDepartments ? "view and manage" : "view"} departments`}
                   </Text>
                 </Box>
               </Flex>
             </Box>
 
             <Tooltip
-              label={!companyId ? "Please select a company first" : "Add new department"}
+              label={
+                !companyId
+                  ? "Please select a company first"
+                  : !canManageDepartments
+                    ? "Only Admins and Super Admins can manage departments"
+                    : "Add new department"
+              }
               hasArrow
             >
               <Button
@@ -303,7 +310,7 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                 size="md"
                 width={{ base: "100%", md: "auto" }}
                 onClick={handleCreate}
-                isDisabled={!companyId}
+                isDisabled={!companyId || !canManageDepartments}
                 bgGradient="linear(to-r, blue.500, purple.600)"
                 color="white"
                 _hover={{
@@ -359,7 +366,7 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                   ? `No departments have been created for ${companyName} yet`
                   : "Please select a company to view its departments"}
               </Text>
-              {companyId && (
+              {companyId && canManageDepartments && (
                 <Button
                   leftIcon={<AddIcon />}
                   colorScheme="blue"
@@ -405,9 +412,11 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                       <Th color="white" fontSize="sm">
                         Code
                       </Th>
-                      <Th textAlign="right" color="white" fontSize="sm">
-                        Actions
-                      </Th>
+                      {canManageDepartments ? (
+                        <Th textAlign="right" color="white" fontSize="sm">
+                          Actions
+                        </Th>
+                      ) : null}
                     </Tr>
                   </Thead>
 
@@ -472,41 +481,43 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
                           </Badge>
                         </Td>
 
-                        <Td>
-                          <Flex justify="flex-end" gap={2}>
-                            <Tooltip label="Edit department" hasArrow>
-                              <IconButton
-                                aria-label="Edit"
-                                icon={<Icon as={FiEdit2} />}
-                                size="sm"
-                                variant="ghost"
-                                colorScheme="blue"
-                                onClick={() => handleEdit(dept)}
-                                _hover={{
-                                  bg: useColorModeValue("blue.100", "blue.900"),
-                                  transform: "scale(1.1)",
-                                }}
-                                transition="all 0.2s"
-                              />
-                            </Tooltip>
+                        {canManageDepartments ? (
+                          <Td>
+                            <Flex justify="flex-end" gap={2}>
+                              <Tooltip label="Edit department" hasArrow>
+                                <IconButton
+                                  aria-label="Edit"
+                                  icon={<Icon as={FiEdit2} />}
+                                  size="sm"
+                                  variant="ghost"
+                                  colorScheme="blue"
+                                  onClick={() => handleEdit(dept)}
+                                  _hover={{
+                                    bg: useColorModeValue("blue.100", "blue.900"),
+                                    transform: "scale(1.1)",
+                                  }}
+                                  transition="all 0.2s"
+                                />
+                              </Tooltip>
 
-                            <Tooltip label="Delete department" hasArrow>
-                              <IconButton
-                                aria-label="Delete"
-                                icon={<Icon as={FiTrash2} />}
-                                size="sm"
-                                variant="ghost"
-                                colorScheme="red"
-                                onClick={() => handleDeleteClick(dept._id)}
-                                _hover={{
-                                  bg: useColorModeValue("red.100", "red.900"),
-                                  transform: "scale(1.1)",
-                                }}
-                                transition="all 0.2s"
-                              />
-                            </Tooltip>
-                          </Flex>
-                        </Td>
+                              <Tooltip label="Delete department" hasArrow>
+                                <IconButton
+                                  aria-label="Delete"
+                                  icon={<Icon as={FiTrash2} />}
+                                  size="sm"
+                                  variant="ghost"
+                                  colorScheme="red"
+                                  onClick={() => handleDeleteClick(dept._id)}
+                                  _hover={{
+                                    bg: useColorModeValue("red.100", "red.900"),
+                                    transform: "scale(1.1)",
+                                  }}
+                                  transition="all 0.2s"
+                                />
+                              </Tooltip>
+                            </Flex>
+                          </Td>
+                        ) : null}
                       </Tr>
                     ))}
                   </Tbody>

@@ -1,6 +1,6 @@
 'use client'
 
-import { PERMISSION_KEYS, hasPermission } from '@/app/config/utils/permissions';
+import { PERMISSION_KEYS, hasAnyCourseViewPermission, hasPermission } from '@/app/config/utils/permissions';
 import { isLearnerRole, isManagerRole } from '@/app/config/utils/roleAccess';
 import stores from '@/app/store/stores';
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
@@ -45,11 +45,11 @@ const Header: React.FC = observer(() => {
   const isLoggedIn = Boolean(user);
   const isLearner = isLoggedIn && isLearnerRole(role);
   const isManagerUser = isLoggedIn && isManagerRole(role);
-  const appHref = hasPermission(user, PERMISSION_KEYS.VIEW_COMPANIES)
+  const appHref = role === 'superadmin'
     ? '/dashboard/admins'
     : hasPermission(user, PERMISSION_KEYS.VIEW_USERS)
       ? '/dashboard/users'
-      : hasPermission(user, PERMISSION_KEYS.VIEW_COURSES)
+      : hasAnyCourseViewPermission(user)
         ? '/dashboard/course'
         : hasPermission(user, PERMISSION_KEYS.VIEW_BATCHES)
           ? '/dashboard/batches'
