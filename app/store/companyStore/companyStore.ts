@@ -137,6 +137,28 @@ class CompanyStores {
     }
   };
 
+  updateManagedCompanyStatus = async (companyId: string, isActive: boolean) => {
+    this.isLoading = true;
+    try {
+      const response = await axios.put(`/company/${companyId}/status`, {
+        isActive,
+      });
+      this.companies.data = (this.companies.data || []).map((company: any) =>
+        company?._id === companyId
+          ? {
+              ...company,
+              ...(response.data?.data || {}),
+            }
+          : company
+      );
+      return response;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.isLoading = false;
+    }
+  };
+
   getManagedCompanies = async (params: any = {}) => {
     this.companies.loading = true;
     try {

@@ -108,15 +108,39 @@ class UserStore {
     }
   };
 
-  toggleUserStatus = async (id: string) => {
+  toggleUserStatus = async (id: string, isEnabled?: boolean) => {
     this.isLoading = true;
     try {
-      const response = await axios.put(`/user/status/${id}`);
+      const response = await axios.put(`/user/status/${id}`, {
+        isEnabled,
+      });
       return response;
     } catch (err: any) {
       return Promise.reject(err?.response?.data || err.message);
     } finally {
         this.isLoading = false;
+    }
+  };
+
+  updateManagedUserStatus = async (id: string, isEnabled: boolean) => {
+    this.submitting = true;
+    try {
+      const response = await axios.put(`/admin/users/${id}/status`, {
+        isEnabled,
+      });
+      this.users = this.users.map((user: any) =>
+        user?._id === id
+          ? {
+              ...user,
+              ...(response?.data?.data?.user || {}),
+            }
+          : user
+      );
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.submitting = false;
     }
   };
 

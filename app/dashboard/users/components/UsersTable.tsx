@@ -3,6 +3,7 @@
 import {
   Badge,
   Box,
+  Button,
   Divider,
   Flex,
   HStack,
@@ -55,8 +56,38 @@ type Props = {
   muted: string;
   onEdit: (user: any) => void;
   onView: (user: any) => void;
+  onToggleStatus?: (user: any) => void;
+  statusUpdatingId?: string | null;
   formatRoleLabel: (role: string) => string;
   canEdit?: boolean;
+  canToggleStatus?: boolean;
+};
+
+const getUserStatusMeta = (user: any) => {
+  if (user?.status === "INACTIVE" || user?.isEnabled === false || user?.is_enabled === false) {
+    return {
+      label: "Inactive",
+      colorScheme: "red",
+      dotColor: "red.500",
+      helperText: "Login blocked",
+    };
+  }
+
+  if (user?.status === "ACTIVE" || user?.isActive) {
+    return {
+      label: "Active",
+      colorScheme: "green",
+      dotColor: "green.500",
+      helperText: "Can access portal",
+    };
+  }
+
+  return {
+    label: "Pending",
+    colorScheme: "orange",
+    dotColor: "orange.500",
+    helperText: "Setup incomplete",
+  };
 };
 
 const UsersTable = ({
@@ -74,14 +105,18 @@ const UsersTable = ({
   muted,
   onEdit,
   onView,
+  onToggleStatus,
+  statusUpdatingId,
   formatRoleLabel,
   canEdit = true,
+  canToggleStatus = false,
 }: Props) => {
   // Statistics calculations
   const stats = {
     total: pagination.total || 0,
-    active: users.filter((u: any) => u.isActive).length,
-    pending: users.filter((u: any) => !u.isActive).length,
+    active: users.filter((u: any) => getUserStatusMeta(u).label === "Active").length,
+    inactive: users.filter((u: any) => getUserStatusMeta(u).label === "Inactive").length,
+    pending: users.filter((u: any) => getUserStatusMeta(u).label === "Pending").length,
     passwordSet: users.filter((u: any) => u.passwordStatus === "SET").length,
   };
 
@@ -311,27 +346,75 @@ const UsersTable = ({
       type: "component",
       width: "120px",
       metaData: {
-        component: (user: any) => (
-          <HStack spacing={1}>
-            <Box
-              w="2"
-              h="2"
+        component: (user: any) => {
+          const statusMeta = getUserStatusMeta(user);
+          const shadowColor =
+            statusMeta.colorScheme === "green"
+              ? "rgba(72, 187, 120, 0.2)"
+              : statusMeta.colorScheme === "red"
+                ? "rgba(245, 101, 101, 0.2)"
+                : "rgba(237, 137, 54, 0.2)";
+
+          return (
+            <VStack align="start" spacing={1}>
+              <HStack spacing={1}>
+                <Box
+                  w="2"
+                  h="2"
+                  borderRadius="full"
+                  bg={statusMeta.dotColor}
+                  boxShadow={`0 0 0 2px ${shadowColor}`}
+                />
+                <Badge
+                  variant="subtle"
+                  colorScheme={statusMeta.colorScheme}
+                  px={2.5}
+                  py={1}
+                  borderRadius="full"
+                  fontSize="xs"
+                >
+                  {statusMeta.label}
+                </Badge>
+              </HStack>
+              <Text fontSize="10px" color={muted}>
+                {statusMeta.helperText}
+              </Text>
+            </VStack>
+          );
+        },
+      },
+    },
+    {
+      headerName: "Access Control",
+      key: "account-access",
+      type: "component",
+      width: "150px",
+      metaData: {
+        component: (user: any) => {
+          const statusMeta = getUserStatusMeta(user);
+          const isEnabled = statusMeta.label !== "Inactive";
+
+          if (!canToggleStatus) {
+            return (
+              <Text fontSize="xs" color={muted}>
+                Superadmin only
+              </Text>
+            );
+          }
+
+          return (
+            <Button
+              size="xs"
               borderRadius="full"
-              bg={user.isActive ? "green.500" : "orange.500"}
-              boxShadow={`0 0 0 2px ${user.isActive ? "rgba(72, 187, 120, 0.2)" : "rgba(237, 137, 54, 0.2)"}`}
-            />
-            <Badge
-              variant="subtle"
-              colorScheme={user.isActive ? "green" : "orange"}
-              px={2.5}
-              py={1}
-              borderRadius="full"
-              fontSize="xs"
+              colorScheme={isEnabled ? "red" : "green"}
+              variant={isEnabled ? "outline" : "solid"}
+              onClick={() => onToggleStatus?.(user)}
+              isLoading={statusUpdatingId === user._id}
             >
-              {user.isActive ? "Active" : "Pending"}
-            </Badge>
-          </HStack>
-        ),
+              {isEnabled ? "Deactivate" : "Activate"}
+            </Button>
+          );
+        },
       },
     },
     {
@@ -438,14 +521,14 @@ const UsersTable = ({
         >
           <Stat>
             <StatLabel color={muted} fontSize="sm">
-              Pending
+              Pending / Inactive
             </StatLabel>
             <StatNumber fontSize="2xl" fontWeight="bold" color={pendingNumberColor}>
-              {stats.pending}
+              {stats.pending + stats.inactive}
             </StatNumber>
             <StatHelpText fontSize="xs" color={muted}>
               <Icon as={FiClock} mr={1} />
-              Awaiting activation
+              {stats.inactive > 0 ? `${stats.inactive} deactivated, ${stats.pending} pending` : "Awaiting activation"}
             </StatHelpText>
           </Stat>
         </Box>
@@ -523,7 +606,7 @@ const UsersTable = ({
             borderRadius="full"
           >
             <Text fontSize="sm" fontWeight="semibold" color={statsTextColor}>
-              📊 {pagination.total} total {activeTabLabel.toLowerCase()}
+              {pagination.total} total {activeTabLabel.toLowerCase()}
               {pagination.total !== 1 ? "s" : ""}
             </Text>
           </Box>
@@ -556,7 +639,7 @@ const UsersTable = ({
             },
             search: {
               show: true,
-              placeholder: "🔍 Search by name, email, role, or creator...",
+              placeholder: "Search by name, email, role, or creator...",
               searchValue: search,
               onSearchChange: (event: any) => {
                 setSearch(event.target.value);

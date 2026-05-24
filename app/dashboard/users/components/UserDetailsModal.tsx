@@ -20,6 +20,18 @@ import {
 
 const COLORS = ["blue", "purple", "orange", "green", "pink", "cyan"];
 
+const getUserStatusMeta = (user: any) => {
+  if (user?.status === "INACTIVE" || user?.isEnabled === false || user?.is_enabled === false) {
+    return { label: "Inactive", colorScheme: "red" };
+  }
+
+  if (user?.status === "ACTIVE" || user?.isActive) {
+    return { label: "Active", colorScheme: "green" };
+  }
+
+  return { label: "Pending", colorScheme: "orange" };
+};
+
 const DetailCard = ({ label, value }: { label: string; value?: string | null }) => {
   const cardBg = useColorModeValue("gray.50", "gray.800");
   const muted = useColorModeValue("gray.500", "gray.400");
@@ -50,8 +62,7 @@ const UserDetailsModal = ({
   const muted = useColorModeValue("gray.600", "gray.400");
   const sectionBg = useColorModeValue("white", "gray.900");
   const managerItemBg = useColorModeValue("gray.50", "gray.800");
-
-  console.log('user',user)
+  const statusMeta = getUserStatusMeta(user);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl" isCentered>
@@ -71,8 +82,8 @@ const UserDetailsModal = ({
               <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
                 {formatRoleLabel(user?.role || "user")}
               </Badge>
-              <Badge colorScheme={user?.isActive ? "green" : "orange"} borderRadius="full" px={3} py={1}>
-                {user?.isActive ? "Active" : "Pending"}
+              <Badge colorScheme={statusMeta.colorScheme} borderRadius="full" px={3} py={1}>
+                {statusMeta.label}
               </Badge>
               <Badge
                 colorScheme={user?.passwordStatus === "SET" ? "green" : "red"}

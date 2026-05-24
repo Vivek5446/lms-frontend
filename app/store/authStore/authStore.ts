@@ -165,6 +165,7 @@ class AuthStore {
   // Login user
   login = async (payload: any) => {
     this.isLoading = true;
+    this.error = null;
     try {
       const response = await axios.post("/auth/login", payload);
       this.token = response?.data?.data?.authorization_token;
@@ -177,6 +178,7 @@ class AuthStore {
       return response?.data
     } catch (err: any) {
       this.error = err?.response?.data?.message || "Login failed.";
+      return Promise.reject(err?.response?.data || err);
     } finally {
       this.isLoading = false;
     }

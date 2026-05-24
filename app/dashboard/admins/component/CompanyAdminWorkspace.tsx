@@ -1,6 +1,16 @@
 "use client";
 
 import {
+  Alert,
+  AlertDescription,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  AlertIcon,
+  AlertTitle,
   Badge,
   Box,
   Button,
@@ -42,7 +52,7 @@ import {
   DrawerOverlay,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   FiArrowLeft,
   FiGlobe,
@@ -244,6 +254,10 @@ const CompanyAdminWorkspace = ({
   });
   const [activeTab, setActiveTab] = useState(0);
   const [isEditCompanyOpen, setIsEditCompanyOpen] = useState(false);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const cancelStatusRef = useRef<HTMLButtonElement | null>(null);
+  const isCompanyInactive = company?.is_active === false;
+  const companyRestrictionMessage = `${company?.company_name || "This company"} is inactive. Existing learners can still log in and continue their assigned courses, but new management actions are disabled until the company is reactivated.`;
 
   const refreshAll = async () => {
     await onCompanyRefresh();
@@ -380,13 +394,67 @@ const CompanyAdminWorkspace = ({
     }));
 
   const openUsersManagement = () => {
+    if (isCompanyInactive) {
+      toast({
+        title: "Company is inactive",
+        description: companyRestrictionMessage,
+        status: "warning",
+        duration: 4000,
+        isClosable: true,
+      });
+      return;
+    }
     setSelectedCompanyId(company._id);
     router.push("/dashboard/users");
   };
 
   const openAssignedCourses = () => {
+    if (isCompanyInactive) {
+      toast({
+        title: "Company is inactive",
+        description: companyRestrictionMessage,
+        status: "warning",
+        duration: 4000,
+        isClosable: true,
+      });
+      return;
+    }
     setSelectedCompanyId(company._id);
     router.push("/dashboard/course/assigned");
+  };
+
+  const handleCompanyStatusToggle = async () => {
+    try {
+      setLoading(true);
+      const response = await stores.companyStore.updateManagedCompanyStatus(
+        company._id,
+        Boolean(isCompanyInactive)
+      );
+
+      await refreshAll();
+      setIsStatusDialogOpen(false);
+      toast({
+        title: isCompanyInactive ? "Company activated" : "Company deactivated",
+        description:
+          response?.data?.message ||
+          (isCompanyInactive
+            ? `${company.company_name} can now resume management activities.`
+            : `${company.company_name} is now restricted to existing learner access only.`),
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Unable to update company status",
+        description: err?.message || "Please try again.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCompanyEditSubmit = async (values: any) => {
@@ -479,6 +547,16 @@ const CompanyAdminWorkspace = ({
     <Box minH="100vh" bg={pageBg}>
       <Container maxW="1400px" px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
         <VStack spacing={6} align="stretch">
+          {isCompanyInactive ? (
+            <Alert status="warning" borderRadius="2xl" alignItems="start">
+              <AlertIcon mt={1} />
+              <Box>
+                <AlertTitle>Management is paused for this company</AlertTitle>
+                <AlertDescription>{companyRestrictionMessage}</AlertDescription>
+              </Box>
+            </Alert>
+          ) : null}
+
           {/* Header Section - Enhanced */}
           <Flex justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} gap={4}>
             <HStack spacing={4}>
@@ -529,6 +607,16 @@ const CompanyAdminWorkspace = ({
               >
                 Edit Company
               </Button>
+              <Button
+                size="sm"
+                borderRadius="full"
+                colorScheme={company?.is_active ? "red" : "green"}
+                variant={company?.is_active ? "outline" : "solid"}
+                onClick={() => setIsStatusDialogOpen(true)}
+                isLoading={loading}
+              >
+                {company?.is_active ? "Deactivate" : "Activate"}
+              </Button>
               <Tooltip label="Assigned Courses" placement="top">
                 <Button
                   variant="outline"
@@ -536,6 +624,7 @@ const CompanyAdminWorkspace = ({
                   borderRadius="full"
                   leftIcon={<FiBookOpen />}
                   onClick={openAssignedCourses}
+                  isDisabled={isCompanyInactive}
                 >
                   Courses
                 </Button>
@@ -550,6 +639,7 @@ const CompanyAdminWorkspace = ({
                     ? openUsersManagement()
                     : setDrawerState({ type: "admin-add", isOpen: true, data: null })
                 }
+                isDisabled={isCompanyInactive}
               >
                 {activeTab === (currentUser?.role === "departmenthead" ? 0 : 2)
                   ? "Manage Users"
@@ -860,6 +950,38 @@ const CompanyAdminWorkspace = ({
           </DrawerBody>
         </DrawerContent>
       </Drawer>
+
+      <AlertDialog
+        isOpen={isStatusDialogOpen}
+        leastDestructiveRef={cancelStatusRef}
+        onClose={() => setIsStatusDialogOpen(false)}
+        isCentered
+      >
+        <AlertDialogOverlay />
+        <AlertDialogContent borderRadius="2xl">
+          <AlertDialogHeader fontSize="lg" fontWeight="bold">
+            {company?.is_active ? "Deactivate company?" : "Activate company?"}
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            {company?.is_active
+              ? `${company?.company_name} will stop all new management operations, including adding users, assigning courses, and creating batches. Existing learners will still be able to log in and continue assigned learning.`
+              : `${company?.company_name} will regain access to user, course, batch, and assignment management immediately.`}
+          </AlertDialogBody>
+          <AlertDialogFooter>
+            <Button ref={cancelStatusRef} onClick={() => setIsStatusDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              colorScheme={company?.is_active ? "red" : "green"}
+              ml={3}
+              onClick={handleCompanyStatusToggle}
+              isLoading={loading}
+            >
+              {company?.is_active ? "Deactivate" : "Activate"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Box>
   );
 };

@@ -297,7 +297,7 @@ const BatchCreationModal = observer(
     initialStep = 0,
   }: BatchCreationModalProps) => {
     const toast = useToast();
-    const { auth } = stores;
+    const { auth, companyStore } = stores;
     const isEditMode = mode === "edit";
 
     const [step, setStep] = useState(Math.min(initialStep, 1));
@@ -312,6 +312,14 @@ const BatchCreationModal = observer(
     const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
     const [uploadFile, setUploadFile] = useState<File | null>(null);
     const [uploadPreview, setUploadPreview] = useState<BatchUploadPreviewData | null>(null);
+    const managedCompanies = companyStore.companies.data || [];
+    const selectedCompany =
+      managedCompanies.find((company: any) => company?._id === companyId) ||
+      auth.user?.companyDetails ||
+      null;
+    const isCompanyInactive = Boolean(companyId && selectedCompany?.is_active === false);
+    const companyName = selectedCompany?.company_name || "this company";
+    const inactiveCompanyMessage = `${companyName} is inactive. Batch creation and updates are disabled until the company is reactivated.`;
 
     const companyAssignedCourseIds = useMemo(
       () =>
@@ -397,9 +405,12 @@ const BatchCreationModal = observer(
     const manualCanSubmit =
       selectedCourseIds.length > 0 &&
       selectedUsers.length > 0 &&
-      invalidSelectedCourses.length === 0;
+      invalidSelectedCourses.length === 0 &&
+      !isCompanyInactive;
 
-    const uploadCanSubmit = Boolean(uploadPreview?.courseCount && uploadPreview?.matchedCount);
+    const uploadCanSubmit = Boolean(
+      uploadPreview?.courseCount && uploadPreview?.matchedCount && !isCompanyInactive
+    );
 
     const normalizeForOpen = (batch: BatchDetailsItem | null, nextStep = 0) => {
       setStep(Math.min(nextStep, 1));
@@ -514,6 +525,18 @@ const BatchCreationModal = observer(
         return;
       }
 
+      if (isCompanyInactive) {
+        toast({
+          title: "Company is inactive",
+          description: inactiveCompanyMessage,
+          status: "warning",
+          duration: 4500,
+          position: "top-right",
+          isClosable: true,
+        });
+        return;
+      }
+
       try {
         const response = await batchStore.previewBatchUpload({
           file: uploadFile,
@@ -557,6 +580,18 @@ const BatchCreationModal = observer(
       }
 
       if (!isUploadMode && !manualCanSubmit) {
+        return;
+      }
+
+      if (isCompanyInactive) {
+        toast({
+          title: "Company is inactive",
+          description: inactiveCompanyMessage,
+          status: "warning",
+          duration: 4500,
+          position: "top-right",
+          isClosable: true,
+        });
         return;
       }
 
@@ -657,6 +692,25 @@ const BatchCreationModal = observer(
           <DrawerBody py={5}>
             <SlideFade in offsetY="8px">
               <Stack spacing={4}>
+                {isCompanyInactive ? (
+                  <Alert
+                    status="warning"
+                    borderRadius="16px"
+                    bg="orange.50"
+                    color="orange.900"
+                    borderWidth="1px"
+                    borderColor="orange.200"
+                    alignItems="start"
+                  >
+                    <AlertIcon color="orange.500" mt={1} />
+                    <Box>
+                      <AlertTitle fontSize="sm">Company is inactive</AlertTitle>
+                      <AlertDescription fontSize="sm" mt={1} lineHeight="1.6">
+                        {inactiveCompanyMessage}
+                      </AlertDescription>
+                    </Box>
+                  </Alert>
+                ) : null}
                 {step === 0 ? (
                   <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
                     <Stack spacing={5}>
@@ -1091,7 +1145,7 @@ const BatchCreationModal = observer(
                                 colorScheme="blue"
                                 variant="outline"
                                 onClick={handleValidateUpload}
-                                isDisabled={!uploadFile || !companyId}
+                                isDisabled={!uploadFile || !companyId || isCompanyInactive}
                                 isLoading={batchStore.isPreviewSubmitting}
                                 h="42px"
                                 borderRadius="14px"
@@ -1414,7 +1468,10 @@ const BatchCreationModal = observer(
                   colorScheme="blue"
                   onClick={handleSubmit}
                   isLoading={batchStore.isSubmitting}
-                  isDisabled={creationMode === "upload" && !isEditMode ? !uploadCanSubmit : !manualCanSubmit}
+                  isDisabled={
+                    isCompanyInactive ||
+                    (creationMode === "upload" && !isEditMode ? !uploadCanSubmit : !manualCanSubmit)
+                  }
                   px={8}
                 >
                   {actionLabel}

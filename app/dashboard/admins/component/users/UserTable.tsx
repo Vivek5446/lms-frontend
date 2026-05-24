@@ -9,6 +9,18 @@ import { formatDate } from "../../../../component/config/utils/dateUtils";
 import { tablePageLimit } from "../../../../component/config/utils/variable";
 import stores from "../../../../store/stores";
 
+const getUserStatusMeta = (user: any) => {
+  if (user?.status === "INACTIVE" || user?.is_enabled === false || user?.isEnabled === false) {
+    return { label: "Inactive", colorScheme: "red" };
+  }
+
+  if (user?.status === "ACTIVE" || user?.is_active) {
+    return { label: "Active", colorScheme: "green" };
+  }
+
+  return { label: "Pending", colorScheme: "orange" };
+};
+
 const UserTable = observer(({
   companyId,
   companyName,
@@ -156,11 +168,10 @@ const UserTable = observer(({
       key: "is_active",
       type: "component",
       metaData: {
-        component: (dt: any) => (
-          <Badge colorScheme={dt.is_active ? "green" : "orange"}>
-            {dt.is_active ? "Active" : "Inactive"}
-          </Badge>
-        ),
+        component: (dt: any) => {
+          const statusMeta = getUserStatusMeta(dt);
+          return <Badge colorScheme={statusMeta.colorScheme}>{statusMeta.label}</Badge>;
+        },
       },
     },
     {

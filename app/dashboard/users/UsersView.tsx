@@ -1,13 +1,24 @@
 "use client";
 
 import {
+  Alert,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
   Box,
+  Button,
   VStack,
   useColorModeValue,
   useToast
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import useDebounce from "../../component/config/component/customHooks/useDebounce";
 import { readFileAsBase64 } from "../../config/utils/utils";
@@ -209,6 +220,7 @@ const UsersView = observer(() => {
   const [isUserDrawerOpen, setIsUserDrawerOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [statusDialog, setStatusDialog] = useState<{ user: any; nextIsEnabled: boolean } | null>(null);
   const [uploadResults, setUploadResults] = useState<any | null>(null);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [userForm, setUserForm] = useState<UserFormState>(initialForm());
@@ -239,6 +251,14 @@ const UsersView = observer(() => {
     auth.user?.companyDetails?.company_name ||
     managedCompanies.find((company: any) => company?._id === auth.company)?.company_name ||
     "Current company";
+  const scopedCompany =
+    isSuperadmin
+      ? managedCompanies.find((company: any) => company?._id === scopedCompanyId) || null
+      : auth.user?.companyDetails || managedCompanies.find((company: any) => company?._id === auth.company) || null;
+  const isManagementBlocked = Boolean(scopedCompany && scopedCompany.is_active === false);
+  const managementBlockedMessage = scopedCompany?.company_name
+    ? `${scopedCompany.company_name} is inactive. New user creation, bulk uploads, and other management actions are unavailable until the company is reactivated.`
+    : "This company is inactive. New user creation, bulk uploads, and other management actions are unavailable until the company is reactivated.";
   const currentCompanyManagerLevels = getCompanyManagerLevels(
     auth.user?.companyDetails ||
       managedCompanies.find((company: any) => company?._id === auth.company)
@@ -437,6 +457,15 @@ const UsersView = observer(() => {
   }, [auth.company, currentCompanyManagerLevels, isSuperadmin, scopedCompanyId, userStore]);
 
   const openBulkUpload = () => {
+    if (isManagementBlocked) {
+      toast({
+        title: "Company is inactive",
+        description: managementBlockedMessage,
+        status: "warning",
+        duration: 4000,
+      });
+      return;
+    }
     resetBulkUploadState();
     setIsBulkModalOpen(true);
   };
@@ -447,6 +476,16 @@ const UsersView = observer(() => {
   };
 
   const openCreate = () => {
+    if (isManagementBlocked) {
+      toast({
+        title: "Company is inactive",
+        description: managementBlockedMessage,
+        status: "warning",
+        duration: 4000,
+      });
+      return;
+    }
+
     if (!canOpenCreate) {
       toast({
         title: "Permission required",
@@ -972,6 +1011,44 @@ const UsersView = observer(() => {
     [isSuperadmin, managedCompanies]
   );
 
+  const cancelStatusRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleOpenStatusDialog = (user: any) => {
+    const currentlyEnabled = user?.isEnabled !== false && user?.status !== "INACTIVE";
+    setStatusDialog({
+      user,
+      nextIsEnabled: !currentlyEnabled,
+    });
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if (!statusDialog?.user?._id) {
+      return;
+    }
+
+    try {
+      const response = await userStore.updateManagedUserStatus(
+        statusDialog.user._id,
+        statusDialog.nextIsEnabled
+      );
+      toast({
+        title: statusDialog.nextIsEnabled ? "User activated" : "User deactivated",
+        description: response?.message || "User status updated successfully.",
+        status: "success",
+        duration: 3500,
+      });
+      setStatusDialog(null);
+      fetchUsers();
+    } catch (err: any) {
+      toast({
+        title: "Unable to update user status",
+        description: err?.error || err?.message || "Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
+  };
+
   const activeTabLabel =
     listTabs.find((item) => item.value === listTab)?.label || "Users";
 
@@ -984,6 +1061,16 @@ const UsersView = observer(() => {
     >
     <Box minH="100vh" p={{ base: 4, md: 6 }}>
       <VStack align="stretch" spacing={6}>
+
+        {isManagementBlocked ? (
+          <Alert status="warning" borderRadius="2xl" alignItems="start">
+            <AlertIcon mt={1} />
+            <Box>
+              <AlertTitle>Company is inactive</AlertTitle>
+              <AlertDescription>{managementBlockedMessage}</AlertDescription>
+            </Box>
+          </Alert>
+        ) : null}
 
         <UsersHeader
   onOpenBulk={openBulkUpload}
@@ -1012,8 +1099,11 @@ const UsersView = observer(() => {
   muted={muted}
   onEdit={openEdit}
   onView={openView}
+  onToggleStatus={handleOpenStatusDialog}
+  statusUpdatingId={statusDialog?.user?._id}
   formatRoleLabel={formatRoleLabel}
   canEdit={canEditUsers}
+  canToggleStatus={isSuperadmin}
 />
       
       </VStack>
@@ -1078,6 +1168,40 @@ const UsersView = observer(() => {
   tableHeadBg={tableHeadBg}
   muted={muted}
 />
+
+<AlertDialog
+  isOpen={Boolean(statusDialog)}
+  leastDestructiveRef={cancelStatusRef}
+  onClose={() => setStatusDialog(null)}
+  isCentered
+>
+  <AlertDialogOverlay />
+  <AlertDialogContent borderRadius="2xl">
+    <AlertDialogHeader fontSize="lg" fontWeight="bold">
+      {statusDialog?.nextIsEnabled ? "Activate user?" : "Deactivate user?"}
+    </AlertDialogHeader>
+
+    <AlertDialogBody>
+      {statusDialog?.nextIsEnabled
+        ? `${statusDialog?.user?.name || "This user"} will be able to log in again immediately.`
+        : `${statusDialog?.user?.name || "This user"} will no longer be able to log in. They’ll see a deactivation message and need an administrator to reactivate the account.`}
+    </AlertDialogBody>
+
+    <AlertDialogFooter>
+      <Button ref={cancelStatusRef} onClick={() => setStatusDialog(null)}>
+        Cancel
+      </Button>
+      <Button
+        colorScheme={statusDialog?.nextIsEnabled ? "green" : "red"}
+        onClick={handleConfirmStatusChange}
+        ml={3}
+        isLoading={userStore.submitting}
+      >
+        {statusDialog?.nextIsEnabled ? "Activate" : "Deactivate"}
+      </Button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
     </Box>
     </PermissionGate>
   );

@@ -74,7 +74,7 @@ const Login = observer(() => {
     } catch (error: any) {
       openNotification({
         title: "Login Failed",
-        message: error.response?.message || "Invalid credentials",
+        message: error?.message || error?.error || "Invalid credentials",
         type: "error",
       });
     } finally {

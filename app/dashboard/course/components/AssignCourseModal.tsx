@@ -307,6 +307,8 @@ const AssignCourseModal = observer(
     const companies = companyStore.companies.data || [];
     const selectedCompany = companies.find((company: any) => company._id === companyId) || auth.user?.companyDetails || null;
     const departments = selectedCompany?.departments || auth.user?.companyDetails?.departments || [];
+    const isCompanyInactive = Boolean(companyId && selectedCompany?.is_active === false);
+    const companyRestrictionMessage = `${selectedCompany?.company_name || "This company"} is inactive. New course assignments are disabled until the company is reactivated.`;
 
     const availableCourses = useMemo(() => {
       let courses = isSuperadmin ? courseStore.courses || [] : (courseStore.accessibleCourses || []).filter((c) => c.access?.canAssign);
@@ -417,10 +419,12 @@ const AssignCourseModal = observer(
       if (step === 0) return selectedCourseIds.length > 0;
       if (step === 1) {
         if (!companyId) return false;
+        if (isCompanyInactive) return false;
         if (assignmentTarget === "department") return Boolean(departmentName);
         return true;
       }
       if (step === 2) {
+        if (isCompanyInactive) return false;
         const hasValidCriteria = selectedCourses.every((course: any) => {
           const totalMarks = Number(course?.assessment?.totalMarks);
           if (!Number.isFinite(totalMarks)) return true;
@@ -434,9 +438,10 @@ const AssignCourseModal = observer(
 
         return (noExpiry || Boolean(validTill)) && hasValidCriteria;
       }
+      if (isCompanyInactive) return false;
       if (assignmentTarget === "users") return combinedSelectedUsers.length > 0;
       return true;
-    }, [assessmentCriteriaByCourse, assignmentTarget, combinedSelectedUsers.length, companyId, departmentName, noExpiry, selectedCourseIds.length, selectedCourses, step, validTill]);
+    }, [assessmentCriteriaByCourse, assignmentTarget, combinedSelectedUsers.length, companyId, departmentName, isCompanyInactive, noExpiry, selectedCourseIds.length, selectedCourses, step, validTill]);
 
     const toggleSelectedCourse = (courseId: string) => {
       setSelectedCourseIds((current) => (current.includes(courseId) ? current.filter((id) => id !== courseId) : [...current, courseId]));
@@ -452,6 +457,18 @@ const AssignCourseModal = observer(
 
     const handlePreviewCsv = async () => {
       if (!csvFile) return;
+
+      if (isCompanyInactive) {
+        toast({
+          title: "Company is inactive",
+          description: companyRestrictionMessage,
+          status: "warning",
+          duration: 4500,
+          position: "top-right",
+          isClosable: true,
+        });
+        return;
+      }
 
       try {
         const response = await courseStore.previewAssignmentUsers({ file: csvFile, companyId });
@@ -490,6 +507,17 @@ const AssignCourseModal = observer(
 
     const handleSubmit = async () => {
       if (!canContinue) return;
+      if (isCompanyInactive) {
+        toast({
+          title: "Company is inactive",
+          description: companyRestrictionMessage,
+          status: "warning",
+          duration: 4500,
+          position: "top-right",
+          isClosable: true,
+        });
+        return;
+      }
       try {
         const response = await courseStore.assignMultipleCourses({
           courseIds: selectedCourseIds,
@@ -592,6 +620,17 @@ const AssignCourseModal = observer(
           <DrawerBody px={{ base: 4, md: 6, xl: 7 }} py={{ base: 4, md: 5 }} bg="gray.50" overflowY="auto">
             <SlideFade in key={step} offsetY="16px">
               <Stack spacing={{ base: 4, md: 5 }}>
+                {isCompanyInactive && companyId ? (
+                  <Alert status="warning" borderRadius="16px" bg="orange.50" color="orange.900" borderWidth="1px" borderColor="orange.200" alignItems="start">
+                    <AlertIcon color="orange.500" mt={1} />
+                    <Box>
+                      <AlertTitle fontSize="sm">Company is inactive</AlertTitle>
+                      <AlertDescription fontSize="sm" mt={1} lineHeight="1.6">
+                        {companyRestrictionMessage}
+                      </AlertDescription>
+                    </Box>
+                  </Alert>
+                ) : null}
                 {!companyId && isSuperadmin && step > 0 && (
                   <Alert status="warning" borderRadius="16px" bg="orange.50" color="orange.900" borderWidth="1px" borderColor="orange.200" alignItems="start">
                     <AlertIcon color="orange.500" mt={1} />
@@ -963,7 +1002,7 @@ const AssignCourseModal = observer(
                                 colorScheme="blue"
                                 variant="outline"
                                 onClick={handlePreviewCsv}
-                                isDisabled={!csvFile || !companyId}
+                                isDisabled={!csvFile || !companyId || isCompanyInactive}
                                 isLoading={courseStore.isAssignmentSubmitting}
                                 width="full"
                                 h="42px"
@@ -1102,7 +1141,7 @@ const AssignCourseModal = observer(
                   Continue
                 </Button>
               ) : (
-                <Button h="42px" borderRadius="13px" colorScheme="blue" onClick={handleSubmit} isLoading={courseStore.isAssignmentSubmitting} isDisabled={!canContinue} px={8} boxShadow="0 10px 22px rgba(37, 99, 235, 0.18)">
+                <Button h="42px" borderRadius="13px" colorScheme="blue" onClick={handleSubmit} isLoading={courseStore.isAssignmentSubmitting} isDisabled={!canContinue || isCompanyInactive} px={8} boxShadow="0 10px 22px rgba(37, 99, 235, 0.18)">
                   Confirm & Assign
                 </Button>
               )}
