@@ -1,16 +1,16 @@
 "use client";
 import {
+  AspectRatio,
   Box,
-  extendTheme,
   Grid,
   Heading,
   SimpleGrid,
   Skeleton,
   Text,
-  AspectRatio,
-  useToken,
+  useToken
 } from "@chakra-ui/react";
 import {
+  ArcElement,
   BarElement,
   CategoryScale,
   Chart as ChartJS,
@@ -20,14 +20,13 @@ import {
   PointElement,
   Title,
   Tooltip,
-  ArcElement,
 } from "chart.js";
-import { Bar, Line } from "react-chartjs-2";
-import { FaUserMd, FaUserInjured, FaUserTie } from "react-icons/fa";
-import DashboardCard from "../common/DashboardCard/DashboardCard";
 import { observer } from "mobx-react-lite";
 import { useEffect } from "react";
+import { Bar, Line } from "react-chartjs-2";
+import { FaUserInjured, FaUserMd, FaUserTie } from "react-icons/fa";
 import stores from "../../../store/stores";
+import DashboardCard from "../common/DashboardCard/DashboardCard";
 
 ChartJS.register(
   CategoryScale,

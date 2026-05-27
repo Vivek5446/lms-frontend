@@ -18,9 +18,15 @@ export interface ScormInteractionReview {
   type?: string;
   question?: string;
   questionTitle?: string;
+  questionPrompt?: string | null;
   questionAssetPaths?: string[];
+  questionBankMatched?: boolean;
   learnerResponse?: string;
+  learnerResponseRaw?: string;
+  learnerResponseText?: string | null;
   correctResponses?: string[];
+  correctResponsesRaw?: string[];
+  correctResponseTexts?: string[];
   result?: string;
   latency?: string;
   time?: string;
@@ -139,7 +145,7 @@ function normalizeQuestionFromId(id: string) {
 // }
 
 export function formatQuestionTitle(
-  interaction: Pick<ScormInteractionReview, "questionTitle" | "question" | "id" | "index">,
+  interaction: Pick<ScormInteractionReview, "questionPrompt" | "questionTitle" | "question" | "id" | "index">,
   fallbackIndex?: number
 ) {
   /**
@@ -172,8 +178,13 @@ export function formatQuestionTitle(
     return "";
   };
 
-  // 1. Use questionTitle if it's meaningful and doesn't contain a raw Articulate hash
+  const prompt = normalizeString(interaction.questionPrompt ?? "");
   const title = normalizeString(interaction.questionTitle ?? "");
+  if (prompt.length > 4 && prompt.toLowerCase() !== title.toLowerCase()) {
+    return prompt;
+  }
+
+  // 1. Use questionTitle if it's meaningful and doesn't contain a raw Articulate hash
   if (title.length > 4 && !isGenericQuestionLabel(title) && !title.includes("_Q_")) {
     return title;
   }
@@ -189,6 +200,10 @@ export function formatQuestionTitle(
   if (fromId.length > 3) return fromId;
 
   // 4. Last resort
+  if (normalizeString(interaction.id)) {
+    return interaction.id;
+  }
+
   return `Question ${Number(interaction.index ?? fallbackIndex ?? 0) + 1}`;
 }
 

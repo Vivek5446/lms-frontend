@@ -55,15 +55,36 @@ type ScormQuizReviewContentProps = {
   };
 };
 
-function formatResponse(value?: string) {
-  const text = String(value || "").trim();
+function formatResponse(interaction: Pick<ScormInteractionReview, "learnerResponseText" | "learnerResponse" | "learnerResponseRaw">) {
+  const text = String(
+    interaction.learnerResponseText ||
+    interaction.learnerResponse ||
+    interaction.learnerResponseRaw ||
+    ""
+  ).trim();
   return text || "No answer captured";
 }
 
-function getCorrectResponses(values?: string[]) {
-  return Array.isArray(values)
-    ? values.map((value) => String(value || "").trim()).filter(Boolean)
-    : [];
+function getCorrectResponses(
+  interaction: Pick<ScormInteractionReview, "correctResponseTexts" | "correctResponses" | "correctResponsesRaw">
+) {
+  const responseSets = [
+    interaction.correctResponseTexts,
+    interaction.correctResponses,
+    interaction.correctResponsesRaw,
+  ];
+
+  for (const values of responseSets) {
+    const normalizedValues = Array.isArray(values)
+      ? values.map((value) => String(value || "").trim()).filter(Boolean)
+      : [];
+
+    if (normalizedValues.length) {
+      return normalizedValues;
+    }
+  }
+
+  return [];
 }
 
 type StatusMeta = {
@@ -498,7 +519,7 @@ export default function ScormQuizReviewContent({
                           {section.interactions.map((interaction, questionIndex) => {
                             const statusMeta = getInteractionStatusMeta(interaction);
                             const questionTitle = formatQuestionTitle(interaction, questionIndex);
-                            const correctResponses = getCorrectResponses(interaction.correctResponses);
+                            const correctResponses = getCorrectResponses(interaction);
 
                             return (
                               <AccordionItem
@@ -553,7 +574,7 @@ export default function ScormQuizReviewContent({
                                       }}
                                       gap={3}
                                     >
-                                      <AnswerBlock label="Your Answer" value={formatResponse(interaction.learnerResponse)} />
+                                      <AnswerBlock label="Your Answer" value={formatResponse(interaction)} />
                                       {correctResponses.length ? (
                                         <AnswerBlock
                                           label="Correct Answer"
