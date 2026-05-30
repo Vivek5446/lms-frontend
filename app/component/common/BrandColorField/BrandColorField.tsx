@@ -1,6 +1,18 @@
 "use client";
 
-import { Box, Button, FormControl, FormHelperText, FormLabel, HStack, Input, SimpleGrid, Text, useColorModeValue } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  FormControl,
+  FormErrorMessage,
+  FormHelperText,
+  FormLabel,
+  HStack,
+  Input,
+  SimpleGrid,
+  Text,
+  useColorModeValue,
+} from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { DEFAULT_LEARNER_PRIMARY_COLOR, normalizeHexColor } from "../../../theme/theme";
 
@@ -17,19 +29,23 @@ const DEFAULT_COLOR_PRESETS = [
 
 type BrandColorFieldProps = {
   defaultColor?: string;
+  error?: string;
   helperText?: string;
   label?: string;
   onChange: (value: string) => void;
   presets?: string[];
+  showError?: boolean;
   value?: string;
 };
 
 const BrandColorField = ({
   defaultColor = DEFAULT_LEARNER_PRIMARY_COLOR,
+  error,
   helperText = "Used for learner-side buttons, badges, highlights, borders, and active states.",
   label = "Primary Theme Color",
   onChange,
   presets = DEFAULT_COLOR_PRESETS,
+  showError = false,
   value,
 }: BrandColorFieldProps) => {
   const resolvedColor = normalizeHexColor(value, defaultColor);
@@ -50,7 +66,7 @@ const BrandColorField = ({
   };
 
   return (
-    <FormControl>
+    <FormControl isInvalid={Boolean(error && showError)}>
       <FormLabel mb={2} fontSize="xs" fontWeight="700" letterSpacing="0.08em" textTransform="uppercase" color={mutedText}>
         {label}
       </FormLabel>
@@ -154,6 +170,11 @@ const BrandColorField = ({
       <Text mt={2} fontSize="sm" color={mutedText}>
         Current color: {resolvedColor}
       </Text>
+      {showError && error ? (
+        <FormErrorMessage mt={2} fontSize="xs" fontWeight="600">
+          {error}
+        </FormErrorMessage>
+      ) : null}
     </FormControl>
   );
 };

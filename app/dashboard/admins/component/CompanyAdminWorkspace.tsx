@@ -11,72 +11,61 @@ import {
   AlertDialogOverlay,
   AlertIcon,
   AlertTitle,
+  Avatar,
   Badge,
   Box,
   Button,
-  Flex,
-  HStack,
-  SimpleGrid,
-  Stack,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-  Text,
-  useColorModeValue,
-  useToast,
-  Icon,
-  Avatar,
-  Divider,
-  Tooltip,
-  VStack,
-  Heading,
-  Container,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  StatArrow,
   Card,
   CardBody,
   CardHeader,
-  IconButton,
-  Wrap,
-  WrapItem,
+  Container,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
+  Flex,
+  Heading,
+  HStack,
+  Icon,
+  IconButton,
+  SimpleGrid,
+  StatArrow,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+  Tooltip,
+  useColorModeValue,
+  useToast,
+  VStack
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import {
   FiArrowLeft,
+  FiBookOpen,
+  FiBriefcase,
+  FiCheckCircle,
+  FiEdit2,
+  FiExternalLink,
   FiGlobe,
   FiMail,
   FiMapPin,
   FiPlus,
   FiShield,
-  FiUsers,
-  FiBriefcase,
-  FiCheckCircle,
-  FiAlertCircle,
-  FiExternalLink,
-  FiMoreVertical,
-  FiUserPlus,
-  FiBookOpen,
-  FiHome,
-  FiEdit2,
+  FiUsers
 } from "react-icons/fi";
+import ConfirmationModal from "../../../component/common/ConfirmationModal/ConfirmationModal";
+import { getApiErrorMessage } from "../../../config/utils/apiError";
 import { readFileAsBase64 } from "../../../config/utils/utils";
 import stores from "../../../store/stores";
-import UserTable from "./users/UserTable";
-import DeleteData from "./users/component/DeleteUser";
 import UserDrawer from "../../users/components/UserDrawer";
 import CompanyForm from "./CompanyForm";
+import UserTable from "./users/UserTable";
 
 const emptyManager = (level: number) => ({ level, selectedManager: null });
 const parseManagerLevel = (role: string) => {
@@ -104,6 +93,7 @@ const reconcileManagersForRole = (role: string, managers: any[], maxLevel: numbe
 };
 const createMemberForm = (companyId: string, role = "admin") => ({
   code: "",
+  profileId: "",
   name: "",
   email: "",
   password: "",
@@ -115,6 +105,8 @@ const createMemberForm = (companyId: string, role = "admin") => ({
   state: "",
   designation: "",
   joiningDate: "",
+  dateOfBirth: "",
+  gender: "",
   role,
   companyId,
   companyName: "",
@@ -240,9 +232,9 @@ const CompanyAdminWorkspace = ({
   const cardBg = useColorModeValue("white", "gray.800");
 
   const {
-    userStore: { createManagedUser, updateManagedUser },
+    userStore: { createManagedUser, updateManagedUser, deleteManagedUser },
     auth: { user: currentUser },
-    companyStore: { setSelectedCompanyId, updateManagedCompany },
+    companyStore: { deleteManagedCompany, setSelectedCompanyId, updateManagedCompany },
   } = stores;
 
   const [adminRefreshKey, setAdminRefreshKey] = useState(0);
@@ -254,8 +246,15 @@ const CompanyAdminWorkspace = ({
   });
   const [activeTab, setActiveTab] = useState(0);
   const [isEditCompanyOpen, setIsEditCompanyOpen] = useState(false);
+  const [isDeleteCompanyOpen, setIsDeleteCompanyOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const cancelStatusRef = useRef<HTMLButtonElement | null>(null);
+  const showToast = (options: any) =>
+    toast({
+      position: "top-right",
+      isClosable: true,
+      ...options,
+    });
   const isCompanyInactive = company?.is_active === false;
   const companyRestrictionMessage = `${company?.company_name || "This company"} is inactive. Existing learners can still log in and continue their assigned courses, but new management actions are disabled until the company is reactivated.`;
 
@@ -293,20 +292,18 @@ const CompanyAdminWorkspace = ({
       await refreshAll();
       setDrawerState({ type: "admin-add", isOpen: false, data: null });
 
-      toast({
+      showToast({
         title: "Member added",
         description: `${formData.name} now belongs to ${company.company_name}.`,
         status: "success",
         duration: 4000,
-        isClosable: true,
       });
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Failed to create member",
-        description: err?.message || "Please review the member details and try again.",
+        description: getApiErrorMessage(err, "Please review the member details and try again."),
         status: "error",
         duration: 5000,
-        isClosable: true,
       });
     } finally {
       setLoading(false);
@@ -341,28 +338,22 @@ const CompanyAdminWorkspace = ({
       await refreshAll();
       setDrawerState({ type: "admin-add", isOpen: false, data: null });
 
-      toast({
+      showToast({
         title: "Member updated",
         description: `${values.name} has been updated successfully.`,
         status: "success",
         duration: 4000,
-        isClosable: true,
       });
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Failed to update member",
-        description: err?.message || "Please try again.",
+        description: getApiErrorMessage(err),
         status: "error",
         duration: 5000,
-        isClosable: true,
       });
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDeleteRefresh = () => {
-    refreshAll().catch(() => null);
   };
 
   const memberRoleOptions = [
@@ -395,12 +386,11 @@ const CompanyAdminWorkspace = ({
 
   const openUsersManagement = () => {
     if (isCompanyInactive) {
-      toast({
+      showToast({
         title: "Company is inactive",
         description: companyRestrictionMessage,
         status: "warning",
         duration: 4000,
-        isClosable: true,
       });
       return;
     }
@@ -410,12 +400,11 @@ const CompanyAdminWorkspace = ({
 
   const openAssignedCourses = () => {
     if (isCompanyInactive) {
-      toast({
+      showToast({
         title: "Company is inactive",
         description: companyRestrictionMessage,
         status: "warning",
         duration: 4000,
-        isClosable: true,
       });
       return;
     }
@@ -433,7 +422,7 @@ const CompanyAdminWorkspace = ({
 
       await refreshAll();
       setIsStatusDialogOpen(false);
-      toast({
+      showToast({
         title: isCompanyInactive ? "Company activated" : "Company deactivated",
         description:
           response?.data?.message ||
@@ -442,15 +431,13 @@ const CompanyAdminWorkspace = ({
             : `${company.company_name} is now restricted to existing learner access only.`),
         status: "success",
         duration: 4000,
-        isClosable: true,
       });
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Unable to update company status",
-        description: err?.message || "Please try again.",
+        description: getApiErrorMessage(err),
         status: "error",
         duration: 5000,
-        isClosable: true,
       });
     } finally {
       setLoading(false);
@@ -502,20 +489,73 @@ const CompanyAdminWorkspace = ({
       await refreshAll();
       setIsEditCompanyOpen(false);
 
-      toast({
+      showToast({
         title: "Company updated",
         description: response?.data?.message || `${values.company_name} has been updated successfully.`,
         status: "success",
         duration: 4000,
-        isClosable: true,
       });
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Failed to update company",
-        description: err?.message || "Please review the company details and try again.",
+        description: getApiErrorMessage(err, "Please review the company details and try again."),
         status: "error",
         duration: 5000,
-        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMemberDelete = async () => {
+    const targetUserId = drawerState?.data?._id;
+    if (!targetUserId) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await deleteManagedUser(targetUserId);
+      await refreshAll();
+      setDrawerState({ type: "admin-add", isOpen: false, data: null });
+      showToast({
+        title: "Member deleted",
+        description: response?.message || "Member deleted successfully.",
+        status: "success",
+        duration: 4000,
+      });
+    } catch (err: any) {
+      showToast({
+        title: "Unable to delete member",
+        description: getApiErrorMessage(err),
+        status: "error",
+        duration: 5000,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompanyDelete = async () => {
+    try {
+      setLoading(true);
+      const response = await deleteManagedCompany(company._id);
+      setSelectedCompanyId("");
+      await onCompanyRefresh();
+      setIsDeleteCompanyOpen(false);
+      onBack();
+      showToast({
+        title: "Company deleted",
+        description: response?.data?.message || `${company.company_name} has been deleted successfully.`,
+        status: "success",
+        duration: 4000,
+      });
+    } catch (err: any) {
+      showToast({
+        title: "Unable to delete company",
+        description: getApiErrorMessage(err),
+        status: "error",
+        duration: 5000,
       });
     } finally {
       setLoading(false);
@@ -617,6 +657,16 @@ const CompanyAdminWorkspace = ({
                 isLoading={loading}
               >
                 {company?.is_active ? "Deactivate" : "Activate"}
+              </Button>
+              <Button
+                size="sm"
+                borderRadius="full"
+                colorScheme="red"
+                variant="ghost"
+                onClick={() => setIsDeleteCompanyOpen(true)}
+                isLoading={loading && isDeleteCompanyOpen}
+              >
+                Delete Company
               </Button>
               <Tooltip label="Assigned Courses" placement="top">
                 <Button
@@ -738,6 +788,7 @@ const CompanyAdminWorkspace = ({
                                 ...createMemberForm(company._id, "admin"),
                                 id: entry._id,
                                 code: entry.code || "",
+                                profileId: entry.profileId || "",
                                 name: entry.name || "",
                                 email: entry.email || entry.username || "",
                                 pic: entry.pic ? { ...entry.pic, file: null, isAdd: 0, isDeleted: 0, url: entry.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
@@ -747,6 +798,8 @@ const CompanyAdminWorkspace = ({
                                 state: entry.state || "",
                                 designation: entry.designation || "",
                                 joiningDate: entry.joiningDate ? String(entry.joiningDate).slice(0, 10) : "",
+                                dateOfBirth: entry.dateOfBirth ? String(entry.dateOfBirth).slice(0, 10) : "",
+                                gender: typeof entry.gender === "number" ? entry.gender : "",
                                 role: entry.role || "admin",
                                 companyId: company._id,
                               },
@@ -787,6 +840,7 @@ const CompanyAdminWorkspace = ({
                                 ...createMemberForm(company._id, "departmenthead"),
                                 id: entry._id,
                                 code: entry.code || "",
+                                profileId: entry.profileId || "",
                                 name: entry.name || "",
                                 email: entry.email || entry.username || "",
                                 pic: entry.pic ? { ...entry.pic, file: null, isAdd: 0, isDeleted: 0, url: entry.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
@@ -796,6 +850,8 @@ const CompanyAdminWorkspace = ({
                                 state: entry.state || "",
                                 designation: entry.designation || "",
                                 joiningDate: entry.joiningDate ? String(entry.joiningDate).slice(0, 10) : "",
+                                dateOfBirth: entry.dateOfBirth ? String(entry.dateOfBirth).slice(0, 10) : "",
+                                gender: typeof entry.gender === "number" ? entry.gender : "",
                                 role: entry.role || "departmenthead",
                                 companyId: company._id,
                               },
@@ -914,14 +970,29 @@ const CompanyAdminWorkspace = ({
         loading={loading}
       />
 
-      {drawerState.type === "delete" && drawerState.isOpen ? (
-        <DeleteData
-          getData={handleDeleteRefresh}
-          data={drawerState.data}
-          isOpen={drawerState.isOpen}
-          onClose={() => setDrawerState({ type: "admin-add", isOpen: false, data: null })}
-        />
-      ) : null}
+      <ConfirmationModal
+        isOpen={drawerState.type === "delete" && drawerState.isOpen}
+        onClose={() => setDrawerState({ type: "admin-add", isOpen: false, data: null })}
+        onConfirm={handleMemberDelete}
+        title="Delete member?"
+        description={`${drawerState?.data?.name || "This member"} will be removed from active management.`}
+        // note="This is a soft delete for audit purposes. The member record remains in the database, but it will no longer appear in the UI."
+        confirmText="Delete Member"
+        isLoading={loading && drawerState.type === "delete"}
+        tone="danger"
+      />
+
+      <ConfirmationModal
+        isOpen={isDeleteCompanyOpen}
+        onClose={() => setIsDeleteCompanyOpen(false)}
+        onConfirm={handleCompanyDelete}
+        title="Delete company?"
+        description={`${company?.company_name || "This company"} will be removed from active management and hidden from the application.`}
+        // note="This is a soft delete for audit purposes. The company record remains in the database, but it will no longer be shown or fetched in the UI."
+        confirmText="Delete Company"
+        isLoading={loading && isDeleteCompanyOpen}
+        tone="danger"
+      />
 
       <Drawer
         size="xl"

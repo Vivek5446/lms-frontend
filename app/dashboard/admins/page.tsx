@@ -30,7 +30,7 @@ import {
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FiArrowRight,
   FiBriefcase,
@@ -45,6 +45,7 @@ import {
 } from "react-icons/fi";
 import { readFileAsBase64 } from "../../config/utils/utils";
 import PermissionGate from "@/app/component/common/PermissionGate";
+import { getApiErrorMessage } from "../../config/utils/apiError";
 import stores from "../../store/stores";
 import CompanyAdminWorkspace from "./component/CompanyAdminWorkspace";
 import CompanyForm from "./component/CompanyForm";
@@ -72,6 +73,15 @@ const DirectoryPage = observer(() => {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const mutedText = useColorModeValue("gray.500", "gray.400");
   const headingText = useColorModeValue("gray.800", "white");
+  const showToast = useCallback(
+    (options: any) =>
+      toast({
+        position: "top-right",
+        isClosable: true,
+        ...options,
+      }),
+    [toast]
+  );
 
   const {
     companyStore: { createCompany, getManagedCompanies, companies },
@@ -87,15 +97,14 @@ const DirectoryPage = observer(() => {
 
   useEffect(() => {
     refreshCompanies().catch((err: any) => {
-      toast({
+      showToast({
         title: "Unable to load companies",
-        description: err?.message || "Please try again.",
+        description: getApiErrorMessage(err),
         status: "error",
         duration: 4000,
-        isClosable: true,
       });
     });
-  }, []);
+  }, [showToast]);
 
   const filteredCompanies = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -164,24 +173,22 @@ const DirectoryPage = observer(() => {
 
       await refreshCompanies();
       setIsCompanyDrawerOpen(false);
-      toast({
+      showToast({
         title: "Company created",
         description: response?.data?.message || `${values.company_name} is ready.`,
         status: "success",
         duration: 4000,
-        isClosable: true,
       });
 
       if (createdCompany?._id) {
         openCompanyWorkspace(createdCompany._id);
       }
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Failed to create company",
-        description: err?.message || "Please review the form and try again.",
+        description: getApiErrorMessage(err, "Please review the form and try again."),
         status: "error",
         duration: 5000,
-        isClosable: true,
       });
     } finally {
       setLoading(false);

@@ -223,6 +223,19 @@ class UserStore {
     }
   };
 
+  deleteManagedUser = async (id: string) => {
+    this.submitting = true;
+    try {
+      const response = await axios.delete(`/admin/users/${id}`);
+      this.users = this.users.filter((user: any) => user?._id !== id);
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.submitting = false;
+    }
+  };
+
   previewUploadUsers = async (file: File, options: any = {}) => {
     this.uploadLoading = true;
     try {

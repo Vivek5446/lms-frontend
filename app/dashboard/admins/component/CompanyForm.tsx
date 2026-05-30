@@ -14,8 +14,9 @@ import {
   SimpleGrid,
   Text,
   useColorModeValue,
+  useToast,
 } from "@chakra-ui/react";
-import { Formik, Form as FormikForm } from "formik";
+import { Formik, Form as FormikForm, getIn } from "formik";
 import {
   Building2,
   Globe,
@@ -27,6 +28,7 @@ import * as Yup from "yup";
 
 import BrandColorField from "../../../component/common/BrandColorField/BrandColorField";
 import CustomInput from "../../../component/config/component/customInput/CustomInput";
+import { getApiErrorMessage } from "../../../config/utils/apiError";
 import { SITE_URL } from "../../../config/utils/variables";
 import { DEFAULT_LEARNER_PRIMARY_COLOR, normalizeHexColor } from "../../../theme/theme";
 
@@ -167,6 +169,7 @@ const createCompanyFormValues = (company?: any) => ({
 /* ================= FORM ================= */
 const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel = "Create Company" }: any) => {
   const [preview, setPreview] = useState<string | null>(null);
+  const toast = useToast();
 
   /* ✅ SAFE PREVIEW */
   const handlePreview = (file: any) => {
@@ -179,15 +182,52 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
   };
 
   const validationSchema = Yup.object({
-    company_name: Yup.string().required(),
-    companyCode: Yup.string().required(),
-    companyEmail: Yup.string().email().required(),
-    managerLevels: Yup.number().min(1).max(20).required(),
-    mobileNo: Yup.string().required(),
-    bio: Yup.string().required(),
+    company_name: Yup.string()
+      .trim()
+      .min(2, "Company name should be at least 2 characters")
+      .required("Company name is required"),
+    companyCode: Yup.string().trim().min(2, "Company code should be at least 2 characters").required("Company code is required"),
+    tenantSlug: Yup.string()
+      .trim()
+      .matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens only")
+      .required("Tenant slug is required"),
+    customDomain: Yup.string()
+      .trim()
+      .test(
+        "custom-domain",
+        "Enter a valid custom domain",
+        (value) =>
+          !value ||
+          /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i.test(value)
+      ),
+    companyEmail: Yup.string()
+      .trim()
+      .email("Enter a valid company email address")
+      .required("Company email is required"),
+    managerLevels: Yup.number()
+      .typeError("Manager levels must be a number")
+      .integer("Manager levels must be a whole number")
+      .min(1, "Manager levels must be at least 1")
+      .max(20, "Manager levels must be 20 or less")
+      .required("Manager levels are required"),
+    mobileNo: Yup.string()
+      .trim()
+      .matches(/^[0-9+()\-\s]{7,20}$/, "Enter a valid primary phone number")
+      .required("Primary phone number is required"),
+    webLink: Yup.string()
+      .trim()
+      .test(
+        "website-url",
+        "Enter a valid website URL",
+        (value) => !value || Yup.string().url().isValidSync(value)
+      ),
+    bio: Yup.string()
+      .trim()
+      .min(10, "Company description should be at least 10 characters")
+      .required("Company description is required"),
     primaryThemeColor: Yup.string()
       .matches(/^#(?:[0-9A-Fa-f]{3}){1,2}$/, "Enter a valid hex color")
-      .required(),
+      .required("Primary theme color is required"),
   });
 
   return (
@@ -195,9 +235,32 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
       initialValues={createCompanyFormValues(initialValues)}
       enableReinitialize
       validationSchema={validationSchema}
-      onSubmit={onSubmit}
+      onSubmit={async (values, helpers) => {
+        try {
+          await onSubmit(values);
+        } catch (error: any) {
+          toast({
+            title: "Unable to save company",
+            description: getApiErrorMessage(error, "Please review the company details and try again."),
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+            position: "top-right",
+          });
+          helpers.setSubmitting(false);
+        }
+      }}
     >
-      {({ values, handleChange, handleSubmit, setFieldValue }: any) => {
+      {({
+        values,
+        errors,
+        touched,
+        submitCount,
+        handleBlur,
+        handleChange,
+        setFieldValue,
+        submitForm,
+      }: any) => {
         useEffect(() => {
           const cleanup = handlePreview(values?.logo?.file);
           if (!values?.logo?.file) {
@@ -216,8 +279,17 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
         );
         const previewTextColor = getContrastTextColor(resolvedThemeColor);
 
+        const fieldError = (path: string) => getIn(errors, path);
+        const showFieldError = (path: string) =>
+          Boolean(fieldError(path) && (getIn(touched, path) || submitCount > 0));
+
+        const handleValidatedSubmit = async (event: any) => {
+          event.preventDefault();
+          await submitForm();
+        };
+
         return (
-          <FormikForm onSubmit={handleSubmit}>
+          <FormikForm onSubmit={handleValidatedSubmit}>
             <Flex direction="column" gap={6}>
 
               {/* TENANT */}
@@ -226,39 +298,59 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                   <CustomInput
                     label="Company Name"
                     name="company_name"
+                    placeholder="Enter company name"
                     value={values.company_name}
+                    onBlur={handleBlur}
                     onChange={(e: any) => {
                       handleChange(e);
                       if (!values.tenantSlug)
                         setFieldValue("tenantSlug", slugifyTenant(e.target.value));
                     }}
+                    error={fieldError("company_name")}
+                    showError={showFieldError("company_name")}
                   />
                   <CustomInput
                     label="Company Code"
                     name="companyCode"
+                    placeholder="Enter company code"
                     value={values.companyCode}
+                    onBlur={handleBlur}
                     onChange={handleChange}
+                    error={fieldError("companyCode")}
+                    showError={showFieldError("companyCode")}
                   />
                   <CustomInput
                     label="Tenant Slug"
                     name="tenantSlug"
+                    placeholder="Enter tenant slug"
                     value={values.tenantSlug}
+                    onBlur={handleBlur}
                     onChange={(e: any) =>
                       setFieldValue("tenantSlug", slugifyTenant(e.target.value))
                     }
+                    error={fieldError("tenantSlug")}
+                    showError={showFieldError("tenantSlug")}
                   />
                   <CustomInput
                     label="Custom Domain"
                     name="customDomain"
+                    placeholder="portal.example.com"
                     value={values.customDomain}
+                    onBlur={handleBlur}
                     onChange={handleChange}
+                    error={fieldError("customDomain")}
+                    showError={showFieldError("customDomain")}
                   />
                   <CustomInput
                     label="Manager Levels"
                     name="managerLevels"
                     type="number"
+                    placeholder="Enter number of manager levels"
                     value={values.managerLevels}
+                    onBlur={handleBlur}
                     onChange={handleChange}
+                    error={fieldError("managerLevels")}
+                    showError={showFieldError("managerLevels")}
                   />
                 </SimpleGrid>
 
@@ -274,6 +366,8 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                   value={resolvedThemeColor}
                   onChange={(nextColor) => setFieldValue("primaryThemeColor", nextColor)}
                   helperText="This applies only to the learner-side portal for now. The admin dashboard keeps its current styling."
+                  error={fieldError("primaryThemeColor")}
+                  showError={showFieldError("primaryThemeColor")}
                 />
 
                 <HStack mt={4} spacing={3} flexWrap="wrap">
@@ -343,20 +437,32 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                   <CustomInput
                     label="Company Email"
                     name="companyEmail"
+                    placeholder="Enter email address"
                     value={values.companyEmail}
+                    onBlur={handleBlur}
                     onChange={handleChange}
+                    error={fieldError("companyEmail")}
+                    showError={showFieldError("companyEmail")}
                   />
                   <CustomInput
                     label="Primary Phone"
                     name="mobileNo"
+                    placeholder="Enter mobile number"
                     value={values.mobileNo}
+                    onBlur={handleBlur}
                     onChange={handleChange}
+                    error={fieldError("mobileNo")}
+                    showError={showFieldError("mobileNo")}
                   />
                   <CustomInput
                     label="Website"
                     name="webLink"
+                    placeholder="https://example.com"
                     value={values.webLink}
+                    onBlur={handleBlur}
                     onChange={handleChange}
+                    error={fieldError("webLink")}
+                    showError={showFieldError("webLink")}
                   />
                 </SimpleGrid>
 
@@ -376,8 +482,12 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     label="Description"
                     name="bio"
                     type="textarea"
+                    placeholder="Enter company description"
                     value={values.bio}
+                    onBlur={handleBlur}
                     onChange={handleChange}
+                    error={fieldError("bio")}
+                    showError={showFieldError("bio")}
                   />
                 </Box>
               </SectionCard>
@@ -388,8 +498,10 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                   <GridItem colSpan={2}>
                     <CustomInput
                       label="Street"
-                      name="street"
+                      name="addressInfo[0].address"
+                      placeholder="Enter street address"
                       value={address.address}
+                      onBlur={handleBlur}
                       onChange={(e: any) =>
                         setFieldValue("addressInfo[0].address", e.target.value)
                       }
@@ -398,32 +510,40 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
 
                   <CustomInput
                     label="City"
-                    name="city"
+                    name="addressInfo[0].city"
+                    placeholder="Enter city"
                     value={address.city}
+                    onBlur={handleBlur}
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].city", e.target.value)
                     }
                   />
                   <CustomInput
                     label="State"
-                    name="state"
+                    name="addressInfo[0].state"
+                    placeholder="Enter state"
                     value={address.state}
+                    onBlur={handleBlur}
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].state", e.target.value)
                     }
                   />
                   <CustomInput
                     label="Country"
-                    name="country"
+                    name="addressInfo[0].country"
+                    placeholder="Enter country"
                     value={address.country}
+                    onBlur={handleBlur}
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].country", e.target.value)
                     }
                   />
                   <CustomInput
                     label="Pin Code"
-                    name="pinCode"
+                    name="addressInfo[0].pinCode"
+                    placeholder="Enter pin code"
                     value={address.pinCode}
+                    onBlur={handleBlur}
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].pinCode", e.target.value)
                     }
@@ -435,7 +555,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
 
               {/* ACTIONS */}
               <Flex justify="flex-end" gap={4}>
-                <Button variant="ghost" onClick={onClose}>
+                <Button type="button" variant="ghost" onClick={onClose}>
                   Cancel
                 </Button>
                 <Button type="submit" colorScheme="brand" isLoading={isLoading}>

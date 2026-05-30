@@ -8,6 +8,7 @@ export const genderOptions: any = [
     value: 2,
   },
   { label: "Other", value: 3 },
+  { label: "Prefer Not to Say", value: 4 },
 ];
 
 export const insuranceTypeOptions = [

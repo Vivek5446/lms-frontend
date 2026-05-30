@@ -71,6 +71,7 @@ interface CustomInputProps {
   name: string;
   isClear?: boolean;
   onChange?: any;
+  onBlur?: any;
   value?: any;
   w?: string;
   options?: { label: string; value: string }[]; // Options for select dropdown

@@ -56,10 +56,12 @@ type Props = {
   muted: string;
   onEdit: (user: any) => void;
   onView: (user: any) => void;
+  onDelete?: (user: any) => void;
   onToggleStatus?: (user: any) => void;
   statusUpdatingId?: string | null;
   formatRoleLabel: (role: string) => string;
   canEdit?: boolean;
+  canDelete?: boolean;
   canToggleStatus?: boolean;
 };
 
@@ -105,10 +107,12 @@ const UsersTable = ({
   muted,
   onEdit,
   onView,
+  onDelete,
   onToggleStatus,
   statusUpdatingId,
   formatRoleLabel,
   canEdit = true,
+  canDelete = false,
   canToggleStatus = false,
 }: Props) => {
   // Statistics calculations
@@ -634,7 +638,9 @@ const UsersTable = ({
                 function: (user: any) => onView(user),
               },
               deleteKey: {
-                showDeleteButton: false,
+                showDeleteButton: canDelete,
+                title: "Delete User",
+                function: (user: any) => onDelete?.(user),
               },
             },
             search: {

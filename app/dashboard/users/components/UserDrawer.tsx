@@ -1,9 +1,9 @@
 "use client";
 
 import {
-    Badge,
-    Box,
-    Button,
+  Badge,
+  Box,
+  Button,
     Checkbox,
     Drawer,
     DrawerBody,
@@ -15,13 +15,14 @@ import {
     Flex,
     Icon,
     SimpleGrid,
-    Text,
-    VStack,
-    useColorModeValue,
+  Text,
+  VStack,
+  useColorModeValue,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Building2, Image as ImageIcon, Layers, Lock, User } from "lucide-react";
 import CustomInput from "../../../component/config/component/customInput/CustomInput";
+import { genderOptions } from "../../../config/constant";
 import ManagerHierarchy from "./ManagerHierarchy";
 
 /* ================= SECTION CARD ================= */
@@ -59,6 +60,130 @@ const SectionCard = ({ title, icon, children, color }: any) => {
   );
 };
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^[0-9+()\-\s]{7,20}$/;
+
+const getTodayDateValue = () => {
+  const today = new Date();
+  return today.toISOString().slice(0, 10);
+};
+
+const isFutureDate = (value?: string) => {
+  if (!value) {
+    return false;
+  }
+
+  const selectedDate = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(selectedDate.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return selectedDate.getTime() > today.getTime();
+};
+
+const buildUserFormErrors = ({
+  userForm,
+  isSuperadmin,
+  availableDepartments,
+  needsDirectPassword,
+  isDepartmentRequired,
+}: {
+  userForm: any;
+  isSuperadmin: boolean;
+  availableDepartments: string[];
+  needsDirectPassword: boolean;
+  isDepartmentRequired: boolean;
+}) => {
+  const errors: Record<string, string> = {};
+  const trimmedCode = String(userForm.code || "").trim();
+  const trimmedName = String(userForm.name || "").trim();
+  const trimmedEmail = String(userForm.email || "").trim().toLowerCase();
+  const trimmedMobile = String(userForm.mobileNumber || "").trim();
+  const trimmedDesignation = String(userForm.designation || "").trim();
+  const trimmedDepartment = String(userForm.department || "").trim();
+  const trimmedPassword = String(userForm.password || "").trim();
+  const trimmedConfirmPassword = String(userForm.confirmPassword || "").trim();
+  const requiresGender = !userForm.id;
+
+  if (!trimmedCode) {
+    errors.code = "Employee code is required.";
+  }
+
+  if (!trimmedName) {
+    errors.name = "Full name is required.";
+  }
+
+  if (!trimmedEmail) {
+    errors.email = "Email address is required.";
+  } else if (!EMAIL_PATTERN.test(trimmedEmail)) {
+    errors.email = "Enter a valid email address.";
+  }
+
+  if (!trimmedMobile) {
+    errors.mobileNumber = "Mobile number is required.";
+  } else if (!PHONE_PATTERN.test(trimmedMobile)) {
+    errors.mobileNumber = "Enter a valid mobile number.";
+  }
+
+  if (!trimmedDesignation) {
+    errors.designation = "Designation is required.";
+  }
+
+  if (!String(userForm.role || "").trim()) {
+    errors.role = "Role is required.";
+  }
+
+  if (isSuperadmin && !String(userForm.companyId || "").trim()) {
+    errors.companyId = "Company selection is required.";
+  }
+
+  if (isDepartmentRequired && !trimmedDepartment) {
+    errors.department = "Department is required for this role.";
+  } else if (
+    trimmedDepartment &&
+    availableDepartments.length > 0 &&
+    !availableDepartments.includes(trimmedDepartment)
+  ) {
+    errors.department = "Select a valid department for the chosen company.";
+  }
+
+  if (requiresGender && !userForm.gender) {
+    errors.gender = "Gender is required.";
+  }
+
+  if (userForm.dateOfBirth && isFutureDate(userForm.dateOfBirth)) {
+    errors.dateOfBirth = "Date of birth cannot be in the future.";
+  }
+
+  if (!userForm.id && needsDirectPassword) {
+    if (!trimmedPassword) {
+      errors.password = "Password is required for admin and department head accounts.";
+    } else if (trimmedPassword.length < 6) {
+      errors.password = "Password must be at least 6 characters.";
+    }
+
+    if (!trimmedConfirmPassword) {
+      errors.confirmPassword = "Confirm password is required.";
+    } else if (trimmedPassword !== trimmedConfirmPassword) {
+      errors.confirmPassword = "Password and confirm password must match.";
+    }
+  }
+
+  if (userForm.id && needsDirectPassword && (trimmedPassword || trimmedConfirmPassword)) {
+    if (trimmedPassword.length < 6) {
+      errors.password = "Password must be at least 6 characters.";
+    }
+
+    if (trimmedPassword !== trimmedConfirmPassword) {
+      errors.confirmPassword = "Password and confirm password must match.";
+    }
+  }
+
+  return errors;
+};
+
 /* ================= MAIN ================= */
 const UserDrawer = ({
   isOpen,
@@ -80,6 +205,7 @@ const UserDrawer = ({
   canAssignManagers = true,
 }: any) => {
   const [preview, setPreview] = useState<string | null>(null);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const availableDepartments = isSuperadmin
     ? filteredCompanies.find((company: any) => company?._id === userForm.companyId)?.departments || []
     : currentCompanyDepartments || [];
@@ -87,6 +213,23 @@ const UserDrawer = ({
     userForm.role === "admin" || userForm.role === "departmenthead";
   const isDepartmentRequired =
     userForm.role === "departmenthead" || /^l\d+-manager$/i.test(String(userForm.role || ""));
+  const validationErrors = useMemo(
+    () =>
+      buildUserFormErrors({
+        userForm,
+        isSuperadmin,
+        availableDepartments,
+        needsDirectPassword,
+        isDepartmentRequired,
+      }),
+    [
+      availableDepartments,
+      isDepartmentRequired,
+      isSuperadmin,
+      needsDirectPassword,
+      userForm,
+    ]
+  );
 
   useEffect(() => {
     if (userForm?.pic?.file instanceof File) {
@@ -97,6 +240,24 @@ const UserDrawer = ({
 
     setPreview(userForm?.pic?.url || null);
   }, [userForm?.pic]);
+
+  const todayDate = getTodayDateValue();
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSubmitAttempted(false);
+    }
+  }, [isOpen]);
+
+  const handleValidatedSubmit = async () => {
+    setSubmitAttempted(true);
+
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    await onSubmit();
+  };
 
   return (
     <Drawer isOpen={isOpen} placement="right" size="xl" onClose={onClose}>
@@ -192,15 +353,29 @@ const UserDrawer = ({
                 <CustomInput
                   label="Employee Code"
                   name="code"
+                  placeholder="Enter employee code"
                   value={userForm.code}
+                  error={validationErrors.code}
+                  showError={submitAttempted}
                   onChange={(e: any) =>
                     setUserForm((p: any) => ({ ...p, code: e.target.value }))
                   }
                 />
                 <CustomInput
-                  label="Name"
+                  label="Profile ID"
+                  name="profileId"
+                  placeholder="Generated automatically after creation"
+                  value={userForm.profileId || ""}
+                  disabled
+                  readOnly
+                />
+                <CustomInput
+                  label="Full Name"
                   name="name"
+                  placeholder="Enter full name"
                   value={userForm.name}
+                  error={validationErrors.name}
+                  showError={submitAttempted}
                   onChange={(e: any) =>
                     setUserForm((p: any) => ({ ...p, name: e.target.value }))
                   }
@@ -208,15 +383,21 @@ const UserDrawer = ({
                 <CustomInput
                   label="Email"
                   name="email"
+                  placeholder="Enter email address"
                   value={userForm.email}
+                  error={validationErrors.email}
+                  showError={submitAttempted}
                   onChange={(e: any) =>
                     setUserForm((p: any) => ({ ...p, email: e.target.value }))
                   }
                 />
                 <CustomInput
-                  label="Mobile"
+                  label="Phone Number"
                   name="mobileNumber"
+                  placeholder="Enter mobile number"
                   value={userForm.mobileNumber}
+                  error={validationErrors.mobileNumber}
+                  showError={submitAttempted}
                   onChange={(e: any) =>
                     setUserForm((p: any) => ({ ...p, mobileNumber: e.target.value }))
                   }
@@ -224,10 +405,38 @@ const UserDrawer = ({
                 <CustomInput
                   label="Designation"
                   name="designation"
+                  placeholder="Enter designation"
                   value={userForm.designation}
+                  error={validationErrors.designation}
+                  showError={submitAttempted}
                   onChange={(e: any) =>
                     setUserForm((p: any) => ({ ...p, designation: e.target.value }))
                   }
+                />
+                <CustomInput
+                  label="Date of Birth"
+                  name="dateOfBirth"
+                  type="date"
+                  maxDate={todayDate}
+                  value={userForm.dateOfBirth}
+                  error={validationErrors.dateOfBirth}
+                  showError={submitAttempted}
+                  onChange={(e: any) =>
+                    setUserForm((p: any) => ({ ...p, dateOfBirth: e.target.value }))
+                  }
+                />
+                <CustomInput
+                  type="select"
+                  label="Gender"
+                  name="gender"
+                  placeholder="Select gender"
+                  value={genderOptions.find((option: any) => option.value === userForm.gender) || null}
+                  error={validationErrors.gender}
+                  showError={submitAttempted}
+                  onChange={(option: any) =>
+                    setUserForm((p: any) => ({ ...p, gender: option?.value ?? "" }))
+                  }
+                  options={genderOptions}
                 />
                 <CustomInput
                   label="Joining Date"
@@ -242,7 +451,10 @@ const UserDrawer = ({
                   type="select"
                   label="Role"
                   name="role"
+                  placeholder="Select role"
                   value={roleOptions.find((r: any) => r.value === userForm.role) || null}
+                  error={validationErrors.role}
+                  showError={submitAttempted}
                   onChange={(option: any) => updateRole(option?.value || "user")}
                   options={roleOptions}
                 />
@@ -251,11 +463,14 @@ const UserDrawer = ({
                   label="Department"
                   name="department"
                   required={isDepartmentRequired}
+                  placeholder="Select department"
                   value={
                     userForm.department
                       ? { label: userForm.department, value: userForm.department }
                       : null
                   }
+                  error={validationErrors.department}
+                  showError={submitAttempted}
                   onChange={(option: any) =>
                     setUserForm((p: any) => ({ ...p, department: option?.value || "" }))
                   }
@@ -267,6 +482,7 @@ const UserDrawer = ({
                 <CustomInput
                   label="City"
                   name="city"
+                  placeholder="Enter city"
                   value={userForm.city}
                   onChange={(e: any) =>
                     setUserForm((p: any) => ({ ...p, city: e.target.value }))
@@ -275,6 +491,7 @@ const UserDrawer = ({
                 <CustomInput
                   label="State"
                   name="state"
+                  placeholder="Enter state"
                   value={userForm.state}
                   onChange={(e: any) =>
                     setUserForm((p: any) => ({ ...p, state: e.target.value }))
@@ -292,7 +509,10 @@ const UserDrawer = ({
                       label={userForm.id ? "New Password" : "Password"}
                       name="password"
                       type="password"
+                      placeholder="Enter password"
                       value={userForm.password}
+                      error={validationErrors.password}
+                      showError={submitAttempted}
                       onChange={(e: any) =>
                         setUserForm((p: any) => ({ ...p, password: e.target.value }))
                       }
@@ -301,7 +521,10 @@ const UserDrawer = ({
                       label={userForm.id ? "Confirm New Password" : "Confirm Password"}
                       name="confirmPassword"
                       type="password"
+                      placeholder="Confirm password"
                       value={userForm.confirmPassword}
+                      error={validationErrors.confirmPassword}
+                      showError={submitAttempted}
                       onChange={(e: any) =>
                         setUserForm((p: any) => ({ ...p, confirmPassword: e.target.value }))
                       }
@@ -341,11 +564,14 @@ const UserDrawer = ({
                     type="select"
                     label="Select company"
                     name="companyId"
+                    placeholder="Select company"
                     value={
                       filteredCompanies
                         .map((c: any) => ({ label: c.company_name, value: c._id }))
                         .find((option: any) => option.value === userForm.companyId) || null
                     }
+                    error={validationErrors.companyId}
+                    showError={submitAttempted}
                     onChange={(option: any) =>
                       setUserForm((p: any) => ({
                         ...p,
@@ -394,7 +620,7 @@ const UserDrawer = ({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button colorScheme="blue" onClick={onSubmit} isLoading={loading}>
+          <Button colorScheme="blue" onClick={handleValidatedSubmit} isLoading={loading}>
             {userForm.id ? "Update User" : "Create User"}
           </Button>
         </DrawerFooter>

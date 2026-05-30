@@ -21,9 +21,11 @@ import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import useDebounce from "../../component/config/component/customHooks/useDebounce";
+import { getApiErrorMessage } from "../../config/utils/apiError";
 import { readFileAsBase64 } from "../../config/utils/utils";
 import stores from "../../store/stores";
 import PermissionGate from "../../component/common/PermissionGate";
+import ConfirmationModal from "../../component/common/ConfirmationModal/ConfirmationModal";
 import { PERMISSION_KEYS, hasPermission } from "../../config/utils/permissions";
 import BulkUploadResultModal from "./components/BulkUploadResultModal";
 import BulkUploadModal from "./components/BulkUploadModal";
@@ -40,6 +42,7 @@ type ManagerRow = {
 type UserFormState = {
   id?: string;
   code: string;
+  profileId: string;
   name: string;
   email: string;
   password: string;
@@ -51,6 +54,8 @@ type UserFormState = {
   state: string;
   designation: string;
   joiningDate: string;
+  dateOfBirth: string;
+  gender: number | "";
   role: string;
   companyId: string;
   companyName: string;
@@ -190,6 +195,7 @@ const reconcileManagersForRole = (role: string, managers: ManagerRow[], maxLevel
 
 const initialForm = (): UserFormState => ({
   code: "",
+  profileId: "",
   name: "",
   email: "",
   password: "",
@@ -201,6 +207,8 @@ const initialForm = (): UserFormState => ({
   state: "",
   designation: "",
   joiningDate: "",
+  dateOfBirth: "",
+  gender: "",
   role: "user",
   companyId: "",
   companyName: "",
@@ -221,6 +229,7 @@ const UsersView = observer(() => {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ user: any; nextIsEnabled: boolean } | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<any | null>(null);
   const [uploadResults, setUploadResults] = useState<any | null>(null);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [userForm, setUserForm] = useState<UserFormState>(initialForm());
@@ -241,8 +250,18 @@ const UsersView = observer(() => {
   const canCreateManagers = hasPermission(auth.user, PERMISSION_KEYS.CREATE_MANAGERS);
   const canEditUsers = hasPermission(auth.user, PERMISSION_KEYS.EDIT_USERS);
   const canAssignManagers = hasPermission(auth.user, PERMISSION_KEYS.ASSIGN_MANAGERS);
+  const canDeleteUsers = canEditUsers;
   const canOpenCreate = canCreateUsers || canCreateManagers;
   const canOpenBulk = canOpenCreate || canEditUsers;
+  const showToast = useCallback(
+    (options: any) =>
+      toast({
+        position: "top-right",
+        isClosable: true,
+        ...options,
+      }),
+    [toast]
+  );
   const isSuperadmin = role === "superadmin";
   const isDepartmentHead = role === "departmenthead";
   const scopedCompanyId = companyStore.getActiveCompanyId();
@@ -350,9 +369,9 @@ const UsersView = observer(() => {
         ...(isSuperadmin && scopedCompanyId ? { companyId: scopedCompanyId } : {}),
       });
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Unable to load users",
-        description: err?.error || err?.message || "Please try again.",
+        description: getApiErrorMessage(err),
         status: "error",
         duration: 3500,
       });
@@ -458,7 +477,7 @@ const UsersView = observer(() => {
 
   const openBulkUpload = () => {
     if (isManagementBlocked) {
-      toast({
+      showToast({
         title: "Company is inactive",
         description: managementBlockedMessage,
         status: "warning",
@@ -477,7 +496,7 @@ const UsersView = observer(() => {
 
   const openCreate = () => {
     if (isManagementBlocked) {
-      toast({
+      showToast({
         title: "Company is inactive",
         description: managementBlockedMessage,
         status: "warning",
@@ -487,7 +506,7 @@ const UsersView = observer(() => {
     }
 
     if (!canOpenCreate) {
-      toast({
+      showToast({
         title: "Permission required",
         description: "Your account cannot create users with the current permission set.",
         status: "warning",
@@ -497,7 +516,7 @@ const UsersView = observer(() => {
     }
 
     if (isSuperadmin && !scopedCompanyId) {
-      toast({
+      showToast({
         title: "Company is required",
         description: "Select a company before creating a user or manager.",
         status: "warning",
@@ -512,7 +531,7 @@ const UsersView = observer(() => {
 
   const openEdit = (user: any) => {
     if (!canEditUsers) {
-      toast({
+      showToast({
         title: "Permission required",
         description: "Your account cannot edit users.",
         status: "warning",
@@ -534,6 +553,7 @@ const UsersView = observer(() => {
     setUserForm({
       id: user._id,
       code: user.code || "",
+      profileId: user.profileId || "",
       name: user.name || "",
       email: user.email || user.username || "",
       password: "",
@@ -545,6 +565,8 @@ const UsersView = observer(() => {
       state: user.state || "",
       designation: user.designation || "",
       joiningDate: user.joiningDate ? String(user.joiningDate).slice(0, 10) : "",
+      dateOfBirth: user.dateOfBirth ? String(user.dateOfBirth).slice(0, 10) : "",
+      gender: typeof user.gender === "number" ? user.gender : "",
       role: roleValue,
       companyId: user.companyId || user.company?._id || "",
       companyName: user.company?.name || user.company?.company_name || "",
@@ -558,6 +580,20 @@ const UsersView = observer(() => {
 
   const openView = (user: any) => {
     setSelectedUser(user);
+  };
+
+  const openDelete = (user: any) => {
+    if (!canDeleteUsers) {
+      showToast({
+        title: "Permission required",
+        description: "Your account cannot delete users.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    setDeleteDialog(user);
   };
 
   const updateRole = (nextRole: string) => {
@@ -587,6 +623,8 @@ const UsersView = observer(() => {
     const state = userForm.state.trim();
     const designation = userForm.designation.trim();
     const joiningDate = userForm.joiningDate;
+    const dateOfBirth = userForm.dateOfBirth;
+    const gender = userForm.gender;
     const managers = userForm.managers
       .map((manager) => ({
         level: manager.level,
@@ -600,18 +638,54 @@ const UsersView = observer(() => {
     const isDepartmentRequired =
       roleValue === "departmenthead" || Boolean(parseManagerLevel(roleValue));
 
-    if (!code || !name || !email || !roleValue || !designation || (isDepartmentRequired && !department)) {
-      toast({
+    if (!code || !name || !email || !roleValue || !designation || !mobileNumber || (!userForm.id && !gender) || (isDepartmentRequired && !department)) {
+      showToast({
         title: "Missing details",
-        description: `Employee code, name, email, designation, ${isDepartmentRequired ? "department, " : ""}and role are required.`,
+        description: `Employee code, full name, email, mobile number, designation, ${!userForm.id ? "gender, " : ""}${isDepartmentRequired ? "department, " : ""}and role are required.`,
         status: "warning",
         duration: 3000,
       });
       return;
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showToast({
+        title: "Invalid email address",
+        description: "Enter a valid email address before saving.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!/^[0-9+()\-\s]{7,20}$/.test(mobileNumber)) {
+      showToast({
+        title: "Invalid mobile number",
+        description: "Enter a valid mobile number before saving.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (dateOfBirth) {
+      const selectedDate = new Date(`${dateOfBirth}T00:00:00`);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate.getTime() > today.getTime()) {
+        showToast({
+          title: "Invalid date of birth",
+          description: "Date of birth cannot be in the future.",
+          status: "warning",
+          duration: 3000,
+        });
+        return;
+      }
+    }
+
     if (managers.some((manager) => manager.managerEmail === email)) {
-      toast({
+      showToast({
         title: "Invalid hierarchy",
         description: "A user cannot be their own manager.",
         status: "warning",
@@ -622,7 +696,7 @@ const UsersView = observer(() => {
 
     if (!userForm.id) {
       if (roleValue === "user" && !canCreateUsers) {
-        toast({
+        showToast({
           title: "Permission required",
           description: "Your account cannot create users.",
           status: "warning",
@@ -632,7 +706,7 @@ const UsersView = observer(() => {
       }
 
       if (parseManagerLevel(roleValue) && !canCreateManagers) {
-        toast({
+        showToast({
           title: "Permission required",
           description: "Your account cannot create managers.",
           status: "warning",
@@ -641,7 +715,7 @@ const UsersView = observer(() => {
         return;
       }
     } else if (!canEditUsers) {
-      toast({
+      showToast({
         title: "Permission required",
         description: "Your account cannot edit users.",
         status: "warning",
@@ -651,7 +725,7 @@ const UsersView = observer(() => {
     }
 
     if (managers.length > 0 && !canAssignManagers) {
-      toast({
+      showToast({
         title: "Permission required",
         description: "Your account cannot assign managers.",
         status: "warning",
@@ -662,7 +736,7 @@ const UsersView = observer(() => {
 
     if (needsDirectPassword && !userForm.id) {
       if (!userForm.password.trim()) {
-        toast({
+        showToast({
           title: "Password is required",
           description: "Enter a password for admin or department head accounts.",
           status: "warning",
@@ -672,7 +746,7 @@ const UsersView = observer(() => {
       }
 
       if (userForm.password.trim().length < 6) {
-        toast({
+        showToast({
           title: "Weak password",
           description: "Password must be at least 6 characters.",
           status: "warning",
@@ -682,7 +756,7 @@ const UsersView = observer(() => {
       }
 
       if (userForm.password !== userForm.confirmPassword) {
-        toast({
+        showToast({
           title: "Passwords do not match",
           description: "Confirm password should match the password field.",
           status: "warning",
@@ -702,6 +776,8 @@ const UsersView = observer(() => {
       state,
       designation,
       joiningDate,
+      dateOfBirth,
+      gender: gender ? Number(gender) : undefined,
       role: roleValue,
       managers,
       resendSetupEmail: userForm.resendSetupEmail,
@@ -732,7 +808,7 @@ const UsersView = observer(() => {
     if (isSuperadmin) {
       if (userForm.createCompany) {
         if (!userForm.companyName.trim()) {
-          toast({
+          showToast({
             title: "Company is required",
             description: "Enter a company name or choose an existing company.",
             status: "warning",
@@ -745,7 +821,7 @@ const UsersView = observer(() => {
       } else if (userForm.companyId) {
         payload.companyId = userForm.companyId;
       } else {
-        toast({
+        showToast({
           title: "Company is required",
           description: "Select a company or create a new one.",
           status: "warning",
@@ -765,19 +841,20 @@ const UsersView = observer(() => {
       const response = userForm.id
         ? await userStore.updateManagedUser(userForm.id, payload)
         : await userStore.createManagedUser(payload);
-      toast({
+      const emailDelivery = response?.data?.emailDelivery;
+      showToast({
         title: userForm.id ? "User updated" : "User created",
         description: response?.message || "Saved successfully.",
-        status: response?.data?.emailDelivery?.success ? "success" : "info",
+        status: emailDelivery?.success || emailDelivery?.skipped ? "success" : "info",
         duration: 3500,
       });
       setIsUserDrawerOpen(false);
       resetForm();
       fetchUsers();
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Unable to save user",
-        description: err?.error || err?.message || "Please try again.",
+        description: getApiErrorMessage(err),
         status: "error",
         duration: 4000,
       });
@@ -792,7 +869,7 @@ const UsersView = observer(() => {
       }
 
       if (isSuperadmin && bulkForm.createCompany && !bulkForm.companyName.trim()) {
-        toast({
+        showToast({
           title: "Company is required",
           description: "Enter a company name before previewing the upload.",
           status: "warning",
@@ -802,7 +879,7 @@ const UsersView = observer(() => {
       }
 
       if (isSuperadmin && !bulkForm.createCompany && !bulkForm.companyId) {
-        toast({
+        showToast({
           title: "Company is required",
           description: "Select a company before previewing the upload.",
           status: "warning",
@@ -812,7 +889,7 @@ const UsersView = observer(() => {
       }
 
       if (!bulkForm.uploadRole) {
-        toast({
+        showToast({
           title: "Upload type is required",
           description: "Choose which hierarchy level this Excel file belongs to.",
           status: "warning",
@@ -843,9 +920,9 @@ const UsersView = observer(() => {
 
         await userStore.previewUploadUsers(file, bulkUploadOptions);
       } catch (err: any) {
-        toast({
+        showToast({
           title: "Preview failed",
-          description: err?.error || err?.message || "We could not read that Excel file.",
+          description: getApiErrorMessage(err, "We could not read that Excel file."),
           status: "error",
           duration: 4000,
         });
@@ -875,7 +952,7 @@ const UsersView = observer(() => {
 
   const handleBulkUpload = async () => {
     if (!selectedFile) {
-      toast({
+      showToast({
         title: "No file selected",
         description: "Choose an Excel file before uploading.",
         status: "warning",
@@ -885,7 +962,7 @@ const UsersView = observer(() => {
     }
 
     if (isSuperadmin && bulkForm.createCompany && !bulkForm.companyName.trim()) {
-      toast({
+      showToast({
         title: "Company is required",
         description: "Enter a company name for this bulk upload.",
         status: "warning",
@@ -895,7 +972,7 @@ const UsersView = observer(() => {
     }
 
     if (isSuperadmin && !bulkForm.createCompany && !bulkForm.companyId) {
-      toast({
+      showToast({
         title: "Company is required",
         description: "Select a company before uploading this file.",
         status: "warning",
@@ -905,7 +982,7 @@ const UsersView = observer(() => {
     }
 
     if (!bulkForm.uploadRole) {
-      toast({
+      showToast({
         title: "Upload type is required",
         description: "Choose which hierarchy level this Excel file belongs to.",
         status: "warning",
@@ -940,7 +1017,7 @@ const UsersView = observer(() => {
       setUploadResults(response?.data);
       setIsResultModalOpen(true);
 
-      toast({
+      showToast({
         title: failedCount > 0 ? "Partial success" : "Bulk upload complete",
         description:
           response?.message ||
@@ -960,9 +1037,9 @@ const UsersView = observer(() => {
       });
       fetchUsers();
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Bulk upload failed",
-        description: err?.error || err?.message || "Please try again.",
+        description: getApiErrorMessage(err),
         status: "error",
         duration: 4000,
       });
@@ -971,7 +1048,7 @@ const UsersView = observer(() => {
 
   const handleDownloadTemplate = async () => {
     if (isSuperadmin && !bulkForm.companyId) {
-      toast({
+      showToast({
         title: "Company is required",
         description: "Select a company before downloading the template.",
         status: "warning",
@@ -981,7 +1058,7 @@ const UsersView = observer(() => {
     }
 
     if (!bulkForm.uploadRole) {
-      toast({
+      showToast({
         title: "User type is required",
         description: "Select the user type you want to create first.",
         status: "warning",
@@ -997,9 +1074,9 @@ const UsersView = observer(() => {
         uploadRole: bulkForm.uploadRole,
       });
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Template download failed",
-        description: err?.error || err?.message || "Please try again.",
+        description: getApiErrorMessage(err),
         status: "error",
         duration: 4000,
       });
@@ -1021,6 +1098,34 @@ const UsersView = observer(() => {
     });
   };
 
+  const handleConfirmDeleteUser = async () => {
+    if (!deleteDialog?._id) {
+      return;
+    }
+
+    try {
+      const response = await userStore.deleteManagedUser(deleteDialog._id);
+      showToast({
+        title: "User deleted",
+        description: response?.message || "User deleted successfully.",
+        status: "success",
+        duration: 3500,
+      });
+      if (selectedUser?._id === deleteDialog._id) {
+        setSelectedUser(null);
+      }
+      setDeleteDialog(null);
+      fetchUsers();
+    } catch (err: any) {
+      showToast({
+        title: "Unable to delete user",
+        description: getApiErrorMessage(err),
+        status: "error",
+        duration: 4000,
+      });
+    }
+  };
+
   const handleConfirmStatusChange = async () => {
     if (!statusDialog?.user?._id) {
       return;
@@ -1031,7 +1136,7 @@ const UsersView = observer(() => {
         statusDialog.user._id,
         statusDialog.nextIsEnabled
       );
-      toast({
+      showToast({
         title: statusDialog.nextIsEnabled ? "User activated" : "User deactivated",
         description: response?.message || "User status updated successfully.",
         status: "success",
@@ -1040,9 +1145,9 @@ const UsersView = observer(() => {
       setStatusDialog(null);
       fetchUsers();
     } catch (err: any) {
-      toast({
+      showToast({
         title: "Unable to update user status",
-        description: err?.error || err?.message || "Please try again.",
+        description: getApiErrorMessage(err),
         status: "error",
         duration: 4000,
       });
@@ -1099,10 +1204,12 @@ const UsersView = observer(() => {
   muted={muted}
   onEdit={openEdit}
   onView={openView}
+  onDelete={openDelete}
   onToggleStatus={handleOpenStatusDialog}
   statusUpdatingId={statusDialog?.user?._id}
   formatRoleLabel={formatRoleLabel}
   canEdit={canEditUsers}
+  canDelete={canDeleteUsers}
   canToggleStatus={isSuperadmin}
 />
       
@@ -1167,6 +1274,18 @@ const UsersView = observer(() => {
   borderColor={borderColor}
   tableHeadBg={tableHeadBg}
   muted={muted}
+/>
+
+<ConfirmationModal
+  isOpen={Boolean(deleteDialog)}
+  onClose={() => setDeleteDialog(null)}
+  onConfirm={handleConfirmDeleteUser}
+  title="Delete user?"
+  description={`${deleteDialog?.name || "This user"} will be removed from active management and hidden from the application.`}
+  // note="This is a soft delete for audit purposes. The record remains in the database, but it will no longer be fetched or shown in the UI."
+  confirmText="Delete User"
+  isLoading={userStore.submitting}
+  tone="danger"
 />
 
 <AlertDialog

@@ -61,13 +61,23 @@ class CompanyStores {
       return;
     }
 
-    if (this.selectedCompanyId) {
+    const availableCompanies = this.companies.data || [];
+    const hasSelectedCompany = availableCompanies.some(
+      (company: any) => company?._id === this.selectedCompanyId
+    );
+
+    if (this.selectedCompanyId && hasSelectedCompany) {
       return;
     }
 
-    const fallbackCompanyId = this.companies.data?.[0]?._id || authStore.company || "";
+    const fallbackCompanyId = availableCompanies?.[0]?._id || authStore.company || "";
     if (fallbackCompanyId) {
       this.setSelectedCompanyId(fallbackCompanyId);
+      return;
+    }
+
+    if (this.selectedCompanyId) {
+      this.setSelectedCompanyId("");
     }
   };
 
@@ -129,6 +139,27 @@ class CompanyStores {
     this.isLoading = true;
     try {
       const response = await axios.put(`/company/${companyId}`, payload);
+      return response;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.isLoading = false;
+    }
+  };
+
+  deleteManagedCompany = async (companyId: string) => {
+    this.isLoading = true;
+    try {
+      const response = await axios.delete(`/company/${companyId}`);
+      this.companies.data = (this.companies.data || []).filter(
+        (company: any) => company?._id !== companyId
+      );
+
+      if (this.selectedCompanyId === companyId) {
+        this.setSelectedCompanyId("");
+      }
+
+      this.initializeCompanyContext();
       return response;
     } catch (err: any) {
       return Promise.reject(err?.response?.data || err.message);
