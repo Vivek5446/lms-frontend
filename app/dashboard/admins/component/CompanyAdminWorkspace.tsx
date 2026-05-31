@@ -267,6 +267,8 @@ const CompanyAdminWorkspace = ({
   const companyRestrictionMessage = `${company?.company_name || "This company"} is inactive. Management actions are disabled until the company is reactivated. User login access depends on each account's status.`;
   const companyStatusActionLabel = isCompanyInactive ? "Activate" : "Deactivate";
   const companyStatusActionLabelLower = companyStatusActionLabel.toLowerCase();
+  const usersTabIndex = currentUser?.role === "departmenthead" ? 0 : 2;
+  const isUsersTab = activeTab === usersTabIndex;
   const selectedStatusActionSummary =
     statusActionScope === "all_users"
       ? isCompanyInactive
@@ -727,13 +729,13 @@ const CompanyAdminWorkspace = ({
                 borderRadius="full"
                 leftIcon={<FiPlus size={14} />}
                 onClick={() =>
-                  activeTab === (currentUser?.role === "departmenthead" ? 0 : 2)
+                  isUsersTab
                     ? openUsersManagement()
                     : setDrawerState({ type: "admin-add", isOpen: true, data: null })
                 }
                 isDisabled={isCompanyInactive}
               >
-                {activeTab === (currentUser?.role === "departmenthead" ? 0 : 2)
+                {isUsersTab
                   ? "Manage Users"
                   : "Add Member"}
               </Button>
@@ -908,7 +910,7 @@ const CompanyAdminWorkspace = ({
                   </TabPanel>
                 )}
                 <TabPanel px={0}>
-                  {(activeTab === (currentUser?.role === "departmenthead" ? 0 : 2)) && (
+                  {isUsersTab && (
                     <Card
                       bg={cardBg}
                       border="1px solid"

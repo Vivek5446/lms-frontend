@@ -199,6 +199,32 @@ class UserStore {
     }
   };
 
+  fetchNotificationUsers = async (companyId: string) => {
+    this.loading = true;
+    try {
+      const response: any = await axios.get("/notification/users", {
+        params: { companyId },
+      });
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.loading = false;
+    }
+  };
+
+  sendCompanyNotification = async (payload: any) => {
+    this.submitting = true;
+    try {
+      const response: any = await axios.post("/notification/send", payload);
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.submitting = false;
+    }
+  };
+
   createManagedUser = async (payload: any) => {
     this.submitting = true;
     try {

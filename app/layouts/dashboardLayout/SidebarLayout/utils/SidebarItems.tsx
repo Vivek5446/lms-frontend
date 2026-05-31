@@ -6,6 +6,7 @@ import { FaPeopleGroup } from "react-icons/fa6";
 import { HiOutlineComputerDesktop } from "react-icons/hi2";
 import { LucideBriefcaseBusiness } from "lucide-react";
 import { BiCategory } from "react-icons/bi";
+import { FiBell } from "react-icons/fi";
 
 interface SidebarItem {
   id: number;
@@ -54,6 +55,13 @@ const sidebarDatas: SidebarItem[] = [
     name: "Permissions",
     icon: <FaCog />,
     url: "/dashboard/permissions",
+    role: ["superadmin"],
+  },
+  {
+    id: 14,
+    name: "Notifications",
+    icon: <FiBell />,
+    url: "/dashboard/notifications",
     role: ["superadmin"],
   },
   {
