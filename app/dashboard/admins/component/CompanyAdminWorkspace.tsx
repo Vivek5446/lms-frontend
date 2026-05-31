@@ -48,6 +48,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import {
+  FiAlertTriangle,
   FiArrowLeft,
   FiBookOpen,
   FiBriefcase,
@@ -55,10 +56,13 @@ import {
   FiEdit2,
   FiExternalLink,
   FiGlobe,
+  FiInfo,
+  FiLock,
   FiMail,
   FiMapPin,
   FiPlus,
   FiShield,
+  FiUnlock,
   FiUsers
 } from "react-icons/fi";
 import ConfirmationModal from "../../../component/common/ConfirmationModal/ConfirmationModal";
@@ -1061,100 +1065,256 @@ const CompanyAdminWorkspace = ({
       </Drawer>
 
       <AlertDialog
-        isOpen={isStatusDialogOpen}
-        leastDestructiveRef={cancelStatusRef}
-        onClose={closeStatusDialog}
-        isCentered
-      >
-        <AlertDialogOverlay />
-        <AlertDialogContent borderRadius="2xl">
-          <AlertDialogHeader fontSize="lg" fontWeight="bold">
-            {company?.is_active ? "Deactivate company access?" : "Activate company access?"}
+  isOpen={isStatusDialogOpen}
+  leastDestructiveRef={cancelStatusRef}
+  onClose={closeStatusDialog}
+  isCentered
+  motionPreset="scale"
+>
+  <AlertDialogOverlay bg="blackAlpha.600" backdropFilter="blur(6px)" />
+
+  <AlertDialogContent
+    borderRadius="3xl"
+    overflow="hidden"
+    maxW="520px"
+    boxShadow="2xl"
+    borderWidth="1px"
+    borderColor={borderColor}
+  >
+    <Box
+      px={6}
+      py={5}
+      bg={company?.is_active ? "red.50" : "green.50"}
+      borderBottomWidth="1px"
+      borderColor={borderColor}
+    >
+      <HStack spacing={4} align="center">
+        <Flex
+          w="46px"
+          h="46px"
+          rounded="2xl"
+          align="center"
+          justify="center"
+          bg={company?.is_active ? "red.100" : "green.100"}
+          color={company?.is_active ? "red.600" : "green.600"}
+        >
+          {company?.is_active ? (
+            <FiLock size={22} />
+          ) : (
+            <FiUnlock size={22} />
+          )}
+        </Flex>
+
+        <Box>
+          <AlertDialogHeader p={0} fontSize="xl" fontWeight="800">
+            {company?.is_active ? "Deactivate Access" : "Activate Access"}
           </AlertDialogHeader>
-          <AlertDialogBody>
-            <Text mb={4}>
-              Choose whether this {companyStatusActionLabelLower} action should affect only company admin activity or every user account in {company?.company_name}.
+
+          <Text fontSize="sm" color={mutedText} mt={1}>
+            Choose what should be affected for{" "}
+            <Text as="span" fontWeight="700" color="gray.700">
+              {company?.company_name}
             </Text>
+          </Text>
+        </Box>
+      </HStack>
+    </Box>
 
-            <RadioGroup
-              value={statusActionScope}
-              onChange={(value) => setStatusActionScope(value as CompanyStatusScope)}
-            >
-              <VStack align="stretch" spacing={3}>
-                <Box
-                  borderWidth="1px"
-                  borderColor={statusActionScope === "company_admin" ? "blue.400" : borderColor}
-                  borderRadius="xl"
-                  p={4}
-                  bg={statusActionScope === "company_admin" ? "blue.50" : "transparent"}
-                >
-                  <Radio value="company_admin" colorScheme="blue" alignItems="flex-start">
-                    <Box ml={2}>
-                      <Text fontWeight="700">
-                        {companyStatusActionLabel} Company Admin
-                      </Text>
-                      <Text fontSize="sm" color={mutedText} mt={1}>
-                        Only company admin activity and management access will be {companyStatusActionLabelLower}d. User account login status will not change.
-                      </Text>
-                    </Box>
-                  </Radio>
-                </Box>
+    <AlertDialogBody px={6} py={5}>
+      <RadioGroup
+        value={statusActionScope}
+        onChange={(value) => setStatusActionScope(value as CompanyStatusScope)}
+      >
+        <VStack align="stretch" spacing={3}>
+          <Box
+            as="label"
+            cursor="pointer"
+            borderWidth="1px"
+            borderColor={
+              statusActionScope === "company_admin"
+                ? company?.is_active
+                  ? "red.300"
+                  : "green.300"
+                : borderColor
+            }
+            borderRadius="2xl"
+            p={4}
+            bg={
+              statusActionScope === "company_admin"
+                ? company?.is_active
+                  ? "red.50"
+                  : "green.50"
+                : "white"
+            }
+            boxShadow={
+              statusActionScope === "company_admin"
+                ? "0 10px 25px rgba(0,0,0,0.08)"
+                : "sm"
+            }
+            transition="all 0.2s ease"
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "md",
+              borderColor: company?.is_active ? "red.300" : "green.300",
+            }}
+          >
+            <HStack spacing={4} align="center">
+              <Flex
+                w="42px"
+                h="42px"
+                rounded="xl"
+                align="center"
+                justify="center"
+                bg="white"
+                color={company?.is_active ? "red.500" : "green.500"}
+                boxShadow="sm"
+              >
+                <FiShield size={20} />
+              </Flex>
 
-                <Box
-                  borderWidth="1px"
-                  borderColor={statusActionScope === "all_users" ? "blue.400" : borderColor}
-                  borderRadius="xl"
-                  p={4}
-                  bg={statusActionScope === "all_users" ? "blue.50" : "transparent"}
-                >
-                  <Radio value="all_users" colorScheme="blue" alignItems="flex-start">
-                    <Box ml={2}>
-                      <Text fontWeight="700">
-                        {companyStatusActionLabel} All Users of the Company
-                      </Text>
-                      <Text fontSize="sm" color={mutedText} mt={1}>
-                        Apply the same {companyStatusActionLabelLower} action to company admins, department heads, managers, and learners under this company.
-                      </Text>
-                    </Box>
-                  </Radio>
-                </Box>
-              </VStack>
-            </RadioGroup>
-
-            <Alert
-              status={statusActionScope === "all_users" ? "warning" : "info"}
-              borderRadius="xl"
-              alignItems="start"
-              mt={4}
-            >
-              <AlertIcon mt={1} />
-              <Box>
-                <AlertTitle fontSize="sm">
-                  {statusActionScope === "all_users"
-                    ? "All company users will be affected"
-                    : "Only company admin activity will be affected"}
-                </AlertTitle>
-                <AlertDescription fontSize="sm">
-                  {selectedStatusActionSummary}
-                </AlertDescription>
+              <Box flex="1">
+                <Text fontWeight="800" fontSize="md">
+                  {companyStatusActionLabel} Admin Access
+                </Text>
+                <Text fontSize="sm" color={mutedText} mt={1}>
+                  Only company admin activity will be updated.
+                </Text>
               </Box>
-            </Alert>
-          </AlertDialogBody>
-          <AlertDialogFooter>
-            <Button ref={cancelStatusRef} onClick={closeStatusDialog}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme={company?.is_active ? "red" : "green"}
-              ml={3}
-              onClick={handleCompanyStatusToggle}
-              isLoading={loading}
-            >
-              {company?.is_active ? "Deactivate" : "Activate"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
+              <Radio
+                value="company_admin"
+                colorScheme={company?.is_active ? "red" : "green"}
+              />
+            </HStack>
+          </Box>
+
+          <Box
+            as="label"
+            cursor="pointer"
+            borderWidth="1px"
+            borderColor={
+              statusActionScope === "all_users"
+                ? company?.is_active
+                  ? "red.300"
+                  : "green.300"
+                : borderColor
+            }
+            borderRadius="2xl"
+            p={4}
+            bg={
+              statusActionScope === "all_users"
+                ? company?.is_active
+                  ? "red.50"
+                  : "green.50"
+                : "white"
+            }
+            boxShadow={
+              statusActionScope === "all_users"
+                ? "0 10px 25px rgba(0,0,0,0.08)"
+                : "sm"
+            }
+            transition="all 0.2s ease"
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "md",
+              borderColor: company?.is_active ? "red.300" : "green.300",
+            }}
+          >
+            <HStack spacing={4} align="center">
+              <Flex
+                w="42px"
+                h="42px"
+                rounded="xl"
+                align="center"
+                justify="center"
+                bg="white"
+                color={company?.is_active ? "red.500" : "green.500"}
+                boxShadow="sm"
+              >
+                <FiUsers size={20} />
+              </Flex>
+
+              <Box flex="1">
+                <Text fontWeight="800" fontSize="md">
+                  {companyStatusActionLabel} Everyone
+                </Text>
+                <Text fontSize="sm" color={mutedText} mt={1}>
+                  Apply this action to all users in this company.
+                </Text>
+              </Box>
+
+              <Radio
+                value="all_users"
+                colorScheme={company?.is_active ? "red" : "green"}
+              />
+            </HStack>
+          </Box>
+        </VStack>
+      </RadioGroup>
+
+      <Box
+        mt={5}
+        px={4}
+        py={3}
+        borderRadius="2xl"
+        bg={statusActionScope === "all_users" ? "orange.50" : "blue.50"}
+        borderWidth="1px"
+        borderColor={statusActionScope === "all_users" ? "orange.200" : "blue.200"}
+      >
+        <HStack spacing={3} align="start">
+          <Box color={statusActionScope === "all_users" ? "orange.500" : "blue.500"} mt="2px">
+            {statusActionScope === "all_users" ? (
+              <FiAlertTriangle size={18} />
+            ) : (
+              <FiInfo size={18} />
+            )}
+          </Box>
+
+          <Text fontSize="sm" color="gray.700" fontWeight="500">
+            {statusActionScope === "all_users"
+              ? "This will affect admins, managers, and learners."
+              : "Only company admin access will be changed."}
+          </Text>
+        </HStack>
+      </Box>
+    </AlertDialogBody>
+
+    <AlertDialogFooter
+      px={6}
+      py={4}
+      bg="gray.50"
+      borderTopWidth="1px"
+      borderColor={borderColor}
+    >
+      <Button
+        ref={cancelStatusRef}
+        onClick={closeStatusDialog}
+        variant="ghost"
+        borderRadius="xl"
+      >
+        Cancel
+      </Button>
+
+      <Button
+        colorScheme={company?.is_active ? "red" : "green"}
+        ml={3}
+        borderRadius="xl"
+        leftIcon={company?.is_active ? <FiLock /> : <FiUnlock />}
+        onClick={handleCompanyStatusToggle}
+        isLoading={loading}
+        px={6}
+        boxShadow="md"
+        _hover={{
+          transform: "translateY(-1px)",
+          boxShadow: "lg",
+        }}
+        transition="all 0.2s ease"
+      >
+        {company?.is_active ? "Deactivate" : "Activate"}
+      </Button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
       
     </Box>
   );
