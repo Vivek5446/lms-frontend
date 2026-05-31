@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp, FileText, FolderTree, Layers, Plus, Rocket, Trash2, Upload, Video } from "lucide-react";
 import { StepWrapper } from "./component/StepWrapper";
 import { FormField } from "./component/FormField";
+import CourseQuizBuilder from "../components/CourseQuizBuilder";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   CourseModuleInput,
   CourseModuleSectionInput,
+  CourseQuizInput,
   CourseStructureState,
   createEmptyModule,
   createEmptyModuleSection,
@@ -140,6 +142,13 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
     });
   };
 
+  const updateModuleQuiz = (moduleId: string, quiz: CourseQuizInput) => {
+    updateModule(moduleId, {
+      quiz,
+      hasQuiz: quiz.questions.length > 0 || value.modules.find((module) => module.id === moduleId)?.hasQuiz || false,
+    });
+  };
+
   const handleModuleStudyMaterialChange = (moduleId: string, fileList: FileList | null) => {
     if (!fileList?.length) {
       return;
@@ -220,6 +229,15 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
             Each section can have a primary SCORM package or MP4 lesson, and you can attach PDF study materials at the module or section level.
           </div>
         </div>
+
+        {value.quizMode === "final" ? (
+          <CourseQuizBuilder
+            quiz={value.finalQuiz}
+            onChange={(finalQuiz) => onChange({ ...value, finalQuiz })}
+            title="Final course quiz"
+            helper="This quiz appears after the learner finishes the course content. Upload the sample Excel format or build it manually here."
+          />
+        ) : null}
 
         <div className="space-y-4">
           <AnimatePresence>
@@ -509,15 +527,25 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
                           </div>
 
                           {value.quizMode === "per-module" && (
-                            <div className="flex items-center gap-6">
-                              <div className="flex items-center gap-2">
-                                <Switch checked={module.hasQuiz} onCheckedChange={(hasQuiz) => updateModule(module.id, { hasQuiz })} />
-                                <span className="text-sm text-foreground">Module has quiz</span>
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-2">
+                                  <Switch checked={module.hasQuiz} onCheckedChange={(hasQuiz) => updateModule(module.id, { hasQuiz })} />
+                                  <span className="text-sm text-foreground">Module has quiz</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Switch checked={module.hasTest} onCheckedChange={(hasTest) => updateModule(module.id, { hasTest })} />
+                                  <span className="text-sm text-foreground">Module has test</span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Switch checked={module.hasTest} onCheckedChange={(hasTest) => updateModule(module.id, { hasTest })} />
-                                <span className="text-sm text-foreground">Module has test</span>
-                              </div>
+                              {module.hasQuiz ? (
+                                <CourseQuizBuilder
+                                  quiz={module.quiz}
+                                  onChange={(quiz) => updateModuleQuiz(module.id, quiz)}
+                                  title={`${module.name || `Module ${moduleIndex + 1}`} quiz`}
+                                  helper="Attach a checkpoint quiz to this module. Learners will see the questions shuffled when they take it."
+                                />
+                              ) : null}
                             </div>
                           )}
                         </div>

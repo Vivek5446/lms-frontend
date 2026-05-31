@@ -6,6 +6,7 @@ export const LEVELS = ["Beginner", "Intermediate", "Advanced", "Expert"];
 
 export type QuizMode = "per-module" | "final";
 export type StoredFileKind = "image" | "video" | "document" | "scorm" | "zip" | "spreadsheet" | "other";
+export type CorrectQuizOption = "Option-1" | "Option-2" | "Option-3" | "Option-4";
 
 export interface StoredFile {
   id: string;
@@ -40,6 +41,26 @@ export interface CourseModuleSectionInput {
   studyMaterials: StoredFile[];
 }
 
+export interface CourseQuizQuestionInput {
+  id: string;
+  sn: number;
+  question: string;
+  option1: string;
+  option2: string;
+  option3: string;
+  option4: string;
+  correctOption: CorrectQuizOption;
+  marks: string;
+  explanation: string;
+}
+
+export interface CourseQuizInput {
+  id: string;
+  title: string;
+  source: "manual" | "excel" | "mixed";
+  questions: CourseQuizQuestionInput[];
+}
+
 export interface CourseModuleInput {
   id: string;
   name: string;
@@ -48,10 +69,12 @@ export interface CourseModuleInput {
   studyMaterials: StoredFile[];
   hasQuiz: boolean;
   hasTest: boolean;
+  quiz: CourseQuizInput;
 }
 
 export interface CourseStructureState {
   quizMode: QuizMode;
+  finalQuiz: CourseQuizInput;
   modules: CourseModuleInput[];
 }
 
@@ -147,6 +170,30 @@ export function createStoredFile(file: File, kind: StoredFileKind, previewUrl?: 
   };
 }
 
+export function createEmptyQuizQuestion(sn = 1): CourseQuizQuestionInput {
+  return {
+    id: createClientId(),
+    sn,
+    question: "",
+    option1: "",
+    option2: "",
+    option3: "",
+    option4: "",
+    correctOption: "Option-1",
+    marks: "1",
+    explanation: "",
+  };
+}
+
+export function createEmptyQuiz(title = "Course quiz"): CourseQuizInput {
+  return {
+    id: createClientId(),
+    title,
+    source: "manual",
+    questions: [],
+  };
+}
+
 export function createEmptyModuleSection(): CourseModuleSectionInput {
   return {
     id: createClientId(),
@@ -158,14 +205,17 @@ export function createEmptyModuleSection(): CourseModuleSectionInput {
 }
 
 export function createEmptyModule(): CourseModuleInput {
+  const moduleId = createClientId();
+
   return {
-    id: createClientId(),
+    id: moduleId,
     name: "",
     description: "",
     sections: [createEmptyModuleSection()],
     studyMaterials: [],
     hasQuiz: false,
     hasTest: false,
+    quiz: createEmptyQuiz("Module quiz"),
   };
 }
 
@@ -185,6 +235,7 @@ export const initialCourseFormState: CourseFormState = {
   },
   structure: {
     quizMode: "per-module",
+    finalQuiz: createEmptyQuiz("Final course quiz"),
     modules: [],
   },
   progress: {
@@ -214,6 +265,69 @@ function summarizeFile(file: StoredFile | null) {
     sizeInBytes: file.size,
     previewUrl: file.previewUrl ?? null,
   };
+}
+
+function parseQuizMarks(value: string) {
+  const parsedValue = parseNumericValue(value);
+  return parsedValue !== null && parsedValue >= 0 ? parsedValue : 1;
+}
+
+function summarizeQuiz(quiz: CourseQuizInput, fallbackTitle: string) {
+  const questions = quiz.questions
+    .map((question, index) => {
+      const options = [question.option1, question.option2, question.option3, question.option4].map((option) => option.trim());
+      const isComplete = question.question.trim() && options.every(Boolean) && question.correctOption;
+
+      if (!isComplete) {
+        return null;
+      }
+
+      return {
+        id: question.id,
+        questionId: question.id,
+        sn: question.sn || index + 1,
+        question: question.question.trim(),
+        option1: options[0],
+        option2: options[1],
+        option3: options[2],
+        option4: options[3],
+        correctOption: question.correctOption,
+        marks: parseQuizMarks(question.marks),
+        explanation: question.explanation.trim(),
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    id: quiz.id,
+    quizId: quiz.id,
+    title: quiz.title.trim() || fallbackTitle,
+    source: quiz.source,
+    questions,
+  };
+}
+
+export function calculateCourseQuizTotalMarks(courseForm: CourseFormState) {
+  const quizzes =
+    courseForm.structure.quizMode === "final"
+      ? [courseForm.structure.finalQuiz]
+      : courseForm.structure.modules.filter((module) => module.hasQuiz).map((module) => module.quiz);
+
+  return quizzes.reduce((total, quiz) => {
+    return (
+      total +
+      quiz.questions.reduce((questionTotal, question) => {
+        const isComplete =
+          question.question.trim() &&
+          question.option1.trim() &&
+          question.option2.trim() &&
+          question.option3.trim() &&
+          question.option4.trim();
+
+        return questionTotal + (isComplete ? parseQuizMarks(question.marks) : 0);
+      }, 0)
+    );
+  }, 0);
 }
 
 export function formatInr(value: string | number | null | undefined) {
@@ -294,7 +408,8 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
   const amount = courseForm.pricing.isPaid ? parseNumericValue(courseForm.pricing.amount) : null;
   const accessDurationDays = parseNumericValue(courseForm.pricing.accessDurationDays);
   const completionDays = parseNumericValue(courseForm.progress.completionDays);
-  const totalMarks = parseNumericValue(courseForm.basicInfo.totalMarks);
+  const quizTotalMarks = calculateCourseQuizTotalMarks(courseForm);
+  const totalMarks = parseNumericValue(courseForm.basicInfo.totalMarks) ?? (quizTotalMarks > 0 ? quizTotalMarks : null);
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
 
   return {
@@ -327,6 +442,10 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
       quizStrategy: courseForm.structure.quizMode,
       totalModules: courseForm.structure.modules.length,
       totalSections,
+      finalQuiz:
+        courseForm.structure.quizMode === "final"
+          ? summarizeQuiz(courseForm.structure.finalQuiz, "Final course quiz")
+          : null,
       modules: courseForm.structure.modules.map((module, index) => ({
         order: index + 1,
         title: module.name.trim(),
@@ -343,6 +462,10 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
         assessments: {
           quizEnabled: module.hasQuiz,
           testEnabled: module.hasTest,
+          quiz:
+            courseForm.structure.quizMode === "per-module" && module.hasQuiz
+              ? summarizeQuiz(module.quiz, `${module.name.trim() || `Module ${index + 1}`} quiz`)
+              : null,
         },
       })),
     },

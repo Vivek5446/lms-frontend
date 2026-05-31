@@ -300,6 +300,64 @@ export interface CourseAssignmentAuditItem {
   courseStatus?: "not_started" | "in_progress" | "completed";
 }
 
+export interface CourseQuizOption {
+  optionId: string;
+  label: string;
+  text: string;
+}
+
+export interface CourseQuizQuestion {
+  questionId: string;
+  sn: number;
+  question: string;
+  marks: number;
+  options: CourseQuizOption[];
+}
+
+export interface CourseQuizAttemptAnswer {
+  questionId: string;
+  question: string;
+  selectedOptionId: string;
+  selectedOptionLabel: string;
+  selectedAnswerText: string;
+  correctOptionId: string;
+  correctOptionLabel: string;
+  correctAnswerText: string;
+  isCorrect: boolean;
+  marksAwarded: number;
+  maxMarks: number;
+}
+
+export interface CourseQuizAttempt {
+  _id: string;
+  quizId: string;
+  quizTitle: string;
+  scope: "module" | "final";
+  moduleId: string;
+  moduleTitle: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  correctCount: number;
+  incorrectCount: number;
+  questionCount: number;
+  attemptNumber: number;
+  submittedAt?: string | null;
+  answers: CourseQuizAttemptAnswer[];
+}
+
+export interface CourseQuizForLearner {
+  quizId: string;
+  title: string;
+  scope: "module" | "final";
+  moduleId: string;
+  moduleTitle: string;
+  questionCount: number;
+  totalMarks: number;
+  questions: CourseQuizQuestion[];
+  attempt?: CourseQuizAttempt | null;
+}
+
 interface CreateCourseInput {
   payload: Record<string, unknown>;
   thumbnailFile?: File | null;
@@ -489,12 +547,15 @@ class CourseStoreClass {
   myCourses: MyCourseItem[] = [];
   courseAssignmentAudit: CourseAssignmentAuditItem[] = [];
   currentCourse: MyCourseDetailItem | null = null;
+  courseQuizzes: CourseQuizForLearner[] = [];
   isLoading: boolean = false;
   isPublicCoursesLoading: boolean = false;
   isAccessLoading: boolean = false;
   isAssignedCoursesLoading: boolean = false;
   isMyCoursesLoading: boolean = false;
   isMyCourseDetailLoading: boolean = false;
+  isCourseQuizzesLoading: boolean = false;
+  isQuizSubmitting: boolean = false;
   isCourseAssignmentAuditLoading: boolean = false;
   isSubmitting: boolean = false;
   isAccessSubmitting: boolean = false;
@@ -727,6 +788,62 @@ class CourseStoreClass {
 
   clearCurrentCourse = () => {
     this.currentCourse = null;
+    this.courseQuizzes = [];
+  };
+
+  clearCourseQuizzes = () => {
+    this.courseQuizzes = [];
+  };
+
+  previewQuizExcel = async (file: File) => {
+    const formData = new FormData();
+    formData.append("quizExcel", file);
+
+    try {
+      const { data } = await axios.post("/course/quiz/preview-excel", formData, multipartRequestConfig);
+      return data.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err);
+    }
+  };
+
+  fetchCourseQuizzes = async (courseId: string) => {
+    this.isCourseQuizzesLoading = true;
+    try {
+      const { data } = await axios.get(`/course/${courseId}/quizzes`);
+      runInAction(() => {
+        this.courseQuizzes = data.data || [];
+      });
+      return data.data || [];
+    } catch (err: any) {
+      runInAction(() => {
+        this.courseQuizzes = [];
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isCourseQuizzesLoading = false;
+      });
+    }
+  };
+
+  submitCourseQuiz = async (
+    courseId: string,
+    quizId: string,
+    answers: Array<{ questionId: string; selectedOptionId: string }>
+  ) => {
+    this.isQuizSubmitting = true;
+    try {
+      const { data } = await axios.post(`/course/${courseId}/quizzes/${quizId}/submit`, { answers });
+      await this.fetchCourseQuizzes(courseId).catch(() => undefined);
+      return data.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isQuizSubmitting = false;
+      });
+    }
   };
 
   applyRealtimeSectionProgressUpdate = (options: {

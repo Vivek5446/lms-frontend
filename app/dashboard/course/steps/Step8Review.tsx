@@ -32,6 +32,10 @@ export default function Step8Review({
   isSubmitting = false,
 }: Step8ReviewProps) {
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
+  const quizQuestionCount =
+    courseForm.structure.quizMode === "final"
+      ? courseForm.structure.finalQuiz.questions.length
+      : courseForm.structure.modules.reduce((count, module) => count + (module.hasQuiz ? module.quiz.questions.length : 0), 0);
 
   const sections = [
     {
@@ -86,9 +90,11 @@ export default function Step8Review({
       icon: CheckCircle2,
       label: "Assessment",
       status:
-        courseForm.basicInfo.totalMarks.trim()
-          ? `${courseForm.basicInfo.totalMarks} total marks. Passing criteria will be set during assignment.`
-          : "Assessment marks not configured yet",
+        quizQuestionCount > 0
+          ? `${quizQuestionCount} quiz question${quizQuestionCount === 1 ? "" : "s"} attached. Passing criteria will be set during assignment.`
+          : courseForm.basicInfo.totalMarks.trim()
+            ? `${courseForm.basicInfo.totalMarks} total marks. Passing criteria will be set during assignment.`
+            : "Assessment marks not configured yet",
       colorClass: "text-step-2",
       bgClass: "bg-step-2/15",
       complete: Boolean(courseForm.basicInfo.totalMarks.trim()),

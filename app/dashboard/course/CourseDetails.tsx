@@ -69,6 +69,7 @@ import {
   Video,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { CourseQuizForLearner } from "@/app/store/courseStore/courseStore";
 
 // Motion components
 const MotionBox = motion(Box);
@@ -178,6 +179,9 @@ interface CourseDetailsProps {
   onAssignCourse?: (course: any) => void;
   learnerAnswers?: ScormAnswerSectionRecord[];
   isLearnerAnswersLoading?: boolean;
+  courseQuizzes?: CourseQuizForLearner[];
+  isCourseQuizzesLoading?: boolean;
+  onTakeQuiz?: (quiz: CourseQuizForLearner) => void;
 }
 
 export default function CourseDetails({
@@ -187,6 +191,9 @@ export default function CourseDetails({
   onAssignCourse, 
   learnerAnswers = [],
   isLearnerAnswersLoading = false,
+  courseQuizzes = [],
+  isCourseQuizzesLoading = false,
+  onTakeQuiz,
 }: CourseDetailsProps) {
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
   const isAssignedCourseView = Array.isArray(course.sources);
@@ -288,11 +295,79 @@ export default function CourseDetails({
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const completedSectionBg = useColorModeValue("green.50", "green.900");
   const completedSectionBorder = useColorModeValue("green.200", "green.700");
+  const pendingQuizBg = useColorModeValue("orange.50", "orange.900");
+  const quizSidebarBg = useColorModeValue("orange.50", "orange.900");
   const timelineColor = useColorModeValue("gray.100", "gray.700");
   const mutedDotBorder = useColorModeValue("gray.50", "gray.700");
   const accentColor = "blue.500";
   const accentLight = useColorModeValue("blue.50", "blue.900");
   const textMuted = useColorModeValue("gray.500", "gray.400");
+  const pendingQuizzes = courseQuizzes.filter((quiz) => !quiz.attempt);
+  const completedQuizzes = courseQuizzes.filter((quiz) => quiz.attempt);
+  const nextQuiz = pendingQuizzes[0] || courseQuizzes[0] || null;
+
+  const renderQuizCard = (quiz: CourseQuizForLearner) => {
+    const completed = Boolean(quiz.attempt);
+
+    return (
+      <Flex
+        key={quiz.quizId}
+        mt={4}
+        p={4}
+        borderWidth="1px"
+        borderColor={completed ? completedSectionBorder : "orange.200"}
+        borderRadius="xl"
+        bg={completed ? completedSectionBg : pendingQuizBg}
+        align="center"
+        justify="space-between"
+        gap={3}
+        wrap="wrap"
+      >
+        <HStack spacing={3} align="start">
+          <Box
+            w={10}
+            h={10}
+            borderRadius="xl"
+            bg={completed ? "green.500" : "orange.500"}
+            color="white"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Icon as={Award} boxSize={5} />
+          </Box>
+          <Box>
+            <Text fontWeight="bold">{quiz.title}</Text>
+            <Text fontSize="sm" color={textMuted}>
+              {quiz.questionCount} question{quiz.questionCount === 1 ? "" : "s"} - {quiz.totalMarks} marks
+            </Text>
+            {completed ? (
+              <Text mt={1} fontSize="sm" fontWeight="semibold" color="green.600">
+                Score {quiz.attempt?.score}/{quiz.attempt?.maxScore} ({Math.round(Number(quiz.attempt?.percentage || 0))}%)
+              </Text>
+            ) : (
+              <Text mt={1} fontSize="sm" color="orange.700">
+                Required quiz waiting for you
+              </Text>
+            )}
+          </Box>
+        </HStack>
+        {onTakeQuiz ? (
+          <Button
+            size="sm"
+            colorScheme={completed ? "green" : "orange"}
+            borderRadius="full"
+            onClick={(event) => {
+              event.stopPropagation();
+              onTakeQuiz(quiz);
+            }}
+          >
+            {completed ? "View Result" : "Take Quiz"}
+          </Button>
+        ) : null}
+      </Flex>
+    );
+  };
 
   return (
     <Box minH="100vh" bg={bgColor}>
@@ -888,6 +963,9 @@ export default function CourseDetails({
                                   );
                                 })}
                               </Box>
+                              {courseQuizzes
+                                .filter((quiz) => quiz.scope === "module" && quiz.moduleId === deriveModuleId(mod))
+                                .map(renderQuizCard)}
                             </AccordionPanel>
                           </>
                         )}
@@ -895,6 +973,7 @@ export default function CourseDetails({
                       );
                     })}
                   </Accordion>
+                  {courseQuizzes.filter((quiz) => quiz.scope === "final").map(renderQuizCard)}
                 </CardBody>
               </Card>
             </MotionBox>
@@ -916,6 +995,11 @@ export default function CourseDetails({
                       <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
                         Score {answerSummary.correctCount}/{answerSummary.totalQuestions}
                       </Badge>
+                      {courseQuizzes.length > 0 ? (
+                        <Badge colorScheme="orange" borderRadius="full" px={3} py={1}>
+                          {completedQuizzes.length}/{courseQuizzes.length} course quizzes
+                        </Badge>
+                      ) : null}
                       {answerSummary.pending > 0 ? (
                         <Badge colorScheme="orange" borderRadius="full" px={3} py={1}>
                           {answerSummary.pending} pending review
@@ -933,7 +1017,7 @@ export default function CourseDetails({
                       sectionsCompleted,
                       totalSections,
                     }}
-                    emptyState="Your answers will appear here as soon as the SCORM lesson saves quiz progress."
+                    emptyState="Your quiz answers will appear here after a SCORM quiz or course quiz is submitted."
                   />
                 </CardBody>
               </Card>
@@ -1064,6 +1148,36 @@ export default function CourseDetails({
                             </Text>
                           </Box>
                         </SimpleGrid>
+                      </Box>
+                    ) : null}
+
+                    {isAssignedCourseView && courseQuizzes.length > 0 ? (
+                      <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4} bg={quizSidebarBg}>
+                        <HStack justify="space-between" mb={2}>
+                          <Text fontSize="sm" fontWeight="semibold">
+                            Required quizzes
+                          </Text>
+                          <Badge colorScheme={pendingQuizzes.length ? "orange" : "green"} borderRadius="full" px={3} py={1}>
+                            {pendingQuizzes.length ? `${pendingQuizzes.length} left` : "Done"}
+                          </Badge>
+                        </HStack>
+                        <Text fontSize="sm" color={textMuted}>
+                          {isCourseQuizzesLoading
+                            ? "Loading quiz status..."
+                            : `${completedQuizzes.length} of ${courseQuizzes.length} submitted`}
+                        </Text>
+                        {nextQuiz && onTakeQuiz ? (
+                          <Button
+                            mt={3}
+                            size="sm"
+                            colorScheme={pendingQuizzes.length ? "orange" : "green"}
+                            borderRadius="full"
+                            w="full"
+                            onClick={() => onTakeQuiz(nextQuiz)}
+                          >
+                            {nextQuiz.attempt ? "View quiz result" : "Take next quiz"}
+                          </Button>
+                        ) : null}
                       </Box>
                     ) : null}
 

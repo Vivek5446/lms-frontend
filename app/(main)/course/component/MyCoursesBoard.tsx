@@ -4,12 +4,13 @@ import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInpu
 import CourseDetails from "@/app/dashboard/course/CourseDetails";
 import CourseAssetModal from "@/app/dashboard/course/scorm/CourseAssetModal";
 import CoursePlayer from "@/app/dashboard/course/scorm/CoursePlayer";
+import CourseQuizPlayer from "@/app/dashboard/course/quiz/CourseQuizPlayer";
 import {
   buildCourseAssetUrl,
   CourseLaunchSection,
   isScormLaunchSection,
 } from "@/app/dashboard/course/scorm/sectionTracking";
-import { courseStore } from "@/app/store/courseStore/courseStore";
+import { CourseQuizForLearner, courseStore } from "@/app/store/courseStore/courseStore";
 import { managerStore } from "@/app/store/managerStore/managerStore";
 import stores from "@/app/store/stores";
 import {
@@ -81,6 +82,7 @@ const MyCoursesBoard = observer(
     const requestedCourseId = searchParams.get("courseId") || "";
     const [playerSection, setPlayerSection] =
       useState<CourseLaunchSection | null>(null);
+    const [activeQuiz, setActiveQuiz] = useState<CourseQuizForLearner | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<
       "all" | "active" | "in_progress" | "completed"
@@ -127,10 +129,12 @@ const MyCoursesBoard = observer(
       const activeCourseId = activeCourse?._id || activeCourse?.courseId;
       if (!activeCourseId) {
         managerStore.clearMyCourseAnswers();
+        courseStore.clearCourseQuizzes();
         return;
       }
 
       managerStore.fetchMyCourseAnswers(activeCourseId).catch(() => undefined);
+      courseStore.fetchCourseQuizzes(activeCourseId).catch(() => undefined);
     }, [activeCourse?._id, activeCourse?.courseId]);
 
     const filteredCourses = useMemo(() => {
@@ -264,6 +268,9 @@ const MyCoursesBoard = observer(
             onLaunchSection={(launchSection) => setPlayerSection(launchSection)}
             learnerAnswers={managerStore.myCourseAnswers}
             isLearnerAnswersLoading={managerStore.isMyCourseAnswersLoading}
+            courseQuizzes={courseStore.courseQuizzes}
+            isCourseQuizzesLoading={courseStore.isCourseQuizzesLoading}
+            onTakeQuiz={(quiz) => setActiveQuiz(quiz)}
           />
 
           <AnimatePresence>
@@ -339,6 +346,27 @@ const MyCoursesBoard = observer(
                   })
                 }
                 onBack={() => setPlayerSection(null)}
+              />
+            ) : null}
+            {activeQuiz ? (
+              <CourseQuizPlayer
+                quiz={activeQuiz}
+                isSubmitting={courseStore.isQuizSubmitting}
+                onClose={() => setActiveQuiz(null)}
+                onSubmit={async (answers) => {
+                  const activeCourseId = activeCourse._id || activeCourse.courseId;
+                  const response = await courseStore.submitCourseQuiz(activeCourseId, activeQuiz.quizId, answers);
+                  await Promise.all([
+                    courseStore.fetchMyCourseDetail(activeCourseId),
+                    courseStore.fetchMyCourses(),
+                    managerStore.fetchMyCourseAnswers(activeCourseId),
+                  ]).catch(() => undefined);
+                  const refreshedQuiz = courseStore.courseQuizzes.find((quiz) => quiz.quizId === activeQuiz.quizId);
+                  if (refreshedQuiz) {
+                    setActiveQuiz(refreshedQuiz);
+                  }
+                  return response;
+                }}
               />
             ) : null}
           </AnimatePresence>

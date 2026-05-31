@@ -28,6 +28,10 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
   const assessmentLabel = courseForm.basicInfo.totalMarks.trim()
     ? `${courseForm.basicInfo.totalMarks} total marks`
     : "Not configured";
+  const quizCount =
+    courseForm.structure.quizMode === "final"
+      ? courseForm.structure.finalQuiz.questions.length
+      : modules.reduce((count, module) => count + (module.hasQuiz ? module.quiz.questions.length : 0), 0);
 
   useEffect(() => {
     onProgressChange?.(100);
@@ -101,7 +105,7 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
                 {
                   icon: Award,
                   label: "Assessment",
-                  value: assessmentLabel,
+                  value: quizCount > 0 ? `${quizCount} quiz Qs` : assessmentLabel,
                 },
                 {
                   icon: Award,
@@ -144,7 +148,9 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
                     )}
                   </div>
                   {courseForm.structure.quizMode === "per-module" && module.hasQuiz && (
-                    <Badge className="bg-step-2/10 text-step-2 border-0 text-xs">Quiz</Badge>
+                    <Badge className="bg-step-2/10 text-step-2 border-0 text-xs">
+                      Quiz: {module.quiz.questions.length} Qs
+                    </Badge>
                   )}
                   {courseForm.structure.quizMode === "per-module" && module.hasTest && (
                     <Badge className="bg-step-3/10 text-step-3 border-0 text-xs">Test</Badge>
@@ -195,6 +201,14 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
               </div>
             ))
           )}
+          {courseForm.structure.quizMode === "final" && courseForm.structure.finalQuiz.questions.length > 0 ? (
+            <div className="p-4 bg-background rounded-xl border border-step-2/20">
+              <p className="text-sm font-medium text-foreground">Final course quiz</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {courseForm.structure.finalQuiz.questions.length} question{courseForm.structure.finalQuiz.questions.length === 1 ? "" : "s"} attached
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
     </StepWrapper>

@@ -31,7 +31,7 @@ export interface ScormInteractionReview {
   latency?: string;
   time?: string;
   maxMarks?: number | null;
-  source?: "cmi.interactions" | "suspend_data";
+  source?: "cmi.interactions" | "suspend_data" | "course_quiz";
   isReviewable?: boolean;
   review: {
     status: ScormReviewStatus;
@@ -347,6 +347,11 @@ function shouldIncludeReviewedOnly(interaction: ScormInteractionReview) {
 }
 
 function getInteractionPossibleMarks(interaction: ScormInteractionReview) {
+  const explicitMarks = Number(interaction.maxMarks);
+  if (Number.isFinite(explicitMarks) && explicitMarks > 0) {
+    return explicitMarks;
+  }
+
   if (isReviewableInteraction(interaction)) {
     return 10;
   }
