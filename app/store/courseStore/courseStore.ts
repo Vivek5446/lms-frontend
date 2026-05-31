@@ -1362,6 +1362,110 @@ class CourseStoreClass {
     }
   };
 
+  updateCourse = async (
+    id: string,
+    input: CreateCourseInput,
+    options?: {
+      action: "draft" | "publish";
+      fileCount?: number;
+    }
+  ) => {
+    this.isSubmitting = true;
+    this.submissionProgress = 4;
+    this.submissionStage = options?.action === "publish" ? "Publishing updates" : "Saving draft updates";
+    this.submissionDetail =
+      (options?.fileCount || 0) > 0
+        ? `Uploading ${options?.fileCount} replacement file${options?.fileCount === 1 ? "" : "s"} and preparing course assets.`
+        : "Saving updated course details.";
+    this.error = null;
+
+    let uploadCompleted = false;
+    try {
+      const formData = new FormData();
+      formData.append("payload", JSON.stringify(input.payload));
+      const chunkUploads = await this.uploadCourseFilesInChunks(input);
+      const hasChunkedUploads = Object.values(chunkUploads).some((uploads) => uploads.length > 0);
+
+      if (input.thumbnailFile) {
+        formData.append("thumbnail", input.thumbnailFile);
+      }
+
+      if (chunkUploads.scormChunkUploads.length > 0) {
+        formData.append("scormChunkUploads", JSON.stringify(chunkUploads.scormChunkUploads));
+      }
+
+      if (chunkUploads.contentChunkUploads.length > 0) {
+        formData.append("contentChunkUploads", JSON.stringify(chunkUploads.contentChunkUploads));
+      }
+
+      if (chunkUploads.studyMaterialChunkUploads.length > 0) {
+        formData.append("studyMaterialChunkUploads", JSON.stringify(chunkUploads.studyMaterialChunkUploads));
+      }
+
+      if (hasChunkedUploads) {
+        runInAction(() => {
+          this.submissionProgress = 86;
+          this.submissionStage = "Updating course";
+          this.submissionDetail = "Finalizing uploaded assets, extracting SCORM packages, and saving the updates.";
+        });
+      }
+
+      const { data } = await axios.put(`/course/${id}`, formData, {
+        ...multipartRequestConfig,
+        onUploadProgress: (progressEvent) => {
+          if (!progressEvent.total) {
+            runInAction(() => {
+              this.submissionStage = hasChunkedUploads ? "Updating course" : "Uploading course files";
+              this.submissionDetail = hasChunkedUploads
+                ? "Finishing the course update on the server..."
+                : "Sending your updated course details to the server...";
+            });
+            return;
+          }
+
+          const ratio = progressEvent.loaded / progressEvent.total;
+          const progressFloor = hasChunkedUploads ? 86 : 8;
+          const progressCeiling = hasChunkedUploads ? 94 : 88;
+          const progress = Math.min(
+            progressCeiling,
+            Math.max(progressFloor, Math.round(progressFloor + ratio * (progressCeiling - progressFloor)))
+          );
+          uploadCompleted = ratio >= 1;
+
+          runInAction(() => {
+            this.submissionProgress = progress;
+            this.submissionStage = uploadCompleted ? "Processing course assets" : "Uploading files";
+            this.submissionDetail = uploadCompleted
+              ? "Saving uploaded assets and updating the course record..."
+              : hasChunkedUploads
+                ? "Sending the final course update..."
+                : `Uploaded ${Math.round(ratio * 100)}% of your course files.`;
+          });
+        },
+      });
+
+      runInAction(() => {
+        this.submissionProgress = 100;
+        this.submissionStage = options?.action === "publish" ? "Course published" : "Draft updated";
+        this.submissionDetail = "Everything is ready.";
+        this.courses = this.courses.map((course) => (course._id === id ? data.data : course));
+        this.currentCourse = data.data;
+      });
+      return data.data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.submissionStage = "Update failed";
+        this.submissionDetail = "We couldn't finish updating the course. Please try again.";
+        this.error = err?.response?.data?.error || "Failed to update course";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isSubmitting = false;
+      });
+    }
+  };
+
   deleteCourse = async (id: string) => {
     try {
       await axios.delete(`/course/${id}`);

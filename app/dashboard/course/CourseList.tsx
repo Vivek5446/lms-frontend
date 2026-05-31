@@ -11,26 +11,32 @@ import Step3Progress from "./steps/Step3Progress";
 import Step4Pricing from "./steps/Step4Pricing";
 import Step7Preview from "./steps/Step7Preview";
 import Step8Review from "./steps/Step8Review";
-import { CourseFormState, buildCoursePayload, collectCourseUploadFiles, initialCourseFormState } from "./courseForm";
+import { CourseFormState, buildCoursePayload, collectCourseUploadFiles, courseToFormState, initialCourseFormState } from "./courseForm";
 import { courseStore } from "@/app/store/courseStore/courseStore";
 
 const TOTAL_STEPS = 6;
 
 interface CourseListProps {
+  mode?: "create" | "edit";
+  courseId?: string;
+  initialCourse?: any;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-function CourseList({ onSuccess, onCancel }: CourseListProps) {
+function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCancel }: CourseListProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [stepProgress, setStepProgress] = useState<Record<number, number>>({});
-  const [courseForm, setCourseForm] = useState<CourseFormState>(initialCourseFormState);
+  const [courseForm, setCourseForm] = useState<CourseFormState>(
+    mode === "edit" && initialCourse ? courseToFormState(initialCourse) : initialCourseFormState
+  );
   const [finalAction, setFinalAction] = useState<"draft" | "publish">("publish");
   const router = useRouter();
+  const isEditMode = mode === "edit";
 
   useEffect(() => {
-    if (courseForm.basicInfo.courseCode) {
+    if (isEditMode || courseForm.basicInfo.courseCode) {
       return;
     }
 
@@ -50,7 +56,34 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
         }));
       })
       .catch(() => undefined);
-  }, [courseForm.basicInfo.courseCode]);
+  }, [courseForm.basicInfo.courseCode, isEditMode]);
+
+  useEffect(() => {
+    if (!isEditMode) {
+      return;
+    }
+
+    if (!courseId) {
+      if (initialCourse) {
+        setCourseForm(courseToFormState(initialCourse));
+      }
+      return;
+    }
+
+    let isMounted = true;
+    courseStore
+      .fetchCourse(courseId)
+      .then((course) => {
+        if (course && isMounted) {
+          setCourseForm(courseToFormState(course));
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [courseId, initialCourse, isEditMode]);
 
   const updateStepProgress = useCallback((step: number, progress: number) => {
     setStepProgress((prev) => {
@@ -81,16 +114,26 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
     const payload = buildCoursePayload(courseForm, action);
 
     try {
-      await courseStore.createCourse({
+      const input = {
         payload,
         thumbnailFile: courseForm.basicInfo.thumbnail?.file ?? null,
         scormFiles: uploadFiles.scormFiles,
         contentFiles: uploadFiles.contentFiles,
         studyMaterialFiles: uploadFiles.studyMaterialFiles,
-      }, {
-        action,
-        fileCount: uploadFiles.totalFileCount,
-      });
+      };
+
+      if (isEditMode && courseId) {
+        await courseStore.updateCourse(courseId, input, {
+          action,
+          fileCount: uploadFiles.totalFileCount,
+        });
+      } else {
+        await courseStore.createCourse(input, {
+          action,
+          fileCount: uploadFiles.totalFileCount,
+        });
+      }
+
       wasSuccessful = true;
       if (onSuccess) {
         onSuccess();
@@ -217,7 +260,7 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
               </div>
               <div>
                 <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0F172A" }}>
-                  {courseStore.submissionStage || "Submitting course"}
+                  {courseStore.submissionStage || (isEditMode ? "Updating course" : "Submitting course")}
                 </h3>
                 <p style={{ margin: "6px 0 0", fontSize: 14, color: "#475569", lineHeight: 1.5 }}>
                   {courseStore.submissionDetail || "Please keep this tab open while we finish preparing the course."}
@@ -300,8 +343,8 @@ function CourseList({ onSuccess, onCancel }: CourseListProps) {
                   color: "#111827",
                   lineHeight: 1.2,
                 }}
-              >
-                Create New Course
+                >
+                {isEditMode ? "Edit Course" : "Create New Course"}
               </h1>
               <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
                 Step {currentStep + 1} of {TOTAL_STEPS}

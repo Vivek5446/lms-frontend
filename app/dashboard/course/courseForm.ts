@@ -16,7 +16,8 @@ export interface StoredFile {
   extension: string;
   kind: StoredFileKind;
   previewUrl?: string;
-  file: File;
+  file?: File | null;
+  isExisting?: boolean;
 }
 
 export interface CourseBasicInfo {
@@ -167,6 +168,56 @@ export function createStoredFile(file: File, kind: StoredFileKind, previewUrl?: 
     kind,
     previewUrl,
     file,
+  };
+}
+
+function inferStoredFileKindFromAsset(asset: any): StoredFileKind {
+  const kind = String(asset?.kind || "").toLowerCase();
+  const extension = String(asset?.extension || asset?.name || asset?.previewUrl || "").split(".").pop()?.toLowerCase() || "";
+  const mimeType = String(asset?.mimeType || asset?.type || "").toLowerCase();
+
+  if (kind === "scorm" || kind === "zip" || extension === "zip") {
+    return kind === "scorm" ? "scorm" : "zip";
+  }
+
+  if (kind === "image" || mimeType.startsWith("image/")) {
+    return "image";
+  }
+
+  if (kind === "video" || mimeType.startsWith("video/")) {
+    return "video";
+  }
+
+  if (kind === "spreadsheet" || ["csv", "xlsx", "xls"].includes(extension)) {
+    return "spreadsheet";
+  }
+
+  if (kind === "document" || extension === "pdf" || mimeType.includes("pdf")) {
+    return "document";
+  }
+
+  return "other";
+}
+
+export function createExistingStoredFile(asset: any, fallbackName = "Existing file"): StoredFile | null {
+  const previewUrl = String(asset?.previewUrl || "").trim();
+  if (!previewUrl) {
+    return null;
+  }
+
+  const rawName = String(asset?.name || fallbackName).trim();
+  const name = rawName || fallbackName;
+
+  return {
+    id: createClientId(),
+    name,
+    size: Number(asset?.sizeInBytes || asset?.size || 0) || 0,
+    type: String(asset?.mimeType || asset?.type || "application/octet-stream"),
+    extension: String(asset?.extension || getFileExtension(name) || "").toLowerCase(),
+    kind: inferStoredFileKindFromAsset(asset),
+    previewUrl,
+    file: null,
+    isExisting: true,
   };
 }
 
@@ -374,11 +425,13 @@ export function collectCourseUploadFiles(courseForm: CourseFormState) {
 
   courseForm.structure.modules.forEach((module) => {
     module.studyMaterials.forEach((material) => {
-      studyMaterialFiles.push(material.file);
+      if (material.file) {
+        studyMaterialFiles.push(material.file);
+      }
     });
 
     module.sections.forEach((section) => {
-      if (section.contentFile) {
+      if (section.contentFile?.file) {
         if (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip") {
           scormFiles.push(section.contentFile.file);
         } else {
@@ -387,7 +440,9 @@ export function collectCourseUploadFiles(courseForm: CourseFormState) {
       }
 
       section.studyMaterials.forEach((material) => {
-        studyMaterialFiles.push(material.file);
+        if (material.file) {
+          studyMaterialFiles.push(material.file);
+        }
       });
     });
   });
@@ -401,6 +456,121 @@ export function collectCourseUploadFiles(courseForm: CourseFormState) {
       contentFiles.length +
       studyMaterialFiles.length +
       (courseForm.basicInfo.thumbnail?.file ? 1 : 0),
+  };
+}
+
+function mapExistingStudyMaterials(materials: any, fallbackPrefix: string) {
+  if (!Array.isArray(materials)) {
+    return [];
+  }
+
+  return materials
+    .map((material, index) => createExistingStoredFile(material, `${fallbackPrefix} ${index + 1}`))
+    .filter(Boolean) as StoredFile[];
+}
+
+function mapExistingQuizQuestion(question: any, index: number): CourseQuizQuestionInput {
+  const options = Array.isArray(question?.options) ? question.options : [];
+  const getOptionText = (label: CorrectQuizOption, legacyKey: string) => {
+    return String(options.find((option: any) => option?.label === label)?.text || question?.[legacyKey] || "");
+  };
+  const correctOption =
+    (String(question?.correctOptionLabel || question?.correctOption || "") as CorrectQuizOption) ||
+    (options.find((option: any) => option?.isCorrect)?.label as CorrectQuizOption) ||
+    "Option-1";
+
+  return {
+    id: String(question?.questionId || question?.id || createClientId()),
+    sn: Number(question?.sn || index + 1),
+    question: String(question?.question || ""),
+    option1: getOptionText("Option-1", "option1"),
+    option2: getOptionText("Option-2", "option2"),
+    option3: getOptionText("Option-3", "option3"),
+    option4: getOptionText("Option-4", "option4"),
+    correctOption: ["Option-1", "Option-2", "Option-3", "Option-4"].includes(correctOption)
+      ? correctOption
+      : "Option-1",
+    marks: String(question?.marks ?? "1"),
+    explanation: String(question?.explanation || ""),
+  };
+}
+
+function mapExistingQuiz(quiz: any, fallbackTitle: string): CourseQuizInput {
+  return {
+    id: String(quiz?.quizId || quiz?.id || createClientId()),
+    title: String(quiz?.title || fallbackTitle),
+    source: quiz?.source === "excel" || quiz?.source === "mixed" ? quiz.source : "manual",
+    questions: Array.isArray(quiz?.questions)
+      ? quiz.questions.map((question: any, index: number) => mapExistingQuizQuestion(question, index))
+      : [],
+  };
+}
+
+export function courseToFormState(course: any): CourseFormState {
+  const curriculum = course?.curriculum || {};
+  const modules = Array.isArray(curriculum.modules) ? curriculum.modules : [];
+  const quizMode: QuizMode = curriculum.quizStrategy === "final" ? "final" : "per-module";
+
+  return {
+    basicInfo: {
+      courseCode: String(course?.courseCode || ""),
+      courseName: String(course?.title || ""),
+      slug: String(course?.slug || ""),
+      descriptionHtml: String(course?.description?.html || ""),
+      descriptionText: String(course?.description?.text || ""),
+      thumbnail: course?.thumbnailUrl
+        ? createExistingStoredFile(
+            {
+              name: "Current thumbnail",
+              kind: "image",
+              mimeType: "image/*",
+              previewUrl: course.thumbnailUrl,
+            },
+            "Current thumbnail"
+          )
+        : null,
+      languages: Array.isArray(course?.taxonomy?.languages) && course.taxonomy.languages.length
+        ? course.taxonomy.languages
+        : ["English"],
+      categories: Array.isArray(course?.taxonomy?.categories) ? course.taxonomy.categories : [],
+      level: String(course?.taxonomy?.level || "Beginner"),
+      visibilityType: course?.visibility?.type === "public" ? "public" : "private",
+      totalMarks: course?.assessment?.totalMarks == null ? "" : String(course.assessment.totalMarks),
+    },
+    structure: {
+      quizMode,
+      finalQuiz: mapExistingQuiz(curriculum.finalQuiz, "Final course quiz"),
+      modules: modules.map((module: any, moduleIndex: number) => ({
+        id: String(module?.moduleId || module?.id || createClientId()),
+        name: String(module?.title || ""),
+        description: String(module?.summary || ""),
+        sections: (Array.isArray(module?.sections) && module.sections.length ? module.sections : [{}]).map(
+          (section: any, sectionIndex: number) => ({
+            id: String(section?.sectionId || section?.id || createClientId()),
+            title: String(section?.title || ""),
+            description: String(section?.description || ""),
+            contentFile: createExistingStoredFile(section?.content, `Section ${sectionIndex + 1} content`),
+            studyMaterials: mapExistingStudyMaterials(section?.studyMaterial, `Section ${sectionIndex + 1} material`),
+          })
+        ),
+        studyMaterials: mapExistingStudyMaterials(module?.studyMaterial, `Module ${moduleIndex + 1} material`),
+        hasQuiz: Boolean(module?.assessments?.quizEnabled),
+        hasTest: Boolean(module?.assessments?.testEnabled),
+        quiz: mapExistingQuiz(module?.assessments?.quiz, `${String(module?.title || `Module ${moduleIndex + 1}`)} quiz`),
+      })),
+    },
+    progress: {
+      completionDays: course?.progression?.completionWindowDays == null ? "" : String(course.progression.completionWindowDays),
+      dripEnabled: Boolean(course?.progression?.dripEnabled),
+      certificateEnabled: course?.progression?.certificateEnabled !== false,
+      mandatoryModules: course?.progression?.mandatoryModules !== false,
+    },
+    pricing: {
+      isPaid: course?.commerce?.pricingModel === "paid",
+      amount: course?.commerce?.amountInRupees == null ? "" : String(course.commerce.amountInRupees),
+      currency: "INR",
+      accessDurationDays: course?.commerce?.accessDurationDays == null ? "" : String(course.commerce.accessDurationDays),
+    },
   };
 }
 

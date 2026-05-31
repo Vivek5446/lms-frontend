@@ -10,6 +10,7 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiDollarSign,
+  FiEdit3,
   FiEye,
   FiFilter,
   FiGlobe,
@@ -87,7 +88,7 @@ function StatCard({
 }
 
 function CoursePage() {
-  const [view, setView] = useState<"gallery" | "create" | "details">("gallery");
+  const [view, setView] = useState<"gallery" | "create" | "edit" | "details">("gallery");
   const [activeCourse, setActiveCourse] = useState<CourseListItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -118,6 +119,7 @@ function CoursePage() {
   const isLearner = isLearnerRole(role);
   const canViewCourses = hasAnyCourseViewPermission(stores.auth.user);
   const canCreateCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.CREATE_COURSES);
+  const canEditCourses = role === "superadmin" && hasPermission(stores.auth.user, PERMISSION_KEYS.EDIT_COURSES);
   const canDeleteCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.DELETE_COURSES);
   const canAssignCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.ASSIGN_COURSES);
   const scopeBadgeLabel =
@@ -154,6 +156,11 @@ function CoursePage() {
   const handleOpenDetails = (course: CourseListItem) => {
     setActiveCourse(course);
     setView("details");
+  };
+
+  const handleOpenEdit = (course: CourseListItem) => {
+    setActiveCourse(course);
+    setView("edit");
   };
 
   const availableCategories = useMemo(() => {
@@ -294,6 +301,18 @@ function CoursePage() {
 
   if (view === "create") {
     return <CourseList onSuccess={handleCreateSuccess} onCancel={() => setView("gallery")} />;
+  }
+
+  if (view === "edit" && activeCourse) {
+    return (
+      <CourseList
+        mode="edit"
+        courseId={activeCourse._id}
+        initialCourse={activeCourse}
+        onSuccess={handleCreateSuccess}
+        onCancel={() => setView("gallery")}
+      />
+    );
   }
 
   if (view === "details" && activeCourse) {
@@ -856,6 +875,30 @@ function CoursePage() {
                                   <FiEye size={12} />
                                   View
                                 </MotionButton>
+
+                                {canEditCourses ? (
+                                  <MotionButton
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => handleOpenEdit(course)}
+                                    style={{
+                                      borderRadius: 12,
+                                      border: `1px solid ${borderColor}`,
+                                      background: surfaceBg,
+                                      color: "#1D4ED8",
+                                      padding: "8px 12px",
+                                      fontSize: 12,
+                                      fontWeight: 600,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 6,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    <FiEdit3 size={12} />
+                                    Edit
+                                  </MotionButton>
+                                ) : null}
 
                                 {canDeleteCourses ? (
                                   <MotionButton
