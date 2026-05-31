@@ -30,6 +30,8 @@ import {
   HStack,
   Icon,
   IconButton,
+  Radio,
+  RadioGroup,
   SimpleGrid,
   StatArrow,
   Tab,
@@ -116,6 +118,7 @@ const createMemberForm = (companyId: string, role = "admin") => ({
   managers: reconcileManagersForRole(role, [], 3),
 });
 const isRealFile = (value: unknown): value is File => typeof File !== "undefined" && value instanceof File;
+type CompanyStatusScope = "company_admin" | "all_users";
 
 // Modern Stat Card with gradient accent
 const StatCard = ({
@@ -248,6 +251,7 @@ const CompanyAdminWorkspace = ({
   const [isEditCompanyOpen, setIsEditCompanyOpen] = useState(false);
   const [isDeleteCompanyOpen, setIsDeleteCompanyOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [statusActionScope, setStatusActionScope] = useState<CompanyStatusScope>("company_admin");
   const cancelStatusRef = useRef<HTMLButtonElement | null>(null);
   const showToast = (options: any) =>
     toast({
@@ -256,11 +260,31 @@ const CompanyAdminWorkspace = ({
       ...options,
     });
   const isCompanyInactive = company?.is_active === false;
-  const companyRestrictionMessage = `${company?.company_name || "This company"} is inactive. Existing learners can still log in and continue their assigned courses, but new management actions are disabled until the company is reactivated.`;
+  const companyRestrictionMessage = `${company?.company_name || "This company"} is inactive. Management actions are disabled until the company is reactivated. User login access depends on each account's status.`;
+  const companyStatusActionLabel = isCompanyInactive ? "Activate" : "Deactivate";
+  const companyStatusActionLabelLower = companyStatusActionLabel.toLowerCase();
+  const selectedStatusActionSummary =
+    statusActionScope === "all_users"
+      ? isCompanyInactive
+        ? `${company?.company_name || "This company"} and every company user will be activated. Admins, department heads, managers, and learners will be able to use their accounts again if they have already completed setup.`
+        : `${company?.company_name || "This company"} and every company user will be deactivated. Admins, department heads, managers, and learners will no longer be able to log in until they are reactivated.`
+      : isCompanyInactive
+        ? `${company?.company_name || "This company"} will be reactivated for company admin activity. Management actions such as adding users, assigning courses, and creating batches will work again, but existing user account statuses will stay exactly as they are.`
+        : `${company?.company_name || "This company"} will be deactivated for company admin activity. Management actions such as adding users, assigning courses, and creating batches will be blocked, but existing user account statuses will stay exactly as they are.`;
 
   const refreshAll = async () => {
     await onCompanyRefresh();
     setAdminRefreshKey((prev) => prev + 1);
+  };
+
+  const openStatusDialog = () => {
+    setStatusActionScope("company_admin");
+    setIsStatusDialogOpen(true);
+  };
+
+  const closeStatusDialog = () => {
+    setIsStatusDialogOpen(false);
+    setStatusActionScope("company_admin");
   };
 
   const handleAddSubmit = async (formData: any) => {
@@ -413,22 +437,35 @@ const CompanyAdminWorkspace = ({
   };
 
   const handleCompanyStatusToggle = async () => {
+    const selectedScope = statusActionScope;
     try {
       setLoading(true);
       const response = await stores.companyStore.updateManagedCompanyStatus(
         company._id,
-        Boolean(isCompanyInactive)
+        Boolean(isCompanyInactive),
+        selectedScope
       );
 
       await refreshAll();
-      setIsStatusDialogOpen(false);
+      closeStatusDialog();
       showToast({
-        title: isCompanyInactive ? "Company activated" : "Company deactivated",
+        title:
+          selectedScope === "all_users"
+            ? isCompanyInactive
+              ? "Company and users activated"
+              : "Company and users deactivated"
+            : isCompanyInactive
+              ? "Company admin activated"
+              : "Company admin deactivated",
         description:
           response?.data?.message ||
-          (isCompanyInactive
-            ? `${company.company_name} can now resume management activities.`
-            : `${company.company_name} is now restricted to existing learner access only.`),
+          (selectedScope === "all_users"
+            ? isCompanyInactive
+              ? `${company.company_name} and all company users have been activated.`
+              : `${company.company_name} and all company users have been deactivated.`
+            : isCompanyInactive
+              ? `${company.company_name} can now resume management activities. User account statuses were left unchanged.`
+              : `${company.company_name} management access has been deactivated. User account statuses were left unchanged.`),
         status: "success",
         duration: 4000,
       });
@@ -653,7 +690,7 @@ const CompanyAdminWorkspace = ({
                 borderRadius="full"
                 colorScheme={company?.is_active ? "red" : "green"}
                 variant={company?.is_active ? "outline" : "solid"}
-                onClick={() => setIsStatusDialogOpen(true)}
+                onClick={openStatusDialog}
                 isLoading={loading}
               >
                 {company?.is_active ? "Deactivate" : "Activate"}
@@ -1026,21 +1063,85 @@ const CompanyAdminWorkspace = ({
       <AlertDialog
         isOpen={isStatusDialogOpen}
         leastDestructiveRef={cancelStatusRef}
-        onClose={() => setIsStatusDialogOpen(false)}
+        onClose={closeStatusDialog}
         isCentered
       >
         <AlertDialogOverlay />
         <AlertDialogContent borderRadius="2xl">
           <AlertDialogHeader fontSize="lg" fontWeight="bold">
-            {company?.is_active ? "Deactivate company?" : "Activate company?"}
+            {company?.is_active ? "Deactivate company access?" : "Activate company access?"}
           </AlertDialogHeader>
           <AlertDialogBody>
-            {company?.is_active
-              ? `${company?.company_name} will stop all new management operations, including adding users, assigning courses, and creating batches. Existing learners will still be able to log in and continue assigned learning.`
-              : `${company?.company_name} will regain access to user, course, batch, and assignment management immediately.`}
+            <Text mb={4}>
+              Choose whether this {companyStatusActionLabelLower} action should affect only company admin activity or every user account in {company?.company_name}.
+            </Text>
+
+            <RadioGroup
+              value={statusActionScope}
+              onChange={(value) => setStatusActionScope(value as CompanyStatusScope)}
+            >
+              <VStack align="stretch" spacing={3}>
+                <Box
+                  borderWidth="1px"
+                  borderColor={statusActionScope === "company_admin" ? "blue.400" : borderColor}
+                  borderRadius="xl"
+                  p={4}
+                  bg={statusActionScope === "company_admin" ? "blue.50" : "transparent"}
+                >
+                  <Radio value="company_admin" colorScheme="blue" alignItems="flex-start">
+                    <Box ml={2}>
+                      <Text fontWeight="700">
+                        {companyStatusActionLabel} Company Admin
+                      </Text>
+                      <Text fontSize="sm" color={mutedText} mt={1}>
+                        Only company admin activity and management access will be {companyStatusActionLabelLower}d. User account login status will not change.
+                      </Text>
+                    </Box>
+                  </Radio>
+                </Box>
+
+                <Box
+                  borderWidth="1px"
+                  borderColor={statusActionScope === "all_users" ? "blue.400" : borderColor}
+                  borderRadius="xl"
+                  p={4}
+                  bg={statusActionScope === "all_users" ? "blue.50" : "transparent"}
+                >
+                  <Radio value="all_users" colorScheme="blue" alignItems="flex-start">
+                    <Box ml={2}>
+                      <Text fontWeight="700">
+                        {companyStatusActionLabel} All Users of the Company
+                      </Text>
+                      <Text fontSize="sm" color={mutedText} mt={1}>
+                        Apply the same {companyStatusActionLabelLower} action to company admins, department heads, managers, and learners under this company.
+                      </Text>
+                    </Box>
+                  </Radio>
+                </Box>
+              </VStack>
+            </RadioGroup>
+
+            <Alert
+              status={statusActionScope === "all_users" ? "warning" : "info"}
+              borderRadius="xl"
+              alignItems="start"
+              mt={4}
+            >
+              <AlertIcon mt={1} />
+              <Box>
+                <AlertTitle fontSize="sm">
+                  {statusActionScope === "all_users"
+                    ? "All company users will be affected"
+                    : "Only company admin activity will be affected"}
+                </AlertTitle>
+                <AlertDescription fontSize="sm">
+                  {selectedStatusActionSummary}
+                </AlertDescription>
+              </Box>
+            </Alert>
           </AlertDialogBody>
           <AlertDialogFooter>
-            <Button ref={cancelStatusRef} onClick={() => setIsStatusDialogOpen(false)}>
+            <Button ref={cancelStatusRef} onClick={closeStatusDialog}>
               Cancel
             </Button>
             <Button
@@ -1054,6 +1155,7 @@ const CompanyAdminWorkspace = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
     </Box>
   );
 };

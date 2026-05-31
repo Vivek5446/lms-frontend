@@ -168,17 +168,22 @@ class CompanyStores {
     }
   };
 
-  updateManagedCompanyStatus = async (companyId: string, isActive: boolean) => {
+  updateManagedCompanyStatus = async (
+    companyId: string,
+    isActive: boolean,
+    scope: "company_admin" | "all_users" = "company_admin"
+  ) => {
     this.isLoading = true;
     try {
       const response = await axios.put(`/company/${companyId}/status`, {
         isActive,
+        scope,
       });
       this.companies.data = (this.companies.data || []).map((company: any) =>
         company?._id === companyId
           ? {
               ...company,
-              ...(response.data?.data || {}),
+              ...(response.data?.data?.company || response.data?.data || {}),
             }
           : company
       );
