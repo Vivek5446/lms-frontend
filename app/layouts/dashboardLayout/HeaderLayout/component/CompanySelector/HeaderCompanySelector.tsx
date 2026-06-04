@@ -344,7 +344,7 @@ const HeaderCompanySelector = observer(() => {
   );
 
   return (
-    <HStack spacing={0} mx={4} display={{ base: "none", lg: "flex" }}>
+    <HStack spacing={0} mx={{ xl: 2, "2xl": 4 }} display={{ base: "none", xl: "flex" }}>
       {isSuperadmin ? (
         <Popover
           placement="bottom-start"

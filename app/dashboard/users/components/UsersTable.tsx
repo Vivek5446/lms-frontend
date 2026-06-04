@@ -7,6 +7,9 @@ import {
   Divider,
   Flex,
   HStack,
+  Input,
+  InputGroup,
+  InputLeftElement,
   Tab,
   TabList,
   Tabs,
@@ -20,6 +23,8 @@ import {
   StatNumber,
   StatHelpText,
   SimpleGrid,
+  Stack,
+  useBreakpointValue,
   useColorModeValue,
 } from "@chakra-ui/react";
 import { 
@@ -32,7 +37,8 @@ import {
   FiTrendingUp,
   FiCheckCircle,
   FiClock,
-  FiAward
+  FiAward,
+  FiSearch
 } from "react-icons/fi";
 import CustomTable from "../../../component/config/component/CustomTable/CustomTable";
 
@@ -137,6 +143,7 @@ const UsersTable = ({
   const statsTextColor = useColorModeValue("blue.700", "blue.200");
   const tooltipBg = useColorModeValue("gray.900", "gray.700");
   const tooltipColor = useColorModeValue("white", "white");
+  const isCompact = useBreakpointValue({ base: true, lg: false }) ?? false;
 
   const columns = [
     {
@@ -462,9 +469,9 @@ const UsersTable = ({
   ];
 
   return (
-    <VStack spacing={6} align="stretch">
+    <VStack spacing={{ base: 4, md: 6 }} align="stretch">
       {/* Statistics Cards */}
-      <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+      <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
         <Box
           bg={cardBg}
           p={4}
@@ -567,7 +574,7 @@ const UsersTable = ({
         <Flex
           justify="space-between"
           align="center"
-          mb={6}
+          mb={{ base: 4, md: 6 }}
           flexWrap="wrap"
           gap={4}
         >
@@ -581,7 +588,7 @@ const UsersTable = ({
               setPage(1);
             }}
           >
-            <TabList gap={2} flexWrap="wrap" bg={tabListBg} p={1} borderRadius="full">
+            <TabList gap={2} flexWrap="nowrap" overflowX="auto" bg={tabListBg} p={1} borderRadius="full">
               {listTabs.map((tab, idx) => (
                 <Tab
                   key={tab.value}
@@ -591,11 +598,12 @@ const UsersTable = ({
                     boxShadow: "md",
                   }}
                   borderRadius="full"
-                  px={6}
+                  px={{ base: 4, md: 6 }}
                   fontSize="sm"
                   fontWeight="medium"
                   transition="all 0.2s"
                   color={useColorModeValue("gray.600", "gray.300")}
+                  whiteSpace="nowrap"
                 >
                   {tab.label}
                 </Tab>
@@ -616,58 +624,177 @@ const UsersTable = ({
           </Box>
         </Flex>
 
-        {/* Custom Table */}
-        <CustomTable
-          title="User Directory"
-          data={users}
-          columns={columns}
-          loading={loading}
-          actions={{
-            actionBtn: {
-              addKey: {
-                showAddButton: false,
+        {!isCompact ? (
+          <CustomTable
+            title="User Directory"
+            data={users}
+            columns={columns}
+            loading={loading}
+            actions={{
+              actionBtn: {
+                addKey: {
+                  showAddButton: false,
+                },
+                editKey: {
+                  showEditButton: canEdit,
+                  title: "Edit User",
+                  function: (user: any) => onEdit(user),
+                },
+                viewKey: {
+                  showViewButton: true,
+                  title: "View User",
+                  function: (user: any) => onView(user),
+                },
+                deleteKey: {
+                  showDeleteButton: canDelete,
+                  title: "Delete User",
+                  function: (user: any) => onDelete?.(user),
+                },
               },
-              editKey: {
-                showEditButton: canEdit,
-                title: "Edit User",
-                function: (user: any) => onEdit(user),
+              search: {
+                show: true,
+                placeholder: "Search by name, email, role, or creator...",
+                searchValue: search,
+                onSearchChange: (event: any) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                },
               },
-              viewKey: {
-                showViewButton: true,
-                title: "View User",
-                function: (user: any) => onView(user),
+              resetData: {
+                show: true,
+                text: "Clear Filters",
+                function: () => {
+                  setSearch("");
+                  setPage(1);
+                },
               },
-              deleteKey: {
-                showDeleteButton: canDelete,
-                title: "Delete User",
-                function: (user: any) => onDelete?.(user),
+              pagination: {
+                show: true,
+                currentPage: page,
+                totalPages: pagination.totalPages || 1,
+                onClick: (nextPage: number) => setPage(nextPage),
               },
-            },
-            search: {
-              show: true,
-              placeholder: "Search by name, email, role, or creator...",
-              searchValue: search,
-              onSearchChange: (event: any) => {
-                setSearch(event.target.value);
-                setPage(1);
-              },
-            },
-            resetData: {
-              show: true,
-              text: "Clear Filters",
-              function: () => {
-                setSearch("");
-                setPage(1);
-              },
-            },
-            pagination: {
-              show: true,
-              currentPage: page,
-              totalPages: pagination.totalPages || 1,
-              onClick: (nextPage: number) => setPage(nextPage),
-            },
-          }}
-        />
+            }}
+          />
+        ) : (
+          <Stack spacing={3}>
+            <InputGroup>
+              <InputLeftElement pointerEvents="none">
+                <Icon as={FiSearch} color={muted} />
+              </InputLeftElement>
+              <Input
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search users"
+                bg={cardBg}
+                borderColor={borderColorLight}
+                borderRadius="xl"
+              />
+            </InputGroup>
+
+            {loading ? (
+              <Box bg={cardBg} borderWidth="1px" borderColor={borderColorLight} borderRadius="xl" p={5}>
+                <Text fontSize="sm" color={muted}>Loading users...</Text>
+              </Box>
+            ) : users.length === 0 ? (
+              <Box bg={cardBg} borderWidth="1px" borderColor={borderColorLight} borderRadius="xl" p={5}>
+                <Text fontSize="sm" color={muted}>No users found for this filter.</Text>
+              </Box>
+            ) : (
+              users.map((user: any) => {
+                const statusMeta = getUserStatusMeta(user);
+                const managers = user.managers || [];
+                return (
+                  <Box key={user._id} bg={cardBg} borderWidth="1px" borderColor={borderColorLight} borderRadius="xl" p={4} boxShadow="sm">
+                    <HStack align="start" spacing={3} mb={3}>
+                      <Avatar
+                        size="sm"
+                        name={user.name || "User"}
+                        bgGradient="linear(to-br, blue.400, purple.500)"
+                        color="white"
+                      />
+                      <Box flex="1" minW={0}>
+                        <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>{user.name || "--"}</Text>
+                        <Text fontSize="xs" color={muted} noOfLines={1}>{user.email || "No email"}</Text>
+                      </Box>
+                      <Badge colorScheme={statusMeta.colorScheme} variant="subtle" borderRadius="full">
+                        {statusMeta.label}
+                      </Badge>
+                    </HStack>
+
+                    <SimpleGrid columns={2} spacing={3} mb={3}>
+                      <Box>
+                        <Text fontSize="10px" textTransform="uppercase" color={muted}>Role</Text>
+                        <Text fontSize="xs" fontWeight="medium">{formatRoleLabel(user.role)}</Text>
+                      </Box>
+                      <Box>
+                        <Text fontSize="10px" textTransform="uppercase" color={muted}>Company</Text>
+                        <Text fontSize="xs" fontWeight="medium" noOfLines={1}>{user.company?.name || user.company?.company_name || "Unassigned"}</Text>
+                      </Box>
+                      <Box>
+                        <Text fontSize="10px" textTransform="uppercase" color={muted}>Department</Text>
+                        <Text fontSize="xs" fontWeight="medium" noOfLines={1}>{user.department || "--"}</Text>
+                      </Box>
+                      <Box>
+                        <Text fontSize="10px" textTransform="uppercase" color={muted}>Security</Text>
+                        <Text fontSize="xs" fontWeight="medium">{user.passwordStatus === "SET" ? "Secure" : "Insecure"}</Text>
+                      </Box>
+                    </SimpleGrid>
+
+                    {managers.length > 0 ? (
+                      <HStack spacing={1.5} flexWrap="wrap" mb={3}>
+                        {managers.slice(0, 3).map((manager: any, index: number) => (
+                          <Badge key={`${user._id}-${manager.level}`} colorScheme={COLORS[index % COLORS.length]} variant="subtle" borderRadius="full">
+                            L{manager.level}
+                          </Badge>
+                        ))}
+                        {managers.length > 3 ? <Badge borderRadius="full">+{managers.length - 3}</Badge> : null}
+                      </HStack>
+                    ) : null}
+
+                    <HStack spacing={2} flexWrap="wrap">
+                      <Button size="sm" variant="outline" onClick={() => onView(user)}>View</Button>
+                      {canEdit ? <Button size="sm" variant="outline" colorScheme="blue" onClick={() => onEdit(user)}>Edit</Button> : null}
+                      {canToggleStatus ? (
+                        <Button
+                          size="sm"
+                          borderRadius="full"
+                          colorScheme={statusMeta.label !== "Inactive" ? "red" : "green"}
+                          variant={statusMeta.label !== "Inactive" ? "outline" : "solid"}
+                          onClick={() => onToggleStatus?.(user)}
+                          isLoading={statusUpdatingId === user._id}
+                        >
+                          {statusMeta.label !== "Inactive" ? "Deactivate" : "Activate"}
+                        </Button>
+                      ) : null}
+                      {canDelete ? <Button size="sm" variant="ghost" colorScheme="red" onClick={() => onDelete?.(user)}>Delete</Button> : null}
+                    </HStack>
+                  </Box>
+                );
+              })
+            )}
+
+            <HStack justify="space-between">
+              <Button size="sm" variant="outline" onClick={() => setPage(Math.max(1, page - 1))} isDisabled={page <= 1}>
+                Prev
+              </Button>
+              <Text fontSize="xs" color={muted}>
+                Page {page} of {pagination.totalPages || 1}
+              </Text>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPage(Math.min(pagination.totalPages || 1, page + 1))}
+                isDisabled={page >= (pagination.totalPages || 1)}
+              >
+                Next
+              </Button>
+            </HStack>
+          </Stack>
+        )}
       </Box>
     </VStack>
   );

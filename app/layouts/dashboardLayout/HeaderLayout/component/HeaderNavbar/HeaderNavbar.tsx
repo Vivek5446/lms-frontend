@@ -14,7 +14,7 @@ const HeaderNavbar = observer(() => {
   const {
     layout: { setOpenMobileSideDrawer },
   } = stores;
-  const [isLargerThan1020] = useMediaQuery("(min-width: 1020px)");
+  const [isLargerThan1020] = useMediaQuery("(min-width: 1280px)");
 
   return (
     <Flex
@@ -22,7 +22,8 @@ const HeaderNavbar = observer(() => {
       justifyContent="flex-end"
       alignItems="center"
       width="auto"
-      gap={3}
+      gap={{ base: 2, md: 3 }}
+      flexShrink={0}
     >
       {isLargerThan1020 ? (
         <>
@@ -36,16 +37,14 @@ const HeaderNavbar = observer(() => {
         </>
       ) : (
         <IconButton
-          aria-label="Arrow"
-          fontSize="xl"
+          aria-label="Open navigation"
+          fontSize="lg"
+          size="sm"
           _hover={{ color: useColorModeValue("brand.500", "brand.200"), bg: useColorModeValue("brand.50", "gray.700") }}
           _active={{ bg: useColorModeValue("brand.100", "gray.800") }}
-          icon={
-            <FaBars
-              cursor="pointer"
-              onClick={() => setOpenMobileSideDrawer(true)}
-            />
-          }
+          onClick={() => setOpenMobileSideDrawer(true)}
+          borderRadius="xl"
+          icon={<FaBars />}
         />
       )}
     </Flex>

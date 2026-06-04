@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Box, Spinner, useBreakpointValue, useMediaQuery, useTheme } from '@chakra-ui/react';
+import { Box, Spinner, useBreakpointValue } from '@chakra-ui/react';
 import styled from 'styled-components';
 import stores from '../../store/stores';
 // import { authenticastion } from '../../config/utils/routes';
@@ -21,11 +21,8 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
     layout: { fullScreenMode, mediumScreenMode, isCallapse, openDashSidebarFun, openMobileSideDrawer, setOpenMobileSideDrawer },
     themeStore: { themeConfig },
   } = stores;
-  const theme = useTheme();
   const [hasMounted, setHasMounted] = useState(false);
-
-  const [sizeStatus] = useMediaQuery(`(max-width: ${theme.breakpoints.xl})`);
-  const isMobile = useBreakpointValue({ base: true, lg: false }) ?? false;
+  const isMobile = useBreakpointValue({ base: true, xl: false }) ?? false;
   const sidebarRef = useRef<HTMLDivElement | null>(null);
 
   const closeDrawerModel = () => {
@@ -111,14 +108,19 @@ export default DashboardLayout;
 
 const MainContainer = styled.div<{ $isMobile: boolean }>`
   display: flex;
+  width: 100%;
+  min-height: 100dvh;
   transition: all 0.3s ease-in-out;
-  overflow: hidden;
+  overflow-x: hidden;
   margin-left: ${(props) => (props.$isMobile ? '0px' : mediumSidebarWidth)};
 `;
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
   transition: all 0.3s ease-in-out;
 `;
 
@@ -161,11 +163,13 @@ const HeaderContainer = styled.div<{
 
 const ContentContainer = styled.div<{ $isMobile: boolean }>`
   padding: ${({ $isMobile }) =>
-    $isMobile ? `${contentSmallBodyPadding}` : `${contentLargeBodyPadding}`};
-  width: ${({ $isMobile }) =>
-    $isMobile ? '100vw' : `calc(100vw - ${mediumSidebarWidth})`};
+    $isMobile ? '14px 12px 24px' : `${contentLargeBodyPadding}`};
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: hidden;
-  height: calc(100vh - ${headerHeight});
+  min-height: calc(100dvh - ${headerHeight});
   transition: all 0.3s ease-in-out;
   margin-top: ${headerHeight};
+  box-sizing: border-box;
 `;

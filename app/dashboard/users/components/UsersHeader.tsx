@@ -41,12 +41,12 @@ const UsersHeader = ({
   return (
     <Box
       bg={bgColor}
-      borderRadius="2xl"
+      borderRadius={{ base: "xl", md: "2xl" }}
       borderWidth="1px"
       borderColor={borderColor}
       position="relative"
       overflow="hidden"
-      boxShadow="lg"
+      boxShadow="md"
       transition="all 0.2s"
       _hover={{ boxShadow: "xl" }}
     >
@@ -60,12 +60,12 @@ const UsersHeader = ({
         right="0"
       />
 
-      <Box p={{ base: 5, md: 6 }}>
+      <Box p={{ base: 4, md: 6 }}>
         <Flex
           justify="space-between"
           align={{ base: "start", md: "center" }}
           direction={{ base: "column", md: "row" }}
-          gap={6}
+          gap={{ base: 4, md: 6 }}
         >
           {/* Left Section - Title & Stats */}
           <Box flex="1">
@@ -81,14 +81,14 @@ const UsersHeader = ({
               </Flex>
               <Box>
                 <Text
-                  fontSize={{ base: "2xl", md: "3xl" }}
+                  fontSize={{ base: "xl", md: "3xl" }}
                   fontWeight="extrabold"
                   bgGradient={`linear(to-r, ${gradientFrom}, ${gradientTo})`}
                   bgClip="text"
                 >
                   Users Management
                 </Text>
-                <Text color={muted} fontSize="sm" mt={1}>
+                <Text color={muted} fontSize="sm" mt={1} display={{ base: "none", sm: "block" }}>
                   Manage users, managers, hierarchy and onboarding
                 </Text>
               </Box>
@@ -96,7 +96,7 @@ const UsersHeader = ({
 
             {/* Stats Section - Only show if there is data */}
             {(totalUsers > 0 || activeUsers > 0) && (
-              <HStack spacing={4} mt={3} ml={12}>
+              <HStack spacing={4} mt={3} ml={{ base: 0, md: 12 }} flexWrap="wrap" display={{ base: "none", md: "flex" }}>
                 {totalUsers > 0 && (
                   <Flex align="center" gap={2}>
                     <Icon as={FiUsers} boxSize={4} color={statLabelColor} />
@@ -153,8 +153,8 @@ const UsersHeader = ({
                 leftIcon={<Icon as={FiUpload} />}
                 variant="outline"
                 onClick={onOpenBulk}
-                size={{ base: "md", md: "lg" }}
-                px={{ base: 4, md: 6 }}
+                size={{ base: "sm", md: "lg" }}
+                px={{ base: 3.5, md: 6 }}
                 borderWidth="2px"
                 borderColor={outlineButtonBorder}
                 color={outlineButtonColor}
@@ -176,8 +176,8 @@ const UsersHeader = ({
               <Button
                 leftIcon={<Icon as={FiUserPlus} />}
                 onClick={onOpenCreate}
-                size={{ base: "md", md: "lg" }}
-                px={{ base: 4, md: 6 }}
+                size={{ base: "sm", md: "lg" }}
+                px={{ base: 3.5, md: 6 }}
                 bgGradient={`linear(to-r, ${gradientFrom}, ${gradientTo})`}
                 color="white"
                 _hover={{

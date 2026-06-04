@@ -462,7 +462,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
     } = stores;
     const router = useRouter();
     const pathname = usePathname();
-    const isMobile = useBreakpointValue({ base: true, lg: false }) ?? false;
+    const isMobile = useBreakpointValue({ base: true, xl: false }) ?? false;
     const { colorMode } = useColorMode();
 
     const [sidebarData, setSidebarData] = useState<SidebarItem[]>([]);
@@ -544,11 +544,17 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
       <>
         <Drawer
           isOpen={openMobileSideDrawer}
-          placement="right"
+          placement="left"
           onClose={() => setOpenMobileSideDrawer(false)}
         >
           <DrawerOverlay />
-          <DrawerContent bgGradient={SIDEBAR_BG}>
+          <DrawerContent
+            bgGradient={SIDEBAR_BG}
+            maxW="320px"
+            borderTopRightRadius="24px"
+            borderBottomRightRadius="24px"
+            overflow="hidden"
+          >
             <DrawerCloseButton
               variant="ghost"
               fontSize="lg"
@@ -558,7 +564,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
               _focus={{ boxShadow: "none" }}
             />
             <SidebarLogo showBrand />
-            <DrawerBody px={2} className="customScrollBar">
+            <DrawerBody px={3} pb={5} className="customScrollBar">
               <SidebarAccordion
                 items={sidebarData}
                 onClick={onItemClick}

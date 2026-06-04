@@ -120,14 +120,14 @@ const StatCard = ({ label, value, icon: StatIcon, growth, color, isLoading, size
 
   return (
     <MotionBox
-      whileHover={{ y: -4, scale: 1.02 }}
+      whileHover={{ y: -2, scale: 1.01 }}
       transition={{ duration: 0.2, type: "spring", stiffness: 300 }}
       bg={bg}
       p={isSmall ? 4 : 6}
-      rounded="2xl"
+      rounded="xl"
       borderWidth="1px"
       borderColor={borderColor}
-      shadow="lg"
+      shadow="md"
       position="relative"
       overflow="hidden"
       _before={{
@@ -684,8 +684,8 @@ const SuperAdminLMS = observer(() => {
   }
 
   return (
-    <Box bg={pageBg} minH="100vh" py={6} px={4}>
-      <VStack spacing={8} align="stretch" maxW="1400px" mx="auto">
+    <Box bg={pageBg} minH="100vh" py={{ base: 3, md: 6 }} px={{ base: 3, md: 4 }}>
+      <VStack spacing={{ base: 4, md: 8 }} align="stretch" maxW="1400px" mx="auto">
         {/* Main Header - Enhanced */}
         <MotionFlex
           initial={{ opacity: 0, y: -20 }}
@@ -694,29 +694,29 @@ const SuperAdminLMS = observer(() => {
           justify="space-between"
           align="center"
           wrap="wrap"
-          gap={4}
+          gap={{ base: 3, md: 4 }}
           bg={sectionBg}
-          p={6}
-          rounded="2xl"
-          shadow="lg"
+          p={{ base: 4, md: 6 }}
+          rounded={{ base: "xl", md: "2xl" }}
+          shadow="md"
           borderWidth="1px"
           borderColor={borderColor}
         >
           <VStack align="start" spacing={2}>
             <HStack spacing={3}>
-              <Box p={2} bg="purple.100" rounded="xl" color="purple.600">
-                <Icon as={Globe} boxSize={7} />
+              <Box p={{ base: 2, md: 2.5 }} bg="purple.100" rounded="xl" color="purple.600">
+                <Icon as={Globe} boxSize={{ base: 5, md: 7 }} />
               </Box>
               <Box>
-                <Text fontSize="2xl" fontWeight="800" bgGradient="linear(to-r, purple.600, pink.600)" bgClip="text">
+                <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="800" bgGradient="linear(to-r, purple.600, pink.600)" bgClip="text">
                   LMS Analytics
                 </Text>
-                <Text fontSize="sm" color={textSecondary}>
+                <Text fontSize="sm" color={textSecondary} display={{ base: "none", sm: "block" }}>
                   Real-time insights & performance metrics
                 </Text>
               </Box>
             </HStack>
-            <HStack spacing={2}>
+            <HStack spacing={2} flexWrap="wrap">
               <Badge colorScheme="green" variant="solid" rounded="full" px={3} py={1}>
                 <HStack spacing={1}>
                   <Box w={2} h={2} rounded="full" bg="green.400" />
@@ -729,20 +729,20 @@ const SuperAdminLMS = observer(() => {
             </HStack>
           </VStack>
           
-          <HStack spacing={4}>
-            <Box bg={headerBg} p={4} rounded="xl" textAlign="center" minW="100px" shadow="sm">
+          <HStack spacing={3} w={{ base: "full", md: "auto" }}>
+            <Box bg={headerBg} p={{ base: 3, md: 4 }} rounded="xl" textAlign="center" minW={{ base: "0", md: "100px" }} flex="1" shadow="sm">
               <Text fontSize="xs" color="gray.500" fontWeight="600" textTransform="uppercase" letterSpacing="wide">
                 Active Batches
               </Text>
-              <Text fontSize="2xl" fontWeight="800" color="purple.600">
+              <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="800" color="purple.600">
                 {batchStatusStats.active}
               </Text>
             </Box>
-            <Box bg={headerBg} p={4} rounded="xl" textAlign="center" minW="100px" shadow="sm">
+            <Box bg={headerBg} p={{ base: 3, md: 4 }} rounded="xl" textAlign="center" minW={{ base: "0", md: "100px" }} flex="1" shadow="sm">
               <Text fontSize="xs" color="gray.500" fontWeight="600" textTransform="uppercase" letterSpacing="wide">
                 Uptime
               </Text>
-              <Text fontSize="2xl" fontWeight="800" color="green.600">
+              <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="800" color="green.600">
                 99.98%
               </Text>
             </Box>
@@ -755,16 +755,16 @@ const SuperAdminLMS = observer(() => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           bg={sectionBg}
-          p={5}
-          rounded="2xl"
+          p={{ base: 4, md: 5 }}
+          rounded={{ base: "xl", md: "2xl" }}
           borderWidth="1px"
           borderColor={borderColor}
-          shadow="lg"
+          shadow="md"
         >
           <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
             <Box>
               <Heading size="sm" mb={1}>Analysis Dashboard</Heading>
-              <Text fontSize="sm" color={textSecondary}>Select a focused analytics view</Text>
+              <Text fontSize="sm" color={textSecondary} display={{ base: "none", sm: "block" }}>Select a focused analytics view</Text>
             </Box>
             <Wrap spacing={3}>
               {[
@@ -779,9 +779,9 @@ const SuperAdminLMS = observer(() => {
                     colorScheme={option.color}
                     onClick={() => setAnalysisView(option.key as any)}
                     leftIcon={<Icon as={option.icon} boxSize={4} />}
-                    size="md"
+                    size={{ base: "sm", md: "md" }}
                     rounded="full"
-                    px={6}
+                    px={{ base: 4, md: 6 }}
                     shadow={analysisView === option.key ? "md" : "none"}
                   >
                     {option.label}

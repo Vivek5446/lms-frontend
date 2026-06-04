@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useColorModeValue } from "@chakra-ui/react";
+import { useBreakpointValue, useColorModeValue } from "@chakra-ui/react";
 import {
   FiBookOpen,
   FiChevronLeft,
@@ -68,12 +68,13 @@ function StatCard({
   helper: string;
   accent: string;
 }) {
+  const isCompact = useBreakpointValue({ base: true, md: false }) ?? false;
   return (
     <div
       style={{
-        borderRadius: 20,
+        borderRadius: 18,
         border: "1px solid rgba(148, 163, 184, 0.18)",
-        padding: "18px 18px 16px",
+        padding: isCompact ? "14px 14px 12px" : "18px 18px 16px",
         background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.92) 100%)",
         boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
       }}
@@ -81,13 +82,14 @@ function StatCard({
       <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#64748B", textTransform: "uppercase" }}>
         {label}
       </p>
-      <p style={{ margin: "10px 0 4px", fontSize: 28, fontWeight: 800, color: accent }}>{value}</p>
-      <p style={{ margin: 0, fontSize: 13, color: "#64748B", lineHeight: 1.5 }}>{helper}</p>
+      <p style={{ margin: "8px 0 4px", fontSize: isCompact ? 22 : 28, fontWeight: 800, color: accent }}>{value}</p>
+      <p style={{ margin: 0, fontSize: 13, color: "#64748B", lineHeight: 1.5, display: isCompact ? "none" : "block" }}>{helper}</p>
     </div>
   );
 }
 
 function CoursePage() {
+  const isCompact = useBreakpointValue({ base: true, lg: false }) ?? false;
   const [view, setView] = useState<"gallery" | "create" | "edit" | "details">("gallery");
   const [activeCourse, setActiveCourse] = useState<CourseListItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -376,26 +378,26 @@ function CoursePage() {
       description="This account does not currently have access to the course workspace."
       fallbackHref="/dashboard/profile"
     >
-      <div style={{ minHeight: "100vh", background: pageBg, padding: "32px" }}>
+      <div style={{ minHeight: "100vh", background: pageBg, padding: isCompact ? "12px" : "32px" }}>
         <div style={{ maxWidth: 1480, margin: "0 auto" }}>
           <div
             style={{
-              borderRadius: 30,
-              padding: "30px 30px 26px",
+              borderRadius: isCompact ? 22 : 30,
+              padding: isCompact ? "18px 16px 16px" : "30px 30px 26px",
               background: "linear-gradient(135deg, #0F172A 0%, #1E3A8A 55%, #0EA5E9 100%)",
               color: "#FFFFFF",
               boxShadow: "0 30px 80px rgba(15, 23, 42, 0.28)",
-              marginBottom: 26,
+              marginBottom: isCompact ? 16 : 26,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: isCompact ? 14 : 18, flexWrap: "wrap", alignItems: "flex-start" }}>
               <div style={{ maxWidth: 760 }}>
                 <div
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
-                    padding: "8px 14px",
+                    padding: isCompact ? "7px 12px" : "8px 14px",
                     borderRadius: 999,
                     background: "rgba(255,255,255,0.14)",
                     fontSize: 12,
@@ -407,16 +409,16 @@ function CoursePage() {
                   <FiFilter />
                   {scopeBadgeLabel}
                 </div>
-                <h1 style={{ margin: "16px 0 10px", fontSize: 34, lineHeight: 1.08, fontWeight: 800 }}>
+                <h1 style={{ margin: isCompact ? "12px 0 6px" : "16px 0 10px", fontSize: isCompact ? 24 : 34, lineHeight: 1.08, fontWeight: 800 }}>
                   Search, filter, and manage courses within your scope
                 </h1>
-                <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.84)" }}>
+                <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.84)", display: isCompact ? "none" : "block" }}>
                   {scopeDescription} Use the filters below to isolate visibility, pricing, delivery type, language,
                   category, and publishing status in seconds.
                 </p>
               </div>
 
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", width: isCompact ? "100%" : "auto" }}>
                 <MotionButton
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -430,13 +432,15 @@ function CoursePage() {
                     border: "1px solid rgba(255,255,255,0.18)",
                     background: "rgba(255,255,255,0.08)",
                     color: "#FFFFFF",
-                    padding: "12px 18px",
+                    padding: isCompact ? "10px 14px" : "12px 18px",
                     fontSize: 14,
                     fontWeight: 600,
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
                     cursor: "pointer",
+                    width: isCompact ? "calc(50% - 6px)" : "auto",
+                    justifyContent: "center",
                   }}
                 >
                   <FiUsers size={16} />
@@ -453,7 +457,7 @@ function CoursePage() {
                       border: "none",
                       background: "#FFFFFF",
                       color: "#0F172A",
-                      padding: "12px 18px",
+                      padding: isCompact ? "10px 14px" : "12px 18px",
                       fontSize: 14,
                       fontWeight: 700,
                       display: "inline-flex",
@@ -461,6 +465,8 @@ function CoursePage() {
                       gap: 8,
                       cursor: "pointer",
                       boxShadow: "0 14px 35px rgba(15, 23, 42, 0.18)",
+                      width: isCompact ? "calc(50% - 6px)" : "auto",
+                      justifyContent: "center",
                     }}
                   >
                     <FiPlus size={16} />
@@ -474,9 +480,9 @@ function CoursePage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: 16,
-              marginBottom: 22,
+              gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: isCompact ? 10 : 16,
+              marginBottom: isCompact ? 16 : 22,
             }}
           >
             <StatCard label="Total Courses" value={summary.total} helper="Every course in your current scope." accent="#2563EB" />
@@ -488,11 +494,11 @@ function CoursePage() {
 
           <div
             style={{
-              borderRadius: 24,
+              borderRadius: isCompact ? 18 : 24,
               border: `1px solid ${borderColor}`,
               background: filterSurface,
               backdropFilter: "blur(14px)",
-              padding: 18,
+              padding: isCompact ? 12 : 18,
               boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
               marginBottom: 18,
             }}
@@ -500,7 +506,7 @@ function CoursePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "minmax(240px, 2fr) repeat(6, minmax(140px, 1fr))",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(240px, 2fr) repeat(6, minmax(140px, 1fr))",
                 gap: 12,
                 alignItems: "center",
               }}
@@ -514,7 +520,7 @@ function CoursePage() {
                   border: `1px solid ${borderColor}`,
                   background: surfaceBg,
                   padding: "0 14px",
-                  height: 46,
+                  height: isCompact ? 42 : 46,
                 }}
               >
                 <FiSearch style={{ color: mutedTextColor }} />
@@ -586,8 +592,8 @@ function CoursePage() {
                   value={config.value}
                   onChange={(event) => config.onChange(event.target.value as never)}
                   style={{
-                    height: 46,
-                    borderRadius: 14,
+                    height: isCompact ? 42 : 46,
+                    borderRadius: isCompact ? 12 : 14,
                     border: `1px solid ${borderColor}`,
                     background: surfaceBg,
                     color: titleColor,
@@ -619,7 +625,7 @@ function CoursePage() {
                     type="button"
                     onClick={() => setSortBy(value as CatalogSort)}
                     style={{
-                      padding: "10px 14px",
+                      padding: isCompact ? "8px 12px" : "10px 14px",
                       borderRadius: 12,
                       border: sortBy === value ? "none" : `1px solid ${borderColor}`,
                       background: sortBy === value ? "#2563EB" : surfaceBg,
@@ -634,13 +640,13 @@ function CoursePage() {
                 ))}
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, width: isCompact ? "100%" : "auto", justifyContent: isCompact ? "space-between" : "flex-start" }}>
                 <span style={{ fontSize: 13, color: textColor }}>Show</span>
                 <select
                   value={itemsPerPage}
                   onChange={(event) => setItemsPerPage(Number(event.target.value))}
                   style={{
-                    height: 40,
+                    height: 38,
                     borderRadius: 12,
                     border: `1px solid ${borderColor}`,
                     background: surfaceBg,
@@ -700,17 +706,133 @@ function CoursePage() {
             </div>
           ) : (
             <>
-              <div
-                style={{
-                  borderRadius: 24,
-                  border: `1px solid ${borderColor}`,
-                  background: surfaceBg,
-                  overflow: "hidden",
-                  boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
-                }}
-              >
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1160 }}>
+              {isCompact ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {currentCourses.map((course) => {
+                    const visibilityType = course.visibility?.type || "private";
+                    const courseType = course.courseType || (course.scormFilePath ? "scorm" : "standard");
+                    const assessment = course.assessment;
+
+                    return (
+                      <div
+                        key={course._id}
+                        style={{
+                          borderRadius: 18,
+                          border: `1px solid ${borderColor}`,
+                          background: surfaceBg,
+                          padding: 14,
+                          boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+                        }}
+                      >
+                        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                          <div
+                            style={{
+                              width: 52,
+                              height: 52,
+                              borderRadius: 14,
+                              background: "linear-gradient(135deg, #DBEAFE 0%, #ECFEFF 100%)",
+                              overflow: "hidden",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {course.thumbnailUrl ? (
+                              <img src={course.thumbnailUrl} alt={course.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              <FiBookOpen size={22} style={{ color: "#2563EB" }} />
+                            )}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: titleColor }}>{course.title}</div>
+                            <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
+                              {course.courseCode || "No course code"}
+                            </div>
+                            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999, background: visibilityType === "public" ? "#ECFDF5" : "#EFF6FF", color: visibilityType === "public" ? "#047857" : "#1D4ED8", fontSize: 11, fontWeight: 700 }}>
+                                {visibilityType === "public" ? <FiGlobe size={11} /> : <FiLock size={11} />}
+                                {visibilityType === "public" ? "Public" : "Private"}
+                              </span>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999, background: course.status === "published" ? "#DCFCE7" : "#FEF3C7", color: course.status === "published" ? "#166534" : "#92400E", fontSize: 11, fontWeight: 700 }}>
+                                {course.status === "published" ? "Published" : "Draft"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 10, textTransform: "uppercase", color: mutedTextColor }}>Type</div>
+                            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: titleColor }}>{courseType === "scorm" ? "SCORM" : "Standard"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, textTransform: "uppercase", color: mutedTextColor }}>Price</div>
+                            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: titleColor }}>{formatCurrency(course.commerce?.amountInRupees)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, textTransform: "uppercase", color: mutedTextColor }}>Assessment</div>
+                            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: titleColor }}>{assessment?.totalMarks ? `${assessment.totalMarks} marks` : "Not set"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10, textTransform: "uppercase", color: mutedTextColor }}>Popularity</div>
+                            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: titleColor }}>{course.metrics?.popularityScore || course.enrollmentCount || 0}</div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+                          <MotionButton
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleOpenDetails(course)}
+                            style={{ borderRadius: 12, border: `1px solid ${borderColor}`, background: surfaceBg, color: titleColor, padding: "8px 12px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                          >
+                            <FiEye size={12} />
+                            View
+                          </MotionButton>
+                          {canEditCourses ? (
+                            <MotionButton
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleOpenEdit(course)}
+                              style={{ borderRadius: 12, border: `1px solid ${borderColor}`, background: surfaceBg, color: "#1D4ED8", padding: "8px 12px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                            >
+                              <FiEdit3 size={12} />
+                              Edit
+                            </MotionButton>
+                          ) : null}
+                          {canDeleteCourses ? (
+                            <MotionButton
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={async () => {
+                                if (confirm("Delete this course?")) {
+                                  await courseStore.deleteCourse(course._id);
+                                }
+                              }}
+                              style={{ borderRadius: 12, border: `1px solid ${borderColor}`, background: surfaceBg, color: "#DC2626", padding: "8px 12px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                            >
+                              <FiTrash2 size={12} />
+                              Delete
+                            </MotionButton>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    borderRadius: 24,
+                    border: `1px solid ${borderColor}`,
+                    background: surfaceBg,
+                    overflow: "hidden",
+                    boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+                  }}
+                >
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1160 }}>
                     <thead>
                       <tr style={{ background: tableHeaderBg, borderBottom: `1px solid ${borderColor}` }}>
                         {["Course","ID", "Visibility", "Type", "Status", "Assessment", "Price", "Popularity", "Actions"].map((label) => (
@@ -933,9 +1055,10 @@ function CoursePage() {
                         );
                       })}
                     </tbody>
-                  </table>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap", alignItems: "center", marginTop: 18 }}>
                 <p style={{ margin: 0, color: textColor, fontSize: 13 }}>
@@ -944,7 +1067,7 @@ function CoursePage() {
                   <strong style={{ color: titleColor }}>{totalCourses}</strong> filtered courses
                 </p>
 
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", width: isCompact ? "100%" : "auto", justifyContent: isCompact ? "space-between" : "flex-start" }}>
                   <button
                     type="button"
                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
@@ -954,7 +1077,7 @@ function CoursePage() {
                       border: `1px solid ${borderColor}`,
                       background: surfaceBg,
                       color: currentPage === 1 ? mutedTextColor : titleColor,
-                      padding: "9px 12px",
+                      padding: isCompact ? "9px 10px" : "9px 12px",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 6,
@@ -975,8 +1098,8 @@ function CoursePage() {
                           type="button"
                           onClick={() => setCurrentPage(pageNumber)}
                           style={{
-                            minWidth: 40,
-                            padding: "9px 12px",
+                            minWidth: 36,
+                            padding: isCompact ? "8px 10px" : "9px 12px",
                             borderRadius: 12,
                             border: currentPage === pageNumber ? "none" : `1px solid ${borderColor}`,
                             background: currentPage === pageNumber ? "#2563EB" : surfaceBg,
@@ -999,7 +1122,7 @@ function CoursePage() {
                       border: `1px solid ${borderColor}`,
                       background: surfaceBg,
                       color: currentPage === totalPages ? mutedTextColor : titleColor,
-                      padding: "9px 12px",
+                      padding: isCompact ? "9px 10px" : "9px 12px",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 6,

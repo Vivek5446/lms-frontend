@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
+  Icon,
   InputGroup,
   Input,
   InputLeftElement,
@@ -9,6 +10,7 @@ import {
   ListItem,
   Flex,
   Text,
+  useBreakpointValue,
   useColorModeValue,
 } from "@chakra-ui/react";
 import { FaSearch } from "react-icons/fa";
@@ -19,6 +21,7 @@ import stores from "@/app/store/stores";
 import { hasPermission } from "@/app/config/utils/permissions";
 
 const SearchBar = () => {
+  const isCompact = useBreakpointValue({ base: true, md: false }) ?? false;
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -76,21 +79,23 @@ const SearchBar = () => {
 
 
   return (
-    <Box position="relative" width="300px" ref={dropdownRef}>
+    <Box position="relative" width="100%" maxW={{ base: "full", md: "320px", xl: "360px" }} ref={dropdownRef}>
       <InputGroup>
-        <InputLeftElement>
-          <FaSearch color={useColorModeValue("brand.500", "brand.200")} />
+        <InputLeftElement h={{ base: "40px", md: "44px" }}>
+          <Icon as={FaSearch} color={useColorModeValue("brand.500", "brand.200")} boxSize={isCompact ? 3.5 : 4} />
         </InputLeftElement>
         <Input
-          placeholder="Start typing to search..."
+          placeholder={isCompact ? "Search dashboard" : "Start typing to search..."}
           bg={useColorModeValue("white", "darkBrand.50")}
           border="1px solid"
           borderColor={useColorModeValue("brand.200", "darkBrand.200")}
           _focus={{ borderColor: "brand.500", boxShadow: "0 0 4px brand.500" }}
           _hover={{ borderColor: "brand.300" }}
           borderRadius="full"
-          px={4}
-          py={2}
+          h={{ base: "40px", md: "44px" }}
+          pl={{ base: 10, md: 11 }}
+          pr={4}
+          fontSize={{ base: "sm", md: "sm" }}
           value={searchQuery}
           onChange={(e) => handleSearchDebounced(e.target.value)}
         />
@@ -115,7 +120,7 @@ const SearchBar = () => {
             <ListItem
               key={result.url}
               px={4}
-              py={3}
+              py={{ base: 2.5, md: 3 }}
               _hover={{
                 bg: useColorModeValue("brand.50", "darkBrand.200"),
                 cursor: "pointer",
@@ -133,10 +138,10 @@ const SearchBar = () => {
                 }}
               >
                 <Flex align="center" gap={4}>
-                  <Box fontSize="24px" color="brand.500">
+                  <Box fontSize={{ base: "20px", md: "24px" }} color="brand.500">
                     {result.icon}
                   </Box>
-                  <Text fontWeight="semibold" fontSize="md" color={useColorModeValue("gray.700", "white")}>
+                  <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }} color={useColorModeValue("gray.700", "white")}>
                     {highlightText(result.name, searchQuery)}
                   </Text>
                 </Flex>

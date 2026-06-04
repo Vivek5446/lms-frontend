@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { observer } from "mobx-react-lite";
+import { useBreakpointValue } from "@chakra-ui/react";
 import { CourseStepper } from "./CourseStepper";
 import Step1BasicInfo from "./steps/Step1BasicInfo";
 import Step2Structure from "./steps/Step2Structure";
@@ -25,6 +26,7 @@ interface CourseListProps {
 }
 
 function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCancel }: CourseListProps) {
+  const isCompact = useBreakpointValue({ base: true, md: false }) ?? false;
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [stepProgress, setStepProgress] = useState<Record<number, number>>({});
@@ -305,18 +307,20 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
       >
         <div
           style={{
-            padding: "14px 24px",
+            padding: isCompact ? "12px 14px" : "14px 24px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={() => (onCancel ? onCancel() : router.push("/dashboard"))}
               style={{
-                width: 36,
-                height: 36,
+                width: isCompact ? 34 : 36,
+                height: isCompact ? 34 : 36,
                 borderRadius: 10,
                 border: "1px solid #E5E7EB",
                 background: "#FFFFFF",
@@ -338,7 +342,7 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
               <h1
                 style={{
                   margin: 0,
-                  fontSize: 17,
+                  fontSize: isCompact ? 16 : 17,
                   fontWeight: 700,
                   color: "#111827",
                   lineHeight: 1.2,
@@ -352,8 +356,8 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 13, color: "#64748B" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, width: isCompact ? "100%" : "auto" }}>
+            <span style={{ fontSize: 13, color: "#64748B", display: isCompact ? "none" : "inline" }}>
               {currentStep === TOTAL_STEPS - 1
                 ? "Choose draft or publish once and submit from the final review."
                 : "Complete the course setup to unlock the final submit action."}
@@ -364,7 +368,7 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
 
       <div
         style={{
-          padding: "32px 24px",
+          padding: isCompact ? "20px 12px 28px" : "32px 24px",
           boxSizing: "border-box",
         }}
       >
@@ -403,9 +407,11 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
+              alignItems: isCompact ? "stretch" : "center",
+              flexDirection: isCompact ? "column-reverse" : "row",
               marginTop: 32,
               paddingTop: 24,
+              gap: 12,
               borderTop: "1px solid #E5E7EB",
             }}
           >
@@ -416,7 +422,7 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "10px 20px",
+                padding: isCompact ? "10px 16px" : "10px 20px",
                 borderRadius: 10,
                 border: "1.5px solid #D1D5DB",
                 background: "#FFFFFF",
@@ -425,6 +431,8 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
                 color: currentStep === 0 || courseStore.isSubmitting ? "#D1D5DB" : "#374151",
                 cursor: currentStep === 0 || courseStore.isSubmitting ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
+                width: isCompact ? "100%" : "auto",
+                justifyContent: "center",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -440,7 +448,7 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "10px 24px",
+                padding: isCompact ? "10px 18px" : "10px 24px",
                 borderRadius: 10,
                 border: "none",
                 background: "#4F46E5",
@@ -450,6 +458,8 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
                 cursor: courseStore.isSubmitting ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
                 opacity: courseStore.isSubmitting ? 0.6 : 1,
+                width: isCompact ? "100%" : "auto",
+                justifyContent: "center",
               }}
               onMouseEnter={(event) => {
                 if (!courseStore.isSubmitting) {

@@ -1,11 +1,11 @@
 "use client";
 
+import { isLearnerRole } from "@/app/config/utils/roleAccess";
+import BatchesWorkspace from "@/app/dashboard/batches/components/BatchesWorkspace";
+import stores from "@/app/store/stores";
 import { Box, Button, Heading, Stack, Text } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import Link from "next/link";
-import BatchesWorkspace from "@/app/dashboard/batches/components/BatchesWorkspace";
-import stores from "@/app/store/stores";
-import { isLearnerRole } from "@/app/config/utils/roleAccess";
 
 const MainBatchesPage = observer(() => {
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();

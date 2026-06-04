@@ -161,7 +161,7 @@ const OverviewTab = observer((props: OverviewTabProps) => {
   const maxAssignments = props.courseAssignmentStats[0]?.assignmentCount || 1;
 
   return (
-    <VStack spacing={6} align="stretch">
+    <VStack spacing={{ base: 4, md: 6 }} align="stretch">
       {/* Compact Header */}
       <MotionFlex
         initial={{ opacity: 0, y: -20 }}
@@ -170,32 +170,32 @@ const OverviewTab = observer((props: OverviewTabProps) => {
         justify="space-between"
         align="center"
         wrap="wrap"
-        gap={4}
+        gap={{ base: 3, md: 4 }}
       >
         <VStack align="start" spacing={1}>
           <HStack spacing={2}>
-            <Icon as={Globe} boxSize={6} color="purple.600" />
-            <Text fontSize="2xl" fontWeight="bold">Dashboard Overview</Text>
+            <Icon as={Globe} boxSize={{ base: 5, md: 6 }} color="purple.600" />
+            <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">Dashboard Overview</Text>
           </HStack>
-          <Text fontSize="sm" color={textSecondary}>
+          <Text fontSize="sm" color={textSecondary} display={{ base: "none", sm: "block" }}>
             System Status: <Badge colorScheme="green" size="sm" ml={2}>● Online</Badge>
           </Text>
         </VStack>
         
-        <HStack spacing={3}>
-          <Box bg={headerBg} p={3} rounded="lg" textAlign="center">
+        <HStack spacing={3} w={{ base: "full", md: "auto" }}>
+          <Box bg={headerBg} p={3} rounded="lg" textAlign="center" flex="1">
             <Text fontSize="xs" color="gray.500" fontWeight="medium">ACTIVE BATCHES</Text>
-            <Text fontSize="xl" fontWeight="bold">{props.batchStatusStats.active}</Text>
+            <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold">{props.batchStatusStats.active}</Text>
           </Box>
-          <Box bg={headerBg} p={3} rounded="lg" textAlign="center">
+          <Box bg={headerBg} p={3} rounded="lg" textAlign="center" flex="1">
             <Text fontSize="xs" color="gray.500" fontWeight="medium">UPTIME</Text>
-            <Text fontSize="xl" fontWeight="bold">99.98%</Text>
+            <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold">99.98%</Text>
           </Box>
         </HStack>
       </MotionFlex>
 
       {/* Primary KPIs */}
-      <SimpleGrid columns={{ base: 2, md: 3, lg: 6 }} spacing={4}>
+      <SimpleGrid columns={{ base: 2, md: 3, lg: 6 }} spacing={{ base: 3, md: 4 }}>
         <StatCard
           label="Companies"
           value={props.stats.totalCompanies}
@@ -247,7 +247,7 @@ const OverviewTab = observer((props: OverviewTabProps) => {
       </SimpleGrid>
 
       {/* Secondary KPIs */}
-      <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+      <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
         <Box
           bg={sectionBg}
           p={4}
@@ -322,7 +322,7 @@ const OverviewTab = observer((props: OverviewTabProps) => {
       </SimpleGrid>
 
       {/* Key Metrics Grid */}
-      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={5}>
+      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 4, md: 5 }}>
         <MotionBox
           whileHover={{ y: -2 }}
           bg={sectionBg}
@@ -404,7 +404,7 @@ const OverviewTab = observer((props: OverviewTabProps) => {
       </SimpleGrid>
 
       {/* Charts Section */}
-      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={5}>
+      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={{ base: 4, md: 5 }}>
         {/* Course Analytics */}
         <MotionBox
           whileHover={{ y: -2 }}
@@ -541,7 +541,7 @@ const OverviewTab = observer((props: OverviewTabProps) => {
       </SimpleGrid>
 
       {/* Activity & Top Course */}
-      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={5}>
+      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={{ base: 4, md: 5 }}>
         {/* Activity Feed */}
         <MotionBox
           whileHover={{ y: -2 }}
@@ -678,7 +678,7 @@ const OverviewTab = observer((props: OverviewTabProps) => {
           </Badge>
         </Flex>
 
-        <TableContainer>
+        <TableContainer display={{ base: "none", md: "block" }}>
           <Table variant="simple" size="sm">
             <Thead>
               <Tr bg={headerBg}>
@@ -749,6 +749,50 @@ const OverviewTab = observer((props: OverviewTabProps) => {
             </Tbody>
           </Table>
         </TableContainer>
+        <VStack display={{ base: "flex", md: "none" }} spacing={3} align="stretch">
+          {props.isLoading ? (
+            <Flex justify="center" py={6}>
+              <Spinner size="sm" />
+            </Flex>
+          ) : stores.batchStore.batches?.length === 0 ? (
+            <Text fontSize="xs" color={textSecondary} textAlign="center" py={4}>No batches yet</Text>
+          ) : (
+            stores.batchStore.batches.slice(0, 5).map((batch: any) => (
+              <Box key={batch._id} p={3} bg={headerBg} rounded="lg" borderWidth="1px" borderColor={borderColor}>
+                <HStack justify="space-between" align="start" mb={2}>
+                  <Text fontWeight="semibold" fontSize="sm" noOfLines={2}>{batch.name}</Text>
+                  <Badge
+                    colorScheme={
+                      batch.status === 'active' ? 'green' :
+                      batch.status === 'completed' ? 'blue' :
+                      batch.status === 'expired' ? 'red' : 'yellow'
+                    }
+                    variant="subtle"
+                    fontSize="0.65rem"
+                  >
+                    {batch.status || "upcoming"}
+                  </Badge>
+                </HStack>
+                <SimpleGrid columns={2} spacing={2}>
+                  <Box>
+                    <Text fontSize="10px" color={textSecondary} textTransform="uppercase">Company</Text>
+                    <Text fontSize="xs" fontWeight="medium" noOfLines={1}>{batch.company?.company_name || "N/A"}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontSize="10px" color={textSecondary} textTransform="uppercase">Users</Text>
+                    <Text fontSize="xs" fontWeight="medium">{batch.userCount || 0}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontSize="10px" color={textSecondary} textTransform="uppercase">Start</Text>
+                    <Text fontSize="xs" fontWeight="medium">
+                      {batch.startDate ? new Date(batch.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
+                    </Text>
+                  </Box>
+                </SimpleGrid>
+              </Box>
+            ))
+          )}
+        </VStack>
       </MotionBox>
     </VStack>
   );

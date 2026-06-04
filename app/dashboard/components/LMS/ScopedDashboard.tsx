@@ -61,18 +61,18 @@ function StatCard({
       bg={bg}
       borderWidth="1px"
       borderColor={borderColor}
-      borderRadius="2xl"
-      p={5}
+      borderRadius="xl"
+      p={{ base: 4, md: 5 }}
       boxShadow="sm"
     >
       <Stat>
-        <StatLabel color="gray.500" fontSize="sm">
+        <StatLabel color="gray.500" fontSize={{ base: "xs", md: "sm" }}>
           {label}
         </StatLabel>
-        <StatNumber fontSize="3xl" color={accent}>
+        <StatNumber fontSize={{ base: "2xl", md: "3xl" }} color={accent}>
           {typeof value === "number" ? value.toLocaleString() : value}
         </StatNumber>
-        <Text mt={2} fontSize="sm" color="gray.500">
+        <Text mt={2} fontSize="sm" color="gray.500" display={{ base: "none", md: "block" }}>
           {helper}
         </Text>
       </Stat>
@@ -99,22 +99,22 @@ function MiniChart({
       bg={bg}
       borderWidth="1px"
       borderColor={borderColor}
-      borderRadius="2xl"
-      p={5}
+      borderRadius="xl"
+      p={{ base: 4, md: 5 }}
       boxShadow="sm"
     >
-      <Heading size="sm" mb={4}>
+      <Heading size="sm" mb={{ base: 3, md: 4 }}>
         {title}
       </Heading>
-      <Stack spacing={4}>
+      <Stack spacing={{ base: 3, md: 4 }}>
         {entries.length ? (
           entries.map((entry) => (
             <Box key={`${title}-${entry.label}`}>
               <Flex justify="space-between" align="center" mb={1}>
-                <Text fontSize="sm" fontWeight="medium">
+                <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
                   {entry.label}
                 </Text>
-                <Text fontSize="sm" color="gray.500">
+                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.500">
                   {entry.value.toLocaleString()}
                 </Text>
               </Flex>
@@ -161,28 +161,28 @@ function ActivityList({
       bg={bg}
       borderWidth="1px"
       borderColor={borderColor}
-      borderRadius="2xl"
-      p={5}
+      borderRadius="xl"
+      p={{ base: 4, md: 5 }}
       boxShadow="sm"
     >
-      <HStack spacing={3} mb={4}>
+      <HStack spacing={3} mb={{ base: 3, md: 4 }}>
         <Box p={2} borderRadius="xl" bg="blue.50" color="blue.500">
           {icon}
         </Box>
         <Heading size="sm">{title}</Heading>
       </HStack>
-      <Stack spacing={4}>
+      <Stack spacing={{ base: 3, md: 4 }}>
         {items.length ? (
           items.map((item, index) => (
             <Box key={`${title}-${index}`} borderBottomWidth={index === items.length - 1 ? "0" : "1px"} borderColor={borderColor} pb={index === items.length - 1 ? 0 : 4}>
-              <Text fontWeight="semibold">{item.title}</Text>
+              <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }}>{item.title}</Text>
               {item.subtitle ? (
-                <Text fontSize="sm" color="gray.500" mt={1}>
+                <Text fontSize="sm" color="gray.500" mt={1} noOfLines={1}>
                   {item.subtitle}
                 </Text>
               ) : null}
               {item.meta ? (
-                <Text fontSize="xs" color="gray.400" mt={2}>
+                <Text fontSize="xs" color="gray.400" mt={2} display={{ base: "none", md: "block" }}>
                   {item.meta}
                 </Text>
               ) : null}
@@ -260,29 +260,29 @@ const ScopedDashboard = observer(() => {
   }
 
   return (
-    <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
-      <Stack spacing={6}>
+    <Box minH="100vh" bg={pageBg} p={{ base: 3, md: 6 }}>
+      <Stack spacing={{ base: 4, md: 6 }}>
         <Box
           bg={heroBg}
           borderWidth="1px"
           borderColor={heroBorder}
-          borderRadius="3xl"
-          p={{ base: 6, md: 8 }}
+          borderRadius={{ base: "2xl", md: "3xl" }}
+          p={{ base: 4, md: 8 }}
           boxShadow="sm"
         >
-          <Flex justify="space-between" gap={6} wrap="wrap" align="flex-start">
+          <Flex justify="space-between" gap={{ base: 4, md: 6 }} wrap="wrap" align="flex-start">
             <Box maxW="760px">
-              <Badge colorScheme={role === "superadmin" ? "purple" : role === "admin" ? "blue" : "teal"} px={3} py={1} borderRadius="full">
+              <Badge colorScheme={role === "superadmin" ? "purple" : role === "admin" ? "blue" : "teal"} px={3} py={1} borderRadius="full" fontSize="0.68rem">
                 {roleCopy.badge}
               </Badge>
-              <Heading mt={4} size="lg">
+              <Heading mt={3} size={{ base: "md", md: "lg" }}>
                 {roleCopy.title}
               </Heading>
-              <Text mt={3} color="gray.500" lineHeight="1.7">
+              <Text mt={2} color="gray.500" lineHeight="1.6" display={{ base: "none", sm: "block" }}>
                 {roleCopy.subtitle}
               </Text>
             </Box>
-            <VStack align="stretch" spacing={3} minW={{ base: "full", md: "260px" }}>
+            <VStack align="stretch" spacing={3} minW={{ base: "full", md: "260px" }} display={{ base: "none", md: "flex" }}>
               {scope.companyName ? (
                 <HStack spacing={3}>
                   <Box p={2} borderRadius="xl" bg="blue.50" color="blue.500">
@@ -313,7 +313,7 @@ const ScopedDashboard = observer(() => {
           </Flex>
         </Box>
 
-        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" }} gap={4}>
+        <Grid templateColumns={{ base: "repeat(2, minmax(0, 1fr))", md: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" }} gap={4}>
           {role === "superadmin" ? (
             <StatCard
               label="Companies"

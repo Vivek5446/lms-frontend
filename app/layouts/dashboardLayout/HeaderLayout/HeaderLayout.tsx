@@ -1,18 +1,17 @@
 "use client"; // Add this for client-side component in Next.js
 
-import { Flex, useColorMode } from "@chakra-ui/react";
-import { useMediaQuery } from "@chakra-ui/react";
+import { Flex, useBreakpointValue, useColorMode } from "@chakra-ui/react";
 import HeaderNavbar from "./component/HeaderNavbar/HeaderNavbar";
 import HeaderLogo from "./component/Logo/HeaderLogo";
 import HeaderCompanySelector from "./component/CompanySelector/HeaderCompanySelector";
 // import HeaderWorkflowSelector from "./component/WorkflowSelector/HeaderWorkflowSelector";
 import { observer } from "mobx-react-lite";
-import { headerHeight, headerPadding } from "../../../component/config/utils/variable";
+import { headerHeight } from "../../../component/config/utils/variable";
 
 
 const HeaderLayout = observer(() => {
-  const [isLargerThan1020] = useMediaQuery("(min-width: 1020px)");
   const { colorMode } = useColorMode();
+  const isCompactLayout = useBreakpointValue({ base: true, xl: false }) ?? false;
 
   const isDark = colorMode === "dark";
 
@@ -21,8 +20,10 @@ const HeaderLayout = observer(() => {
       direction="row"
       alignItems="center"
       justifyContent="space-between"
-      height={headerHeight}
-      padding={headerPadding}
+      minH={{ base: "64px", md: "68px", xl: headerHeight }}
+      px={{ base: 3, md: 4, xl: 6 }}
+      py={{ base: 2, md: 2.5 }}
+      gap={{ base: 3, md: 4 }}
       bg={isDark 
         ? "linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1e1e2e 100%)" 
         : "linear-gradient(135deg, #ffffff 0%, #f8f9ff 30%, #f0f2ff 80%)"
@@ -35,9 +36,9 @@ const HeaderLayout = observer(() => {
       color={isDark ? "#e2e8f0" : "#1e2850"}
       transition="all 0.3s ease"
     >
-      <Flex width={isLargerThan1020 ? "85%" : "95%"} align="center">
+      <Flex flex="1" minW={0} align="center" gap={{ base: 2, md: 3 }}>
         <HeaderLogo />
-        <HeaderCompanySelector />
+        {!isCompactLayout ? <HeaderCompanySelector /> : null}
         {/* <HeaderWorkflowSelector /> */}
       </Flex>
       <HeaderNavbar />
