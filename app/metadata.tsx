@@ -11,7 +11,7 @@ interface MetadataMap {
 export const METADATA_MAP: MetadataMap = {
   '/': {
     title: 'LMS',
-    description: 'Vendor Workflow'
+    description: 'LMS'
   },
   '/therapist': {
     title: 'Choose The Right Therapist For You | Dental Health',

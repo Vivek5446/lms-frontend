@@ -1,19 +1,29 @@
-import React from "react";
 import {
-  Box,
-  Image,
-  Text,
-  Progress,
-  HStack,
-  VStack,
   AspectRatio,
-  Icon,
+  Box,
+  Button,
   Circle,
-  useColorModeValue,
+  CircularProgress,
+  CircularProgressLabel,
   Flex,
+  HStack,
+  Icon,
+  Image,
+  Progress,
+  Text,
+  VStack,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { FiBookOpen, FiClock, FiPlayCircle, FiStar } from "react-icons/fi";
+import React from "react";
+import {
+  FiArrowRight,
+  FiBookOpen,
+  FiClock,
+  FiLayers,
+  FiPlayCircle,
+  FiStar,
+} from "react-icons/fi";
 
 const MotionBox = motion(Box);
 
@@ -25,7 +35,7 @@ interface CourseCardProps {
   formatDate: (date: string) => string;
 }
 
-function truncateText(value?: string, limit = 60) {
+function truncateText(value?: string, limit = 70) {
   const text = String(value || "").trim();
   if (!text) return "No description available yet.";
   return text.length > limit ? `${text.slice(0, limit).trim()}...` : text;
@@ -38,20 +48,22 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
   getStatusColor,
   formatDate,
 }) => {
-  const cardBg = useColorModeValue("white", "#1c1c2e");
+  const cardBg = useColorModeValue("white", "gray.800");
   const subduedText = useColorModeValue("gray.500", "gray.400");
   const titleColor = useColorModeValue("gray.900", "white");
   const dividerColor = useColorModeValue("gray.200", "whiteAlpha.200");
   const metricsBg = useColorModeValue("gray.50", "whiteAlpha.100");
   const metricsValueColor = useColorModeValue("gray.800", "white");
-  const metricsLabelColor = useColorModeValue("gray.400", "gray.500");
+  const metricsLabelColor = useColorModeValue("gray.500", "gray.500");
+  const iconBg = useColorModeValue("blue.50", "whiteAlpha.100");
+  const progressTrack = useColorModeValue("gray.100", "whiteAlpha.100");
   const shadowColor = useColorModeValue(
-    "0 2px 16px rgba(0,0,0,0.07)",
-    "0 2px 20px rgba(0,0,0,0.5)",
+    "0 12px 30px rgba(15, 23, 42, 0.07)",
+    "0 12px 34px rgba(0, 0, 0, 0.35)",
   );
   const hoverShadow = useColorModeValue(
-    "0 8px 32px rgba(0,0,0,0.12)",
-    "0 8px 32px rgba(0,0,0,0.7)",
+    "0 18px 44px rgba(37, 99, 235, 0.16)",
+    "0 18px 44px rgba(0, 0, 0, 0.55)",
   );
 
   const statusLabel = course.isExpired
@@ -59,14 +71,14 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
     : course.visibilityStatus === "expiring_soon"
       ? "Expiring Soon"
       : "Active";
-
   const statusColorKey = getStatusColor(course.visibilityStatus);
   const dotColor =
     statusColorKey === "green"
       ? "#22c55e"
-      : statusColorKey === "yellow"
-        ? "#eab308"
+      : statusColorKey === "yellow" || statusColorKey === "orange"
+        ? "#f59e0b"
         : "#ef4444";
+  const progress = Math.round(Number(course.progress || 0));
   const assessmentOutcome = String(course.assessmentSummary?.outcome || "").trim().toLowerCase();
   const assessmentLabel =
     assessmentOutcome === "passed"
@@ -89,22 +101,144 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
         ? "red.600"
         : "orange.600";
 
+  const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleOpenCourse(course.courseId);
+    }
+  };
+
   return (
     <MotionBox
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.06, ease: "easeOut" }}
-      whileHover={{ y: -5, transition: { duration: 0.2 } }}
-      role="group"
+      transition={{ duration: 0.34, delay: index * 0.045, ease: "easeOut" }}
+      whileHover={{ y: -4, transition: { duration: 0.18 } }}
+      role="button"
+      tabIndex={0}
+      data-group
+      aria-label={`Open ${course.title}`}
       bg={cardBg}
-      borderRadius="24px"
+      borderRadius="2xl"
       overflow="hidden"
       boxShadow={shadowColor}
-      _hover={{ boxShadow: hoverShadow, cursor: "pointer" }}
+      borderWidth="1px"
+      borderColor={dividerColor}
+      _hover={{ boxShadow: hoverShadow, borderColor: "blue.200", cursor: "pointer" }}
       onClick={() => handleOpenCourse(course.courseId)}
+      onKeyDown={handleCardKeyDown}
       w="full"
     >
-      {/* ── Banner ── */}
+      <Flex display={{ base: "flex", md: "none" }} p={3} gap={3} align="stretch">
+        <Box
+          position="relative"
+          w="94px"
+          h="106px"
+          flexShrink={0}
+          borderRadius="xl"
+          overflow="hidden"
+          bgGradient="linear(to-br, blue.700, teal.400)"
+        >
+          {course.thumbnailUrl ? (
+            <Image src={course.thumbnailUrl} alt={course.title} w="full" h="full" objectFit="cover" />
+          ) : null}
+          <Box position="absolute" inset={0} bgGradient="linear(to-t, blackAlpha.600, transparent)" />
+          <HStack
+            position="absolute"
+            left={2}
+            bottom={2}
+            spacing={1}
+            bg="blackAlpha.500"
+            color="white"
+            px={2}
+            py={1}
+            borderRadius="full"
+          >
+            <Circle size="6px" bg={dotColor} />
+            <Text fontSize="10px" fontWeight="800" noOfLines={1}>
+              {statusLabel}
+            </Text>
+          </HStack>
+        </Box>
+
+        <Flex direction="column" minW={0} flex="1" justify="space-between" gap={2}>
+          <Box minW={0}>
+            <HStack justify="space-between" align="start" gap={2}>
+              <Text fontSize="sm" fontWeight="800" lineHeight="1.25" color={titleColor} noOfLines={2}>
+                {course.title}
+              </Text>
+              <Text fontSize="xs" fontWeight="900" color="blue.500" flexShrink={0}>
+                {progress}%
+              </Text>
+            </HStack>
+
+            {assessmentLabel ? (
+              <Box
+                mt={2}
+                px={2}
+                py={1}
+                borderRadius="full"
+                bg={assessmentBg}
+                color={assessmentText}
+                fontSize="10px"
+                fontWeight="800"
+                display="inline-flex"
+                alignItems="center"
+                gap={1}
+                maxW="100%"
+              >
+                <Icon as={FiStar} boxSize={3} />
+                <Text noOfLines={1}>{assessmentLabel}</Text>
+              </Box>
+            ) : null}
+          </Box>
+
+          <Box>
+            <Progress
+              value={progress}
+              size="xs"
+              borderRadius="full"
+              bg={progressTrack}
+              sx={{
+                "& > div": {
+                  background:
+                    "linear-gradient(90deg, var(--chakra-colors-blue-600) 0%, var(--chakra-colors-teal-300) 100%)",
+                  borderRadius: "full",
+                },
+              }}
+            />
+            <HStack mt={2} spacing={2} color={subduedText} fontSize="11px" fontWeight="700">
+              <HStack spacing={1} minW={0}>
+                <Icon as={FiLayers} boxSize={3} color="blue.400" />
+                <Text noOfLines={1}>{course.curriculum?.totalModules ?? 0} modules</Text>
+              </HStack>
+              <Text color={dividerColor}>|</Text>
+              <HStack spacing={1} minW={0}>
+                <Icon as={FiClock} boxSize={3} color="orange.400" />
+                <Text noOfLines={1}>{formatDate(course.validTill)}</Text>
+              </HStack>
+            </HStack>
+          </Box>
+
+          <Button
+            alignSelf="flex-start"
+            size="sm"
+            h="34px"
+            px={4}
+            colorScheme="blue"
+            borderRadius="lg"
+            rightIcon={<FiArrowRight />}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleOpenCourse(course.courseId);
+            }}
+          >
+            {progress > 0 ? "Continue" : "Start"}
+          </Button>
+        </Flex>
+      </Flex>
+
+      <Box display={{ base: "none", md: "block" }}>
       <Box position="relative" overflow="hidden">
         <AspectRatio ratio={16 / 9}>
           {course.thumbnailUrl ? (
@@ -113,86 +247,75 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
               alt={course.title}
               objectFit="cover"
               transition="transform 0.5s ease"
-              _groupHover={{ transform: "scale(1.06)" }}
+              _groupHover={{ transform: "scale(1.05)" }}
             />
           ) : (
-            <Box
-              bgGradient="linear(to-br, blue.700, blue.400)"
-              w="full"
-              h="full"
-            />
+            <Box bgGradient="linear(to-br, blue.700, teal.400)" w="full" h="full" />
           )}
         </AspectRatio>
 
-        {/* Scrim */}
         <Box
           position="absolute"
-          bottom={0}
-          w="full"
-          h="60%"
-          bgGradient="linear(to-t, blackAlpha.600, transparent)"
+          inset={0}
+          bgGradient="linear(to-t, blackAlpha.700, transparent 58%)"
           pointerEvents="none"
         />
 
-        {/* Status pill */}
         <HStack
           position="absolute"
-          bottom="10px"
+          top="10px"
           right="12px"
-          bg="rgba(0,0,0,0.40)"
+          bg="rgba(0, 0, 0, 0.42)"
           backdropFilter="blur(12px)"
-          border="1px solid rgba(255,255,255,0.18)"
+          border="1px solid rgba(255, 255, 255, 0.18)"
           px={3}
           py={1}
           borderRadius="full"
-          spacing={1.5}
-          flexShrink={0}
+          spacing={2}
         >
-          <Circle size="7px" flexShrink={0} bg={dotColor} />
-          <Text
-            fontSize="11px"
-            fontWeight="700"
-            color="white"
-            letterSpacing="0.03em"
-            whiteSpace="nowrap"
-          >
+          <Circle size="7px" bg={dotColor} />
+          <Text fontSize="11px" fontWeight="800" color="white" whiteSpace="nowrap">
             {statusLabel}
           </Text>
         </HStack>
+
+        <CircularProgress
+          position="absolute"
+          bottom="10px"
+          left="12px"
+          value={progress}
+          size="54px"
+          thickness="9px"
+          color="blue.300"
+          trackColor="whiteAlpha.500"
+        >
+          <CircularProgressLabel color="white" fontSize="xs" fontWeight="800">
+            {progress}%
+          </CircularProgressLabel>
+        </CircularProgress>
       </Box>
 
-      {/* ── Body ── */}
-      <Box px={5} pb={5} pt={0}>
-        {/* Avatar overlapping banner */}
-        <Box mt="-22px" mb={3} zIndex={2} position="relative">
-          <Circle
-            size="50px"
-            border="3px solid"
-            borderColor={cardBg}
-            bg={useColorModeValue("blue.50", "blue.900")}
-            color="blue.400"
-            boxShadow="0 3px 10px rgba(0,0,0,0.15)"
-          >
+      <Box px={{ base: 4, md: 5 }} py={{ base: 4, md: 5 }}>
+        <Flex gap={3} align="start" mb={3}>
+          <Circle size={{ base: "40px", md: "46px" }} bg={iconBg} color="blue.500" flexShrink={0}>
             <Icon as={FiBookOpen} boxSize={5} />
           </Circle>
-        </Box>
 
-        {/* Title + description */}
-        <VStack align="start" spacing={0.5} mb={3}>
-          <Text
-            fontWeight="800"
-            fontSize="lg"
-            lineHeight="1.2"
-            color={titleColor}
-            noOfLines={1}
-            letterSpacing="-0.01em"
-          >
-            {course.title}
-          </Text>
-          <Text color={subduedText} fontSize="sm" noOfLines={1}>
-            {truncateText(course.description?.text, 55)}
-          </Text>
-        </VStack>
+          <Box minW={0} flex="1">
+            <Text
+              fontWeight="800"
+              fontSize={{ base: "md", md: "lg" }}
+              lineHeight="1.25"
+              color={titleColor}
+              noOfLines={2}
+            >
+              {course.title}
+            </Text>
+            <Text color={subduedText} fontSize="sm" noOfLines={1} display={{ base: "none", md: "block" }} mt={1}>
+              {truncateText(course.description?.text)}
+            </Text>
+          </Box>
+        </Flex>
 
         {assessmentLabel ? (
           <Box
@@ -203,83 +326,91 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
             bg={assessmentBg}
             color={assessmentText}
             fontSize="12px"
-            fontWeight="700"
+            fontWeight="800"
             display="inline-flex"
             alignItems="center"
             gap={2}
           >
-            <Icon as={FiStar} boxSize={3.5} />
+            <Icon as={FiStar} boxSize={4} />
             {assessmentLabel}
           </Box>
         ) : null}
 
-        {/* Progress */}
         <Box mb={4}>
-          <HStack justify="space-between" mb={1.5}>
-            <Text
-              fontSize="10px"
-              color={subduedText}
-              fontWeight="700"
-              textTransform="uppercase"
-              letterSpacing="0.08em"
-            >
+          <HStack justify="space-between" mb={2}>
+            <Text fontSize="10px" color={subduedText} fontWeight="800" textTransform="uppercase">
               Progress
             </Text>
-            <Text fontSize="10px" fontWeight="800" color="blue.400">
-              {course.progress}%
+            <Text fontSize="10px" fontWeight="800" color="blue.500">
+              {progress}%
             </Text>
           </HStack>
           <Progress
-            value={course.progress}
+            value={progress}
             size="xs"
             borderRadius="full"
-            bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+            bg={progressTrack}
             sx={{
               "& > div": {
-                background: "linear-gradient(90deg, var(--chakra-colors-blue-600) 0%, var(--chakra-colors-blue-300) 100%)",
+                background:
+                  "linear-gradient(90deg, var(--chakra-colors-blue-600) 0%, var(--chakra-colors-teal-300) 100%)",
                 borderRadius: "full",
               },
             }}
           />
         </Box>
 
-        {/* Metrics row */}
         <Box
           bg={metricsBg}
-          borderRadius="16px"
-          py={2.5}
-          px={0} // ← ensure this is 0
+          borderRadius="xl"
+          py={{ base: 2, md: 3 }}
           display="grid"
           gridTemplateColumns="1fr 1px 1fr 1px 1fr"
           alignItems="center"
         >
           <MetricItem
-            icon={FiStar}
-            iconColor="yellow.400"
+            icon={FiLayers}
+            iconColor="blue.400"
             label="Modules"
             value={course.curriculum?.totalModules ?? 0}
             valueColor={metricsValueColor}
             labelColor={metricsLabelColor}
           />
-          <Box h="26px" bg={dividerColor} />
+          <Box h="28px" bg={dividerColor} />
           <MetricItem
             icon={FiPlayCircle}
-            iconColor="blue.400"
+            iconColor="teal.400"
             label="Status"
-            value={course.status?.replace(/_/g, " ") ?? "—"}
+            value={course.status?.replace(/_/g, " ") ?? "-"}
             valueColor={metricsValueColor}
             labelColor={metricsLabelColor}
           />
-          <Box h="26px" bg={dividerColor} />
+          <Box h="28px" bg={dividerColor} />
           <MetricItem
             icon={FiClock}
-            iconColor="purple.400"
-            label="Valid Till"
+            iconColor="orange.400"
+            label="Valid till"
             value={formatDate(course.validTill)}
             valueColor={metricsValueColor}
             labelColor={metricsLabelColor}
           />
         </Box>
+
+        <Button
+          mt={4}
+          w="full"
+          h={{ base: "42px", md: "44px" }}
+          colorScheme="blue"
+          borderRadius="xl"
+          rightIcon={<FiArrowRight />}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleOpenCourse(course.courseId);
+          }}
+        >
+          {progress > 0 ? "Continue" : "Start"}
+        </Button>
+      </Box>
       </Box>
     </MotionBox>
   );
@@ -287,7 +418,6 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
 
 export default MYCourseBoardCard;
 
-/* ── Metric sub-component ── */
 const MetricItem = ({
   icon,
   label,
@@ -303,32 +433,14 @@ const MetricItem = ({
   valueColor: string;
   labelColor: string;
 }) => (
-  <VStack
-    spacing={0.5}
-    align="center"
-    justify="center"
-    w="100%"
-    minW={0}
-    px={0}
-  >
-    <HStack spacing={1} justify="center" w="100%" px={2}>
-      <Icon as={icon} color={iconColor} boxSize={3.5} flexShrink={0} />
-      <Text
-        fontSize="xs"
-        fontWeight="700"
-        color={valueColor}
-        textTransform="capitalize"
-        noOfLines={1}
-      >
+  <VStack spacing={1} align="center" justify="center" w="100%" minW={0} px={1}>
+    <HStack spacing={1} justify="center" w="100%" px={1}>
+      <Icon as={icon} color={iconColor} boxSize={4} flexShrink={0} />
+      <Text fontSize="xs" fontWeight="800" color={valueColor} textTransform="capitalize" noOfLines={1}>
         {value}
       </Text>
     </HStack>
-    <Text
-      fontSize="10px"
-      color={labelColor}
-      fontWeight="500"
-      textAlign="center"
-    >
+    <Text fontSize="10px" color={labelColor} fontWeight="600" textAlign="center" noOfLines={1}>
       {label}
     </Text>
   </VStack>

@@ -290,14 +290,15 @@ const BatchesWorkspace = observer(
               "linear-gradient(135deg, #f5f7fa 0%, #eef2f6 100%)",
               "linear-gradient(135deg, #1a202c 0%, #2d3748 100%)"
             )}
-        p={{lg: 2 }}
+        p={isLearner ? { base: 4, md: 6 } : { lg: 2 }}
+        overflowX="hidden"
       >
-        <Stack spacing={6} w="100%">
+        <Stack spacing={{ base: 4, md: 6 }} w="100%" maxW={isLearner ? "7xl" : "none"} mx={isLearner ? "auto" : 0}>
           {/* Hero Header Section - Full Width */}
           <Box
-            borderRadius="3xl"
-            px={{ base: 5, md: 8 }}
-            py={{ base: 6, md: 6 }}
+            borderRadius="2xl"
+            px={{ base: 4, md: 8 }}
+            py={{ base: 5, md: 6 }}
             bg={
               isLearner
                 ? "linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)"
@@ -329,7 +330,7 @@ const BatchesWorkspace = observer(
                       boxSize={{ base: 4, md: 6 }} 
                       color={isLearner ? "blue.300" : "blue.600"}
                     />
-                    <Heading size={'md'} fontWeight="bold">
+                    <Heading size={{ base: "sm", md: "md" }} fontWeight="bold">
                       {isLearner ? "My Learning Batches" : "Batch Management"}
                     </Heading>
                     {stats.totalBatches > 0 && (
@@ -349,6 +350,7 @@ const BatchesWorkspace = observer(
                     fontSize={{ base: "sm", md: "md" }}
                     color={isLearner ? "whiteAlpha.800" : "gray.600"}
                     maxW="3xl"
+                    display={{ base: isLearner ? "none" : "block", md: "block" }}
                   >
                     {isLearner
                       ? "Access your learning cohorts, track progress, and launch courses bundled in each batch"
@@ -509,7 +511,7 @@ const BatchesWorkspace = observer(
                   />
                 </Box>
                 
-                <HStack spacing={4}>
+                <HStack spacing={{ base: 2, md: 4 }} justify={{ base: "space-between", md: "flex-start" }}>
                   {/* View Toggle */}
                   <HStack spacing={2}>
                     <Tooltip label="Card View">

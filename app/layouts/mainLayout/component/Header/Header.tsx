@@ -12,6 +12,7 @@ import {
   Container,
   Flex,
   HStack,
+  Icon,
   IconButton,
   Image,
   Menu,
@@ -26,6 +27,7 @@ import { observer } from 'mobx-react-lite';
 import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { FiBookOpen, FiGrid, FiHome, FiMenu, FiUser } from 'react-icons/fi';
 import UserProfileDrawer from './UserProfileDrawer';
 
 interface NavLink {
@@ -70,6 +72,16 @@ const Header: React.FC = observer(() => {
     { href: '/contact-us', label: 'Contact Us' },
   ]), [isLearner, isManagerUser]);
 
+  const bottomNavLinks = useMemo(
+    () => [
+      { href: '/', label: 'Home', icon: FiHome },
+      { href: '/course', label: 'Courses', icon: FiBookOpen },
+      ...(isLearner ? [{ href: '/batches', label: 'Batches', icon: FiGrid }] : []),
+      ...(isLoggedIn ? [{ href: appHref, label: isLearner ? 'My' : 'App', icon: FiUser }] : [{ href: '/login', label: 'Login', icon: FiUser }]),
+    ],
+    [appHref, isLearner, isLoggedIn]
+  );
+
   const handleLogout = () => {
     stores.auth.logout();
     setMobileMenuOpen(false);
@@ -91,7 +103,7 @@ const Header: React.FC = observer(() => {
         borderBottom="1px solid"
         borderColor={scrolled ? (colorMode === 'light' ? 'gray.100' : 'gray.700') : 'transparent'}
         transition="all 0.35s ease"
-        py={scrolled ? 2 : 4}
+        py={{ base: 2, md: scrolled ? 2 : 4 }}
       >
         <Container maxW="1400px" px={{ base: 3, md: 6 }}>
           <Flex align="center" justify="space-between" gap={4}>
@@ -185,7 +197,7 @@ const Header: React.FC = observer(() => {
                     borderColor={colorMode === 'light' ? 'blue.600' : 'blue.400'}
                     color={colorMode === 'light' ? 'blue.600' : 'blue.400'}
                     px={6}
-                    py={2.5}
+                    py={2}
                     borderRadius="full"
                     fontWeight="bold"
                     fontSize="sm"
@@ -255,7 +267,7 @@ const Header: React.FC = observer(() => {
                   borderColor={colorMode === 'light' ? 'blue.600' : 'blue.400'}
                   color={colorMode === 'light' ? 'blue.600' : 'blue.400'}
                   px={7}
-                  py={2.5}
+                  py={2}
                   borderRadius="full"
                   fontWeight="bold"
                   fontSize="sm"
@@ -440,6 +452,74 @@ const Header: React.FC = observer(() => {
             </Stack>
           </Box>
         )}
+      </Box>
+
+      <Box
+        display={{ base: 'block', md: 'none' }}
+        position="fixed"
+        left="0"
+        right="0"
+        bottom="0"
+        zIndex="1000"
+        px={3}
+        pt={2}
+        pb="calc(8px + env(safe-area-inset-bottom))"
+        bg={colorMode === 'light' ? 'rgba(255,255,255,0.92)' : 'rgba(17,24,39,0.94)'}
+        borderTop="1px solid"
+        borderColor={colorMode === 'light' ? 'gray.200' : 'gray.700'}
+        backdropFilter="blur(18px)"
+      >
+        <HStack justify="space-between" maxW="520px" mx="auto" spacing={1}>
+          {bottomNavLinks.map((link) => {
+            const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+            return (
+              <ChakraLink
+                key={link.href}
+                as={NextLink}
+                href={link.href}
+                flex="1"
+                minH="54px"
+                borderRadius="xl"
+                display="flex"
+                flexDirection="column"
+                alignItems="center"
+                justifyContent="center"
+                gap={1}
+                color={isActive ? (colorMode === 'light' ? 'blue.600' : 'blue.300') : (colorMode === 'light' ? 'gray.500' : 'gray.400')}
+                bg={isActive ? (colorMode === 'light' ? 'blue.50' : 'whiteAlpha.100') : 'transparent'}
+                fontSize="11px"
+                fontWeight="700"
+                transition="all 0.2s ease"
+                onClick={() => setMobileMenuOpen(false)}
+                _hover={{ textDecoration: 'none', bg: colorMode === 'light' ? 'blue.50' : 'whiteAlpha.100', transform: 'translateY(-1px)' }}
+                _active={{ transform: 'scale(0.96)' }}
+              >
+                <Icon as={link.icon} boxSize={6} />
+                <Text lineHeight="1" noOfLines={1}>{link.label}</Text>
+              </ChakraLink>
+            );
+          })}
+          <Button
+            flex="1"
+            minH="54px"
+            borderRadius="xl"
+            variant="ghost"
+            display="flex"
+            flexDirection="column"
+            gap={1}
+            fontSize="11px"
+            fontWeight="700"
+            color={mobileMenuOpen ? (colorMode === 'light' ? 'blue.600' : 'blue.300') : (colorMode === 'light' ? 'gray.500' : 'gray.400')}
+            bg={mobileMenuOpen ? (colorMode === 'light' ? 'blue.50' : 'whiteAlpha.100') : 'transparent'}
+            transition="all 0.2s ease"
+            _hover={{ bg: colorMode === 'light' ? 'blue.50' : 'whiteAlpha.100', transform: 'translateY(-1px)' }}
+            _active={{ transform: 'scale(0.96)' }}
+            onClick={() => setMobileMenuOpen((open) => !open)}
+          >
+            <Icon as={FiMenu} boxSize={6} />
+            <Text lineHeight="1">More</Text>
+          </Button>
+        </HStack>
       </Box>
 
       <UserProfileDrawer isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />

@@ -20,6 +20,7 @@ import {
   Grid,
   Heading,
   HStack,
+  Icon,
   Image,
   SimpleGrid,
   Spinner,
@@ -32,6 +33,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { FiBookOpen, FiCheckCircle, FiClock, FiPlayCircle } from "react-icons/fi";
 import MYCourseBoardCard from "./MyCourseBoardCard";
 
 function formatDate(value?: string | null) {
@@ -92,7 +94,8 @@ const MyCoursesBoard = observer(
     const cardBg = useColorModeValue("white", "gray.800");
     const subduedText = useColorModeValue("gray.600", "gray.300");
     const borderColor = useColorModeValue("gray.200", "gray.700");
-    const metricBg = useColorModeValue("gray.50", "whiteAlpha.100");
+    const heroBg = useColorModeValue("white", "gray.800");
+    const panelBg = useColorModeValue("rgba(255,255,255,0.84)", "whiteAlpha.100");
 
     useEffect(() => {
       courseStore.fetchMyCourses().catch(() => undefined);
@@ -375,125 +378,87 @@ const MyCoursesBoard = observer(
     }
 
     return (
-      <Box minH="100vh" bg={pageBg}>
-        <Stack spacing={6}>
+      <Box minH="100vh" bg={pageBg} px={{ base: 3, md: 6 }} py={{ base: 3, md: 6 }} overflowX="hidden">
+        <Stack spacing={{ base: 3, md: 6 }} maxW="7xl" mx="auto">
           <Box
-            borderRadius="3xl"
+            borderRadius="2xl"
             overflow="hidden"
             position="relative"
-            bg="blue.50"
-            color="gray.800"
+            bg={heroBg}
+            borderWidth="1px"
+            borderColor={borderColor}
+            boxShadow={useColorModeValue("0 18px 45px rgba(15, 23, 42, 0.06)", "none")}
             w="full"
           >
-            {/* Background decorative circles */}
-            <Box
-              position="absolute"
-              right="30%"
-              top="-60px"
-              w="300px"
-              h="300px"
-              borderRadius="full"
-              bg="blue.100"
-              opacity={0.6}
-            />
-            <Box
-              position="absolute"
-              right="25%"
-              bottom="-80px"
-              w="200px"
-              h="200px"
-              borderRadius="full"
-              bg="blue.200"
-              opacity={0.4}
-            />
-
             <Grid
-              templateColumns={{ base: "1fr", lg: "1fr 420px" }}
-              minH="220px"
+              templateColumns={{ base: "1fr", lg: "1fr 360px" }}
+              minH={{ base: "auto", lg: "248px" }}
+              gap={0}
             >
-              {/* Left: text + search + stats */}
               <Box
-                px={{ base: 6, md: 10 }}
-                py={{ base: 6, md: 8 }}
+                px={{ base: 3, sm: 5, md: 8 }}
+                py={{ base: 4, md: 8 }}
                 position="relative"
                 zIndex={1}
               >
-                <Badge
-                  bg="blue.100"
-                  color="blue.700"
-                  borderRadius="full"
-                  px={3}
-                  py={1}
-                  fontSize="xs"
-                  textTransform="uppercase"
-                  letterSpacing="0.08em"
-                >
-                  Online Learning Course
-                </Badge>
+                <HStack spacing={2} mb={{ base: 2, md: 3 }}>
+                  <Icon as={FiPlayCircle} color="blue.500" boxSize={4} />
+                  <Badge colorScheme="blue" borderRadius="full" px={3} py={1} textTransform="none" fontSize="xs">
+                    My learning
+                  </Badge>
+                </HStack>
 
                 <Heading
-                  mt={3}
-                  size="lg"
-                  color="gray.900"
+                  fontSize={{ base: "xl", sm: "2xl", md: "4xl" }}
                   fontWeight="800"
-                  lineHeight="1.2"
+                  lineHeight={{ base: "1.15", md: "1.08" }}
                 >
-                  Your assigned courses,{" "}
+                  Continue learning{" "}
                   <Text as="span" color="blue.600">
-                    ready to continue
+                    today
                   </Text>
                 </Heading>
+                <Text mt={3} color={subduedText} maxW="2xl" display={{ base: "none", md: "block" }}>
+                  Your assigned courses, progress, expiry status, and next actions are gathered into one focused learning space.
+                </Text>
 
-                {/* Search */}
-                <Box mt={5} maxW="480px">
+                <Box mt={{ base: 3, md: 5 }} maxW="560px">
                   <GlassSearchInput
                     value={searchQuery}
                     onChange={(val) => setSearchQuery(val)}
-                    placeholder="Search by course title or assignment source"
+                    placeholder="Search courses"
                     maxW="100%"
                     isLearner={false}
                   />
                 </Box>
 
-                {/* Stats row */}
-                <HStack mt={5} spacing={6}>
-                  <Box>
-                    <Text fontSize="2xl" fontWeight="800" color="blue.700">
-                      {summary.total}+
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Total Courses
-                    </Text>
-                  </Box>
-                  <Box w="1px" h="32px" bg="gray.200" />
-                  <Box>
-                    <Text fontSize="2xl" fontWeight="800" color="blue.700">
-                      {summary.active}+
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Active Courses
-                    </Text>
-                  </Box>
-                  <Box w="1px" h="32px" bg="gray.200" />
-                  <Box>
-                    <Text fontSize="2xl" fontWeight="800" color="blue.700">
-                      {summary.completed}+
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      Completed
-                    </Text>
-                  </Box>
-                </HStack>
+                <SimpleGrid columns={3} spacing={{ base: 2, md: 3 }} mt={{ base: 3, md: 5 }} maxW="560px">
+                  {[
+                    { label: "Courses", value: summary.total, icon: FiBookOpen, color: "blue.500" },
+                    { label: "Active", value: summary.active, icon: FiClock, color: "teal.500" },
+                    { label: "Done", value: summary.completed, icon: FiCheckCircle, color: "green.500" },
+                  ].map((item) => (
+                    <HStack key={item.label} spacing={2} bg={panelBg} borderWidth="1px" borderColor={borderColor} borderRadius="lg" px={{ base: 2, md: 4 }} py={{ base: 2, md: 3 }}>
+                      <Icon as={item.icon} color={item.color} boxSize={{ base: 4, md: 5 }} />
+                      <Box minW={0}>
+                        <Text fontSize={{ base: "md", md: "2xl" }} fontWeight="800" lineHeight="1">
+                          {item.value}
+                        </Text>
+                        <Text fontSize={{ base: "10px", md: "xs" }} color={subduedText} noOfLines={1}>
+                          {item.label}
+                        </Text>
+                      </Box>
+                    </HStack>
+                  ))}
+                </SimpleGrid>
               </Box>
 
-              {/* Right: image panel */}
               <Box
                 position="relative"
                 overflow="hidden"
                 display={{ base: "none", lg: "block" }}
-                minH="280px"
+                minH="248px"
               >
-                {/* Actual image */}
                 <Image
                   src="/images/happy-schoolgirl-with-new-books.jpg"
                   alt="Learning"
@@ -504,20 +469,12 @@ const MyCoursesBoard = observer(
                   objectFit="cover"
                   objectPosition="center top"
                 />
-
-                {/* Transparent blue overlay */}
-                {/* <Box
-    position="absolute"
-    inset={0}
-    bg="blue.600"
-    opacity={0.45}
-    zIndex={1}
-  /> */}
               </Box>
             </Grid>
           </Box>
 
-          <HStack spacing={3} flexWrap="wrap">
+          <Box overflowX="auto" pb={1} mx={{ base: -3, md: 0 }} px={{ base: 3, md: 0 }}>
+          <HStack spacing={2} flexWrap="nowrap" w="max-content">
             {[
               { key: "all", label: "All courses" },
               { key: "active", label: "Active" },
@@ -532,6 +489,9 @@ const MyCoursesBoard = observer(
                   borderRadius="full"
                   variant={isActive ? "solid" : "outline"}
                   colorScheme={isActive ? "blue" : "gray"}
+                  minH={{ base: "34px", md: "40px" }}
+                  px={{ base: 3, md: 4 }}
+                  fontSize={{ base: "xs", md: "sm" }}
                   onClick={() =>
                     setStatusFilter(option.key as typeof statusFilter)
                   }
@@ -541,24 +501,25 @@ const MyCoursesBoard = observer(
               );
             })}
           </HStack>
+          </Box>
 
           {courseStore.isMyCoursesLoading ? (
-            <HStack justify="center" py={20}>
+            <HStack justify="center" py={{ base: 10, md: 16 }} bg={cardBg} borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
               <Spinner />
-              <Text color={subduedText}>Loading your courses...</Text>
+              <Text color={subduedText}>Loading courses...</Text>
             </HStack>
           ) : courses.length === 0 ? (
             <Box
               bg={cardBg}
-              borderRadius="3xl"
+              borderRadius="2xl"
               borderWidth="1px"
               borderColor={borderColor}
-              p={8}
+              p={{ base: 5, md: 8 }}
             >
               <Text fontWeight="semibold" fontSize="lg">
                 No courses assigned yet
               </Text>
-              <Text color={subduedText} mt={2}>
+              <Text color={subduedText} mt={2} display={{ base: "none", md: "block" }}>
                 When a course is assigned directly to you or delivered through a
                 batch, it will appear here with its thumbnail, status, and
                 launch access.
@@ -567,21 +528,21 @@ const MyCoursesBoard = observer(
           ) : filteredCourses.length === 0 ? (
             <Box
               bg={cardBg}
-              borderRadius="3xl"
+              borderRadius="2xl"
               borderWidth="1px"
               borderColor={borderColor}
-              p={8}
+              p={{ base: 5, md: 8 }}
             >
               <Text fontWeight="semibold" fontSize="lg">
                 No courses match this filter
               </Text>
-              <Text color={subduedText} mt={2}>
+              <Text color={subduedText} mt={2} display={{ base: "none", md: "block" }}>
                 Try another search keyword or switch the status filter to see
                 the rest of your learning library.
               </Text>
             </Box>
           ) : (
-            <SimpleGrid columns={{ base: 1, md: 3, xl: 4 }} spacing={4}>
+            <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing={{ base: 3, md: 4 }}>
               {filteredCourses.map((course, index) => (
                 <MYCourseBoardCard
                   key={course.courseId}

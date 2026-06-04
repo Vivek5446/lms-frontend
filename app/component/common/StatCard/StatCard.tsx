@@ -63,7 +63,7 @@ export default function StatCard({
           <Icon
             as={icon}
             color={styles.iconColor}
-            boxSize={{ base: 2, md: 3.5 }}
+            boxSize={{ base: 3, md: 4 }}
           />
         </Box>
 

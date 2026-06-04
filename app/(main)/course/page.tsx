@@ -101,8 +101,8 @@ const CoursesPage = observer(function CoursesPage() {
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
 
   const heroBg = useColorModeValue(
-    "linear-gradient(135deg, var(--chakra-colors-blue-50) 0%, var(--chakra-colors-blue-100) 52%, var(--chakra-colors-blue-200) 100%)",
-    "linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, var(--chakra-colors-blue-900) 100%)"
+    "linear-gradient(135deg, #ffffff 0%, #eef6ff 58%, #ecfdf5 100%)",
+    "linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 64, 175, 0.82) 58%, rgba(20, 83, 45, 0.55) 100%)"
   );
   const pageBg = useColorModeValue("#F8FAFC", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
@@ -216,7 +216,7 @@ const CoursesPage = observer(function CoursesPage() {
   }
 
   const FilterPanel = (
-    <VStack align="stretch" spacing={4}>
+    <VStack align="stretch" spacing={{ base: 3, md: 4 }}>
       <Box>
         <Text fontSize="xs" fontWeight="700" letterSpacing="0.08em" color={softText} textTransform="uppercase" mb={2}>
           Search
@@ -227,29 +227,30 @@ const CoursesPage = observer(function CoursesPage() {
           placeholder="Search by course name, language, or category"
           bg={cardBg}
           borderColor={borderColor}
-          h="46px"
+          h={{ base: "40px", md: "46px" }}
+          fontSize={{ base: "sm", md: "md" }}
         />
       </Box>
 
       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
-        <Select value={pricingFilter} onChange={(event) => setPricingFilter(event.target.value as typeof pricingFilter)} bg={cardBg} borderColor={borderColor} h="46px">
+        <Select value={pricingFilter} onChange={(event) => setPricingFilter(event.target.value as typeof pricingFilter)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
           <option value="all">Paid / Free</option>
           <option value="free">Free</option>
           <option value="paid">Paid</option>
         </Select>
-        <Select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} bg={cardBg} borderColor={borderColor} h="46px">
+        <Select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
           {availableCategories.map((category) => (
             <option key={category} value={category}>
               {category === "all" ? "Category" : category}
             </option>
           ))}
         </Select>
-        <Select value={courseTypeFilter} onChange={(event) => setCourseTypeFilter(event.target.value as typeof courseTypeFilter)} bg={cardBg} borderColor={borderColor} h="46px">
+        <Select value={courseTypeFilter} onChange={(event) => setCourseTypeFilter(event.target.value as typeof courseTypeFilter)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
           <option value="all">Course Type</option>
           <option value="standard">Standard</option>
           <option value="scorm">SCORM</option>
         </Select>
-        <Select value={languageFilter} onChange={(event) => setLanguageFilter(event.target.value)} bg={cardBg} borderColor={borderColor} h="46px">
+        <Select value={languageFilter} onChange={(event) => setLanguageFilter(event.target.value)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
           {availableLanguages.map((language) => (
             <option key={language} value={language}>
               {language === "all" ? "Language" : language}
@@ -258,7 +259,7 @@ const CoursesPage = observer(function CoursesPage() {
         </Select>
       </SimpleGrid>
 
-      <Select value={sortBy} onChange={(event) => setSortBy(event.target.value as CatalogSort)} bg={cardBg} borderColor={borderColor} h="46px">
+      <Select value={sortBy} onChange={(event) => setSortBy(event.target.value as CatalogSort)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
         <option value="latest">Latest</option>
         <option value="popularity">Popularity</option>
         <option value="price_asc">Price: Low to High</option>
@@ -269,30 +270,30 @@ const CoursesPage = observer(function CoursesPage() {
   );
 
   return (
-    <Box minH="100vh" bg={pageBg}>
+    <Box minH="100vh" bg={pageBg} overflowX="hidden">
       <Box bgImage={heroBg} borderBottomWidth="1px" borderColor={borderColor}>
-        <Box maxW="8xl" mx="auto" px={{ base: 5, md: 8 }} py={{ base: 10, md: 14 }}>
-          <Grid templateColumns={{ base: "1fr", lg: "1.25fr 0.95fr" }} gap={10} alignItems="center">
+        <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 5, md: 12 }}>
+          <Grid templateColumns={{ base: "1fr", lg: "1.16fr 0.84fr" }} gap={{ base: 4, lg: 10 }} alignItems="center">
             <Box>
-              <Badge colorScheme="blue" borderRadius="full" px={4} py={1.5}>
-                Public Course Catalog
+              <Badge colorScheme="blue" borderRadius="full" px={3} py={1} textTransform="none" fontSize="xs">
+                Course catalog
               </Badge>
-              <Heading mt={5} fontSize={{ base: "3xl", md: "5xl" }} lineHeight="1.05">
-                Explore public courses with
-                <Text as="span" color="blue.500"> faster discovery</Text>
+              <Heading mt={3} fontSize={{ base: "2xl", md: "5xl" }} lineHeight={{ base: "1.12", md: "1.06" }} maxW="3xl">
+                Find the right course,
+                <Text as="span" color="blue.500"> faster.</Text>
               </Heading>
-              <Text mt={4} fontSize={{ base: "md", md: "lg" }} color={mutedText} maxW="2xl" lineHeight="1.8">
+              <Text mt={4} fontSize={{ base: "sm", md: "lg" }} color={mutedText} maxW="2xl" lineHeight="1.7" display={{ base: "none", sm: "block" }}>
                 Search by title, narrow by pricing, category, course type, and language, then sort by the signals that matter most.
               </Text>
 
-              <HStack mt={7} spacing={4} flexWrap="wrap">
+              <HStack mt={{ base: 4, md: 7 }} spacing={3} flexWrap="wrap" display={{ base: "none", sm: "flex" }}>
                 <Box
                   display="flex"
                   alignItems="center"
                   gap={3}
                   px={4}
                   py={3}
-                  borderRadius="2xl"
+                  borderRadius="xl"
                   bg={cardBg}
                   borderWidth="1px"
                   borderColor={borderColor}
@@ -300,7 +301,7 @@ const CoursesPage = observer(function CoursesPage() {
                   <Icon as={FiBookOpen} color="blue.500" />
                   <Box>
                     <Text fontSize="sm" fontWeight="700">{publicCourses.length}</Text>
-                    <Text fontSize="xs" color={softText}>Public courses</Text>
+                    <Text fontSize="xs" color={softText}>Courses</Text>
                   </Box>
                 </Box>
                 <Box
@@ -309,7 +310,7 @@ const CoursesPage = observer(function CoursesPage() {
                   gap={3}
                   px={4}
                   py={3}
-                  borderRadius="2xl"
+                  borderRadius="xl"
                   bg={cardBg}
                   borderWidth="1px"
                   borderColor={borderColor}
@@ -319,7 +320,7 @@ const CoursesPage = observer(function CoursesPage() {
                     <Text fontSize="sm" fontWeight="700">
                       {publicCourses.reduce((sum, course) => sum + Number(course.metrics?.popularityScore || 0), 0)}
                     </Text>
-                    <Text fontSize="xs" color={softText}>Combined enrollments</Text>
+                    <Text fontSize="xs" color={softText}>Enrollments</Text>
                   </Box>
                 </Box>
                 <Box
@@ -328,7 +329,7 @@ const CoursesPage = observer(function CoursesPage() {
                   gap={3}
                   px={4}
                   py={3}
-                  borderRadius="2xl"
+                  borderRadius="xl"
                   bg={cardBg}
                   borderWidth="1px"
                   borderColor={borderColor}
@@ -336,14 +337,28 @@ const CoursesPage = observer(function CoursesPage() {
                   <Icon as={FiGlobe} color="green.500" />
                   <Box>
                     <Text fontSize="sm" fontWeight="700">Open to all</Text>
-                    <Text fontSize="xs" color={softText}>Browse without login</Text>
+                    <Text fontSize="xs" color={softText}>Open access</Text>
                   </Box>
                 </Box>
               </HStack>
+
+              <Button
+                mt={5}
+                display={{ base: "inline-flex", md: "none" }}
+                colorScheme="blue"
+                borderRadius="full"
+                leftIcon={<FiFilter />}
+                size="sm"
+                minH="38px"
+                onClick={onOpen}
+              >
+                Filters
+              </Button>
             </Box>
 
             <Box
-              borderRadius="3xl"
+              display={{ base: "none", md: "block" }}
+              borderRadius="2xl"
               borderWidth="1px"
               borderColor={borderColor}
               bg={cardBg}
@@ -366,24 +381,25 @@ const CoursesPage = observer(function CoursesPage() {
                 leftIcon={<FiFilter />}
                 onClick={onOpen}
               >
-                Refine catalog on mobile
+                Refine catalog
               </Button>
             </Box>
           </Grid>
         </Box>
       </Box>
 
-      <Box maxW="8xl" mx="auto" px={{ base: 5, md: 0 }} py={{ base: 8, md: 10 }}>
+      <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 7, md: 10 }}>
         {isLearner && featuredAssignedCourses.length > 0 ? (
-          <Box mb={10}>
+          <Box mb={{ base: 7, md: 10 }}>
             <Flex justify="space-between" align="center" mb={5} flexWrap="wrap" gap={3}>
               <Box>
-                <Text fontSize="sm" fontWeight="700" color="blue.500" textTransform="uppercase" letterSpacing="0.08em">
+                <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="700" color="blue.500" textTransform="uppercase" letterSpacing="0.08em">
                   Assigned Private Courses
                 </Text>
-                <Heading size="lg" mt={1}>Continue learning from your dashboard picks</Heading>
+                <Heading size={{ base: "md", md: "lg" }} mt={1}>Continue learning</Heading>
               </Box>
               <Button
+                size={{ base: "sm", md: "md" }}
                 variant="ghost"
                 colorScheme="blue"
                 rightIcon={<FiArrowRight />}
@@ -393,7 +409,7 @@ const CoursesPage = observer(function CoursesPage() {
               </Button>
             </Flex>
 
-            <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={5}>
+            <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={{ base: 4, md: 5 }}>
               {featuredAssignedCourses.map((course) => (
                 <MotionBox
                   key={course.courseId}
@@ -401,30 +417,30 @@ const CoursesPage = observer(function CoursesPage() {
                   bg={cardBg}
                   borderWidth="1px"
                   borderColor={borderColor}
-                  borderRadius="3xl"
+                  borderRadius="2xl"
                   overflow="hidden"
                   boxShadow="0 18px 45px rgba(15, 23, 42, 0.06)"
                 >
                   <Box position="relative">
                     {course.thumbnailUrl ? (
-                      <Image src={course.thumbnailUrl} alt={course.title} h="190px" w="full" objectFit="cover" />
+                      <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "128px", md: "190px" }} w="full" objectFit="cover" />
                     ) : (
-                      <Box h="190px" bgGradient="linear(to-br, blue.600, blue.300)" />
+                      <Box h={{ base: "128px", md: "190px" }} bgGradient="linear(to-br, blue.600, blue.300)" />
                     )}
                     <Badge position="absolute" top={4} left={4} colorScheme="blue" borderRadius="full" px={3} py={1}>
                       Private
                     </Badge>
                   </Box>
 
-                  <Box p={5}>
+                  <Box p={{ base: 4, md: 5 }}>
                     <HStack spacing={2} flexWrap="wrap" mb={3}>
                       <Badge colorScheme="gray" borderRadius="full" px={3} py={1}>
                         {course.taxonomy?.level || "Beginner"}
                       </Badge>
                       <AssessmentBadge summary={course.assessmentSummary} />
                     </HStack>
-                    <Heading size="md" mb={2}>{course.title}</Heading>
-                    <Text fontSize="sm" color={mutedText} noOfLines={2}>
+                    <Heading size={{ base: "sm", md: "md" }} mb={2} noOfLines={2}>{course.title}</Heading>
+                    <Text fontSize="sm" color={mutedText} noOfLines={2} display={{ base: "none", md: "block" }}>
                       {course.description?.text || "Assigned privately by your organization."}
                     </Text>
 
@@ -437,7 +453,7 @@ const CoursesPage = observer(function CoursesPage() {
                       </Text>
                     </HStack>
 
-                    <Button mt={4} w="full" colorScheme="blue" borderRadius="xl" onClick={() => router.push(`/course?courseId=${course.courseId}`)}>
+                    <Button mt={{ base: 3, md: 4 }} h={{ base: "40px", md: "auto" }} w="full" colorScheme="blue" borderRadius="xl" onClick={() => router.push(`/course?courseId=${course.courseId}`)}>
                       Continue Course
                     </Button>
                   </Box>
@@ -449,13 +465,13 @@ const CoursesPage = observer(function CoursesPage() {
 
         <Flex justify="space-between" align="flex-end" mb={5} flexWrap="wrap" gap={4}>
           <Box>
-            <Text fontSize="sm" fontWeight="700" color="blue.500" textTransform="uppercase" letterSpacing="0.08em">
+            <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="700" color="blue.500" textTransform="uppercase" letterSpacing="0.08em">
               Explore Courses
             </Text>
-            <Heading size="lg" mt={1}>Public learning catalog</Heading>
-            <Text mt={2} color={mutedText}>
-              {filteredPublicCourses.length} course{filteredPublicCourses.length === 1 ? "" : "s"} match your current filters.
-            </Text>
+            <Heading size={{ base: "md", md: "lg" }} mt={1}>Public learning catalog</Heading>
+                <Text mt={2} color={mutedText} display={{ base: "none", md: "block" }}>
+                  {filteredPublicCourses.length} course{filteredPublicCourses.length === 1 ? "" : "s"} match your current filters.
+                </Text>
           </Box>
 
           <Button
@@ -463,6 +479,8 @@ const CoursesPage = observer(function CoursesPage() {
             colorScheme="blue"
             borderRadius="full"
             leftIcon={<FiFilter />}
+            size="sm"
+            minH="38px"
             onClick={onOpen}
           >
             Filters
@@ -475,13 +493,13 @@ const CoursesPage = observer(function CoursesPage() {
             <Text color={mutedText}>Loading public courses...</Text>
           </HStack>
         ) : filteredPublicCourses.length === 0 ? (
-          <Box textAlign="center" py={16} borderRadius="3xl" bg={cardBg} borderWidth="1px" borderColor={borderColor}>
+          <Box textAlign="center" py={16} borderRadius="2xl" bg={cardBg} borderWidth="1px" borderColor={borderColor}>
             <Icon as={FiBookOpen} boxSize={8} color="gray.400" />
             <Heading size="md" mt={4}>No public courses found</Heading>
             <Text mt={2} color={mutedText}>Try changing your search or filters to broaden the results.</Text>
           </Box>
         ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={6}>
+          <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={{ base: 4, md: 5 }}>
             {filteredPublicCourses.map((course) => (
               <MotionBox
                 key={course._id}
@@ -489,15 +507,15 @@ const CoursesPage = observer(function CoursesPage() {
                 bg={cardBg}
                 borderWidth="1px"
                 borderColor={borderColor}
-                borderRadius="3xl"
+                borderRadius="2xl"
                 overflow="hidden"
                 boxShadow="0 18px 45px rgba(15, 23, 42, 0.06)"
               >
                 <Box position="relative">
                   {course.thumbnailUrl ? (
-                    <Image src={course.thumbnailUrl} alt={course.title} h="210px" w="full" objectFit="cover" />
+                    <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "128px", md: "210px" }} w="full" objectFit="cover" />
                   ) : (
-                    <Box h="210px" bgGradient="linear(to-br, blue.600, blue.300)" />
+                    <Box h={{ base: "128px", md: "210px" }} bgGradient="linear(to-br, blue.600, teal.300)" />
                   )}
                   <HStack position="absolute" top={4} left={4} spacing={2} flexWrap="wrap">
                     <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
@@ -509,7 +527,7 @@ const CoursesPage = observer(function CoursesPage() {
                   </HStack>
                 </Box>
 
-                <Box p={5}>
+                <Box p={{ base: 4, md: 5 }}>
                   <HStack spacing={2} flexWrap="wrap" mb={3}>
                     {(course.taxonomy?.categories || []).slice(0, 2).map((category) => (
                       <Badge key={`${course._id}-${category}`} borderRadius="full" px={3} py={1}>
@@ -521,12 +539,12 @@ const CoursesPage = observer(function CoursesPage() {
                     </Badge>
                   </HStack>
 
-                  <Heading size="md" mb={2}>{course.title}</Heading>
-                  <Text fontSize="sm" color={mutedText} noOfLines={3}>
+                  <Heading size={{ base: "sm", md: "md" }} mb={2} noOfLines={2}>{course.title}</Heading>
+                  <Text fontSize="sm" color={mutedText} noOfLines={3} display={{ base: "none", sm: "block" }}>
                     {course.description?.text || "Explore this course to review the curriculum, pricing, and assessment thresholds."}
                   </Text>
 
-                  <SimpleGrid columns={2} spacing={3} mt={4}>
+                  <SimpleGrid columns={2} spacing={3} mt={4} display={{ base: "none", sm: "grid" }}>
                     <Box>
                       <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Price</Text>
                       <HStack spacing={2} mt={1}>
@@ -559,7 +577,7 @@ const CoursesPage = observer(function CoursesPage() {
                     </Box>
                   </SimpleGrid>
 
-                  <Button mt={5} w="full" colorScheme="blue" borderRadius="xl" rightIcon={<FiArrowRight />} onClick={() => setSelectedCourse(course)}>
+                  <Button mt={{ base: 3, md: 5 }} h={{ base: "40px", md: "auto" }} w="full" colorScheme="blue" borderRadius="xl" rightIcon={<FiArrowRight />} onClick={() => setSelectedCourse(course)}>
                     View Course
                   </Button>
                 </Box>

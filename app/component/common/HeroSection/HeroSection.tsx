@@ -90,8 +90,8 @@ export default observer(function LMSLandingPage() {
         as="section"
         position="relative"
         overflow="hidden"
-        pt={{ base: '36px', md: '72px' }}
-        pb={{ base: '52px', md: '84px' }}
+        pt={{ base: 4, md: '72px' }}
+        pb={{ base: 6, md: '84px' }}
         bgImage={heroBg}
       >
         <Circle
@@ -103,78 +103,92 @@ export default observer(function LMSLandingPage() {
           right="-80px"
           filter="blur(100px)"
           zIndex={0}
+          display={{ base: "none", md: "block" }}
         />
 
-        <Box maxW="7xl" mx="auto" px={{ base: 5, md: 8 }} position="relative" zIndex={1}>
-          <Grid templateColumns={{ base: "1fr", lg: "1.15fr 0.95fr" }} gap={{ base: 10, lg: 14 }} alignItems="center">
+        <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8 }} position="relative" zIndex={1}>
+          <Grid templateColumns={{ base: "1fr", lg: "1.15fr 0.95fr" }} gap={{ base: 5, lg: 14 }} alignItems="center">
             <Box>
               <Badge
                 colorScheme="blue"
                 variant="subtle"
-                px={4}
-                py={1.5}
-                mb={5}
+                px={{ base: 3, md: 4 }}
+                py={{ base: 1, md: 2 }}
+                mb={{ base: 3, md: 5 }}
                 borderRadius="full"
                 textTransform="none"
               >
                 <HStack spacing={2}>
                   <Icon as={FaCheckCircle} />
-                  <Text fontWeight="medium">Public and private learning, finally in one experience</Text>
+                  <Text fontWeight="medium" fontSize={{ base: "xs", md: "sm" }}>
+                    Learning hub
+                  </Text>
                 </HStack>
               </Badge>
 
               <Heading
                 as="h1"
-                fontSize={{ base: '3xl', md: '5xl', xl: '6xl' }}
+                fontSize={{ base: '2xl', sm: '3xl', md: '5xl', xl: '6xl' }}
                 fontWeight="extrabold"
-                lineHeight="1.02"
+                lineHeight={{ base: "1.12", md: "1.02" }}
                 color={textPrimary}
-                letterSpacing="tight"
+                maxW={{ base: "20rem", md: "none" }}
               >
-                Explore public courses and keep
-                <Text as="span" color="blue.600"> assigned training </Text>
-                in view
+                Learn, resume, and grow
+                <Text as="span" color="blue.600"> faster</Text>
               </Heading>
 
-              <Text fontSize={{ base: "md", md: "xl" }} color={textSecondary} mt={5} maxW="2xl" lineHeight="1.8">
+              <Text
+                fontSize={{ base: "sm", md: "xl" }}
+                color={textSecondary}
+                mt={5}
+                maxW="2xl"
+                lineHeight="1.8"
+                display={{ base: "none", md: "block" }}
+              >
                 Search the open catalog, compare pricing and course formats, and jump back into your private assignments without leaving the homepage.
               </Text>
 
               <Flex
-                mt={8}
+                mt={{ base: 4, md: 8 }}
                 p={2}
                 bg={cardBg}
-                borderRadius="2xl"
+                borderRadius={{ base: "xl", md: "2xl" }}
                 borderWidth="1px"
                 borderColor={borderColor}
-                boxShadow="0 22px 50px rgba(15, 23, 42, 0.08)"
+                boxShadow={{ base: "0 10px 26px rgba(15, 23, 42, 0.08)", md: "0 22px 50px rgba(15, 23, 42, 0.08)" }}
                 gap={2}
-                direction={{ base: "column", sm: "row" }}
+                direction="row"
+                align="center"
+                maxW={{ base: "100%", md: "720px" }}
               >
-                <Flex align="center" gap={3} px={4} flex="1">
+                <Flex align="center" gap={{ base: 2, md: 3 }} px={{ base: 3, md: 4 }} flex="1" minW={0}>
                   <Icon as={FaSearch} color="blue.500" />
                   <Input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search public courses by name, category, or language"
+                    placeholder="Search courses"
                     border="none"
+                    h={{ base: "38px", md: "50px" }}
+                    fontSize={{ base: "sm", md: "md" }}
                     _focusVisible={{ boxShadow: "none" }}
                     px={0}
                   />
                 </Flex>
                 <Button
                   colorScheme="blue"
-                  borderRadius="xl"
-                  h="50px"
-                  px={8}
+                  borderRadius={{ base: "lg", md: "xl" }}
+                  h={{ base: "38px", md: "50px" }}
+                  px={{ base: 4, md: 8 }}
                   rightIcon={<FaArrowRight />}
+                  fontSize={{ base: "sm", md: "md" }}
                   onClick={handleExplore}
                 >
-                  Explore Courses
+                  Explore
                 </Button>
               </Flex>
 
-              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4} mt={8}>
+              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4} mt={8} display={{ base: "none", md: "grid" }}>
                 {[
                   { label: "Public Courses", value: publicCourses.length || "0" },
                   { label: "Assigned to You", value: isLearner ? assignedCourses.length || "0" : "Live" },
@@ -207,7 +221,7 @@ export default observer(function LMSLandingPage() {
               </SimpleGrid>
             </Box>
 
-            <Stack spacing={5}>
+            <Stack spacing={5} display={{ base: "none", lg: "flex" }}>
               <MotionBox
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -327,18 +341,18 @@ export default observer(function LMSLandingPage() {
         </Box>
       </Box>
 
-      <Box as="section" py={20} bg={mutedBg}>
-        <Box maxW="7xl" mx="auto" px={{ base: 5, md: 8 }}>
-          <Flex justify="space-between" align="flex-end" mb={10} flexWrap="wrap" gap={4}>
+      <Box as="section" py={{ base: 8, md: 20 }} bg={mutedBg}>
+        <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8 }}>
+          <Flex justify="space-between" align="flex-end" mb={{ base: 5, md: 10 }} flexWrap="wrap" gap={4}>
             <VStack align="start" spacing={2}>
               <Badge colorScheme="blue" variant="subtle">Explore Public Courses</Badge>
-              <Heading size="xl" color={textPrimary}>Discover what learners can join right now</Heading>
-              <Text color={textSecondary}>
+              <Heading size={{ base: "md", md: "xl" }} color={textPrimary}>Courses to start now</Heading>
+              <Text color={textSecondary} display={{ base: "none", md: "block" }}>
                 Public courses stay open to everyone, while private assignments remain visible for your signed-in learners.
               </Text>
             </VStack>
-            <Button colorScheme="blue" variant="ghost" rightIcon={<FaArrowRight />} onClick={() => router.push("/course")}>
-              Browse Full Catalog
+            <Button size={{ base: "sm", md: "md" }} colorScheme="blue" variant="ghost" rightIcon={<FaArrowRight />} onClick={() => router.push("/course")}>
+              Browse
             </Button>
           </Flex>
 
@@ -348,32 +362,32 @@ export default observer(function LMSLandingPage() {
               <Text color={textSecondary}>Loading course highlights...</Text>
             </HStack>
           ) : (
-            <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={6}>
+            <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={{ base: 3, md: 6 }}>
               {featuredPublicCourses.map((course) => (
                 <MotionBox
                   key={course._id}
                   whileHover={{ y: -8 }}
                   bg={cardBg}
-                  borderRadius="3xl"
+                  borderRadius={{ base: "xl", md: "3xl" }}
                   overflow="hidden"
                   borderWidth="1px"
                   borderColor={borderColor}
                   boxShadow="0 18px 45px rgba(15, 23, 42, 0.07)"
                 >
                   {course.thumbnailUrl ? (
-                    <Image src={course.thumbnailUrl} alt={course.title} h="180px" w="full" objectFit="cover" />
+                    <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "124px", md: "180px" }} w="full" objectFit="cover" />
                   ) : (
-                    <Box h="180px" bgGradient="linear(to-br, blue.500, cyan.400)" />
+                    <Box h={{ base: "124px", md: "180px" }} bgGradient="linear(to-br, blue.500, cyan.400)" />
                   )}
-                  <Box p={5}>
+                  <Box p={{ base: 4, md: 5 }}>
                     <HStack spacing={2} flexWrap="wrap" mb={3}>
                       <Badge colorScheme="green" borderRadius="full" px={3} py={1}>Public</Badge>
                       <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
                         {course.taxonomy?.level || "Beginner"}
                       </Badge>
                     </HStack>
-                    <Heading size="sm" minH="42px" color={textPrimary}>{course.title}</Heading>
-                    <Text mt={2} fontSize="sm" color={textSecondary} noOfLines={2}>
+                    <Heading size="sm" minH={{ base: "auto", md: "42px" }} color={textPrimary} noOfLines={2}>{course.title}</Heading>
+                    <Text mt={2} fontSize="sm" color={textSecondary} noOfLines={2} display={{ base: "none", md: "block" }}>
                       {course.description?.text || "Open this course to inspect pricing, curriculum, and enrollment options."}
                     </Text>
 
