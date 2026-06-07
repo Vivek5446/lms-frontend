@@ -50,31 +50,25 @@ import {
   useToast,
   VStack,
   Wrap,
-  WrapItem,
+  WrapItem
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo, useState } from "react";
 import {
   FiBookOpen,
+  FiCalendar,
   FiCheck,
   FiCheckCircle,
   FiFileText,
   FiSearch,
   FiUploadCloud,
-  FiUsers,
+  FiUsers
 } from "react-icons/fi";
 
 const STEPS = [
-  { title: "Batch Details", description: "Name and schedule" },
-  { title: "Audience Setup", description: "Manual or spreadsheet" },
+  { title: "Details", description: "Name and dates" },
+  { title: "Setup", description: "Courses and learners" },
 ];
-
-const SURFACE_PROPS = {
-  bg: "white",
-  borderWidth: "1px",
-  borderColor: "gray.200",
-  borderRadius: "18px",
-};
 
 const focusRing = {
   borderColor: "blue.500",
@@ -93,6 +87,28 @@ type BatchCreationModalProps = {
   initialStep?: number;
 };
 
+function toDateInputValue(value?: string | null) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "Open ended";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Open ended";
+
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 const SectionHeader = ({
   eyebrow,
   title,
@@ -107,28 +123,49 @@ const SectionHeader = ({
       <Text
         color="blue.600"
         fontSize="xs"
-        fontWeight="800"
+        fontWeight="900"
         textTransform="uppercase"
         letterSpacing="0.08em"
       >
         {eyebrow}
       </Text>
     ) : null}
+
     <Text
       color="gray.950"
       fontSize={{ base: "lg", md: "xl" }}
-      fontWeight="800"
-      letterSpacing="-0.03em"
+      fontWeight="900"
+      letterSpacing="-0.04em"
       lineHeight="1.15"
     >
       {title}
     </Text>
+
     {description ? (
       <Text color="gray.500" fontSize="sm" lineHeight="1.6">
         {description}
       </Text>
     ) : null}
   </Stack>
+);
+
+const Surface = ({
+  children,
+  p = { base: 4, md: 5 },
+}: {
+  children: React.ReactNode;
+  p?: any;
+}) => (
+  <Box
+    bg="white"
+    borderWidth="1px"
+    borderColor="gray.200"
+    borderRadius="22px"
+    p={p}
+    boxShadow="sm"
+  >
+    {children}
+  </Box>
 );
 
 const EmptyState = ({
@@ -143,12 +180,12 @@ const EmptyState = ({
   <Flex
     align="center"
     justify="center"
-    minH="180px"
-    p={6}
+    minH="150px"
+    p={5}
     borderWidth="1px"
     borderStyle="dashed"
     borderColor="gray.300"
-    borderRadius="16px"
+    borderRadius="18px"
     bg="gray.50"
     textAlign="center"
   >
@@ -156,16 +193,19 @@ const EmptyState = ({
       <Flex
         align="center"
         justify="center"
-        boxSize="40px"
-        borderRadius="14px"
+        boxSize="42px"
+        borderRadius="16px"
         bg="white"
         color="gray.400"
+        boxShadow="sm"
       >
         <Icon as={icon} boxSize={5} />
       </Flex>
-      <Text color="gray.900" fontWeight="700">
+
+      <Text color="gray.900" fontWeight="800">
         {title}
       </Text>
+
       <Text color="gray.500" fontSize="sm" lineHeight="1.6">
         {description}
       </Text>
@@ -173,19 +213,34 @@ const EmptyState = ({
   </Flex>
 );
 
-const StatCard = ({ label, value }: { label: string; value: string }) => (
-  <Box p={4} borderWidth="1px" borderColor="gray.200" borderRadius="14px" bg="gray.50">
+const StatCard = ({
+  label,
+  value,
+  colorScheme = "blue",
+}: {
+  label: string;
+  value: string;
+  colorScheme?: string;
+}) => (
+  <Box
+    p={4}
+    borderWidth="1px"
+    borderColor="gray.200"
+    borderRadius="16px"
+    bg={`${colorScheme}.50`}
+  >
     <Text
       fontSize="xs"
-      fontWeight="800"
+      fontWeight="900"
       letterSpacing="0.08em"
       textTransform="uppercase"
-      color="gray.500"
+      color={`${colorScheme}.600`}
       mb={2}
     >
       {label}
     </Text>
-    <Text color="gray.950" fontSize="md" fontWeight="800" lineHeight="1.3">
+
+    <Text color="gray.950" fontSize="lg" fontWeight="900" lineHeight="1.2">
       {value}
     </Text>
   </Box>
@@ -197,12 +252,14 @@ const ModeCard = ({
   icon,
   isSelected,
   onClick,
+  badge,
 }: {
   title: string;
   description: string;
   icon: any;
   isSelected: boolean;
   onClick: () => void;
+  badge?: string;
 }) => (
   <Box
     as="button"
@@ -210,45 +267,67 @@ const ModeCard = ({
     onClick={onClick}
     textAlign="left"
     w="full"
-    p={4}
+    p={5}
     borderWidth="1px"
     borderColor={isSelected ? "blue.400" : "gray.200"}
     bg={isSelected ? "blue.50" : "white"}
-    borderRadius="16px"
+    borderRadius="20px"
     transition="all 0.18s ease"
-    _hover={{ borderColor: isSelected ? "blue.500" : "gray.300", bg: isSelected ? "blue.50" : "gray.50" }}
+    boxShadow={isSelected ? "0 12px 30px rgba(37, 99, 235, 0.10)" : "sm"}
+    _hover={{
+      borderColor: isSelected ? "blue.500" : "gray.300",
+      bg: isSelected ? "blue.50" : "gray.50",
+      transform: "translateY(-1px)",
+    }}
     _focusVisible={focusRing}
   >
-    <Stack spacing={3}>
+    <Stack spacing={4}>
       <HStack justify="space-between" align="start">
         <Flex
           align="center"
           justify="center"
-          boxSize="40px"
-          borderRadius="14px"
+          boxSize="44px"
+          borderRadius="16px"
           bg={isSelected ? "blue.500" : "gray.100"}
           color={isSelected ? "white" : "gray.600"}
         >
           <Icon as={icon} boxSize={5} />
         </Flex>
-        <Flex
-          align="center"
-          justify="center"
-          boxSize="24px"
-          borderRadius="full"
-          borderWidth="1px"
-          borderColor={isSelected ? "blue.500" : "gray.300"}
-          bg={isSelected ? "blue.500" : "white"}
-          color="white"
-        >
-          {isSelected ? <Icon as={FiCheck} boxSize={3.5} /> : null}
-        </Flex>
+
+        <HStack spacing={2}>
+          {badge ? (
+            <Badge
+              colorScheme={isSelected ? "blue" : "gray"}
+              borderRadius="full"
+              px={2.5}
+              py={1}
+              textTransform="none"
+            >
+              {badge}
+            </Badge>
+          ) : null}
+
+          <Flex
+            align="center"
+            justify="center"
+            boxSize="24px"
+            borderRadius="full"
+            borderWidth="1px"
+            borderColor={isSelected ? "blue.500" : "gray.300"}
+            bg={isSelected ? "blue.500" : "white"}
+            color="white"
+          >
+            {isSelected ? <Icon as={FiCheck} boxSize={3.5} /> : null}
+          </Flex>
+        </HStack>
       </HStack>
+
       <Box>
-        <Text color="gray.950" fontWeight="800" fontSize="sm">
+        <Text color="gray.950" fontWeight="900" fontSize="md">
           {title}
         </Text>
-        <Text color="gray.500" fontSize="sm" mt={1} lineHeight="1.6">
+
+        <Text color="gray.500" fontSize="sm" mt={1.5} lineHeight="1.6">
           {description}
         </Text>
       </Box>
@@ -256,35 +335,39 @@ const ModeCard = ({
   </Box>
 );
 
-function toDateInputValue(value?: string | null) {
-  if (!value) {
-    return "";
-  }
+const ReviewRow = ({
+  icon,
+  label,
+  value,
+}: {
+  icon: any;
+  label: string;
+  value: string | number;
+}) => (
+  <HStack justify="space-between" spacing={3}>
+    <HStack spacing={3} minW={0}>
+      <Flex
+        align="center"
+        justify="center"
+        boxSize="34px"
+        borderRadius="12px"
+        bg="blue.50"
+        color="blue.600"
+        flexShrink={0}
+      >
+        <Icon as={icon} boxSize={4} />
+      </Flex>
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
+      <Text fontSize="sm" fontWeight="800" color="gray.700" noOfLines={1}>
+        {label}
+      </Text>
+    </HStack>
 
-  return date.toISOString().slice(0, 10);
-}
-
-function formatDate(value?: string | null) {
-  if (!value) {
-    return "Open ended";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "Open ended";
-  }
-
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+    <Text fontSize="sm" fontWeight="900" color="gray.950" flexShrink={0}>
+      {value}
+    </Text>
+  </HStack>
+);
 
 const BatchCreationModal = observer(
   ({
@@ -311,14 +394,22 @@ const BatchCreationModal = observer(
     const [userResults, setUserResults] = useState<any[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
     const [uploadFile, setUploadFile] = useState<File | null>(null);
-    const [uploadPreview, setUploadPreview] = useState<BatchUploadPreviewData | null>(null);
+    const [uploadPreview, setUploadPreview] =
+      useState<BatchUploadPreviewData | null>(null);
+
     const managedCompanies = companyStore.companies.data || [];
+
     const selectedCompany =
       managedCompanies.find((company: any) => company?._id === companyId) ||
       auth.user?.companyDetails ||
       null;
-    const isCompanyInactive = Boolean(companyId && selectedCompany?.is_active === false);
+
+    const isCompanyInactive = Boolean(
+      companyId && selectedCompany?.is_active === false
+    );
+
     const companyName = selectedCompany?.company_name || "this company";
+
     const inactiveCompanyMessage = `${companyName} is inactive. Batch creation and updates are disabled until the company is reactivated.`;
 
     const companyAssignedCourseIds = useMemo(
@@ -328,7 +419,8 @@ const BatchCreationModal = observer(
             (courseStore.assignedCourseAccesses || [])
               .filter(
                 (access) =>
-                  access.assignmentType === "company" && access.status !== "expired"
+                  access.assignmentType === "company" &&
+                  access.status !== "expired"
               )
               .map((access) => access.courseId)
               .filter(Boolean)
@@ -341,7 +433,9 @@ const BatchCreationModal = observer(
       () =>
         new Map(
           (courseStore.assignedCourseAccesses || [])
-            .filter((access) => access.assignmentType === "company" && access.courseId)
+            .filter(
+              (access) => access.assignmentType === "company" && access.courseId
+            )
             .map((access) => [access.courseId, access.courseName])
         ),
       [courseStore.assignedCourseAccesses]
@@ -351,12 +445,15 @@ const BatchCreationModal = observer(
       const courseMap = new Map(
         (courseStore.courses || []).map((course) => [course._id, course])
       );
+
       const existingCourseMap = new Map(
         (initialBatch?.courses || []).map((course) => [course._id, course])
       );
+
       const scopedCourses = companyAssignedCourseIds
         .map((courseId) => {
           const existingCourse = existingCourseMap.get(courseId);
+
           return (
             courseMap.get(courseId) ||
             existingCourse || {
@@ -387,11 +484,19 @@ const BatchCreationModal = observer(
         (course, index, courses) =>
           courses.findIndex((item) => item._id === course._id) === index
       );
-    }, [companyAssignedCourseIds, companyAssignedCourseMap, courseStore.courses, initialBatch?.courses, selectedCourseIds]);
+    }, [
+      companyAssignedCourseIds,
+      companyAssignedCourseMap,
+      courseStore.courses,
+      initialBatch?.courses,
+      selectedCourseIds,
+    ]);
 
     const selectedCourses = useMemo(() => {
       const byId = new Map(availableCourses.map((course) => [course._id, course]));
-      return selectedCourseIds.map((courseId) => byId.get(courseId)).filter(Boolean);
+      return selectedCourseIds
+        .map((courseId) => byId.get(courseId))
+        .filter(Boolean);
     }, [availableCourses, selectedCourseIds]);
 
     const invalidSelectedCourses = useMemo(
@@ -401,6 +506,9 @@ const BatchCreationModal = observer(
         ),
       [companyAssignedCourseIds, selectedCourses]
     );
+
+    const canContinueFromDetails =
+      Boolean(name.trim() && startDate) && (!endDate || endDate >= startDate);
 
     const manualCanSubmit =
       selectedCourseIds.length > 0 &&
@@ -443,9 +551,7 @@ const BatchCreationModal = observer(
     };
 
     useEffect(() => {
-      if (!isOpen) {
-        return;
-      }
+      if (!isOpen) return;
 
       if (isEditMode) {
         normalizeForOpen(initialBatch, initialStep);
@@ -454,6 +560,7 @@ const BatchCreationModal = observer(
       }
 
       courseStore.fetchCourses().catch(() => undefined);
+
       if (companyId) {
         courseStore
           .fetchAssignedCourseAccesses({
@@ -481,8 +588,9 @@ const BatchCreationModal = observer(
             searchValue: userSearch.trim(),
             ...(companyId ? { companyId } : {}),
           });
+
           setUserResults(response || []);
-        } catch (error) {
+        } catch {
           setUserResults([]);
         }
       }, 300);
@@ -492,6 +600,7 @@ const BatchCreationModal = observer(
 
     const handleModeChange = (nextMode: CreationMode) => {
       setCreationMode(nextMode);
+
       if (nextMode === "manual") {
         setUploadFile(null);
         setUploadPreview(null);
@@ -513,17 +622,17 @@ const BatchCreationModal = observer(
     const toggleUser = (user: any) => {
       setSelectedUsers((current) => {
         const exists = current.some((item) => item._id === user._id);
+
         if (exists) {
           return current.filter((item) => item._id !== user._id);
         }
+
         return [...current, user];
       });
     };
 
     const handleValidateUpload = async () => {
-      if (!uploadFile) {
-        return;
-      }
+      if (!uploadFile) return;
 
       if (isCompanyInactive) {
         toast({
@@ -547,9 +656,15 @@ const BatchCreationModal = observer(
         setUploadPreview(preview);
 
         toast({
-          title: preview?.summary?.validRows ? "Workbook reviewed" : "No valid data found",
+          title: preview?.summary?.validRows
+            ? "Workbook reviewed"
+            : "No valid data found",
           description: preview?.summary?.validRows
-            ? `${preview.summary.validCourseRows} valid course${preview.summary.validCourseRows === 1 ? "" : "s"} and ${preview.summary.validUserRows} valid user${preview.summary.validUserRows === 1 ? "" : "s"} identified.`
+            ? `${preview.summary.validCourseRows} valid course${
+                preview.summary.validCourseRows === 1 ? "" : "s"
+              } and ${preview.summary.validUserRows} valid user${
+                preview.summary.validUserRows === 1 ? "" : "s"
+              } identified.`
             : "No batchable courses or users were found in the uploaded workbook.",
           status: preview?.summary?.validRows ? "success" : "warning",
           duration: 4000,
@@ -558,6 +673,7 @@ const BatchCreationModal = observer(
         });
       } catch (err: any) {
         setUploadPreview(null);
+
         toast({
           title: "Validation failed",
           description:
@@ -575,13 +691,8 @@ const BatchCreationModal = observer(
     const handleSubmit = async () => {
       const isUploadMode = creationMode === "upload" && !isEditMode;
 
-      if (isUploadMode && !uploadCanSubmit) {
-        return;
-      }
-
-      if (!isUploadMode && !manualCanSubmit) {
-        return;
-      }
+      if (isUploadMode && !uploadCanSubmit) return;
+      if (!isUploadMode && !manualCanSubmit) return;
 
       if (isCompanyInactive) {
         toast({
@@ -609,7 +720,9 @@ const BatchCreationModal = observer(
                 name: name.trim(),
                 companyId: companyId || undefined,
                 courseIds: isUploadMode ? [] : selectedCourseIds,
-                userIds: isUploadMode ? [] : selectedUsers.map((user) => user._id),
+                userIds: isUploadMode
+                  ? []
+                  : selectedUsers.map((user) => user._id),
                 startDate: new Date(startDate).toISOString(),
                 endDate: endDate ? new Date(endDate).toISOString() : null,
                 file: isUploadMode ? uploadFile : null,
@@ -628,10 +741,7 @@ const BatchCreationModal = observer(
           isClosable: true,
         });
 
-        if (onCreated) {
-          await onCreated();
-        }
-
+        await onCreated?.();
         handleClose();
       } catch (err: any) {
         toast({
@@ -645,57 +755,102 @@ const BatchCreationModal = observer(
       }
     };
 
-    const canContinueFromDetails =
-      Boolean(name.trim() && startDate) && (!endDate || endDate >= startDate);
-
     const actionLabel = isEditMode
       ? "Save Batch"
       : creationMode === "upload"
         ? uploadPreview?.failedCount
-          ? "Create Batch With Valid Data"
+          ? "Create With Valid Data"
           : "Create Batch"
         : "Create Batch";
 
+    const isSubmitDisabled =
+      isCompanyInactive ||
+      (creationMode === "upload" && !isEditMode
+        ? !uploadCanSubmit
+        : !manualCanSubmit);
+
     return (
       <Drawer isOpen={isOpen} placement="right" size="full" onClose={handleClose}>
-        <DrawerOverlay backdropFilter="blur(6px)" />
-        <DrawerContent bg="gray.50" maxW={{md:"70vw"}}>
+        <DrawerOverlay backdropFilter="blur(8px)" bg="blackAlpha.400" />
+
+        <DrawerContent bg="gray.50" maxW={{ base: "100vw", xl: "82vw" }}>
           <DrawerCloseButton mt={2} />
-          <DrawerHeader pb={0}>
-            <Stack spacing={5}>
-              <SectionHeader
-                eyebrow={isEditMode ? "Edit Batch" : "Create Batch"}
-                title={isEditMode ? "Update batch setup" : "Create a batch in two simple steps"}
-                description="Define the batch basics first, then choose whether you want to build it manually or from a validated spreadsheet."
-              />
-              <Stepper index={step} size="sm" colorScheme="blue">
-                {STEPS.map((item) => (
-                  <Step key={item.title}>
-                    <StepIndicator>
-                      <StepStatus
-                        complete={<StepNumber />}
-                        incomplete={<StepNumber />}
-                        active={<StepNumber />}
-                      />
-                    </StepIndicator>
-                    <Box flexShrink="0">
-                      <StepTitle>{item.title}</StepTitle>
-                      <StepDescription>{item.description}</StepDescription>
-                    </Box>
-                    <StepSeparator />
-                  </Step>
-                ))}
-              </Stepper>
-            </Stack>
+
+          <DrawerHeader
+            bg="white"
+            borderBottomWidth="1px"
+            borderColor="gray.200"
+            px={{ base: 4, md: 8 }}
+            py={{ base: 4, md: 6 }}
+          >
+            <Grid
+              templateColumns={{ base: "1fr", lg: "minmax(0, 1fr) 420px" }}
+              gap={{ base: 5, lg: 8 }}
+              alignItems="center"
+            >
+              <Stack spacing={3}>
+                <Badge
+                  alignSelf="start"
+                  colorScheme={isEditMode ? "purple" : "blue"}
+                  borderRadius="full"
+                  px={3}
+                  py={1}
+                  textTransform="none"
+                  fontSize="xs"
+                >
+                  {isEditMode ? "Edit existing batch" : "Create new batch"}
+                </Badge>
+
+                <Box>
+                  <Text
+                    color="gray.950"
+                    fontSize={{ base: "2xl", md: "3xl" }}
+                    fontWeight="950"
+                    letterSpacing="-0.055em"
+                    lineHeight="1.05"
+                  >
+                    {isEditMode ? "Update batch setup" : "Create a clear learning batch"}
+                  </Text>
+
+                  <Text color="gray.500" fontSize="sm" mt={2} maxW="720px" lineHeight="1.7">
+                    Add the basic details first, then choose how learners and courses should be assigned.
+                    The review panel will show exactly what will be created.
+                  </Text>
+                </Box>
+              </Stack>
+
+              <Box>
+                <Stepper index={step} size="sm" colorScheme="blue">
+                  {STEPS.map((item) => (
+                    <Step key={item.title}>
+                      <StepIndicator>
+                        <StepStatus
+                          complete={<StepNumber />}
+                          incomplete={<StepNumber />}
+                          active={<StepNumber />}
+                        />
+                      </StepIndicator>
+
+                      <Box flexShrink="0">
+                        <StepTitle>{item.title}</StepTitle>
+                        <StepDescription>{item.description}</StepDescription>
+                      </Box>
+
+                      <StepSeparator />
+                    </Step>
+                  ))}
+                </Stepper>
+              </Box>
+            </Grid>
           </DrawerHeader>
 
-          <DrawerBody py={5}>
+          <DrawerBody px={{ base: 4, md: 8 }} py={{ base: 5, md: 6 }}>
             <SlideFade in offsetY="8px">
-              <Stack spacing={4}>
+              <Stack spacing={5}>
                 {isCompanyInactive ? (
                   <Alert
                     status="warning"
-                    borderRadius="16px"
+                    borderRadius="18px"
                     bg="orange.50"
                     color="orange.900"
                     borderWidth="1px"
@@ -711,133 +866,197 @@ const BatchCreationModal = observer(
                     </Box>
                   </Alert>
                 ) : null}
+
                 {step === 0 ? (
-                  <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
-                    <Stack spacing={5}>
-                      <SectionHeader
-                        eyebrow="Step 1"
-                        title="Set the batch details"
-                        description="Start with the essentials so the batch is clearly named and scheduled."
-                      />
+                  <Grid
+                    templateColumns={{ base: "1fr", xl: "minmax(0, 1fr) 360px" }}
+                    gap={5}
+                    alignItems="start"
+                  >
+                    <Surface p={{ base: 4, md: 6 }}>
+                      <Stack spacing={6}>
+                        <SectionHeader
+                          eyebrow="Step 1"
+                          title="Batch details"
+                          description="Give this batch a clear name and schedule so admins and learners can understand it quickly."
+                        />
 
-                      <Stack spacing={4}>
-                        <Box>
-                          <Text fontSize="sm" fontWeight="700" color="gray.700" mb={2}>
-                            Batch Name
-                          </Text>
-                          <Input
-                            value={name}
-                            onChange={(event) => setName(event.target.value)}
-                            placeholder="Q3 onboarding cohort"
-                            bg="white"
-                            borderRadius="14px"
-                            borderColor="gray.200"
-                            h="44px"
-                            _focus={focusRing}
-                          />
-                        </Box>
-
-                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                        <Stack spacing={5}>
                           <Box>
-                            <Text fontSize="sm" fontWeight="700" color="gray.700" mb={2}>
-                              Start Date
+                            <Text fontSize="sm" fontWeight="800" color="gray.700" mb={2}>
+                              Batch Name
                             </Text>
+
                             <Input
-                              type="date"
-                              value={startDate}
-                              onChange={(event) => setStartDate(event.target.value)}
+                              value={name}
+                              onChange={(event) => setName(event.target.value)}
+                              placeholder="Example: Q3 Sales Onboarding"
                               bg="white"
-                              borderRadius="14px"
+                              borderRadius="16px"
                               borderColor="gray.200"
-                              h="44px"
+                              h="46px"
                               _focus={focusRing}
                             />
-                          </Box>
 
-                          <Box>
-                            <Text fontSize="sm" fontWeight="700" color="gray.700" mb={2}>
-                              End Date
+                            <Text fontSize="xs" color="gray.500" mt={2}>
+                              Use a name that explains the audience, purpose, or timeline.
                             </Text>
-                            <Input
-                              type="date"
-                              value={endDate}
-                              min={startDate || undefined}
-                              onChange={(event) => setEndDate(event.target.value)}
-                              bg="white"
-                              borderRadius="14px"
-                              borderColor="gray.200"
-                              h="44px"
-                              _focus={focusRing}
-                            />
                           </Box>
-                        </SimpleGrid>
 
-                        {endDate && startDate && endDate < startDate ? (
-                          <Alert status="warning" borderRadius="14px">
-                            <AlertIcon />
+                          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                             <Box>
-                              <AlertTitle fontSize="sm">Check the schedule</AlertTitle>
-                              <AlertDescription fontSize="sm">
-                                End date must be later than start date.
-                              </AlertDescription>
+                              <Text fontSize="sm" fontWeight="800" color="gray.700" mb={2}>
+                                Start Date
+                              </Text>
+
+                              <Input
+                                type="date"
+                                value={startDate}
+                                onChange={(event) => setStartDate(event.target.value)}
+                                bg="white"
+                                borderRadius="16px"
+                                borderColor="gray.200"
+                                h="46px"
+                                _focus={focusRing}
+                              />
                             </Box>
-                          </Alert>
-                        ) : null}
+
+                            <Box>
+                              <Text fontSize="sm" fontWeight="800" color="gray.700" mb={2}>
+                                End Date
+                              </Text>
+
+                              <Input
+                                type="date"
+                                value={endDate}
+                                min={startDate || undefined}
+                                onChange={(event) => setEndDate(event.target.value)}
+                                bg="white"
+                                borderRadius="16px"
+                                borderColor="gray.200"
+                                h="46px"
+                                _focus={focusRing}
+                              />
+
+                              <Text fontSize="xs" color="gray.500" mt={2}>
+                                Leave empty for an open-ended batch.
+                              </Text>
+                            </Box>
+                          </SimpleGrid>
+
+                          {endDate && startDate && endDate < startDate ? (
+                            <Alert status="warning" borderRadius="16px">
+                              <AlertIcon />
+                              <Box>
+                                <AlertTitle fontSize="sm">Check the schedule</AlertTitle>
+                                <AlertDescription fontSize="sm">
+                                  End date must be later than start date.
+                                </AlertDescription>
+                              </Box>
+                            </Alert>
+                          ) : null}
+                        </Stack>
                       </Stack>
-                    </Stack>
-                  </Box>
+                    </Surface>
+
+                    <Surface>
+                      <Stack spacing={4}>
+                        <SectionHeader
+                          eyebrow="Preview"
+                          title="Batch summary"
+                          description="This will update as you complete the setup."
+                        />
+
+                        <Stack spacing={3}>
+                          <ReviewRow
+                            icon={FiFileText}
+                            label="Batch Name"
+                            value={name.trim() || "Not added"}
+                          />
+
+                          <ReviewRow
+                            icon={FiCalendar}
+                            label="Start Date"
+                            value={formatDate(startDate)}
+                          />
+
+                          <ReviewRow
+                            icon={FiCalendar}
+                            label="End Date"
+                            value={formatDate(endDate)}
+                          />
+                        </Stack>
+
+                        <Alert status="info" borderRadius="16px" bg="blue.50">
+                          <AlertIcon color="blue.500" />
+                          <Text fontSize="sm" color="blue.900" lineHeight="1.6">
+                            Next, you will add courses and learners manually or through a validated Excel upload.
+                          </Text>
+                        </Alert>
+                      </Stack>
+                    </Surface>
+                  </Grid>
                 ) : null}
 
                 {step === 1 ? (
-                  <Stack spacing={4}>
+                  <Stack spacing={5}>
                     {!isEditMode ? (
-                      <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
+                      <Surface>
                         <Stack spacing={4}>
                           <SectionHeader
                             eyebrow="Step 2"
-                            title="Choose how you want to build the batch"
-                            description="Pick the workflow that fits this batch best. You can either configure it manually or upload a validated sheet."
+                            title="Choose setup method"
+                            description="Manual setup is best for smaller batches. Excel upload is best when you already have a prepared learner/course list."
                           />
-                          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+
+                          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                             <ModeCard
-                              title="Manual Selection"
-                              description="Choose the company-assigned courses and search learners manually before creating the batch."
+                              title="Manual Setup"
+                              description="Select courses and learners inside this screen. Best when you want full control."
                               icon={FiUsers}
+                              badge="Recommended"
                               isSelected={creationMode === "manual"}
                               onClick={() => handleModeChange("manual")}
                             />
+
                             <ModeCard
                               title="Excel Upload"
-                              description="Upload a spreadsheet with courseCode and learner identifiers, validate it, then create the batch from the valid rows."
+                              description="Upload one workbook, validate it, then create the batch using only valid rows."
                               icon={FiUploadCloud}
+                              badge="Bulk"
                               isSelected={creationMode === "upload"}
                               onClick={() => handleModeChange("upload")}
                             />
                           </SimpleGrid>
                         </Stack>
-                      </Box>
+                      </Surface>
                     ) : null}
 
                     {creationMode === "manual" || isEditMode ? (
                       <Grid
-                        templateColumns={{ base: "1fr", xl: "minmax(0, 1.1fr) minmax(340px, 0.9fr)" }}
-                        gap={4}
+                        templateColumns={{
+                          base: "1fr",
+                          xl: "minmax(0, 1fr) 380px",
+                        }}
+                        gap={5}
                         alignItems="start"
                       >
-                        <Stack spacing={4}>
-                          <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
+                        <Stack spacing={5}>
+                          <Surface>
                             <Stack spacing={4}>
                               <SectionHeader
                                 eyebrow="Courses"
-                                title="Select the batch courses"
-                                description="Only courses already assigned to the selected company can be added to this batch."
+                                title="Select courses"
+                                description="Every learner in this batch will receive all selected courses."
                               />
 
                               {!companyAssignedCourseIds.length ? (
-                                <Alert status="warning" borderRadius="14px">
+                                <Alert status="warning" borderRadius="16px">
                                   <AlertIcon />
                                   <Box>
-                                    <AlertTitle fontSize="sm">No assigned courses available</AlertTitle>
+                                    <AlertTitle fontSize="sm">
+                                      No assigned courses available
+                                    </AlertTitle>
                                     <AlertDescription fontSize="sm">
                                       Assign at least one course to this company before creating a batch.
                                     </AlertDescription>
@@ -846,12 +1065,14 @@ const BatchCreationModal = observer(
                               ) : null}
 
                               {invalidSelectedCourses.length ? (
-                                <Alert status="warning" borderRadius="14px">
+                                <Alert status="warning" borderRadius="16px">
                                   <AlertIcon />
                                   <Box>
-                                    <AlertTitle fontSize="sm">Some selected courses are no longer valid</AlertTitle>
+                                    <AlertTitle fontSize="sm">
+                                      Some selected courses are no longer valid
+                                    </AlertTitle>
                                     <AlertDescription fontSize="sm">
-                                      Remove the outdated course assignments before saving this batch again.
+                                      Remove outdated course assignments before saving this batch.
                                     </AlertDescription>
                                   </Box>
                                 </Alert>
@@ -864,32 +1085,33 @@ const BatchCreationModal = observer(
                                 searchValue={courseSearch}
                                 onSearchChange={setCourseSearch}
                                 label="Batch courses"
-                                helperText="Every learner in the batch will receive all selected courses."
+                                helperText="Only company-assigned courses are available here."
                                 emptyStateText="No company-assigned courses match this search."
                               />
                             </Stack>
-                          </Box>
+                          </Surface>
 
-                          <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
+                          <Surface>
                             <Stack spacing={4}>
                               <SectionHeader
                                 eyebrow="Learners"
-                                title="Search and select learners"
-                                description="Add the learners who should belong to this batch."
+                                title="Search and add learners"
+                                description="Search users by name, email, code, or department, then click a user to add or remove them."
                               />
 
                               <InputGroup>
                                 <InputLeftElement pointerEvents="none">
                                   <Icon as={FiSearch} color="gray.400" />
                                 </InputLeftElement>
+
                                 <Input
                                   value={userSearch}
                                   onChange={(event) => setUserSearch(event.target.value)}
-                                  placeholder="Search by name, email, code, or department"
+                                  placeholder="Search learners..."
                                   bg="white"
-                                  borderRadius="13px"
+                                  borderRadius="16px"
                                   borderColor="gray.200"
-                                  h="42px"
+                                  h="46px"
                                   _focus={focusRing}
                                 />
                               </InputGroup>
@@ -897,10 +1119,10 @@ const BatchCreationModal = observer(
                               <Box
                                 borderWidth="1px"
                                 borderColor="gray.200"
-                                borderRadius="16px"
+                                borderRadius="18px"
                                 overflow="hidden"
                                 bg="white"
-                                maxH="340px"
+                                maxH="360px"
                                 overflowY="auto"
                               >
                                 {userResults.length === 0 ? (
@@ -923,7 +1145,9 @@ const BatchCreationModal = observer(
                                           p={3.5}
                                           cursor="pointer"
                                           bg={isSelected ? "blue.50" : "white"}
-                                          _hover={{ bg: isSelected ? "blue.100" : "gray.50" }}
+                                          _hover={{
+                                            bg: isSelected ? "blue.100" : "gray.50",
+                                          }}
                                           onClick={() => toggleUser(user)}
                                           justify="space-between"
                                         >
@@ -933,17 +1157,29 @@ const BatchCreationModal = observer(
                                               name={user.name || user.email}
                                               src={user.profilePicture}
                                             />
+
                                             <Box minW={0}>
-                                              <Text fontSize="sm" fontWeight="700" color="gray.950" noOfLines={1}>
+                                              <Text
+                                                fontSize="sm"
+                                                fontWeight="800"
+                                                color="gray.950"
+                                                noOfLines={1}
+                                              >
                                                 {user.name || "Unnamed user"}
                                               </Text>
+
                                               <Text fontSize="xs" color="gray.500" noOfLines={1}>
                                                 {user.email || user.username}
                                               </Text>
                                             </Box>
                                           </HStack>
+
                                           {isSelected ? (
-                                            <Icon as={FiCheckCircle} color="blue.500" flexShrink={0} />
+                                            <Icon
+                                              as={FiCheckCircle}
+                                              color="blue.500"
+                                              flexShrink={0}
+                                            />
                                           ) : null}
                                         </HStack>
                                       );
@@ -952,140 +1188,237 @@ const BatchCreationModal = observer(
                                 )}
                               </Box>
                             </Stack>
-                          </Box>
+                          </Surface>
                         </Stack>
 
-                        <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
-                          <Stack spacing={5}>
-                            <SectionHeader
-                              eyebrow="Review"
-                              title="Review before creating"
-                              description="This summary shows exactly what will be included in the batch."
-                            />
+                        <Box position={{ xl: "sticky" }} top={{ xl: 5 }}>
+                          <Surface>
+                            <Stack spacing={5}>
+                              <SectionHeader
+                                eyebrow="Live Review"
+                                title="Ready to create?"
+                                description="Check the final course and learner count before saving."
+                              />
 
-                            <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3}>
-                              <StatCard label="Courses" value={`${selectedCourseIds.length}`} />
-                              <StatCard label="Learners" value={`${selectedUsers.length}`} />
-                            </SimpleGrid>
-
-                            <Box>
-                              <Text
-                                fontSize="xs"
-                                fontWeight="800"
-                                letterSpacing="0.08em"
-                                textTransform="uppercase"
-                                color="gray.500"
-                                mb={3}
-                              >
-                                Selected Courses
-                              </Text>
-                              {selectedCourses.length ? (
-                                <Wrap spacing={2}>
-                                  {selectedCourses.map((course: any) => (
-                                    <WrapItem key={course._id}>
-                                      <Tag borderRadius="full" colorScheme="blue" variant="subtle" px={3} py={2}>
-                                        <HStack spacing={2}>
-                                          <Icon as={FiBookOpen} boxSize={3.5} />
-                                          <TagLabel fontWeight="700">{course.title}</TagLabel>
-                                        </HStack>
-                                      </Tag>
-                                    </WrapItem>
-                                  ))}
-                                </Wrap>
-                              ) : (
-                                <EmptyState
-                                  icon={FiBookOpen}
-                                  title="No courses selected"
-                                  description="Select one or more courses to prepare this batch."
+                              <SimpleGrid columns={2} spacing={3}>
+                                <StatCard
+                                  label="Courses"
+                                  value={`${selectedCourseIds.length}`}
+                                  colorScheme="blue"
                                 />
-                              )}
-                            </Box>
-
-                            <Box>
-                              <Text
-                                fontSize="xs"
-                                fontWeight="800"
-                                letterSpacing="0.08em"
-                                textTransform="uppercase"
-                                color="gray.500"
-                                mb={3}
-                              >
-                                Selected Learners
-                              </Text>
-                              {selectedUsers.length ? (
-                                <Wrap spacing={2}>
-                                  {selectedUsers.map((user) => (
-                                    <WrapItem key={user._id}>
-                                      <Tag size="lg" borderRadius="full" variant="subtle" colorScheme="blue" pl={1} pr={3} py={1.5}>
-                                        <Avatar size="xs" name={user.name || user.email} src={user.profilePicture} mr={2} />
-                                        <TagLabel fontWeight="700" fontSize="sm">
-                                          {user.name || user.email}
-                                        </TagLabel>
-                                        <TagCloseButton onClick={() => toggleUser(user)} ml={2} />
-                                      </Tag>
-                                    </WrapItem>
-                                  ))}
-                                </Wrap>
-                              ) : (
-                                <EmptyState
-                                  icon={FiUsers}
-                                  title="No learners selected"
-                                  description="Search and pick the learners you want to add to this batch."
+                                <StatCard
+                                  label="Learners"
+                                  value={`${selectedUsers.length}`}
+                                  colorScheme="green"
                                 />
-                              )}
-                            </Box>
-                          </Stack>
+                              </SimpleGrid>
+
+                              <Divider />
+
+                              <Box>
+                                <Text
+                                  fontSize="xs"
+                                  fontWeight="900"
+                                  letterSpacing="0.08em"
+                                  textTransform="uppercase"
+                                  color="gray.500"
+                                  mb={3}
+                                >
+                                  Selected Courses
+                                </Text>
+
+                                {selectedCourses.length ? (
+                                  <Wrap spacing={2}>
+                                    {selectedCourses.slice(0, 8).map((course: any) => (
+                                      <WrapItem key={course._id}>
+                                        <Tag
+                                          borderRadius="full"
+                                          colorScheme="blue"
+                                          variant="subtle"
+                                          px={3}
+                                          py={2}
+                                        >
+                                          <HStack spacing={2}>
+                                            <Icon as={FiBookOpen} boxSize={3.5} />
+                                            <TagLabel fontWeight="800" maxW="180px" noOfLines={1}>
+                                              {course.title}
+                                            </TagLabel>
+                                          </HStack>
+                                        </Tag>
+                                      </WrapItem>
+                                    ))}
+
+                                    {selectedCourses.length > 8 ? (
+                                      <WrapItem>
+                                        <Tag borderRadius="full" colorScheme="gray" px={3} py={2}>
+                                          +{selectedCourses.length - 8} more
+                                        </Tag>
+                                      </WrapItem>
+                                    ) : null}
+                                  </Wrap>
+                                ) : (
+                                  <EmptyState
+                                    icon={FiBookOpen}
+                                    title="No courses selected"
+                                    description="Select at least one course to continue."
+                                  />
+                                )}
+                              </Box>
+
+                              <Box>
+                                <Text
+                                  fontSize="xs"
+                                  fontWeight="900"
+                                  letterSpacing="0.08em"
+                                  textTransform="uppercase"
+                                  color="gray.500"
+                                  mb={3}
+                                >
+                                  Selected Learners
+                                </Text>
+
+                                {selectedUsers.length ? (
+                                  <Wrap spacing={2}>
+                                    {selectedUsers.slice(0, 10).map((user) => (
+                                      <WrapItem key={user._id}>
+                                        <Tag
+                                          size="lg"
+                                          borderRadius="full"
+                                          variant="subtle"
+                                          colorScheme="green"
+                                          pl={1}
+                                          pr={3}
+                                          py={1.5}
+                                        >
+                                          <Avatar
+                                            size="xs"
+                                            name={user.name || user.email}
+                                            src={user.profilePicture}
+                                            mr={2}
+                                          />
+                                          <TagLabel fontWeight="800" fontSize="sm">
+                                            {user.name || user.email}
+                                          </TagLabel>
+                                          <TagCloseButton
+                                            onClick={() => toggleUser(user)}
+                                            ml={2}
+                                          />
+                                        </Tag>
+                                      </WrapItem>
+                                    ))}
+
+                                    {selectedUsers.length > 10 ? (
+                                      <WrapItem>
+                                        <Tag borderRadius="full" colorScheme="gray" px={3} py={2}>
+                                          +{selectedUsers.length - 10} more
+                                        </Tag>
+                                      </WrapItem>
+                                    ) : null}
+                                  </Wrap>
+                                ) : (
+                                  <EmptyState
+                                    icon={FiUsers}
+                                    title="No learners selected"
+                                    description="Search and add learners to this batch."
+                                  />
+                                )}
+                              </Box>
+                            </Stack>
+                          </Surface>
                         </Box>
                       </Grid>
                     ) : null}
 
                     {creationMode === "upload" && !isEditMode ? (
-                      <Stack spacing={4}>
-                        <Grid
-                          templateColumns={{ base: "1fr", xl: "minmax(0, 0.95fr) minmax(360px, 1.05fr)" }}
-                          gap={4}
-                          alignItems="start"
-                        >
-                          <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
+                      <Grid
+                        templateColumns={{
+                          base: "1fr",
+                          xl: "minmax(0, 1fr) 420px",
+                        }}
+                        gap={5}
+                        alignItems="start"
+                      >
+                        <Stack spacing={5}>
+                          <Surface>
                             <Stack spacing={4}>
                               <SectionHeader
                                 eyebrow="Spreadsheet Upload"
-                                title="Upload and validate your workbook"
-                                description="Use one XLSX workbook with separate Courses and Users sheets so both lists can be checked independently."
+                                title="Upload and validate workbook"
+                                description="Use one XLSX workbook with separate Courses and Users sheets."
                               />
 
-                              <Alert status="info" borderRadius="14px" alignItems="start" bg="blue.50" borderWidth="1px" borderColor="blue.100">
+                              <Alert
+                                status="info"
+                                borderRadius="16px"
+                                alignItems="start"
+                                bg="blue.50"
+                                borderWidth="1px"
+                                borderColor="blue.100"
+                              >
                                 <AlertIcon mt={1} color="blue.500" />
                                 <Box>
-                                  <AlertTitle fontSize="sm">Workbook structure</AlertTitle>
+                                  <AlertTitle fontSize="sm">Required workbook structure</AlertTitle>
                                   <AlertDescription fontSize="sm" mt={2} lineHeight="1.6">
-                                    Add a <strong>Courses</strong> sheet with <strong>courseCode</strong>, and a <strong>Users</strong> sheet with
-                                    <strong> email</strong>, <strong>employeeId</strong>, <strong>code</strong>, or <strong>userId</strong>.
+                                    Add a <strong>Courses</strong> sheet with{" "}
+                                    <strong>courseCode</strong>, and a{" "}
+                                    <strong>Users</strong> sheet with{" "}
+                                    <strong>email</strong>,{" "}
+                                    <strong>employeeId</strong>,{" "}
+                                    <strong>code</strong>, or{" "}
+                                    <strong>userId</strong>.
                                   </AlertDescription>
                                 </Box>
                               </Alert>
 
                               <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3}>
-                                <Box p={4} borderWidth="1px" borderColor="gray.200" borderRadius="14px" bg="gray.50">
-                                  <Text fontSize="xs" fontWeight="800" letterSpacing="0.08em" textTransform="uppercase" color="gray.500" mb={2}>
+                                <Box
+                                  p={4}
+                                  borderWidth="1px"
+                                  borderColor="gray.200"
+                                  borderRadius="16px"
+                                  bg="gray.50"
+                                >
+                                  <Text
+                                    fontSize="xs"
+                                    fontWeight="900"
+                                    letterSpacing="0.08em"
+                                    textTransform="uppercase"
+                                    color="gray.500"
+                                    mb={2}
+                                  >
                                     Sheet 1
                                   </Text>
-                                  <Text color="gray.900" fontWeight="700" fontSize="sm">
+                                  <Text color="gray.900" fontWeight="900" fontSize="sm">
                                     Courses
                                   </Text>
                                   <Text color="gray.500" fontSize="sm" mt={1}>
-                                    One column: <strong>courseCode</strong>
+                                    Required column: <strong>courseCode</strong>
                                   </Text>
                                 </Box>
-                                <Box p={4} borderWidth="1px" borderColor="gray.200" borderRadius="14px" bg="gray.50">
-                                  <Text fontSize="xs" fontWeight="800" letterSpacing="0.08em" textTransform="uppercase" color="gray.500" mb={2}>
+
+                                <Box
+                                  p={4}
+                                  borderWidth="1px"
+                                  borderColor="gray.200"
+                                  borderRadius="16px"
+                                  bg="gray.50"
+                                >
+                                  <Text
+                                    fontSize="xs"
+                                    fontWeight="900"
+                                    letterSpacing="0.08em"
+                                    textTransform="uppercase"
+                                    color="gray.500"
+                                    mb={2}
+                                  >
                                     Sheet 2
                                   </Text>
-                                  <Text color="gray.900" fontWeight="700" fontSize="sm">
+                                  <Text color="gray.900" fontWeight="900" fontSize="sm">
                                     Users
                                   </Text>
                                   <Text color="gray.500" fontSize="sm" mt={1}>
-                                    Use <strong>email</strong> or <strong>employeeId/code</strong>
+                                    Use <strong>email</strong> or{" "}
+                                    <strong>employeeId/code</strong>
                                   </Text>
                                 </Box>
                               </SimpleGrid>
@@ -1095,13 +1428,17 @@ const BatchCreationModal = observer(
                                 htmlFor="batch-upload-file"
                                 cursor="pointer"
                                 display="block"
-                                p={4}
+                                p={5}
                                 bg={uploadFile ? "blue.50" : "gray.50"}
                                 borderWidth="1px"
                                 borderStyle="dashed"
                                 borderColor={uploadFile ? "blue.300" : "gray.300"}
-                                borderRadius="16px"
-                                _hover={{ bg: uploadFile ? "blue.100" : "gray.100" }}
+                                borderRadius="20px"
+                                transition="all 0.18s ease"
+                                _hover={{
+                                  bg: uploadFile ? "blue.100" : "gray.100",
+                                  borderColor: uploadFile ? "blue.400" : "gray.400",
+                                }}
                               >
                                 <Input
                                   id="batch-upload-file"
@@ -1113,29 +1450,48 @@ const BatchCreationModal = observer(
                                     setUploadPreview(null);
                                   }}
                                 />
+
                                 <HStack justify="space-between" spacing={3}>
                                   <HStack spacing={3} minW={0}>
                                     <Flex
                                       align="center"
                                       justify="center"
-                                      boxSize="40px"
-                                      borderRadius="14px"
+                                      boxSize="44px"
+                                      borderRadius="16px"
                                       bg="white"
                                       color="blue.600"
                                       flexShrink={0}
+                                      boxShadow="sm"
                                     >
                                       <Icon as={FiUploadCloud} boxSize={5} />
                                     </Flex>
+
                                     <Box minW={0}>
-                                      <Text fontSize="sm" fontWeight="800" color="gray.900" noOfLines={1}>
-                                        {uploadFile ? uploadFile.name : "Choose Excel workbook (.xlsx)"}
+                                      <Text
+                                        fontSize="sm"
+                                        fontWeight="900"
+                                        color="gray.900"
+                                        noOfLines={1}
+                                      >
+                                        {uploadFile
+                                          ? uploadFile.name
+                                          : "Choose Excel workbook (.xlsx)"}
                                       </Text>
+
                                       <Text fontSize="xs" color="gray.500" mt={0.5}>
-                                        CSV and legacy `.xls` files are not supported in this flow.
+                                        CSV and legacy .xls files are not supported.
                                       </Text>
                                     </Box>
                                   </HStack>
-                                  <Badge colorScheme={uploadFile ? "blue" : "gray"} variant="subtle" borderRadius="full" px={3} py={1} textTransform="none">
+
+                                  <Badge
+                                    colorScheme={uploadFile ? "blue" : "gray"}
+                                    variant="subtle"
+                                    borderRadius="full"
+                                    px={3}
+                                    py={1}
+                                    textTransform="none"
+                                  >
                                     Browse
                                   </Badge>
                                 </HStack>
@@ -1143,12 +1499,12 @@ const BatchCreationModal = observer(
 
                               <Button
                                 colorScheme="blue"
-                                variant="outline"
+                                variant="solid"
                                 onClick={handleValidateUpload}
                                 isDisabled={!uploadFile || !companyId || isCompanyInactive}
                                 isLoading={batchStore.isPreviewSubmitting}
-                                h="42px"
-                                borderRadius="14px"
+                                h="44px"
+                                borderRadius="16px"
                               >
                                 Validate Workbook
                               </Button>
@@ -1156,96 +1512,96 @@ const BatchCreationModal = observer(
                               {uploadPreview ? (
                                 <Alert
                                   status={uploadPreview.summary.validRows ? "success" : "warning"}
-                                  borderRadius="14px"
+                                  borderRadius="16px"
                                   alignItems="start"
                                   bg={uploadPreview.summary.validRows ? "green.50" : "orange.50"}
                                   borderWidth="1px"
-                                  borderColor={uploadPreview.summary.validRows ? "green.100" : "orange.200"}
+                                  borderColor={
+                                    uploadPreview.summary.validRows
+                                      ? "green.100"
+                                      : "orange.200"
+                                  }
                                 >
-                                  <AlertIcon mt={1} color={uploadPreview.summary.validRows ? "green.500" : "orange.500"} />
+                                  <AlertIcon
+                                    mt={1}
+                                    color={
+                                      uploadPreview.summary.validRows
+                                        ? "green.500"
+                                        : "orange.500"
+                                    }
+                                  />
                                   <Box>
                                     <AlertTitle fontSize="sm">Upload summary</AlertTitle>
                                     <AlertDescription fontSize="sm" mt={2} lineHeight="1.6">
                                       {uploadPreview.summary.validRows
-                                        ? `Validated ${uploadPreview.summary.validCourseRows} course${uploadPreview.summary.validCourseRows === 1 ? "" : "s"} and ${uploadPreview.summary.validUserRows} user${uploadPreview.summary.validUserRows === 1 ? "" : "s"}, with ${uploadPreview.summary.failedRows} issue${uploadPreview.summary.failedRows === 1 ? "" : "s"} to review.`
+                                        ? `Validated ${uploadPreview.summary.validCourseRows} course${
+                                            uploadPreview.summary.validCourseRows === 1
+                                              ? ""
+                                              : "s"
+                                          } and ${uploadPreview.summary.validUserRows} user${
+                                            uploadPreview.summary.validUserRows === 1
+                                              ? ""
+                                              : "s"
+                                          }. ${uploadPreview.summary.failedRows} issue${
+                                            uploadPreview.summary.failedRows === 1 ? "" : "s"
+                                          } found.`
                                         : "No valid courses or users were found in the uploaded workbook."}
                                     </AlertDescription>
                                   </Box>
                                 </Alert>
                               ) : null}
                             </Stack>
-                          </Box>
+                          </Surface>
 
-                          <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
-                            <Stack spacing={5}>
-                              <SectionHeader
-                                eyebrow="Review"
-                                title="What this upload will create"
-                                description="Review the validated course list, learner list, and batch outcome before confirming."
-                              />
-
-                              {uploadPreview ? (
-                                <>
-                                  <SimpleGrid columns={{ base: 1, sm: 2, xl: 3 }} spacing={3}>
-                                    <StatCard label="Course Rows" value={`${uploadPreview.summary.courseRows}`} />
-                                    <StatCard label="User Rows" value={`${uploadPreview.summary.userRows}`} />
-                                    <StatCard label="Total Rows" value={`${uploadPreview.summary.totalRows}`} />
-                                    <StatCard label="Valid Courses" value={`${uploadPreview.summary.validCourseRows}`} />
-                                    <StatCard label="Valid Users" value={`${uploadPreview.summary.validUserRows}`} />
-                                    <StatCard label="Failed Rows" value={`${uploadPreview.summary.failedRows}`} />
-                                  </SimpleGrid>
-
-                                  <Alert status="info" borderRadius="14px" alignItems="start" bg="gray.50" borderWidth="1px" borderColor="gray.200">
-                                    <AlertIcon mt={1} color="blue.500" />
-                                    <Box>
-                                      <AlertTitle fontSize="sm">Batch behavior</AlertTitle>
-                                      <AlertDescription fontSize="sm" mt={2} lineHeight="1.6">
-                                        This batch will be created with <strong>{uploadPreview.courseCount}</strong> unique course{uploadPreview.courseCount === 1 ? "" : "s"} and <strong>{uploadPreview.matchedCount}</strong> unique learner{uploadPreview.matchedCount === 1 ? "" : "s"}. Each learner in the batch will receive all valid courses included in this upload.
-                                      </AlertDescription>
-                                    </Box>
-                                  </Alert>
-
-                                  <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3}>
-                                    <StatCard label="Batch Courses" value={`${uploadPreview.courseCount}`} />
-                                    <StatCard label="Batch Learners" value={`${uploadPreview.matchedCount}`} />
-                                  </SimpleGrid>
-                                </>
-                              ) : (
-                                <EmptyState
-                                  icon={FiFileText}
-                                  title="No upload review yet"
-                                  description="Upload a workbook and validate it to review the final course list, learner list, and any sheet-level issues."
-                                />
-                              )}
-                            </Stack>
-                          </Box>
-                        </Grid>
-
-                        {uploadPreview ? (
-                          <Grid templateColumns={{ base: "1fr", xl: "1.05fr 0.95fr" }} gap={4} alignItems="start">
-                            <Stack spacing={4}>
-                              <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
+                          {uploadPreview ? (
+                            <Grid
+                              templateColumns={{ base: "1fr", xl: "1fr 1fr" }}
+                              gap={5}
+                              alignItems="start"
+                            >
+                              <Surface>
                                 <Stack spacing={4}>
                                   <SectionHeader
-                                    eyebrow="Selected Courses"
-                                    title={`Validated courses (${uploadPreview.matchedCourses.length})`}
-                                    description="These are the courses that will be assigned to everyone in this batch."
+                                    eyebrow="Valid Courses"
+                                    title={`Courses found (${uploadPreview.matchedCourses.length})`}
+                                    description="These courses will be assigned to every learner in the batch."
                                   />
 
                                   {uploadPreview.matchedCourses.length ? (
                                     <Stack spacing={3} maxH="420px" overflowY="auto" pr={1}>
                                       {uploadPreview.matchedCourses.map((course) => (
-                                        <Box key={course.courseId} borderWidth="1px" borderColor="gray.200" borderRadius="14px" p={4}>
+                                        <Box
+                                          key={course.courseId}
+                                          borderWidth="1px"
+                                          borderColor="gray.200"
+                                          borderRadius="16px"
+                                          p={4}
+                                          bg="white"
+                                        >
                                           <HStack justify="space-between" align="start" gap={3}>
                                             <Stack spacing={1} minW={0}>
-                                              <Text fontWeight="800" color="gray.950">
+                                              <Text fontWeight="900" color="gray.950">
                                                 {course.title}
                                               </Text>
-                                              <Badge alignSelf="start" colorScheme="blue" variant="subtle" borderRadius="full" px={2.5} py={1} textTransform="none">
+                                              <Badge
+                                                alignSelf="start"
+                                                colorScheme="blue"
+                                                variant="subtle"
+                                                borderRadius="full"
+                                                px={2.5}
+                                                py={1}
+                                                textTransform="none"
+                                              >
                                                 {course.courseCode}
                                               </Badge>
                                             </Stack>
-                                            <Icon as={FiCheckCircle} color="green.500" boxSize={5} flexShrink={0} />
+
+                                            <Icon
+                                              as={FiCheckCircle}
+                                              color="green.500"
+                                              boxSize={5}
+                                              flexShrink={0}
+                                            />
                                           </HStack>
                                         </Box>
                                       ))}
@@ -1258,14 +1614,14 @@ const BatchCreationModal = observer(
                                     />
                                   )}
                                 </Stack>
-                              </Box>
+                              </Surface>
 
-                              <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
+                              <Surface>
                                 <Stack spacing={4}>
                                   <SectionHeader
-                                    eyebrow="Selected Users"
-                                    title={`Validated learners (${uploadPreview.matchedUsers.length})`}
-                                    description="Every learner listed here will receive all valid batch courses after confirmation."
+                                    eyebrow="Valid Learners"
+                                    title={`Learners found (${uploadPreview.matchedUsers.length})`}
+                                    description="These learners will be added to the batch."
                                   />
 
                                   {uploadPreview.matchedUsers.length ? (
@@ -1276,29 +1632,45 @@ const BatchCreationModal = observer(
                                           p={4}
                                           borderWidth="1px"
                                           borderColor="gray.200"
-                                          borderRadius="14px"
+                                          borderRadius="16px"
                                           justify="space-between"
                                           align="start"
                                           gap={3}
+                                          bg="white"
                                         >
                                           <HStack spacing={3} minW={0} align="start">
-                                            <Avatar size="sm" name={user.name || user.email || user.username} />
+                                            <Avatar
+                                              size="sm"
+                                              name={user.name || user.email || user.username}
+                                            />
+
                                             <Stack spacing={1} minW={0}>
-                                              <Text fontWeight="800" color="gray.950" noOfLines={1}>
+                                              <Text
+                                                fontWeight="900"
+                                                color="gray.950"
+                                                noOfLines={1}
+                                              >
                                                 {user.name || user.email || "Unnamed user"}
                                               </Text>
+
                                               <Text fontSize="sm" color="gray.500" noOfLines={1}>
-                                                {user.email || user.username || user.code || "No identifier available"}
+                                                {user.email ||
+                                                  user.username ||
+                                                  user.code ||
+                                                  "No identifier available"}
                                               </Text>
-                                              {user.department ? (
-                                                <Badge alignSelf="start" colorScheme="gray" variant="subtle" borderRadius="full" px={2.5} py={1} textTransform="none">
-                                                  {user.department}
-                                                </Badge>
-                                              ) : null}
                                             </Stack>
                                           </HStack>
+
                                           {user.code ? (
-                                            <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={2.5} py={1} textTransform="none">
+                                            <Badge
+                                              colorScheme="blue"
+                                              variant="subtle"
+                                              borderRadius="full"
+                                              px={2.5}
+                                              py={1}
+                                              textTransform="none"
+                                            >
                                               {user.code}
                                             </Badge>
                                           ) : null}
@@ -1313,118 +1685,185 @@ const BatchCreationModal = observer(
                                     />
                                   )}
                                 </Stack>
-                              </Box>
-                            </Stack>
+                              </Surface>
+                            </Grid>
+                          ) : null}
+                        </Stack>
 
-                            <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
-                              <Stack spacing={4}>
-                                <SectionHeader
-                                  eyebrow="Validation Errors"
-                                  title={`Review issues (${uploadPreview.failedCount})`}
-                                  description="Courses and users are validated independently, so only the invalid entries below will be skipped."
+                        <Box position={{ xl: "sticky" }} top={{ xl: 5 }}>
+                          <Surface>
+                            <Stack spacing={5}>
+                              <SectionHeader
+                                eyebrow="Upload Review"
+                                title="Final outcome"
+                                description="Only valid rows will be used when creating the batch."
+                              />
+
+                              {uploadPreview ? (
+                                <>
+                                  <SimpleGrid columns={2} spacing={3}>
+                                    <StatCard
+                                      label="Courses"
+                                      value={`${uploadPreview.courseCount}`}
+                                      colorScheme="blue"
+                                    />
+                                    <StatCard
+                                      label="Learners"
+                                      value={`${uploadPreview.matchedCount}`}
+                                      colorScheme="green"
+                                    />
+                                    <StatCard
+                                      label="Failed"
+                                      value={`${uploadPreview.failedCount}`}
+                                      colorScheme={
+                                        uploadPreview.failedCount ? "orange" : "gray"
+                                      }
+                                    />
+                                    <StatCard
+                                      label="Rows"
+                                      value={`${uploadPreview.summary.totalRows}`}
+                                      colorScheme="purple"
+                                    />
+                                  </SimpleGrid>
+
+                                  <Alert
+                                    status="info"
+                                    borderRadius="16px"
+                                    bg="gray.50"
+                                    borderWidth="1px"
+                                    borderColor="gray.200"
+                                  >
+                                    <AlertIcon color="blue.500" />
+                                    <Text fontSize="sm" lineHeight="1.6">
+                                      This batch will be created with{" "}
+                                      <strong>{uploadPreview.courseCount}</strong> course
+                                      {uploadPreview.courseCount === 1 ? "" : "s"} and{" "}
+                                      <strong>{uploadPreview.matchedCount}</strong> learner
+                                      {uploadPreview.matchedCount === 1 ? "" : "s"}.
+                                    </Text>
+                                  </Alert>
+
+                                  {uploadPreview.courseErrors.length ||
+                                  uploadPreview.userErrors.length ? (
+                                    <Stack spacing={4}>
+                                      <Divider />
+
+                                      <SectionHeader
+                                        eyebrow="Issues"
+                                        title={`Rows skipped (${uploadPreview.failedCount})`}
+                                        description="Invalid entries are listed below and will not be included."
+                                      />
+
+                                      <Stack spacing={3} maxH="420px" overflowY="auto" pr={1}>
+                                        {uploadPreview.courseErrors.map((entry, index) => (
+                                          <Box
+                                            key={`course-${entry.rowNumber || index}`}
+                                            borderWidth="1px"
+                                            borderColor="orange.200"
+                                            borderRadius="16px"
+                                            p={4}
+                                            bg="orange.50"
+                                          >
+                                            <Stack spacing={1.5}>
+                                              <HStack spacing={2} flexWrap="wrap">
+                                                {entry.rowNumber ? (
+                                                  <Badge
+                                                    colorScheme="orange"
+                                                    variant="subtle"
+                                                    borderRadius="full"
+                                                    px={2.5}
+                                                    py={1}
+                                                    textTransform="none"
+                                                  >
+                                                    Course row {entry.rowNumber}
+                                                  </Badge>
+                                                ) : null}
+                                                {entry.courseCode ? (
+                                                  <Badge
+                                                    colorScheme="gray"
+                                                    variant="subtle"
+                                                    borderRadius="full"
+                                                    px={2.5}
+                                                    py={1}
+                                                    textTransform="none"
+                                                  >
+                                                    {entry.courseCode}
+                                                  </Badge>
+                                                ) : null}
+                                              </HStack>
+
+                                              <Text fontWeight="900" color="orange.900">
+                                                {entry.reason}
+                                              </Text>
+                                            </Stack>
+                                          </Box>
+                                        ))}
+
+                                        {uploadPreview.userErrors.map((entry, index) => (
+                                          <Box
+                                            key={`user-${entry.rowNumber || index}`}
+                                            borderWidth="1px"
+                                            borderColor="orange.200"
+                                            borderRadius="16px"
+                                            p={4}
+                                            bg="orange.50"
+                                          >
+                                            <Stack spacing={1.5}>
+                                              <HStack spacing={2} flexWrap="wrap">
+                                                {entry.rowNumber ? (
+                                                  <Badge
+                                                    colorScheme="orange"
+                                                    variant="subtle"
+                                                    borderRadius="full"
+                                                    px={2.5}
+                                                    py={1}
+                                                    textTransform="none"
+                                                  >
+                                                    User row {entry.rowNumber}
+                                                  </Badge>
+                                                ) : null}
+                                                {entry.email ? (
+                                                  <Badge
+                                                    colorScheme="gray"
+                                                    variant="subtle"
+                                                    borderRadius="full"
+                                                    px={2.5}
+                                                    py={1}
+                                                    textTransform="none"
+                                                  >
+                                                    {entry.email}
+                                                  </Badge>
+                                                ) : null}
+                                              </HStack>
+
+                                              <Text fontWeight="900" color="orange.900">
+                                                {entry.reason}
+                                              </Text>
+                                            </Stack>
+                                          </Box>
+                                        ))}
+                                      </Stack>
+                                    </Stack>
+                                  ) : (
+                                    <Alert status="success" borderRadius="16px">
+                                      <AlertIcon />
+                                      <Text fontSize="sm" fontWeight="700">
+                                        No validation issues found.
+                                      </Text>
+                                    </Alert>
+                                  )}
+                                </>
+                              ) : (
+                                <EmptyState
+                                  icon={FiFileText}
+                                  title="No upload review yet"
+                                  description="Upload and validate a workbook to see the final course and learner count."
                                 />
-
-                                {uploadPreview.courseErrors.length || uploadPreview.userErrors.length ? (
-                                  <Stack spacing={4} maxH="720px" overflowY="auto" pr={1}>
-                                    <Box>
-                                      <Text fontSize="xs" fontWeight="800" letterSpacing="0.08em" textTransform="uppercase" color="gray.500" mb={3}>
-                                        Invalid Courses
-                                      </Text>
-                                      {uploadPreview.courseErrors.length ? (
-                                        <Stack spacing={3}>
-                                          {uploadPreview.courseErrors.map((entry, index) => (
-                                            <Box key={`${entry.rowNumber || entry.courseCode}-${index}`} borderWidth="1px" borderColor="orange.200" borderRadius="14px" p={4} bg="orange.50">
-                                              <Stack spacing={1.5}>
-                                                <HStack spacing={2} flexWrap="wrap">
-                                                  {entry.rowNumber ? (
-                                                    <Badge colorScheme="orange" variant="subtle" borderRadius="full" px={2.5} py={1} textTransform="none">
-                                                      Row {entry.rowNumber}
-                                                    </Badge>
-                                                  ) : null}
-                                                  {entry.courseCode ? (
-                                                    <Badge colorScheme="gray" variant="subtle" borderRadius="full" px={2.5} py={1} textTransform="none">
-                                                      {entry.courseCode}
-                                                    </Badge>
-                                                  ) : null}
-                                                </HStack>
-                                                <Text fontWeight="800" color="orange.900">
-                                                  {entry.reason}
-                                                </Text>
-                                                <Text fontSize="sm" color="orange.800">
-                                                  {entry.courseCode || entry.courseId || "Course reference missing"}
-                                                </Text>
-                                              </Stack>
-                                            </Box>
-                                          ))}
-                                        </Stack>
-                                      ) : (
-                                        <EmptyState
-                                          icon={FiCheckCircle}
-                                          title="No course issues"
-                                          description="All course entries were validated successfully."
-                                        />
-                                      )}
-                                    </Box>
-
-                                    <Divider />
-
-                                    <Box>
-                                      <Text fontSize="xs" fontWeight="800" letterSpacing="0.08em" textTransform="uppercase" color="gray.500" mb={3}>
-                                        Invalid Users
-                                      </Text>
-                                      {uploadPreview.userErrors.length ? (
-                                        <Stack spacing={3}>
-                                          {uploadPreview.userErrors.map((entry, index) => (
-                                            <Box key={`${entry.rowNumber || entry.email || entry.employeeId || entry.userId}-${index}`} borderWidth="1px" borderColor="orange.200" borderRadius="14px" p={4} bg="orange.50">
-                                              <Stack spacing={1.5}>
-                                                <HStack spacing={2} flexWrap="wrap">
-                                                  {entry.rowNumber ? (
-                                                    <Badge colorScheme="orange" variant="subtle" borderRadius="full" px={2.5} py={1} textTransform="none">
-                                                      Row {entry.rowNumber}
-                                                    </Badge>
-                                                  ) : null}
-                                                  {entry.email ? (
-                                                    <Badge colorScheme="gray" variant="subtle" borderRadius="full" px={2.5} py={1} textTransform="none">
-                                                      {entry.email}
-                                                    </Badge>
-                                                  ) : null}
-                                                  {!entry.email && entry.employeeId ? (
-                                                    <Badge colorScheme="gray" variant="subtle" borderRadius="full" px={2.5} py={1} textTransform="none">
-                                                      {entry.employeeId}
-                                                    </Badge>
-                                                  ) : null}
-                                                </HStack>
-                                                <Text fontWeight="800" color="orange.900">
-                                                  {entry.reason}
-                                                </Text>
-                                                <Text fontSize="sm" color="orange.800">
-                                                  {entry.email || entry.employeeId || entry.userId || "User reference missing"}
-                                                </Text>
-                                              </Stack>
-                                            </Box>
-                                          ))}
-                                        </Stack>
-                                      ) : (
-                                        <EmptyState
-                                          icon={FiCheckCircle}
-                                          title="No user issues"
-                                          description="All user entries were validated successfully."
-                                        />
-                                      )}
-                                    </Box>
-                                  </Stack>
-                                ) : (
-                                  <EmptyState
-                                    icon={FiCheckCircle}
-                                    title="No validation errors"
-                                    description="All uploaded course and user entries were validated successfully."
-                                  />
-                                )}
-                              </Stack>
-                            </Box>
-                          </Grid>
-                        ) : null}
-                      </Stack>
+                              )}
+                            </Stack>
+                          </Surface>
+                        </Box>
+                      </Grid>
                     ) : null}
                   </Stack>
                 ) : null}
@@ -1432,7 +1871,12 @@ const BatchCreationModal = observer(
             </SlideFade>
           </DrawerBody>
 
-          <DrawerFooter borderTopWidth="1px" borderColor="gray.200" p={{ base: 4, md: 5 }} bg="white">
+          <DrawerFooter
+            borderTopWidth="1px"
+            borderColor="gray.200"
+            p={{ base: 4, md: 5 }}
+            bg="white"
+          >
             <Flex
               direction={{ base: "column-reverse", sm: "row" }}
               justify="space-between"
@@ -1441,38 +1885,36 @@ const BatchCreationModal = observer(
               w="full"
             >
               <Button
-                h="42px"
-                borderRadius="13px"
+                h="44px"
+                borderRadius="16px"
                 variant="ghost"
                 colorScheme="gray"
                 onClick={() => (step === 0 ? handleClose() : setStep(0))}
               >
-                {step === 0 ? "Cancel" : "Back"}
+                {step === 0 ? "Cancel" : "Back to Details"}
               </Button>
 
               {step === 0 ? (
                 <Button
-                  h="42px"
-                  borderRadius="13px"
+                  h="44px"
+                  borderRadius="16px"
                   colorScheme="blue"
                   onClick={() => setStep(1)}
                   isDisabled={!canContinueFromDetails}
                   px={8}
                 >
-                  Continue
+                  Continue to Setup
                 </Button>
               ) : (
                 <Button
-                  h="42px"
-                  borderRadius="13px"
+                  h="44px"
+                  borderRadius="16px"
                   colorScheme="blue"
                   onClick={handleSubmit}
                   isLoading={batchStore.isSubmitting}
-                  isDisabled={
-                    isCompanyInactive ||
-                    (creationMode === "upload" && !isEditMode ? !uploadCanSubmit : !manualCanSubmit)
-                  }
+                  isDisabled={isSubmitDisabled}
                   px={8}
+                  leftIcon={<Icon as={FiCheckCircle} />}
                 >
                   {actionLabel}
                 </Button>

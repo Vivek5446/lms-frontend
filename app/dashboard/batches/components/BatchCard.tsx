@@ -1,323 +1,260 @@
 "use client";
 
-import StatCard from "@/app/component/common/StatCard/StatCard";
-import type { BatchListItem } from "@/app/store/batchStore/batchStore";
 import {
   Badge,
   Box,
-  Button,
+  Flex,
   HStack,
   Icon,
-  Progress,
   SimpleGrid,
   Stack,
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
-import type { KeyboardEvent } from "react";
 import {
   FiBookOpen,
   FiCalendar,
   FiChevronRight,
   FiClock,
+  FiGrid,
   FiUsers,
 } from "react-icons/fi";
 
-type Status = "active" | "expired" | "expiring_soon" | "completed";
-
-function getStatusColor(status: Status) {
-  if (status === "expired") return "red";
-  if (status === "completed") return "green";
-  if (status === "expiring_soon") return "orange";
-  return "green";
-}
-
-function formatDuration(batch: BatchListItem) {
-  if (batch.durationLabel) {
-    return batch.durationLabel;
-  }
-
-  const start = batch.startDate
-    ? new Date(batch.startDate).toLocaleDateString()
-    : "Not set";
-  const end = batch.endDate
-    ? new Date(batch.endDate).toLocaleDateString()
-    : "Open ended";
-  return `${start} - ${end}`;
-}
-
 type BatchCardProps = {
-  batch: BatchListItem;
+  batch: any;
   onClick: () => void;
   isLearner?: boolean;
 };
 
-export default function BatchCard({
-  batch,
-  onClick,
-  isLearner = false,
-}: BatchCardProps) {
-  const mutedText = useColorModeValue("gray.600", "gray.300");
-  const cardBg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const completionPercent =
-    batch.courseCount > 0
-      ? Math.round(((batch.completedCount || 0) / batch.courseCount) * 100)
-      : 0;
-  const statusColor = getStatusColor(batch.status as Status);
+const getStatusColor = (status?: string) => {
+  const normalizedStatus = String(status || "active").toLowerCase();
 
-  const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onClick();
-    }
-  };
+  if (normalizedStatus === "completed") return "green";
+  if (normalizedStatus === "inactive") return "gray";
+  if (normalizedStatus === "draft") return "yellow";
+  if (normalizedStatus === "expired") return "red";
+  if (normalizedStatus === "upcoming") return "purple";
 
-  if (isLearner) {
-    return (
-      <Box
-        role="button"
-        tabIndex={0}
-        aria-label={`Open ${batch.name}`}
-        borderRadius="2xl"
-        overflow="hidden"
-        cursor="pointer"
-        transition="all 0.22s ease"
-        onClick={onClick}
-        onKeyDown={handleCardKeyDown}
-        bg={cardBg}
-        borderWidth="1px"
-        borderColor={borderColor}
-        _hover={{
-          transform: "translateY(-3px)",
-          boxShadow: "0 16px 34px rgba(37, 99, 235, 0.12)",
-          borderColor: "blue.300",
-        }}
-        _active={{ transform: "scale(0.98)" }}
-      >
-        <Box
-          bg="linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 58%, #dbeafe 100%)"
-          color="gray.800"
-          p={{ base: 3, md: 5 }}
-        >
-          <HStack justify="space-between" align="start" gap={3}>
-            <Box minW={0}>
-              <Badge
-                bg="blue.200"
-                color="blue.700"
-                borderRadius="full"
-                px={3}
-                py={1}
-                fontSize="xs"
-                mb={2}
-              >
-                Batch
-              </Badge>
-              <Text
-                fontSize={{ base: "md", md: "2xl" }}
-                fontWeight="800"
-                lineHeight="1.2"
-                noOfLines={2}
-              >
-                {batch.name}
-              </Text>
-              <Text mt={1} fontSize="xs" opacity={0.8} noOfLines={1}>
-                {batch.company?.company_name || "Assigned learning group"}
-              </Text>
-            </Box>
+  return "blue";
+};
 
-            <Badge
-              bg={`${statusColor}.100`}
-              color={`${statusColor}.700`}
-              borderRadius="full"
-              px={3}
-              py={1}
-              flexShrink={0}
-            >
-              {batch.status.replace(/_/g, " ")}
-            </Badge>
-          </HStack>
+const formatDate = (date?: string) => {
+  if (!date) return "Not set";
 
-          <Box mt={{ base: 3, md: 5 }}>
-            <HStack justify="space-between" mb={1}>
-              <Text fontSize="xs" fontWeight="700" opacity={0.9}>
-                Progress
-              </Text>
-              <Text fontSize="xs" fontWeight="800">
-                {batch.completedCount || 0}/{batch.courseCount}
-              </Text>
-            </HStack>
-            <Progress
-              value={completionPercent}
-              size="sm"
-              borderRadius="full"
-              bg="whiteAlpha.800"
-              sx={{
-                "& > div": {
-                  background: "linear-gradient(90deg, #2563eb, #22c55e)",
-                },
-              }}
-            />
-          </Box>
-        </Box>
-
-        <Box p={{ base: 3, md: 5 }}>
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 2, md: 4 }}>
-            <StatCard
-              label="Courses"
-              value={batch.courseCount}
-              icon={FiBookOpen}
-              colorScheme="blue"
-            />
-            <StatCard
-              label="Status"
-              value={batch.status.replace(/_/g, " ")}
-              icon={FiClock}
-              colorScheme="green"
-            />
-            <Box display={{ base: "none", md: "block" }}>
-              <StatCard
-                label="Duration"
-                value={formatDuration(batch)}
-                icon={FiCalendar}
-                colorScheme="orange"
-              />
-            </Box>
-            <Box display={{ base: "none", md: "block" }}>
-              <StatCard
-                label="Owner"
-                value={batch.createdBy?.name || "Team"}
-                icon={FiUsers}
-                colorScheme="purple"
-              />
-            </Box>
-          </SimpleGrid>
-
-          <HStack mt={{ base: 3, md: 5 }} justify="space-between" gap={3}>
-            <Text fontSize="sm" color="gray.500" display={{ base: "none", sm: "block" }}>
-              Continue learning from this batch
-            </Text>
-            <Button
-              size="sm"
-              h={{ base: "38px", md: "40px" }}
-              px={5}
-              bg="blue.600"
-              color="white"
-              borderRadius="lg"
-              fontWeight="700"
-              w={{ base: "full", sm: "auto" }}
-              _hover={{ bg: "blue.700" }}
-              rightIcon={<Icon as={FiChevronRight} />}
-            >
-              View
-            </Button>
-          </HStack>
-        </Box>
-      </Box>
-    );
+  try {
+    return new Date(date).toLocaleDateString();
+  } catch {
+    return "Not set";
   }
+};
+
+const MiniMetric = ({
+  label,
+  value,
+  icon,
+  colorScheme,
+}: {
+  label: string;
+  value: string | number;
+  icon: any;
+  colorScheme: string;
+}) => {
+  const bg = useColorModeValue(`${colorScheme}.50`, "whiteAlpha.100");
+  const iconColor = useColorModeValue(`${colorScheme}.500`, `${colorScheme}.300`);
+  const textColor = useColorModeValue("gray.900", "white");
+  const mutedText = useColorModeValue("gray.500", "gray.400");
 
   return (
     <Box
-      role="button"
-      tabIndex={0}
-      aria-label={`Open ${batch.name}`}
-      bg="white"
+      bg={bg}
+      rounded={{ base: "xl", md: "2xl" }}
+      px={{ base: 2, md: 3 }}
+      py={{ base: 2, md: 3 }}
+      minW={0}
+    >
+      <HStack spacing={1.5} mb={1}>
+        <Icon as={icon} boxSize={3} color={iconColor} flexShrink={0} />
+
+        <Text
+          fontSize="2xs"
+          color={mutedText}
+          fontWeight="800"
+          noOfLines={1}
+          textTransform="uppercase"
+          letterSpacing="wide"
+        >
+          {label}
+        </Text>
+      </HStack>
+
+      <Text
+        fontSize={{ base: "xs", md: "sm" }}
+        fontWeight="900"
+        color={textColor}
+        noOfLines={1}
+        textTransform={label === "Status" ? "capitalize" : "none"}
+      >
+        {value}
+      </Text>
+    </Box>
+  );
+};
+
+const BatchCard = ({ batch, onClick, isLearner }: BatchCardProps) => {
+  const cardBg = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const textColor = useColorModeValue("gray.900", "white");
+  const mutedText = useColorModeValue("gray.500", "gray.400");
+  const footerBg = useColorModeValue("gray.50", "whiteAlpha.100");
+
+  const status = batch.status || "active";
+  const startDate = formatDate(batch.startDate);
+  const endDate = formatDate(batch.endDate);
+
+  return (
+    <Box
+      bg={cardBg}
       borderWidth="1px"
-      borderRadius="3xl"
-      p={5}
-      boxShadow="sm"
+      borderColor={borderColor}
+      rounded={{ base: "2xl", md: "3xl" }}
+      p={{ base: 3, md: 5 }}
+      shadow="sm"
       cursor="pointer"
       transition="all 0.2s ease"
+      position="relative"
+      overflow="hidden"
       _hover={{
-        transform: "translateY(-2px)",
-        boxShadow: "md",
-        borderColor: "blue.200",
+        transform: { base: "none", md: "translateY(-3px)" },
+        shadow: { base: "sm", md: "lg" },
+        borderColor: "blue.300",
       }}
       onClick={onClick}
-      onKeyDown={handleCardKeyDown}
     >
-      <Stack spacing={5}>
-        <HStack justify="space-between" align="start">
-          <Stack spacing={2}>
-            <Badge colorScheme="gray" borderRadius="full" w="fit-content" px={3} py={1}>
-              Batch
-            </Badge>
-            <Text fontSize="lg" fontWeight="semibold" color="gray.900">
-              {batch.name}
-            </Text>
-            <Text color={mutedText} fontSize="sm">
-              {batch.company?.company_name || "Company batch"}
-            </Text>
-          </Stack>
+      <Box
+        position="absolute"
+        insetX={0}
+        top={0}
+        h="1"
+        bgGradient="linear(to-r, blue.400, purple.500, pink.400)"
+      />
 
-          <Badge colorScheme={getStatusColor(batch.status)} borderRadius="full" px={3} py={1}>
-            {batch.status === "expiring_soon" ? "Expiring soon" : batch.status}
+      <Stack spacing={{ base: 3, md: 4 }}>
+        <Flex align="flex-start" justify="space-between" gap={3}>
+          <HStack spacing={3} minW={0} flex="1">
+            <Box
+              w={{ base: 9, md: 12 }}
+              h={{ base: 9, md: 12 }}
+              rounded={{ base: "xl", md: "2xl" }}
+              bgGradient="linear(to-br, blue.500, purple.600)"
+              color="white"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              flexShrink={0}
+              shadow="sm"
+            >
+              <Icon as={FiGrid} boxSize={{ base: 4, md: 5 }} />
+            </Box>
+
+            <Box minW={0}>
+              <Text
+                fontSize={{ base: "sm", md: "lg" }}
+                fontWeight="900"
+                color={textColor}
+                noOfLines={1}
+                lineHeight="1.25"
+              >
+                {batch.name}
+              </Text>
+
+              <HStack
+                mt={1}
+                spacing={1.5}
+                color={mutedText}
+                fontSize={{ base: "xs", md: "sm" }}
+                minW={0}
+              >
+                <Icon as={FiCalendar} boxSize={3} flexShrink={0} />
+                <Text noOfLines={1}>
+                  {startDate} - {endDate}
+                </Text>
+              </HStack>
+            </Box>
+          </HStack>
+
+          <Badge
+            colorScheme={getStatusColor(status)}
+            rounded="full"
+            px={{ base: 2, md: 3 }}
+            py={1}
+            fontSize="xs"
+            flexShrink={0}
+            textTransform="capitalize"
+          >
+            {status}
           </Badge>
-        </HStack>
+        </Flex>
 
-        <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3}>
-          <Box borderRadius="2xl" bg="blue.50" p={3}>
-            <HStack spacing={2} color="blue.700">
-              <Icon as={FiBookOpen} />
-              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
-                Courses
-              </Text>
-            </HStack>
-            <Text mt={2} fontSize="lg" fontWeight="semibold">
-              {batch.courseCount}
-            </Text>
-          </Box>
+        <SimpleGrid columns={3} spacing={{ base: 2, md: 3 }}>
+          <MiniMetric
+            label="Courses"
+            value={batch.courseCount || 0}
+            icon={FiBookOpen}
+            colorScheme="purple"
+          />
 
-          <Box borderRadius="2xl" bg="purple.50" p={3}>
-            <HStack spacing={2} color="purple.700">
-              <Icon as={FiUsers} />
-              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
-                Users
-              </Text>
-            </HStack>
-            <Text mt={2} fontSize="lg" fontWeight="semibold">
-              {batch.userCount ?? 0}
-            </Text>
-          </Box>
+          <MiniMetric
+            label="Users"
+            value={batch.userCount || 0}
+            icon={FiUsers}
+            colorScheme="green"
+          />
 
-          <Box borderRadius="2xl" bg="orange.50" p={3}>
-            <HStack spacing={2} color="orange.700">
-              <Icon as={FiCalendar} />
-              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
-                Duration
-              </Text>
-            </HStack>
-            <Text mt={2} fontSize="sm" fontWeight="medium" noOfLines={2}>
-              {formatDuration(batch)}
-            </Text>
-          </Box>
-
-          <Box borderRadius="2xl" bg="gray.50" p={3}>
-            <HStack spacing={2} color="gray.700">
-              <Icon as={FiClock} />
-              <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
-                Created
-              </Text>
-            </HStack>
-            <Text mt={2} fontSize="sm" fontWeight="medium" noOfLines={2}>
-              {batch.createdAt
-                ? new Date(batch.createdAt).toLocaleDateString()
-                : "Recently"}
-            </Text>
-          </Box>
+          <MiniMetric
+            label="Status"
+            value={status}
+            icon={FiClock}
+            colorScheme="blue"
+          />
         </SimpleGrid>
 
-        <HStack justify="space-between" color={mutedText}>
-          <Text fontSize="sm">
-            {batch.createdBy?.name || batch.createdBy?.email || "Unknown creator"}
+        <Flex
+          display={{ base: "flex", md: "none" }}
+          align="center"
+          justify="space-between"
+          bg={footerBg}
+          rounded="xl"
+          px={3}
+          py={2}
+        >
+          <Text fontSize="xs" fontWeight="800" color="blue.500">
+            {isLearner ? "Open batch" : "View details"}
           </Text>
-          <HStack spacing={1} fontSize="sm" color="blue.600">
-            <Text>Open details</Text>
-            <Icon as={FiChevronRight} />
+
+          <Icon as={FiChevronRight} color="blue.500" boxSize={4} />
+        </Flex>
+
+        <Flex
+          display={{ base: "none", md: "flex" }}
+          align="center"
+          justify="space-between"
+          color={mutedText}
+          fontSize="sm"
+        >
+          <Text fontWeight="600">
+            {batch.createdBy?.name || batch.createdBy?.email
+              ? `Created by ${batch.createdBy?.name || batch.createdBy?.email}`
+              : "Created by System"}
+          </Text>
+
+          <HStack spacing={1} color="blue.500">
+            <Text fontWeight="800">{isLearner ? "Open batch" : "View details"}</Text>
+            <Icon as={FiChevronRight} boxSize={4} />
           </HStack>
-        </HStack>
+        </Flex>
       </Stack>
     </Box>
   );
-}
+};
+
+export default BatchCard;

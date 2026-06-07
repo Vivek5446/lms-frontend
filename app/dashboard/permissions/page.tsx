@@ -546,7 +546,7 @@ const PermissionsPage = observer(() => {
       fallbackHref="/dashboard/profile"
     >
       <Box minH="100dvh" bg={bgColor} py={{ base: 2, md: 0 }}>
-        <Box px={{ base: 3, md: 2 }}>
+        <Box px={{ base: 1, md: 2 }}>
           <Stack spacing={{ base: 4, md: 6 }}>
             <Box
               rounded={{ base: "2xl", md: "3xl" }}

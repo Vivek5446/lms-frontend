@@ -1,5 +1,6 @@
 "use client";
 
+import type { BatchDetailsItem } from "@/app/store/batchStore/batchStore";
 import {
   AspectRatio,
   Badge,
@@ -28,7 +29,6 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useMemo, useState } from "react";
 import { FiBookOpen, FiBriefcase, FiCalendar, FiEdit2, FiPlayCircle, FiSearch, FiTrash2, FiUserPlus, FiUsers } from "react-icons/fi";
-import type { BatchDetailsItem } from "@/app/store/batchStore/batchStore";
 
 function getStatusColor(status: string) {
   if (status === "expired") {

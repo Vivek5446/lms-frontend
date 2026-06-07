@@ -18,7 +18,6 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { FiBriefcase, FiLayers } from "react-icons/fi";
-// import CustomInput from "@/components/Common/CustomInput"; // Adjust path as needed
 
 type AddDepartmentModalProps = {
   isOpen: boolean;
@@ -38,10 +37,17 @@ const AddDepartmentModal = ({
   onSaved,
 }: AddDepartmentModalProps) => {
   const [formData, setFormData] = useState({ name: "", code: "" });
-  
-  // Color tokens for a "Linear" feel
-  const bgColor = useColorModeValue("white", "gray.900");
-  const companyBadgeBg = useColorModeValue("gray.50", "whiteAlpha.100");
+
+  const isEditMode = Boolean(initialData?._id);
+
+  const modalBg = useColorModeValue("white", "gray.900");
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200");
+  const softBg = useColorModeValue("gray.50", "whiteAlpha.100");
+  const titleColor = useColorModeValue("gray.900", "white");
+  const mutedTextColor = useColorModeValue("gray.500", "gray.400");
+  const companyTextColor = useColorModeValue("gray.700", "gray.200");
+  const warningBg = useColorModeValue("orange.50", "orange.900");
+  const warningText = useColorModeValue("orange.700", "orange.200");
 
   useEffect(() => {
     if (initialData) {
@@ -54,10 +60,15 @@ const AddDepartmentModal = ({
     }
   }, [initialData, isOpen]);
 
+  const departmentName = formData.name.trim();
+  const code = formData.code.trim();
+
+  const isDisabled = !departmentName || !code || (!isEditMode && !companyId);
+
   const handleSave = async () => {
-    const departmentName = formData.name.trim();
-    const code = formData.code.trim();
-    const mode = initialData?._id ? "update" : "create";
+    if (isDisabled) return;
+
+    const mode = isEditMode ? "update" : "create";
 
     try {
       if (mode === "update") {
@@ -80,53 +91,136 @@ const AddDepartmentModal = ({
     }
   };
 
-  const isDisabled =
-    !formData.name.trim() ||
-    !formData.code.trim() ||
-    (!initialData?._id && !companyId);
-
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      isCentered 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      isCentered
       motionPreset="slideInBottom"
-      // size="sm"
+      size={{ base: "xs", sm: "sm", md: "md" }}
     >
-      <ModalOverlay backdropFilter="blur(4px)" bg="blackAlpha.300" />
-      <ModalContent 
-        borderRadius="3xl" 
+      <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.400" />
+
+      <ModalContent
+        mx={{ base: 3, sm: 4 }}
+        borderRadius={{ base: "2xl", md: "3xl" }}
         boxShadow="2xl"
-        bg={bgColor}
+        bg={modalBg}
+        overflow="hidden"
       >
-        <ModalHeader borderBottomWidth="1px" fontSize="lg" fontWeight="semibold">
-          <HStack spacing={2}>
-            <Icon as={initialData ? FiLayers : FiLayers} color="blue.500" />
-            <Text fontWeight={600}>{initialData ? "Update Department" : "New Department"}</Text>
+        <Box h="1" bgGradient="linear(to-r, blue.400, purple.500, pink.400)" />
+
+        <ModalHeader
+          px={{ base: 4, md: 6 }}
+          py={{ base: 4, md: 5 }}
+          borderBottomWidth="1px"
+          borderColor={borderColor}
+        >
+          <HStack spacing={3} align="flex-start" pr={8}>
+            <Box
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              w={{ base: 9, md: 10 }}
+              h={{ base: 9, md: 10 }}
+              borderRadius="xl"
+              bgGradient="linear(to-br, blue.500, purple.600)"
+              color="white"
+              flexShrink={0}
+            >
+              <Icon as={FiLayers} boxSize={{ base: 4, md: 5 }} />
+            </Box>
+
+            <Box minW={0}>
+              <Text
+                fontSize={{ base: "md", md: "lg" }}
+                fontWeight="800"
+                color={titleColor}
+                lineHeight="1.2"
+              >
+                {isEditMode ? "Update Department" : "New Department"}
+              </Text>
+
+              <Text
+                mt={1}
+                fontSize={{ base: "xs", md: "sm" }}
+                color={mutedTextColor}
+                fontWeight="500"
+                noOfLines={2}
+              >
+                {isEditMode
+                  ? "Edit department name and code."
+                  : "Create a department for the selected company."}
+              </Text>
+            </Box>
           </HStack>
         </ModalHeader>
-        <ModalCloseButton top="12px" />
 
-        <ModalBody>
-          <Stack spacing={5}>
-            {/* Context Header: Shows which company this belongs to */}
-            <Box 
-              p={3} 
-              bg={companyBadgeBg} 
-              borderRadius="lg" 
+        <ModalCloseButton top={{ base: 3, md: 4 }} right={{ base: 3, md: 4 }} />
+
+        <ModalBody px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }}>
+          <Stack spacing={{ base: 4, md: 5 }}>
+            <Box
+              p={{ base: 3, md: 4 }}
+              bg={softBg}
+              borderRadius="2xl"
               borderWidth="1px"
+              borderColor={borderColor}
               borderStyle="dashed"
             >
-              {/* <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" mb={1}>
-                Parent Entity
-              </Text> */}
-              <HStack>
-                <Icon as={FiBriefcase} size={14} color="gray.400" />
-                <Text fontSize="sm" fontWeight="medium">
-                  {companyName || "No company selected"}
-                </Text>
+              <HStack spacing={3} align="flex-start">
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  w="8"
+                  h="8"
+                  borderRadius="lg"
+                  bg={useColorModeValue("blue.50", "blue.900")}
+                  color={useColorModeValue("blue.500", "blue.300")}
+                  flexShrink={0}
+                >
+                  <Icon as={FiBriefcase} boxSize={4} />
+                </Box>
+
+                <Box minW={0}>
+                  <Text
+                    fontSize="xs"
+                    fontWeight="800"
+                    color={mutedTextColor}
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                  >
+                    Company
+                  </Text>
+
+                  <Text
+                    mt={0.5}
+                    fontSize={{ base: "sm", md: "md" }}
+                    fontWeight="700"
+                    color={companyTextColor}
+                    noOfLines={2}
+                  >
+                    {companyName || "No company selected"}
+                  </Text>
+                </Box>
               </HStack>
             </Box>
+
+            {!isEditMode && !companyId ? (
+              <Box
+                px={3}
+                py={2.5}
+                bg={warningBg}
+                borderRadius="xl"
+                borderWidth="1px"
+                borderColor={useColorModeValue("orange.100", "orange.700")}
+              >
+                <Text fontSize="xs" fontWeight="600" color={warningText}>
+                  Please select a company before creating a department.
+                </Text>
+              </Box>
+            ) : null}
 
             <CustomInput
               label="Department Name"
@@ -134,7 +228,10 @@ const AddDepartmentModal = ({
               name="name"
               value={formData.name}
               onChange={(e: any) =>
-                setFormData((p) => ({ ...p, name: e.target.value }))
+                setFormData((previous) => ({
+                  ...previous,
+                  name: e.target.value,
+                }))
               }
             />
 
@@ -144,17 +241,41 @@ const AddDepartmentModal = ({
               name="code"
               value={formData.code}
               onChange={(e: any) =>
-                setFormData((p) => ({ ...p, code: e.target.value }))
+                setFormData((previous) => ({
+                  ...previous,
+                  code: e.target.value.toUpperCase(),
+                }))
               }
             />
+
+            <Text fontSize="xs" color={mutedTextColor} lineHeight="1.5">
+              Department code should be short and easy to identify, for example{" "}
+              <Text as="span" fontWeight="700">
+                ENG
+              </Text>{" "}
+              or{" "}
+              <Text as="span" fontWeight="700">
+                HR-01
+              </Text>
+              .
+            </Text>
           </Stack>
         </ModalBody>
 
-        <ModalFooter gap={3}>
-          <Button 
-            variant="ghost" 
+        <ModalFooter
+          px={{ base: 4, md: 6 }}
+          py={{ base: 4, md: 5 }}
+          gap={3}
+          borderTopWidth="1px"
+          borderColor={borderColor}
+          flexDirection={{ base: "column-reverse", sm: "row" }}
+        >
+          <Button
+            variant="ghost"
             onClick={onClose}
-            fontWeight="medium"
+            fontWeight="600"
+            width={{ base: "100%", sm: "auto" }}
+            rounded="full"
           >
             Cancel
           </Button>
@@ -162,16 +283,24 @@ const AddDepartmentModal = ({
           <Button
             colorScheme="blue"
             px={6}
-            fontWeight="bold"
+            fontWeight="800"
             onClick={handleSave}
             isDisabled={isDisabled}
             isLoading={departmentStore.isSubmitting}
-            loadingText={initialData ? "Saving..." : "Creating..."}
-            _hover={{ transform: 'translateY(-1px)', boxShadow: 'lg' }}
-            _active={{ transform: 'translateY(0)' }}
+            loadingText={isEditMode ? "Saving..." : "Creating..."}
+            width={{ base: "100%", sm: "auto" }}
+            rounded="full"
+            bgGradient="linear(to-r, blue.500, purple.600)"
+            color="white"
+            _hover={{
+              bgGradient: "linear(to-r, blue.600, purple.700)",
+              transform: "translateY(-1px)",
+              boxShadow: "lg",
+            }}
+            _active={{ transform: "translateY(0)" }}
             transition="all 0.2s"
           >
-            {initialData ? "Update Changes" : "Create Department"}
+            {isEditMode ? "Update Changes" : "Create Department"}
           </Button>
         </ModalFooter>
       </ModalContent>
