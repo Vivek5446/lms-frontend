@@ -89,7 +89,7 @@ function StatCard({
 }
 
 function CoursePage() {
-  const isCompact = useBreakpointValue({ base: true, lg: false }) ?? false;
+  const isCompact = useBreakpointValue({ base: true, xl: false }) ?? false;
   const [view, setView] = useState<"gallery" | "create" | "edit" | "details">("gallery");
   const [activeCourse, setActiveCourse] = useState<CourseListItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -124,6 +124,7 @@ function CoursePage() {
   const canEditCourses = role === "superadmin" && hasPermission(stores.auth.user, PERMISSION_KEYS.EDIT_COURSES);
   const canDeleteCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.DELETE_COURSES);
   const canAssignCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.ASSIGN_COURSES);
+  const compactActionWidth = isCompact ? (canCreateCourses ? "calc(50% - 6px)" : "100%") : "auto";
   const scopeBadgeLabel =
     role === "superadmin"
       ? "Platform Course Library"
@@ -378,7 +379,7 @@ function CoursePage() {
       description="This account does not currently have access to the course workspace."
       fallbackHref="/dashboard/profile"
     >
-      <div style={{ minHeight: "100vh", background: pageBg, padding: isCompact ? "12px" : "32px" }}>
+      <div style={{ minHeight: "100vh", background: pageBg, padding: isCompact ? "0" : "24px" }}>
         <div style={{ maxWidth: 1480, margin: "0 auto" }}>
           <div
             style={{
@@ -439,7 +440,7 @@ function CoursePage() {
                     alignItems: "center",
                     gap: 8,
                     cursor: "pointer",
-                    width: isCompact ? "calc(50% - 6px)" : "auto",
+                    width: compactActionWidth,
                     justifyContent: "center",
                   }}
                 >
@@ -465,7 +466,7 @@ function CoursePage() {
                       gap: 8,
                       cursor: "pointer",
                       boxShadow: "0 14px 35px rgba(15, 23, 42, 0.18)",
-                      width: isCompact ? "calc(50% - 6px)" : "auto",
+                      width: compactActionWidth,
                       justifyContent: "center",
                     }}
                   >

@@ -9,7 +9,7 @@ import stores from '../../store/stores';
 import SidebarLayout from './SidebarLayout/SidebarLayout';
 import HeaderLayout from './HeaderLayout/HeaderLayout';
 // import PermissionDeniedPage from '../../component/common/Loader/PermissionDeniedPage';
-import { contentLargeBodyPadding, contentSmallBodyPadding, headerHeight, mediumSidebarWidth } from '../../component/config/utils/variable';
+import { contentLargeBodyPadding, headerHeight, mediumSidebarWidth, sidebarWidth } from '../../component/config/utils/variable';
 import ThemeChangeContainer from '../../component/common/ThemeChangeContainer/ThemeChangeContainer';
 import PageLoader from '../../component/common/Loader/PageLoader';
 
@@ -23,6 +23,7 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
   } = stores;
   const [hasMounted, setHasMounted] = useState(false);
   const isMobile = useBreakpointValue({ base: true, xl: false }) ?? false;
+  const sidebarOffset = isMobile ? '0px' : isCallapse ? mediumSidebarWidth : sidebarWidth;
   const sidebarRef = useRef<HTMLDivElement | null>(null);
 
   const closeDrawerModel = () => {
@@ -78,9 +79,9 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
             setOpenMobileSideDrawer={closeDrawerModel}
           />
         </Box>
-        <Container>
+        <Container $isMobile={isMobile} $sidebarOffset={sidebarOffset}>
           <HeaderContainer
-            $isMobile={isMobile}
+            $sidebarOffset={sidebarOffset}
             $backgroundColor={themeConfig.colors.custom.light.primary}
           >
             <HeaderLayout />
@@ -112,29 +113,34 @@ const MainContainer = styled.div<{ $isMobile: boolean }>`
   min-height: 100dvh;
   transition: all 0.3s ease-in-out;
   overflow-x: hidden;
-  margin-left: ${(props) => (props.$isMobile ? '0px' : mediumSidebarWidth)};
 `;
 
-const Container = styled.div`
+const Container = styled.div<{
+  $isMobile: boolean;
+  $sidebarOffset: string;
+}>`
   display: flex;
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  width: 100%;
+  width: ${({ $isMobile, $sidebarOffset }) =>
+    $isMobile ? '100%' : `calc(100% - ${$sidebarOffset})`};
+  margin-left: ${({ $isMobile, $sidebarOffset }) =>
+    $isMobile ? '0px' : $sidebarOffset};
   transition: all 0.3s ease-in-out;
 `;
 
 /* ── Only this component changed ── */
 const HeaderContainer = styled.div<{
   $backgroundColor: string;
-  $isMobile: boolean;
+  $sidebarOffset: string;
 }>`
   z-index: 99;
   height: ${headerHeight};
   position: fixed;
   top: 0;
   right: 0;
-  left: ${(props) => (props.$isMobile ? '0px' : mediumSidebarWidth)};
+  left: ${({ $sidebarOffset }) => $sidebarOffset};
   transition: all 0.3s ease-in-out;
 
   /* White gradient with subtle slide-down animation on mount */
@@ -163,7 +169,7 @@ const HeaderContainer = styled.div<{
 
 const ContentContainer = styled.div<{ $isMobile: boolean }>`
   padding: ${({ $isMobile }) =>
-    $isMobile ? '14px 12px 24px' : `${contentLargeBodyPadding}`};
+    $isMobile ? '0 0 24px' : `${contentLargeBodyPadding}`};
   width: 100%;
   max-width: 100%;
   min-width: 0;
