@@ -1,9 +1,6 @@
 'use client';
 
 import stores from "@/app/store/stores";
-import { observer } from "mobx-react-lite";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Badge,
   Box,
@@ -24,15 +21,17 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
+import { observer } from "mobx-react-lite";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   FaArrowRight,
-  FaBookOpen,
   FaCheckCircle,
   FaGlobe,
   FaLock,
   FaSearch,
   FaStar,
-  FaUserGraduate,
+  FaUserGraduate
 } from "react-icons/fa";
 
 const MotionBox = motion(Box);
@@ -106,7 +105,7 @@ export default observer(function LMSLandingPage() {
           display={{ base: "none", md: "block" }}
         />
 
-        <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8 }} position="relative" zIndex={1}>
+        <Box maxW="8xl" mx="auto" px={{ base: 4, md: 8 }} position="relative" zIndex={1}>
           <Grid templateColumns={{ base: "1fr", lg: "1.15fr 0.95fr" }} gap={{ base: 5, lg: 14 }} alignItems="center">
             <Box>
               <Badge

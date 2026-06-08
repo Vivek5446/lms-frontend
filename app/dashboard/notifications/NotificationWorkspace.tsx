@@ -43,7 +43,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiBell,
   FiBookOpen,
-  FiCheckCircle,
   FiClock,
   FiEye,
   FiFilter,
@@ -53,8 +52,7 @@ import {
   FiSearch,
   FiSend,
   FiShield,
-  FiUsers,
-  FiZap,
+  FiZap
 } from "react-icons/fi";
 import { getApiErrorMessage } from "../../config/utils/apiError";
 import stores from "../../store/stores";
@@ -208,6 +206,17 @@ const NotificationWorkspace = observer(({
   const previewBg = useColorModeValue("gray.100", "gray.900");
   const cardTextColor = useColorModeValue("gray.800", "gray.100");
   const selectedUserBg = useColorModeValue("blue.50", "blue.900");
+  const heroBg = useColorModeValue(
+    "linear-gradient(135deg, rgba(235,248,255,0.98) 0%, rgba(255,255,255,0.98) 45%, rgba(230,255,250,0.96) 100%)",
+    "linear-gradient(135deg, rgba(26,32,44,0.96) 0%, rgba(17,24,39,0.98) 55%, rgba(22,78,99,0.85) 100%)"
+  );
+  const searchBg = useColorModeValue("white", "whiteAlpha.80");
+  const searchBorderColor = useColorModeValue("blue.100", "whiteAlpha.200");
+  const chipBg = useColorModeValue("whiteAlpha.800", "whiteAlpha.140");
+  const scrollbarThumb = useColorModeValue("rgba(59,130,246,0.45)", "rgba(144,205,244,0.45)");
+  const scrollbarTrack = useColorModeValue("rgba(226,232,240,0.75)", "rgba(45,55,72,0.7)");
+  const heroBorderColor = useColorModeValue("blue.100", "whiteAlpha.200");
+  const heroOrbBg = useColorModeValue("blue.100", "whiteAlpha.100");
 
   const { companyStore, userStore } = stores;
   const managedCompanies = companyStore.companies?.data || [];
@@ -445,47 +454,59 @@ const NotificationWorkspace = observer(({
     <VStack spacing={5} align="stretch">
       <Box
         borderRadius="3xl"
-        p={{ base: 5, md: 7 }}
+        p={{ base: 3, md: 6 }}
         color={cardTextColor}
-        shadow="md"
+        shadow="base"
         overflow="hidden"
         position="relative"
-        bg={surfaceBg}
+        bg={heroBg}
         borderWidth="1px"
-        borderColor={borderColor}
+        borderColor={heroBorderColor}
       >
+        {/* <Box
+          position="absolute"
+          top="-50px"
+          right="-30px"
+          w="180px"
+          h="180px"
+          borderRadius="full"
+          bg={heroOrbBg}
+          filter="blur(8px)"
+        /> */}
         <HStack spacing={4} align="center" justify="space-between" flexWrap="wrap">
           <HStack spacing={4}>
-            <Flex w="54px" h="54px" borderRadius="2xl" bg="blue.50" color="blue.600" align="center" justify="center">
-              <FiMail size={26} />
+            <Flex
+              w="50px"
+              h="50px"
+              borderRadius="2xl"
+              bg={useColorModeValue("whiteAlpha.900", "whiteAlpha.160")}
+              color="blue.600"
+              align="center"
+              justify="center"
+              boxShadow="0 12px 30px rgba(59, 130, 246, 0.14)"
+            >
+              <FiMail size={20} />
             </Flex>
             <Box>
-              <Heading size="lg">Notifications</Heading>
+              <Heading fontSize="2xl" fontWeight="bold">
+                Notifications
+              </Heading>
               <Text color={mutedText} fontSize="sm" mt={1}>
-                Send polished email updates to company users.
+                Send polished, targeted updates with sharper filtering and live preview.
               </Text>
             </Box>
           </HStack>
-          <FormControl maxW={{ base: "100%", md: "360px" }}>
-            <FormLabel fontSize="xs" fontWeight="800" textTransform="uppercase" color={mutedText}>
-              Company
-            </FormLabel>
-            <Select
-              value={selectedCompanyId}
-              onChange={(event) => setSelectedCompanyId(event.target.value)}
-              bg={subtleBg}
-              color={cardTextColor}
-              borderColor={borderColor}
-              borderRadius="xl"
-              fontWeight="700"
-            >
-              {companyOptions.map((entry: any) => (
-                <option key={entry._id} value={entry._id}>
-                  {entry.company_name || entry.name}
-                </option>
-              ))}
-            </Select>
-          </FormControl>
+          <HStack spacing={3} flexWrap="wrap">
+            <Badge px={3} py={1.5} borderRadius="full" bg={chipBg} color={cardTextColor}>
+              {stats.total} users
+            </Badge>
+            <Badge px={3} py={1.5} borderRadius="full" bg={chipBg} color={cardTextColor}>
+              {recipientCount} recipients
+            </Badge>
+            <Badge px={3} py={1.5} borderRadius="full" bg={chipBg} color={cardTextColor}>
+              {selectedCompany?.company_name || "No company selected"}
+            </Badge>
+          </HStack>
         </HStack>
       </Box>
 
@@ -529,6 +550,26 @@ const NotificationWorkspace = observer(({
               </Button>
             </HStack>
             <VStack spacing={4} align="stretch">
+              <FormControl>
+                <FormLabel fontSize="xs" fontWeight="800" textTransform="uppercase" color={mutedText}>
+                  Company
+                </FormLabel>
+                <Select
+                  value={selectedCompanyId}
+                  onChange={(event) => setSelectedCompanyId(event.target.value)}
+                  bg={subtleBg}
+                  color={cardTextColor}
+                  borderColor={borderColor}
+                  borderRadius="xl"
+                  fontWeight="700"
+                >
+                  {companyOptions.map((entry: any) => (
+                    <option key={entry._id} value={entry._id}>
+                      {entry.company_name || entry.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
               <FormControl>
                 <FormLabel fontSize="xs">Role</FormLabel>
                 <Select size="sm" value={filters.role} onChange={(event) => updateFilter("role", event.target.value)}>
@@ -618,7 +659,17 @@ const NotificationWorkspace = observer(({
         <VStack spacing={5} align="stretch">
           <Card bg={surfaceBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" shadow="sm">
             <CardBody>
-              <Heading size="sm" mb={4}>Notification type</Heading>
+              <HStack justify="space-between" mb={4} align="start">
+                <Box>
+                  <Heading size="sm">Notification type</Heading>
+                  <Text fontSize="sm" color={mutedText} mt={1}>
+                    Pick a starting template, then fine-tune the content in the composer.
+                  </Text>
+                </Box>
+                <Badge borderRadius="full" px={3} py={1} colorScheme="blue" variant="subtle">
+                  {formatLabel(notificationType)}
+                </Badge>
+              </HStack>
               <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
                 {notificationTypes.map((type) => {
                   const isSelected = notificationType === type.value;
@@ -653,7 +704,15 @@ const NotificationWorkspace = observer(({
           <Card bg={surfaceBg} border="1px solid" borderColor={borderColor} borderRadius="2xl" shadow="sm">
             <CardBody>
               <Flex justify="space-between" gap={3} align={{ base: "stretch", md: "center" }} direction={{ base: "column", md: "row" }} mb={4}>
-                <HStack flex="1" bg={subtleBg} borderRadius="xl" px={3}>
+                <HStack
+                  flex="1"
+                  bg={searchBg}
+                  borderRadius="xl"
+                  px={3}
+                  borderWidth="1px"
+                  borderColor={searchBorderColor}
+                  boxShadow="sm"
+                >
                   <Icon as={FiSearch} color={mutedText} />
                   <Input
                     value={search}
@@ -687,7 +746,31 @@ const NotificationWorkspace = observer(({
                   <AlertDescription>No users match the current filters.</AlertDescription>
                 </Alert>
               ) : (
-                <VStack spacing={3} align="stretch" maxH="530px" overflowY="auto" pr={1}>
+                <VStack
+                  spacing={3}
+                  pt={2}
+                  align="stretch"
+                  maxH="530px"
+                  overflowY="auto"
+                  pr={2}
+                  sx={{
+                    scrollbarColor: `${scrollbarThumb} ${scrollbarTrack}`,
+                    scrollbarWidth: "thin",
+                    "&::-webkit-scrollbar": {
+                      width: "8px",
+                    },
+                    "&::-webkit-scrollbar-track": {
+                      background: scrollbarTrack,
+                      borderRadius: "999px",
+                    },
+                    "&::-webkit-scrollbar-thumb": {
+                      background: scrollbarThumb,
+                      borderRadius: "999px",
+                      border: "2px solid transparent",
+                      backgroundClip: "padding-box",
+                    },
+                  }}
+                >
                   {filteredUsers.map((user) => {
                     const signals = user.notificationSignals || {};
                     const checked = recipientMode === "all" || selectedUserIds.includes(user._id);
@@ -700,7 +783,7 @@ const NotificationWorkspace = observer(({
                         borderRadius="2xl"
                         p={4}
                         transition="all 0.2s ease"
-                        _hover={{ borderColor: "blue.300", shadow: "sm" }}
+                        _hover={{ borderColor: "blue.300", shadow: "md", transform: "translateY(-1px)" }}
                       >
                         <HStack align="flex-start" spacing={3}>
                           <Checkbox
@@ -715,6 +798,11 @@ const NotificationWorkspace = observer(({
                               <Box minW={0}>
                                 <Text fontWeight="800" noOfLines={1}>{user.name}</Text>
                                 <Text fontSize="sm" color={mutedText} noOfLines={1}>{user.email}</Text>
+                                {(user.designation || user.department) ? (
+                                  <Text fontSize="xs" color={mutedText} mt={1} noOfLines={1}>
+                                    {[user.designation, user.department].filter(Boolean).join(" • ")}
+                                  </Text>
+                                ) : null}
                               </Box>
                               <Badge colorScheme={user.status === "active" ? "green" : user.status === "pending" ? "yellow" : "gray"} borderRadius="full">
                                 {formatLabel(user.status)}
@@ -753,7 +841,23 @@ const NotificationWorkspace = observer(({
                   {recipientCount} recipients
                 </Badge>
               </HStack>
-              <VStack spacing={4} align="stretch">
+                <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={3} bg={subtleBg}>
+                  <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color={mutedText} fontWeight="800">
+                    Target company
+                  </Text>
+                  <Text fontWeight="800" mt={0}>
+                    {selectedCompany?.company_name || "Choose a company"}
+                  </Text>
+                </Box>
+                {/* <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={3} bg={subtleBg}>
+                  <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color={mutedText} fontWeight="800">
+                    Delivery mode
+                  </Text>
+                  <Text fontWeight="800" mt={1}>
+                    {recipientMode === "all" ? "All filtered users" : "Selected users only"}
+                  </Text>
+                </Box> */}
+              <VStack mt={2} spacing={4} align="stretch">
                 <FormControl>
                   <FormLabel fontSize="xs">Subject</FormLabel>
                   <Input value={subject} onChange={(event) => setSubject(event.target.value)} />

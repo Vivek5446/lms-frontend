@@ -1,8 +1,8 @@
 "use client";
 
 import { Box } from "@chakra-ui/react";
-import HeroSection from "../../component/common/HeroSection/HeroSection";
 import { observer } from "mobx-react-lite";
+import HeroSection from "../../component/common/HeroSection/HeroSection";
 
 const Home = observer(() => {
   return (
