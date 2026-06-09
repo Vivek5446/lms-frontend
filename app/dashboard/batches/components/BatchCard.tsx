@@ -130,13 +130,13 @@ const BatchCard = ({ batch, onClick, isLearner }: BatchCardProps) => {
       }}
       onClick={onClick}
     >
-      <Box
+      {/* <Box
         position="absolute"
         insetX={0}
         top={0}
         h="1"
         bgGradient="linear(to-r, blue.400, purple.500, pink.400)"
-      />
+      /> */}
 
       <Stack spacing={{ base: 3, md: 4 }}>
         <Flex align="flex-start" justify="space-between" gap={3}>
@@ -145,7 +145,7 @@ const BatchCard = ({ batch, onClick, isLearner }: BatchCardProps) => {
               w={{ base: 9, md: 12 }}
               h={{ base: 9, md: 12 }}
               rounded={{ base: "xl", md: "2xl" }}
-              bgGradient="linear(to-br, blue.500, purple.600)"
+              bgGradient="linear(to-br, blue.300, purple.400)"
               color="white"
               display="flex"
               alignItems="center"

@@ -1,6 +1,5 @@
 "use client";
 
-import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
 import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import { batchStore } from "@/app/store/batchStore/batchStore";
@@ -15,6 +14,7 @@ import {
   Heading,
   Icon,
   IconButton,
+  Image,
   Menu,
   MenuButton,
   MenuItem,
@@ -32,12 +32,12 @@ import {
   Text,
   Th,
   Thead,
-  Tooltip,
   Tr,
   VStack,
   useColorModeValue,
   useDisclosure,
-  useToast
+  useToast,
+  useToken
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useRouter } from "next/navigation";
@@ -50,7 +50,6 @@ import {
   FiClock,
   FiEdit2,
   FiGrid,
-  FiList,
   FiMoreVertical,
   FiPlus,
   FiSearch,
@@ -101,6 +100,43 @@ const BatchesWorkspace = observer(
     const cardBg = useColorModeValue("white", "gray.800");
     const borderColor = useColorModeValue("gray.200", "gray.700");
     const textColor = useColorModeValue("gray.600", "gray.300");
+    const learnerHeroBg = useColorModeValue(
+      "linear-gradient(135deg, var(--chakra-colors-brand-50) 0%, #ffffff 48%, var(--chakra-colors-brand-100) 100%)",
+      "linear-gradient(135deg, var(--chakra-colors-gray-900) 0%, rgba(15, 23, 42, 0.98) 42%, var(--chakra-colors-brand-900) 100%)"
+    );
+    const learnerHeroPanelBg = useColorModeValue(
+      "rgba(255,255,255,0.82)",
+      "rgba(15, 23, 42, 0.42)"
+    );
+    const learnerHeroSearchBg = useColorModeValue(
+      "rgba(255,255,255,0.68)",
+      "rgba(15, 23, 42, 0.34)"
+    );
+    const learnerHeroBorderColor = useColorModeValue("brand.100", "whiteAlpha.200");
+    const learnerHeroText = useColorModeValue("gray.800", "white");
+    const learnerHeroMutedText = useColorModeValue("gray.600", "gray.300");
+    const learnerHeroBadgeBg = useColorModeValue("brand.50", "whiteAlpha.200");
+    const learnerHeroAccentGradient = useColorModeValue(
+      "linear(to-r, brand.700, brand.500, brand.300)",
+      "linear(to-r, brand.200, brand.400, brand.600)"
+    );
+    const learnerHeroShadow = useColorModeValue(
+      "0 18px 54px rgba(15, 23, 42, 0.08)",
+      "0 24px 70px rgba(2, 6, 23, 0.34)"
+    );
+    const learnerHeroStatShadow = useColorModeValue(
+      "0 12px 32px rgba(15, 23, 42, 0.06)",
+      "0 18px 40px rgba(2, 6, 23, 0.2)"
+    );
+    const [brand50, brand100, brand200, brand300, brand400, brand500, brand700] = useToken("colors", [
+      "brand.50",
+      "brand.100",
+      "brand.200",
+      "brand.300",
+      "brand.400",
+      "brand.500",
+      "brand.700",
+    ]);
 
     useEffect(() => {
       if (isSuperadmin) {
@@ -337,6 +373,35 @@ const BatchesWorkspace = observer(
 }, []);
 
 
+const BatchHeroIllustration = () => (
+  <Box
+    display={{ base: "none", md: "block" }}
+    w={{ md: "190px", lg: "230px" }}
+    flexShrink={0}
+    opacity={0.96}
+  >
+    <svg viewBox="0 0 260 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="32" y="34" width="156" height="118" rx="24" fill="url(#paint0_linear)" />
+      <rect x="55" y="59" width="82" height="10" rx="5" fill="white" opacity="0.9" />
+      <rect x="55" y="82" width="108" height="8" rx="4" fill="white" opacity="0.55" />
+      <rect x="55" y="102" width="72" height="8" rx="4" fill="white" opacity="0.55" />
+      <circle cx="190" cy="63" r="30" fill="#38BDF8" />
+      <path d="M178 63.5L186.5 72L203 55.5" stroke="white" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="150" y="105" width="76" height="50" rx="18" fill="#F97316" />
+      <circle cx="173" cy="128" r="9" fill="white" opacity="0.9" />
+      <circle cx="198" cy="128" r="9" fill="white" opacity="0.65" />
+      <path d="M80 170C109.5 157.5 151.5 157.5 188 170" stroke="#93C5FD" strokeWidth="8" strokeLinecap="round" />
+      <defs>
+        <linearGradient id="paint0_linear" x1="32" y1="34" x2="188" y2="152" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#2563EB" />
+          <stop offset="1" stopColor="#7C3AED" />
+        </linearGradient>
+      </defs>
+    </svg>
+  </Box>
+);
+
+
 return (
   <Box
     minH="100dvh"
@@ -355,16 +420,338 @@ return (
     <Stack
       spacing={{ base: 3, md: 6 }}
       w="100%"
-      maxW={isLearner ? "8xl" : "none"}
       mx={isLearner ? "auto" : 0}
     >
+
+
+<Box
+  borderRadius={{ base: "xl", md: "2xl" }}
+  px={{ base: 4, md: 8 }}
+  py={{ base: 4, md: 6 }} // Reduced mobile padding
+  bg={
+    isLearner
+      ? learnerHeroBg
+      : useColorModeValue(
+          "linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #e0f2fe 100%)",
+          "linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #1e293b 100%)"
+        )
+  }
+  borderWidth="1px"
+  borderColor={
+    isLearner ? learnerHeroBorderColor : useColorModeValue("blue.100", "blue.900")
+  }
+  boxShadow={isLearner ? learnerHeroShadow : { base: "sm", md: "md" }}
+  color={isLearner ? learnerHeroText : useColorModeValue("inherit", "white")}
+  position="relative"
+  overflow="hidden"
+  w="100%"
+>
+  {/* Abstract Background Blur (Kept subtle for depth) */}
+  {isLearner && (
+    <>
       <Box
+        position="absolute"
+        top="-50px"
+        right="-20px"
+        w={{ base: "150px", md: "250px" }}
+        h={{ base: "150px", md: "250px" }}
+        bg={brand400}
+        opacity={{ base: 0.1, md: 0.15 }}
+        filter="blur(40px)"
+        borderRadius="full"
+        pointerEvents="none"
+      />
+      {/* <Box
+        position="absolute"
+        bottom="-80px"
+        left="-40px"
+        w={{ base: "150px", md: "200px" }}
+        h={{ base: "150px", md: "200px" }}
+        bg={brand200}
+        opacity={{ base: 0.1, md: 0.15 }}
+        filter="blur(50px)"
+        borderRadius="full"
+        pointerEvents="none"
+      /> */}
+    </>
+  )}
+
+  <Stack spacing={{ base: 4, md: 6 }} position="relative" zIndex={1} w="100%">
+    <Flex
+      justify="space-between"
+      align="center"
+      direction="row"
+      gap={{ base: 3, md: 6 }}
+      w="100%"
+    >
+      <VStack align="start" spacing={{ base: 1, md: 3 }} flex={1} minW={0}>
+        {isLearner ? (
+          <>
+            <HStack spacing={{ base: 2, md: 3 }} align="center">
+              <Box
+                w={{ base: "32px", md: "42px" }}
+                h={{ base: "32px", md: "42px" }}
+                borderRadius={{ base: "lg", md: "xl" }}
+                display="grid"
+                placeItems="center"
+                bg={learnerHeroPanelBg}
+                borderWidth="1px"
+                borderColor={learnerHeroBorderColor}
+                backdropFilter="blur(14px)"
+                flexShrink={0}
+              >
+                <Icon as={FiGrid} boxSize={{ base: 3.5, md: 5 }} color={brand700} />
+              </Box>
+
+              {stats.totalBatches > 0 && (
+                <Badge
+                  bg={brand50}
+                  color={brand700}
+                  borderRadius="full"
+                  px={{ base: 2, md: 3 }}
+                  py={0.5}
+                  fontSize={{ base: "2xs", md: "xs" }}
+                  textTransform="none"
+                >
+                  {stats.totalBatches} batches assigned
+                </Badge>
+              )}
+            </HStack>
+
+            <Heading
+              fontSize={{ base: "lg", md: "3xl", xl: "4xl" }}
+              fontWeight="900"
+              lineHeight="1.1"
+              letterSpacing="-0.03em"
+              color={learnerHeroText}
+            >
+              Stay in sync with your{" "}
+              <Text as="span" bgGradient={learnerHeroAccentGradient} bgClip="text">
+                batches
+              </Text>
+            </Heading>
+          </>
+        ) : (
+          <HStack spacing={{ base: 2, md: 3 }} flexWrap="nowrap" w="100%">
+            <Icon
+              as={FiGrid}
+              boxSize={{ base: 4, md: 6 }}
+              color="blue.600"
+              flexShrink={0}
+            />
+            <Heading
+              size={{ base: "sm", md: "md" }}
+              fontWeight="900"
+              noOfLines={1}
+              letterSpacing="-0.03em"
+            >
+              Batch Management
+            </Heading>
+            {stats.totalBatches > 0 && (
+              <Badge
+                display={{ base: "none", sm: "inline-flex" }}
+                colorScheme="purple"
+                variant="solid"
+                borderRadius="full"
+                px={2}
+                py={0.5}
+                fontSize="xs"
+                flexShrink={0}
+              >
+                {stats.totalBatches} Batches
+              </Badge>
+            )}
+          </HStack>
+        )}
+
+        {/* HIDDEN ON MOBILE TO SAVE SPACE */}
+        <Text
+          display={{ base: "none", md: "block" }}
+          fontSize="sm"
+          color={isLearner ? learnerHeroMutedText : "gray.600"}
+          maxW="2xl"
+        >
+          {isLearner
+            ? "Track assigned cohorts, review schedules, and launch the courses bundled into each batch from one clean workspace."
+            : `Manage learning cohorts for ${
+                activeCompany?.company_name || "your organization"
+              } with intuitive controls and real-time insights.`}
+        </Text>
+      </VStack>
+
+      {/* VECTOR ILLUSTRATION - Visible only on desktop to make it look better without breaking mobile */}
+      {/* <Box display={{ base: "none", lg: "block" }} flexShrink={0}>
+        <Image
+          src="/images/batch/batch-hero.svg" // Replace with your actual vector SVG asset path
+          alt="Vector Illustration"
+          w="140px"
+          h="auto"
+          objectFit="contain"
+          transform="translateY(-10px)"
+        />
+      </Box> */}
+
+      {/* CREATE BUTTON */}
+      {canCreate && !isLearner && (
+        <Button
+          leftIcon={<Icon as={FiPlus} />}
+          colorScheme="blue"
+          rounded="full"
+          size={{ base: "sm", md: "md" }}
+          onClick={creationDisclosure.onOpen}
+          isDisabled={!companyId && isSuperadmin}
+          px={{ base: 4, md: 6 }}
+          flexShrink={0}
+          _hover={{
+            transform: { base: "none", md: "translateY(-2px)" },
+            boxShadow: { base: "sm", md: "xl" },
+          }}
+          transition="all 0.2s"
+        >
+          <Text display={{ base: "none", sm: "inline" }}>Create New Batch</Text>
+          <Text display={{ base: "inline", sm: "none" }}>Create</Text>
+        </Button>
+      )}
+    </Flex>
+
+    {/* LEARNER STATS - Made more compact on mobile */}
+    {isLearner && (
+      <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 2, md: 4 }} w="100%">
+        {[
+          { label: "Batches", value: stats.totalBatches, icon: FiGrid, iconBg: brand50, iconColor: brand700 },
+          { label: "Active", value: stats.activeBatches, icon: FiCheckCircle, iconBg: brand100, iconColor: "green.500" },
+          { label: "Courses", value: stats.totalCourses, icon: FiBookOpen, iconBg: brand200, iconColor: brand500 },
+          { label: "Learners", value: stats.totalUsers, icon: FiUsers, iconBg: brand300, iconColor: "teal.500" },
+        ].map((item) => (
+          <Box
+            key={item.label}
+            p={{ base: 2.5, md: 3 }}
+            borderRadius="3xl"
+            bg={learnerHeroPanelBg}
+            borderWidth="1px"
+            borderColor={learnerHeroBorderColor}
+            backdropFilter="blur(14px)"
+            boxShadow={learnerHeroStatShadow}
+          >
+            <HStack align="center" spacing={{ base: 2, md: 3 }}>
+              <Box
+                w={{ base: "28px", md: "42px" }}
+                h={{ base: "28px", md: "42px" }}
+                borderRadius="lg"
+                display="grid"
+                placeItems="center"
+                flexShrink={0}
+              >
+                <Icon as={item.icon} color={item.iconColor} boxSize={{ base: 3, md: 5 }} />
+              </Box>
+              <Box minW={0}>
+                <Text fontSize={{ base: "2xs", md: "xs" }} color={learnerHeroMutedText} textTransform="uppercase" letterSpacing="0.05em">
+                  {item.label}
+                </Text>
+                <Text fontSize={{ base: "md", md: "xl" }} fontWeight="900" color={learnerHeroText} lineHeight="1.1">
+                  {item.value}
+                </Text>
+              </Box>
+            </HStack>
+          </Box>
+        ))}
+      </SimpleGrid>
+    )}
+
+    {/* ADMIN DESKTOP STATS */}
+    {!isLearner && stats.totalBatches > 0 && (
+      <SimpleGrid
+        display={{ base: "none", md: "grid" }}
+        columns={{ md: 3, lg: 5 }}
+        spacing={4}
+        pt={2}
+        w="100%"
+      >
+        {/* Same stat boxes as before, slightly tweaked spacing inside if needed, kept mostly intact for desktop */}
+        <Box bg={useColorModeValue("white", "gray.800")} borderRadius="xl" p={4} boxShadow="sm" _hover={{ transform: "translateY(-2px)", transition: "all 0.2s" }}>
+          <HStack justify="space-between">
+            <Stat>
+              <StatLabel fontSize="xs" color={useColorModeValue("gray.500", "gray.400")}>Total Batches</StatLabel>
+              <StatNumber fontSize="xl" color={useColorModeValue("blue.600", "blue.400")}>{stats.totalBatches}</StatNumber>
+              <StatHelpText fontSize="xs" m={0}><HStack spacing={1}><Icon as={FiTrendingUp} boxSize={3} /><Text>{stats.activeBatches} active</Text></HStack></StatHelpText>
+            </Stat>
+            <Box p={2} bg={useColorModeValue("blue.50", "blue.900")} borderRadius="lg" color={useColorModeValue("blue.500", "blue.300")}><Icon as={FiGrid} boxSize={5} /></Box>
+          </HStack>
+        </Box>
+
+        <Box bg={useColorModeValue("white", "gray.800")} borderRadius="xl" p={4} boxShadow="sm" _hover={{ transform: "translateY(-2px)", transition: "all 0.2s" }}>
+          <HStack justify="space-between">
+            <Stat>
+              <StatLabel fontSize="xs" color={useColorModeValue("gray.500", "gray.400")}>Total Learners</StatLabel>
+              <StatNumber fontSize="xl" color={useColorModeValue("green.600", "green.400")}>{stats.totalUsers}</StatNumber>
+            </Stat>
+            <Box p={2} bg={useColorModeValue("green.50", "green.900")} borderRadius="lg" color={useColorModeValue("green.500", "green.300")}><Icon as={FiUsers} boxSize={5} /></Box>
+          </HStack>
+        </Box>
+
+        <Box bg={useColorModeValue("white", "gray.800")} borderRadius="xl" p={4} boxShadow="sm" _hover={{ transform: "translateY(-2px)", transition: "all 0.2s" }}>
+          <HStack justify="space-between">
+            <Stat>
+              <StatLabel fontSize="xs" color={useColorModeValue("gray.500", "gray.400")}>Total Courses</StatLabel>
+              <StatNumber fontSize="xl" color={useColorModeValue("purple.600", "purple.400")}>{stats.totalCourses}</StatNumber>
+            </Stat>
+            <Box p={2} bg={useColorModeValue("purple.50", "purple.900")} borderRadius="lg" color={useColorModeValue("purple.500", "purple.300")}><Icon as={FiBookOpen} boxSize={5} /></Box>
+          </HStack>
+        </Box>
+
+        <Box bg={useColorModeValue("white", "gray.800")} borderRadius="xl" p={4} boxShadow="sm" _hover={{ transform: "translateY(-2px)", transition: "all 0.2s" }}>
+          <HStack justify="space-between">
+            <Stat>
+              <StatLabel fontSize="xs" color={useColorModeValue("gray.500", "gray.400")}>Completion Rate</StatLabel>
+              <StatNumber fontSize="xl" color={useColorModeValue("orange.600", "orange.400")}>{stats.completionRate}%</StatNumber>
+            </Stat>
+            <Box p={2} bg={useColorModeValue("orange.50", "orange.900")} borderRadius="lg" color={useColorModeValue("orange.500", "orange.300")}><Icon as={FiAward} boxSize={5} /></Box>
+          </HStack>
+        </Box>
+
+        <Box bg={useColorModeValue("white", "gray.800")} borderRadius="xl" p={4} boxShadow="sm" _hover={{ transform: "translateY(-2px)", transition: "all 0.2s" }}>
+          <HStack justify="space-between">
+            <Stat>
+              <StatLabel fontSize="xs" color={useColorModeValue("gray.500", "gray.400")}>Active Batches</StatLabel>
+              <StatNumber fontSize="xl" color={useColorModeValue("teal.600", "teal.400")}>{stats.activeBatches}</StatNumber>
+            </Stat>
+            <Box p={2} bg={useColorModeValue("teal.50", "teal.900")} borderRadius="lg" color={useColorModeValue("teal.500", "teal.300")}><Icon as={FiCalendar} boxSize={5} /></Box>
+          </HStack>
+        </Box>
+      </SimpleGrid>
+    )}
+
+    {/* ADMIN MOBILE SCROLLABLE CHIPS - Adjusted padding for less vertical space */}
+    {!isLearner && stats.totalBatches > 0 && (
+      <Box
+        display={{ base: "block", md: "none" }}
+        overflowX="auto"
+        pb={1}
+        mt={-1}
+        sx={{
+          "&::-webkit-scrollbar": { display: "none" },
+          scrollbarWidth: "none",
+        }}
+      >
+        <HStack spacing={2} minW="max-content">
+          <MobileStatChip label="Batches" value={stats.totalBatches} icon={FiGrid} colorScheme="blue" />
+          <MobileStatChip label="Learners" value={stats.totalUsers} icon={FiUsers} colorScheme="green" />
+          <MobileStatChip label="Courses" value={stats.totalCourses} icon={FiBookOpen} colorScheme="purple" />
+          <MobileStatChip label="Active" value={stats.activeBatches} icon={FiCalendar} colorScheme="teal" />
+          <MobileStatChip label="Done" value={`${stats.completionRate}%`} icon={FiAward} colorScheme="orange" />
+        </HStack>
+      </Box>
+    )}
+  </Stack>
+</Box>
+
+      {/* <Box
         borderRadius={{ base: "xl", md: "2xl" }}
         px={{ base: 3, md: 8 }}
-        py={{ base: 3, md: 6 }}
+        py={{ base: 4, md: 6 }}
         bg={
           isLearner
-            ? "linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)"
+            ? learnerHeroBg
             : useColorModeValue(
                 "linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #e0f2fe 100%)",
                 "linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #1e293b 100%)"
@@ -372,67 +759,152 @@ return (
         }
         borderWidth="1px"
         borderColor={
-          isLearner ? "transparent" : useColorModeValue("blue.100", "blue.900")
+          isLearner ? learnerHeroBorderColor : useColorModeValue("blue.100", "blue.900")
         }
-        boxShadow={{ base: "sm", md: "md" }}
-        color={isLearner ? "white" : useColorModeValue("inherit", "white")}
+        boxShadow={isLearner ? learnerHeroShadow : { base: "sm", md: "md" }}
+        color={isLearner ? learnerHeroText : useColorModeValue("inherit", "white")}
         position="relative"
         overflow="hidden"
         w="100%"
       >
+        {isLearner && (
+          <>
+            <Box
+              position="absolute"
+              top="-90px"
+              right="-80px"
+              w={{ base: "220px", md: "300px" }}
+              h={{ base: "220px", md: "300px" }}
+              bg={brand400}
+              opacity={{ base: 0.16, md: 0.2 }}
+              filter="blur(54px)"
+              borderRadius="full"
+              pointerEvents="none"
+            />
+            <Box
+              position="absolute"
+              bottom="-110px"
+              left="-80px"
+              w={{ base: "220px", md: "280px" }}
+              h={{ base: "220px", md: "280px" }}
+              bg={brand200}
+              opacity={{ base: 0.14, md: 0.18 }}
+              filter="blur(60px)"
+              borderRadius="full"
+              pointerEvents="none"
+            />
+          </>
+        )}
         <Stack spacing={{ base: 3, md: 6 }} position="relative" zIndex={1} w="100%">
           <Flex
             justify="space-between"
-            align={{ base: "center", md: "center" }}
-            gap={{ base: 2, md: 4 }}
+            align={{ base: isLearner ? "start" : "center", md: "center" }}
+            direction={{ base: isLearner ? "column" : "row", md: "row" }}
+            gap={{ base: isLearner ? 4 : 2, md: 4 }}
             w="100%"
           >
             <VStack align="start" spacing={{ base: 1, md: 3 }} flex={1} minW={0}>
-              <HStack spacing={{ base: 2, md: 3 }} flexWrap="nowrap" w="100%">
-                <Icon
-                  as={FiGrid}
-                  boxSize={{ base: 4, md: 6 }}
-                  color={isLearner ? "blue.300" : "blue.600"}
-                  flexShrink={0}
-                />
+              {isLearner ? (
+                <>
+                 
 
-                <Heading
-                  size={{ base: "sm", md: "md" }}
-                  fontWeight="900"
-                  noOfLines={1}
-                  letterSpacing="-0.03em"
-                >
-                  {isLearner ? "My Batches" : "Batch Management"}
-                </Heading>
+                  <HStack spacing={{ base: 2, md: 3 }} align="center">
+                    <Box
+                      w={{ base: "36px", md: "42px" }}
+                      h={{ base: "36px", md: "42px" }}
+                      borderRadius="xl"
+                      display="grid"
+                      placeItems="center"
+                      bg={learnerHeroPanelBg}
+                      borderWidth="1px"
+                      borderColor={learnerHeroBorderColor}
+                      backdropFilter="blur(14px)"
+                      flexShrink={0}
+                    >
+                      <Icon as={FiGrid} boxSize={{ base: 4, md: 5 }} color={brand700} />
+                    </Box>
 
-                {stats.totalBatches > 0 && (
-                  <Badge
-                    display={{ base: "none", sm: "inline-flex" }}
-                    colorScheme={isLearner ? "blue" : "purple"}
-                    variant="solid"
-                    borderRadius="full"
-                    px={3}
-                    py={1}
-                    fontSize="xs"
-                    flexShrink={0}
+                    {stats.totalBatches > 0 ? (
+                      <Badge
+                        bg={brand50}
+                        color={brand700}
+                        borderRadius="full"
+                        px={3}
+                        py={1}
+                        fontSize="xs"
+                        textTransform="none"
+                      >
+                        {stats.totalBatches} batches assigned
+                      </Badge>
+                    ) : null}
+                  </HStack>
+
+                  <Heading
+                    fontSize={{ base: "xl", md: "3xl", xl: "4xl" }}
+                    fontWeight="900"
+                    lineHeight={{ base: "1.12", md: "1.04" }}
+                    letterSpacing="-0.04em"
+                    color={learnerHeroText}
+                    maxW="12ch"
                   >
-                    {stats.totalBatches} Batches
-                  </Badge>
-                )}
-              </HStack>
+                    Stay in sync with your{" "}
+                    <Text
+                      as="span"
+                      bgGradient={learnerHeroAccentGradient}
+                      bgClip="text"
+                    >
+                      batches
+                    </Text>
+                  </Heading>
+                </>
+              ) : (
+                <HStack spacing={{ base: 2, md: 3 }} flexWrap="nowrap" w="100%">
+                  <Icon
+                    as={FiGrid}
+                    boxSize={{ base: 4, md: 6 }}
+                    color="blue.600"
+                    flexShrink={0}
+                  />
+
+                  <Heading
+                    size={{ base: "sm", md: "md" }}
+                    fontWeight="900"
+                    noOfLines={1}
+                    letterSpacing="-0.03em"
+                  >
+                    Batch Management
+                  </Heading>
+
+                  {stats.totalBatches > 0 && (
+                    <Badge
+                      display={{ base: "none", sm: "inline-flex" }}
+                      colorScheme="purple"
+                      variant="solid"
+                      borderRadius="full"
+                      px={3}
+                      py={1}
+                      fontSize="xs"
+                      flexShrink={0}
+                    >
+                      {stats.totalBatches} Batches
+                    </Badge>
+                  )}
+                </HStack>
+              )}
 
               <Text
-                fontSize={{ base: "xs", md: "md" }}
-                color={isLearner ? "whiteAlpha.800" : "gray.600"}
+                fontSize={{ base: isLearner ? "sm" : "xs", md: "md" }}
+                color={isLearner ? learnerHeroMutedText : "gray.600"}
                 maxW="3xl"
-                display={{ base: "none", md: "block" }}
+                display="block"
               >
                 {isLearner
-                  ? "Access your learning cohorts, track progress, and launch courses bundled in each batch."
+                  ? "Track assigned cohorts, review schedules, and launch the courses bundled into each batch from one clean workspace."
                   : `Manage learning cohorts for ${
                       activeCompany?.company_name || "your organization"
                     } with intuitive controls and real-time insights.`}
               </Text>
+
             </VStack>
 
             {canCreate && !isLearner && (
@@ -456,6 +928,50 @@ return (
               </Button>
             )}
           </Flex>
+
+          {isLearner && (
+            <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3} w="100%">
+              {[
+                { label: "Batches", value: stats.totalBatches, icon: FiGrid, iconBg: brand50, iconColor: brand700 },
+                { label: "Active", value: stats.activeBatches, icon: FiCheckCircle, iconBg: brand100, iconColor: "green.500" },
+                { label: "Courses", value: stats.totalCourses, icon: FiBookOpen, iconBg: brand200, iconColor: brand500 },
+                { label: "Learners", value: stats.totalUsers, icon: FiUsers, iconBg: brand300, iconColor: "teal.500" },
+              ].map((item) => (
+                <Box
+                  key={item.label}
+                  p={{ base: 3.5, md: 4 }}
+                  borderRadius="2xl"
+                  bg={learnerHeroPanelBg}
+                  borderWidth="1px"
+                  borderColor={learnerHeroBorderColor}
+                  backdropFilter="blur(14px)"
+                  boxShadow={learnerHeroStatShadow}
+                >
+                  <HStack align="start" spacing={3}>
+                    <Box
+                      w={{ base: "38px", md: "42px" }}
+                      h={{ base: "38px", md: "42px" }}
+                      borderRadius="xl"
+                      display="grid"
+                      placeItems="center"
+                      bg={item.iconBg}
+                      flexShrink={0}
+                    >
+                      <Icon as={item.icon} color={item.iconColor} boxSize={{ base: 4, md: 5 }} />
+                    </Box>
+                    <Box minW={0}>
+                      <Text fontSize="xs" color={learnerHeroMutedText} textTransform="uppercase" letterSpacing="0.08em">
+                        {item.label}
+                      </Text>
+                      <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="900" color={learnerHeroText} lineHeight="1.1">
+                        {item.value}
+                      </Text>
+                    </Box>
+                  </HStack>
+                </Box>
+              ))}
+            </SimpleGrid>
+          )}
 
           {!isLearner && stats.totalBatches > 0 && (
             <SimpleGrid
@@ -693,85 +1209,11 @@ return (
               </HStack>
             </Box>
           )}
-
-          <Flex
-            direction={{ base: "column", md: "row" }}
-            justify="space-between"
-            align={{ base: "stretch", md: "center" }}
-            gap={{ base: 2, md: 4 }}
-            pt={{ base: 0, md: isLearner ? 2 : 4 }}
-            w="100%"
-          >
-            <Box flex={1} minW={{ md: "300px" }}>
-              <GlassSearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search batches..."
-                isLearner={isLearner}
-              />
-            </Box>
-
-            <HStack
-              spacing={{ base: 2, md: 4 }}
-              justify={{ base: "space-between", md: "flex-start" }}
-              display={{ base: "none", md: "flex" }}
-            >
-              <HStack spacing={2}>
-                <Tooltip label="Card View">
-                  <IconButton
-                    aria-label="Card view"
-                    icon={<Icon as={FiGrid} />}
-                    colorScheme={viewMode === "card" ? "blue" : "gray"}
-                    variant={viewMode === "card" ? "solid" : "ghost"}
-                    onClick={() => setViewMode("card")}
-                    size="md"
-                  />
-                </Tooltip>
-
-                <Tooltip label="Table View">
-                  <IconButton
-                    aria-label="Table view"
-                    icon={<Icon as={FiList} />}
-                    colorScheme={viewMode === "table" ? "blue" : "gray"}
-                    variant={viewMode === "table" ? "solid" : "ghost"}
-                    onClick={() => setViewMode("table")}
-                    size="md"
-                  />
-                </Tooltip>
-              </HStack>
-
-              {viewMode === "table" && (
-                <Menu>
-                  <MenuButton
-                    as={Button}
-                    rightIcon={<Icon as={FiTrendingUp} />}
-                    variant="outline"
-                    size="md"
-                  >
-                    Sort by: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
-                  </MenuButton>
-
-                  <MenuList>
-                    <MenuItem onClick={() => setSortBy("name")}>Name</MenuItem>
-                    <MenuItem onClick={() => setSortBy("date")}>Start Date</MenuItem>
-                    <MenuItem onClick={() => setSortBy("users")}>Users Count</MenuItem>
-                    <MenuItem onClick={() => setSortBy("status")}>Status</MenuItem>
-                    <Divider />
-                    <MenuItem
-                      onClick={() =>
-                        setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                      }
-                    >
-                      Toggle Order (
-                      {sortOrder === "asc" ? "↑ Ascending" : "↓ Descending"})
-                    </MenuItem>
-                  </MenuList>
-                </Menu>
-              )}
-            </HStack>
-          </Flex>
         </Stack>
-      </Box>
+      </Box> */}
+
+
+
 
       {isLoading ? (
         <Flex justify="center" align="center" minH={{ base: "220px", md: "400px" }} w="100%">
@@ -1089,5 +1531,4 @@ return (
 );
   },
 );
-
 export default BatchesWorkspace;
