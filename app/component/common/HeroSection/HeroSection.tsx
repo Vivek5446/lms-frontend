@@ -13,11 +13,13 @@ import {
   Icon,
   Image,
   Input,
+  Progress,
   SimpleGrid,
   Spinner,
   Stack,
   Text,
   useColorModeValue,
+  useToken,
   VStack,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
@@ -26,11 +28,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   FaArrowRight,
-  FaCheckCircle,
-  FaGlobe,
+  FaBolt,
   FaLock,
+  FaPlayCircle,
   FaSearch,
-  FaStar,
   FaUserGraduate
 } from "react-icons/fa";
 
@@ -66,17 +67,67 @@ export default observer(function LMSLandingPage() {
   const assignedCourses = stores.courseStore.myCourses || [];
   const featuredPublicCourses = useMemo(() => publicCourses.slice(0, 4), [publicCourses]);
   const featuredAssignedCourses = useMemo(() => assignedCourses.slice(0, 2), [assignedCourses]);
+  const avgRating = useMemo(() => {
+    const ratedCourses = publicCourses.filter((course) => Number(course.metrics?.averageRating || 0) > 0);
+    if (!ratedCourses.length) {
+      return "New";
+    }
 
-  const bgMain = useColorModeValue('white', 'gray.900');
-  const heroBg = useColorModeValue(
-    "linear-gradient(135deg, var(--chakra-colors-blue-50) 0%, var(--chakra-colors-blue-100) 45%, var(--chakra-colors-blue-200) 100%)",
-    "linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, var(--chakra-colors-blue-900) 100%)"
+    const average =
+      ratedCourses.reduce((sum, course) => sum + Number(course.metrics?.averageRating || 0), 0) / ratedCourses.length;
+    return average.toFixed(1);
+  }, [publicCourses]);
+
+  const bgMain = useColorModeValue("white", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.800");
+  const mutedBg = useColorModeValue("gray.50", "gray.900");
+  const borderColor = useColorModeValue("gray.100", "gray.700");
+  const textPrimary = useColorModeValue("gray.800", "whiteAlpha.900");
+  const textSecondary = useColorModeValue("gray.600", "gray.400");
+  const glassBg = useColorModeValue("rgba(255,255,255,0.8)", "rgba(15,23,42,0.76)");
+  const subtleBorder = useColorModeValue("rgba(255,255,255,0.68)", "rgba(255,255,255,0.08)");
+  const gridOverlayOpacity = useColorModeValue(0.08, 0.05);
+  const glowOneOpacity = useColorModeValue(0.22, 0.16);
+  const glowTwoOpacity = useColorModeValue(0.18, 0.14);
+  const glowThreeOpacity = useColorModeValue(0.32, 0.1);
+  const heroBaseBg = useColorModeValue(
+    "linear-gradient(135deg, var(--chakra-colors-brand-50) 0%, #FFFFFF 42%, var(--chakra-colors-brand-100) 100%)",
+    "linear-gradient(135deg, var(--chakra-colors-gray-900) 0%, var(--chakra-colors-gray-800) 48%, var(--chakra-colors-brand-900) 100%)"
   );
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const mutedBg = useColorModeValue('gray.50', 'gray.900');
-  const borderColor = useColorModeValue('gray.100', 'gray.700');
-  const textPrimary = useColorModeValue('gray.800', 'whiteAlpha.900');
-  const textSecondary = useColorModeValue('gray.600', 'gray.400');
+  const learnerPanelBg = useColorModeValue(
+    "linear-gradient(135deg, var(--chakra-colors-brand-700) 0%, var(--chakra-colors-brand-500) 60%, var(--chakra-colors-brand-400) 100%)",
+    "linear-gradient(135deg, var(--chakra-colors-brand-900) 0%, var(--chakra-colors-brand-700) 55%, var(--chakra-colors-brand-500) 100%)"
+  );
+  const [brand50, brand100, brand200, brand300, brand400, brand500, brand600, brand700, brand900] = useToken("colors", [
+    "brand.50",
+    "brand.100",
+    "brand.200",
+    "brand.300",
+    "brand.400",
+    "brand.500",
+    "brand.600",
+    "brand.700",
+    "brand.900",
+  ]);
+
+  const categoryChips = ["Design", "Engineering", "Leadership", "Compliance", "AI & Data"];
+  const accentGradients = [
+    `linear-gradient(135deg, ${brand600} 0%, ${brand400} 100%)`,
+    `linear-gradient(135deg, ${brand500} 0%, ${brand300} 100%)`,
+    `linear-gradient(135deg, ${brand700} 0%, ${brand500} 100%)`,
+    `linear-gradient(135deg, ${brand400} 0%, ${brand200} 100%)`,
+  ];
+  const stats = [
+    { label: "Public Courses", value: publicCourses.length || "0", accent: accentGradients[0] },
+    { label: "Assigned to You", value: isLearner ? assignedCourses.length || "0" : "Live", accent: accentGradients[1] },
+    { label: "Avg Rating", value: avgRating, accent: accentGradients[2] },
+    {
+      label: "Free Courses",
+      value: publicCourses.filter((course) => course.commerce?.pricingModel === "free").length || "0",
+      accent: accentGradients[3],
+    },
+  ];
+
 
   const handleExplore = () => {
     const query = searchQuery.trim();
@@ -85,218 +136,222 @@ export default observer(function LMSLandingPage() {
 
   return (
     <Box minH="100vh" bg={bgMain}>
-      <Box
-        as="section"
-        position="relative"
-        overflow="hidden"
-        pt={{ base: 4, md: '72px' }}
-        pb={{ base: 6, md: '84px' }}
-        bgImage={heroBg}
-      >
-        <Circle
-          size="560px"
-          bg="blue.500"
-          opacity="0.06"
+      <Box as="section" position="relative" overflow="hidden" pb={{ base: 10, md: 20 }} bgImage={heroBaseBg}>
+        <Box
           position="absolute"
-          top="-180px"
-          right="-80px"
+          inset={0}
+          opacity={gridOverlayOpacity}
+          backgroundImage="linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)"
+          backgroundSize={{ base: "28px 28px", md: "44px 44px" }}
+          color={brand900}
+        />
+        <Circle
+          size={{ base: "280px", md: "420px", xl: "520px" }}
+          bg={brand400}
+          opacity={glowOneOpacity}
+          position="absolute"
+          top={{ base: "-100px", md: "-120px" }}
+          left={{ base: "-110px", md: "-80px" }}
           filter="blur(100px)"
-          zIndex={0}
-          display={{ base: "none", md: "block" }}
+        />
+        <Circle
+          size={{ base: "340px", md: "500px", xl: "620px" }}
+          bg={brand500}
+          opacity={glowTwoOpacity}
+          position="absolute"
+          top={{ base: "20px", md: "40px" }}
+          right={{ base: "-180px", md: "-120px" }}
+          filter="blur(100px)"
+        />
+        <Circle
+          size={{ base: "260px", md: "360px", xl: "420px" }}
+          bg={brand200}
+          opacity={glowThreeOpacity}
+          position="absolute"
+          bottom={{ base: "-120px", md: "-160px" }}
+          left={{ base: "35%", md: "30%" }}
+          filter="blur(110px)"
         />
 
-        <Box maxW="8xl" mx="auto" px={{ base: 4, md: 8 }} position="relative" zIndex={1}>
-          <Grid templateColumns={{ base: "1fr", lg: "1.15fr 0.95fr" }} gap={{ base: 5, lg: 14 }} alignItems="center">
-            <Box>
-              <Badge
-                colorScheme="blue"
-                variant="subtle"
-                px={{ base: 3, md: 4 }}
-                py={{ base: 1, md: 2 }}
-                mb={{ base: 3, md: 5 }}
-                borderRadius="full"
-                textTransform="none"
+        <Box maxW="8xl" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 8, md: 12 }} position="relative" zIndex={1}>
+          {/* <Flex align="center" justify="space-between" gap={4} pt={{ base: 5, md: 6 }} pb={{ base: 8, md: 10 }}>
+            <HStack
+              spacing={3}
+              px={{ base: 3, md: 4 }}
+              py={2}
+              borderRadius="full"
+              bg={navBg}
+              borderWidth="1px"
+              borderColor={subtleBorder}
+              backdropFilter="blur(16px)"
+              boxShadow="0 12px 35px rgba(15, 23, 42, 0.08)"
+            >
+              <Flex
+                boxSize={{ base: "40px", md: "44px" }}
+                borderRadius="xl"
+                align="center"
+                justify="center"
+                bgGradient={`linear(to-br, ${brand700}, ${brand500})`}
+                color="white"
+                overflow="hidden"
               >
-                <HStack spacing={2}>
-                  <Icon as={FaCheckCircle} />
-                  <Text fontWeight="medium" fontSize={{ base: "xs", md: "sm" }}>
-                    Learning hub
-                  </Text>
-                </HStack>
-              </Badge>
+                {logoUrl ? (
+                  <Image src={logoUrl} alt={appName} objectFit="contain" boxSize="70%" />
+                ) : (
+                  <Icon as={FaBolt} />
+                )}
+              </Flex>
+              <Text fontWeight="900" fontSize={{ base: "md", md: "lg" }} color={textPrimary} letterSpacing="-0.02em">
+                {appName}
+              </Text>
+            </HStack>
+
+            <HStack
+              spacing={2}
+              display={{ base: "none", md: "flex" }}
+              px={2}
+              py={2}
+              borderRadius="full"
+              bg={navBg}
+              borderWidth="1px"
+              borderColor={subtleBorder}
+              backdropFilter="blur(16px)"
+            >
+              {["Catalog", "For Teams", "Pricing", "Docs"].map((item) => (
+                <Button key={item} variant="ghost" borderRadius="full" size="sm" color={textSecondary} _hover={{ bg: cardBg, color: brand700 }}>
+                  {item}
+                </Button>
+              ))}
+            </HStack>
+
+            <HStack spacing={2}>
+              <Button display={{ base: "none", sm: "inline-flex" }} variant="ghost" borderRadius="xl" color={textSecondary}>
+                Sign in
+              </Button>
+              <Button borderRadius="xl" colorScheme="brand" onClick={() => router.push("/course")}>
+                Get started
+              </Button>
+            </HStack>
+          </Flex> */}
+
+          <Grid templateColumns={{ base: "1fr", lg: "1.1fr 0.9fr" }} gap={{ base: 7, lg: 14 }} alignItems="center">
+            <Box>
+           
 
               <Heading
                 as="h1"
-                fontSize={{ base: '2xl', sm: '3xl', md: '5xl', xl: '6xl' }}
+                fontSize={{ base: "2xl", sm: "4xl", md: "5xl", xl: "6xl" }}
                 fontWeight="extrabold"
-                lineHeight={{ base: "1.12", md: "1.02" }}
+                lineHeight={{ base: "1.08", md: "1.02" }}
                 color={textPrimary}
-                maxW={{ base: "20rem", md: "none" }}
+                letterSpacing="-0.03em"
+                maxW="16ch"
               >
-                Learn, resume, and grow
-                <Text as="span" color="blue.600"> faster</Text>
+                Learn, resume, and grow{" "}
+                <Text as="span" bgGradient={`linear(to-r, ${brand700}, ${brand500}, ${brand300})`} bgClip="text">
+                  faster
+                </Text>
               </Heading>
 
-              <Text
-                fontSize={{ base: "sm", md: "xl" }}
-                color={textSecondary}
-                mt={5}
-                maxW="2xl"
-                lineHeight="1.8"
-                display={{ base: "none", md: "block" }}
-              >
-                Search the open catalog, compare pricing and course formats, and jump back into your private assignments without leaving the homepage.
+              <Text fontSize={{ base: "sm", md: "xl" }} color={textSecondary} mt={5} maxW="2xl" lineHeight="1.8">
+                Search the open catalog, compare pricing and course formats, and jump back into your private assignments
+                all from one beautifully focused home.
               </Text>
 
               <Flex
-                mt={{ base: 4, md: 8 }}
+                mt={{ base: 5, md: 8 }}
                 p={2}
-                bg={cardBg}
+                bg={glassBg}
                 borderRadius={{ base: "xl", md: "2xl" }}
                 borderWidth="1px"
-                borderColor={borderColor}
-                boxShadow={{ base: "0 10px 26px rgba(15, 23, 42, 0.08)", md: "0 22px 50px rgba(15, 23, 42, 0.08)" }}
+                borderColor={subtleBorder}
+                backdropFilter="blur(20px)"
+                boxShadow={{ base: "0 10px 26px rgba(15, 23, 42, 0.08)", md: "0 12px 60px rgba(15, 23, 42, 0.12)" }}
                 gap={2}
-                direction="row"
+                direction={{ base: "column", sm: "row" }}
                 align="center"
                 maxW={{ base: "100%", md: "720px" }}
               >
-                <Flex align="center" gap={{ base: 2, md: 3 }} px={{ base: 3, md: 4 }} flex="1" minW={0}>
-                  <Icon as={FaSearch} color="blue.500" />
+                <Flex align="center" gap={{ base: 2, md: 3 }} px={{ base: 3, md: 4 }} flex="1" minW={0} w="full">
+                  <Icon as={FaSearch} color={brand500} />
                   <Input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search courses"
+                    placeholder="Search courses, topics, instructors..."
                     border="none"
-                    h={{ base: "38px", md: "50px" }}
+                    h={{ base: "40px", md: "50px" }}
                     fontSize={{ base: "sm", md: "md" }}
                     _focusVisible={{ boxShadow: "none" }}
                     px={0}
                   />
                 </Flex>
                 <Button
-                  colorScheme="blue"
+                  colorScheme="brand"
                   borderRadius={{ base: "lg", md: "xl" }}
-                  h={{ base: "38px", md: "50px" }}
+                  h={{ base: "40px", md: "50px" }}
+                  w={{ base: "100%", sm: "auto" }}
                   px={{ base: 4, md: 8 }}
                   rightIcon={<FaArrowRight />}
                   fontSize={{ base: "sm", md: "md" }}
+                  bgGradient={`linear(to-r, ${brand700}, ${brand500}, ${brand400})`}
+                  boxShadow={`0 18px 34px ${brand100}`}
+                  _hover={{ bgGradient: `linear(to-r, ${brand700}, ${brand600}, ${brand500})`, transform: "translateY(-1px)" }}
                   onClick={handleExplore}
                 >
                   Explore
                 </Button>
               </Flex>
 
-              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4} mt={8} display={{ base: "none", md: "grid" }}>
-                {[
-                  { label: "Public Courses", value: publicCourses.length || "0" },
-                  { label: "Assigned to You", value: isLearner ? assignedCourses.length || "0" : "Live" },
-                  {
-                    label: "Avg Rating",
-                    value: publicCourses.some((course) => course.metrics?.averageRating)
-                      ? (
-                          publicCourses.reduce((sum, course) => sum + Number(course.metrics?.averageRating || 0), 0) /
-                          publicCourses.filter((course) => Number(course.metrics?.averageRating || 0) > 0).length
-                        ).toFixed(1)
-                      : "New",
-                  },
-                  {
-                    label: "Free Courses",
-                    value: publicCourses.filter((course) => course.commerce?.pricingModel === "free").length || "0",
-                  },
-                ].map((item) => (
-                  <Box
-                    key={item.label}
-                    p={4}
-                    borderRadius="2xl"
-                    bg="rgba(255,255,255,0.78)"
-                    border="1px solid rgba(255,255,255,0.42)"
-                    backdropFilter="blur(12px)"
+              <HStack spacing={2} mt={5} flexWrap="wrap">
+                {categoryChips.map((item) => (
+                  <Button
+                    key={item}
+                    size="sm"
+                    variant="ghost"
+                    borderRadius="full"
+                    bg={glassBg}
+                    color={textSecondary}
+                    borderWidth="1px"
+                    borderColor={borderColor}
+                    _hover={{ color: brand700, borderColor: brand200, bg: cardBg }}
                   >
-                    <Text fontSize="2xl" fontWeight="800" color={textPrimary}>{item.value}</Text>
-                    <Text fontSize="sm" color={textSecondary}>{item.label}</Text>
-                  </Box>
+                    {item}
+                  </Button>
                 ))}
-              </SimpleGrid>
+              </HStack>
+
+         
             </Box>
 
             <Stack spacing={5} display={{ base: "none", lg: "flex" }}>
-              <MotionBox
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55 }}
-                bg={cardBg}
-                borderRadius="3xl"
-                p={5}
-                borderWidth="1px"
-                borderColor={borderColor}
-                boxShadow="0 28px 70px rgba(15, 23, 42, 0.12)"
-              >
-                <HStack justify="space-between" mb={4}>
-                  <VStack align="start" spacing={1}>
-                    <Text fontSize="xs" color={textSecondary} textTransform="uppercase" letterSpacing="0.08em" fontWeight="700">
-                      Featured Public Courses
-                    </Text>
-                    <Heading size="md" color={textPrimary}>Open catalog highlights</Heading>
-                  </VStack>
-                  <Circle size="42px" bg="blue.50" color="blue.500">
-                    <Icon as={FaGlobe} />
-                  </Circle>
-                </HStack>
-
-                <Stack spacing={4}>
-                  {featuredPublicCourses.map((course) => (
-                    <Box
-                      key={course._id}
-                      p={4}
-                      borderRadius="2xl"
-                      borderWidth="1px"
-                      borderColor={borderColor}
-                      bg={mutedBg}
-                    >
-                      <Flex justify="space-between" gap={3}>
-                        <Box>
-                          <HStack spacing={2} flexWrap="wrap" mb={2}>
-                            <Badge colorScheme="green" borderRadius="full" px={3} py={1}>Public</Badge>
-                            <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
-                              {course.courseType === "scorm" ? "SCORM" : "Standard"}
-                            </Badge>
-                          </HStack>
-                          <Text fontWeight="700" color={textPrimary}>{course.title}</Text>
-                          <Text fontSize="sm" color={textSecondary} mt={1}>
-                            {(course.taxonomy?.categories || []).slice(0, 2).join(" • ") || "General"}
-                          </Text>
-                        </Box>
-                        <VStack align="end" spacing={1}>
-                          <Text fontWeight="800" color="blue.600">{formatCurrency(course.commerce?.amountInRupees)}</Text>
-                          <HStack spacing={1}>
-                            <Icon as={FaStar} color="orange.400" />
-                            <Text fontSize="sm" color={textSecondary}>
-                              {course.metrics?.averageRating ? course.metrics.averageRating.toFixed(1) : "New"}
-                            </Text>
-                          </HStack>
-                        </VStack>
-                      </Flex>
-                    </Box>
-                  ))}
-                </Stack>
-              </MotionBox>
+         
 
               {isLearner && featuredAssignedCourses.length > 0 ? (
                 <MotionBox
                   initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.55, delay: 0.12 }}
-                  bg="linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)"
+                  bgImage={learnerPanelBg}
                   borderRadius="3xl"
+                  position="relative"
+                  overflow="hidden"
                   p={5}
                   color="white"
                   boxShadow="0 28px 70px rgba(15, 23, 42, 0.22)"
                 >
+                  <Circle
+                    size="180px"
+                    position="absolute"
+                    top="-60px"
+                    right="-40px"
+                    bg={brand200}
+                    opacity={0.28}
+                    filter="blur(40px)"
+                  />
                   <HStack justify="space-between" mb={4}>
                     <VStack align="start" spacing={1}>
-                      <Text fontSize="xs" color="whiteAlpha.700" textTransform="uppercase" letterSpacing="0.08em" fontWeight="700">
-                        Assigned Private Courses
+                      <Text fontSize="xs" color="whiteAlpha.700" textTransform="uppercase" letterSpacing="0.12em" fontWeight="700">
+                        Assigned Courses
                       </Text>
                       <Heading size="md">Resume your learning</Heading>
                     </VStack>
@@ -315,16 +370,31 @@ export default observer(function LMSLandingPage() {
                         border="1px solid rgba(255,255,255,0.12)"
                       >
                         <Flex justify="space-between" gap={3} align="start">
-                          <Box>
+                          <Box flex="1">
                             <Text fontWeight="700">{course.title}</Text>
-                            <Text fontSize="sm" color="whiteAlpha.700" mt={1}>
+                            <Progress
+                              value={Math.round(Number(course.progress || 0))}
+                              size="xs"
+                              mt={2}
+                              borderRadius="full"
+                              bg="whiteAlpha.200"
+                              sx={{
+                                "& > div": {
+                                  background: `linear-gradient(90deg, ${brand50}, ${brand300})`,
+                                },
+                              }}
+                            />
+                            <Text fontSize="sm" color="whiteAlpha.700" mt={1.5}>
                               {Math.round(Number(course.progress || 0))}% complete
                             </Text>
                           </Box>
                           <Button
                             size="sm"
-                            colorScheme="whiteAlpha"
+                            leftIcon={<FaPlayCircle />}
+                            bg="white"
+                            color={brand700}
                             borderRadius="full"
+                            _hover={{ bg: brand50 }}
                             onClick={() => router.push(`/course?courseId=${course.courseId}`)}
                           >
                             Continue
@@ -340,29 +410,44 @@ export default observer(function LMSLandingPage() {
         </Box>
       </Box>
 
-      <Box as="section" py={{ base: 8, md: 20 }} bg={mutedBg}>
-        <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8 }}>
+      <Box as="section" py={{ base: 10, md: 20 }} bg={mutedBg}>
+        <Box maxW="8xl" mx="auto" px={{ base: 4, md: 8 }}>
           <Flex justify="space-between" align="flex-end" mb={{ base: 5, md: 10 }} flexWrap="wrap" gap={4}>
             <VStack align="start" spacing={2}>
-              <Badge colorScheme="blue" variant="subtle">Explore Public Courses</Badge>
-              <Heading size={{ base: "md", md: "xl" }} color={textPrimary}>Courses to start now</Heading>
-              <Text color={textSecondary} display={{ base: "none", md: "block" }}>
+              <Badge bg={brand50} color={brand700} borderRadius="full" px={3} py={1}>
+                Explore Public Courses
+              </Badge>
+              <Heading size={{ base: "md", md: "xl" }} color={textPrimary}>
+                Courses to start{" "}
+                <Text as="span" bgGradient={`linear(to-r, ${brand500}, ${brand300})`} bgClip="text">
+                  right now
+                </Text>
+              </Heading>
+              <Text color={textSecondary}>
                 Public courses stay open to everyone, while private assignments remain visible for your signed-in learners.
               </Text>
             </VStack>
-            <Button size={{ base: "sm", md: "md" }} colorScheme="blue" variant="ghost" rightIcon={<FaArrowRight />} onClick={() => router.push("/course")}>
+            <Button
+              size={{ base: "sm", md: "md" }}
+              variant="outline"
+              borderColor={brand200}
+              color={brand700}
+              rightIcon={<FaArrowRight />}
+              _hover={{ bg: brand50, borderColor: brand400 }}
+              onClick={() => router.push("/course")}
+            >
               Browse
             </Button>
           </Flex>
 
           {stores.courseStore.isPublicCoursesLoading ? (
             <HStack justify="center" py={14}>
-              <Spinner color="blue.500" />
+              <Spinner color={brand500} />
               <Text color={textSecondary}>Loading course highlights...</Text>
             </HStack>
           ) : (
-            <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={{ base: 3, md: 6 }}>
-              {featuredPublicCourses.map((course) => (
+            <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={{ base: 4, md: 6 }}>
+              {featuredPublicCourses.map((course, index) => (
                 <MotionBox
                   key={course._id}
                   whileHover={{ y: -8 }}
@@ -376,25 +461,35 @@ export default observer(function LMSLandingPage() {
                   {course.thumbnailUrl ? (
                     <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "124px", md: "180px" }} w="full" objectFit="cover" />
                   ) : (
-                    <Box h={{ base: "124px", md: "180px" }} bgGradient="linear(to-br, blue.500, cyan.400)" />
+                    <Flex h={{ base: "124px", md: "180px" }} bgImage={accentGradients[index % accentGradients.length]} align="center" justify="center" color="white">
+                      <Icon as={FaBolt} boxSize={8} opacity={0.92} />
+                    </Flex>
                   )}
                   <Box p={{ base: 4, md: 5 }}>
                     <HStack spacing={2} flexWrap="wrap" mb={3}>
-                      <Badge colorScheme="green" borderRadius="full" px={3} py={1}>Public</Badge>
-                      <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
+                      <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
+                        Public
+                      </Badge>
+                      <Badge bg={brand50} color={brand700} borderRadius="full" px={3} py={1}>
                         {course.taxonomy?.level || "Beginner"}
                       </Badge>
                     </HStack>
-                    <Heading size="sm" minH={{ base: "auto", md: "42px" }} color={textPrimary} noOfLines={2}>{course.title}</Heading>
-                    <Text mt={2} fontSize="sm" color={textSecondary} noOfLines={2} display={{ base: "none", md: "block" }}>
+                    <Heading size="sm" minH={{ base: "auto", md: "42px" }} color={textPrimary} noOfLines={2}>
+                      {course.title}
+                    </Heading>
+                    <Text mt={2} fontSize="sm" color={textSecondary} noOfLines={2}>
                       {course.description?.text || "Open this course to inspect pricing, curriculum, and enrollment options."}
                     </Text>
 
-                    <Flex justify="space-between" align="center" mt={4}>
-                      <Text fontWeight="800" color="blue.600">{formatCurrency(course.commerce?.amountInRupees)}</Text>
+                    <Flex justify="space-between" align="center" mt={4} pt={4} borderTopWidth="1px" borderColor={borderColor}>
+                      <Text fontWeight="800" bgGradient={`linear(to-r, ${brand700}, ${brand500})`} bgClip="text">
+                        {formatCurrency(course.commerce?.amountInRupees)}
+                      </Text>
                       <HStack spacing={1}>
-                        <Icon as={FaUserGraduate} color="blue.500" />
-                        <Text fontSize="sm" color={textSecondary}>{course.metrics?.popularityScore || 0}</Text>
+                        <Icon as={FaUserGraduate} color={brand500} />
+                        <Text fontSize="sm" color={textSecondary}>
+                          {course.metrics?.popularityScore || 0} learners
+                        </Text>
                       </HStack>
                     </Flex>
                   </Box>

@@ -20,14 +20,17 @@ import {
   Icon,
   Image,
   Input,
+  InputGroup,
+  InputLeftElement,
   Select,
   SimpleGrid,
   Spinner,
   Stack,
   Text,
   useColorModeValue,
+  useToken,
   useDisclosure,
-  VStack,
+  VStack
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
@@ -76,7 +79,7 @@ function AssessmentBadge({ summary }: { summary?: any }) {
         : "Assessment Pending";
 
   return (
-    <Badge colorScheme={colorScheme} borderRadius="full" px={3} py={1}>
+    <Badge colorScheme={colorScheme} borderRadius="full" px={3} py={1} size={'sm'} fontSize={'xs'}>
       {label}
     </Badge>
   );
@@ -101,8 +104,8 @@ const CoursesPage = observer(function CoursesPage() {
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
 
   const heroBg = useColorModeValue(
-    "linear-gradient(135deg, #ffffff 0%, #eef6ff 58%, #ecfdf5 100%)",
-    "linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 64, 175, 0.82) 58%, rgba(20, 83, 45, 0.55) 100%)"
+    "linear-gradient(135deg, var(--chakra-colors-brand-50) 0%, #ffffff 48%, var(--chakra-colors-brand-100) 100%)",
+    "linear-gradient(135deg, var(--chakra-colors-gray-900) 0%, rgba(15, 23, 42, 0.98) 40%, var(--chakra-colors-brand-900) 100%)"
   );
   const pageBg = useColorModeValue("#F8FAFC", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
@@ -110,6 +113,34 @@ const CoursesPage = observer(function CoursesPage() {
   const mutedText = useColorModeValue("gray.600", "gray.300");
   const softText = useColorModeValue("gray.500", "gray.400");
   const drawerBg = useColorModeValue("white", "gray.800");
+  const heroPanelOverlay = useColorModeValue(
+    "linear-gradient(135deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.3) 100%)",
+    "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)"
+  );
+  const heroHeadingAccent = useColorModeValue(
+    "linear(to-r, brand.700, brand.500, brand.300)",
+    "linear(to-r, brand.200, brand.400, brand.600)"
+  );
+  const heroStatShadow = useColorModeValue(
+    "0 14px 34px rgba(15, 23, 42, 0.06)",
+    "0 18px 42px rgba(2, 6, 23, 0.28)"
+  );
+  const heroPanelShadow = useColorModeValue(
+    "0 18px 50px rgba(15, 23, 42, 0.08)",
+    "0 24px 60px rgba(2, 6, 23, 0.34)"
+  );
+  const heroButtonShadow = useColorModeValue(
+    "0 12px 28px rgba(37, 99, 235, 0.24)",
+    "0 16px 32px rgba(15, 23, 42, 0.34)"
+  );
+  const [brand50, brand100, brand200, brand400, brand500, brand700] = useToken("colors", [
+    "brand.50",
+    "brand.100",
+    "brand.200",
+    "brand.400",
+    "brand.500",
+    "brand.700",
+  ]);
 
   useEffect(() => {
     stores.courseStore.fetchPublicCourses().catch(() => undefined);
@@ -215,186 +246,382 @@ const CoursesPage = observer(function CoursesPage() {
     );
   }
 
-  const FilterPanel = (
-    <VStack align="stretch" spacing={{ base: 3, md: 4 }}>
-      <Box>
-        <Text fontSize="xs" fontWeight="700" letterSpacing="0.08em" color={softText} textTransform="uppercase" mb={2}>
-          Search
-        </Text>
-        <Input
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search by course name, language, or category"
-          bg={cardBg}
-          borderColor={borderColor}
-          h={{ base: "40px", md: "46px" }}
-          fontSize={{ base: "sm", md: "md" }}
-        />
-      </Box>
+const filterInputStyles = {
+  bg: cardBg,
+  borderColor,
+  borderRadius: "xl",
+  h: { base: "38px", md: "38px" },
+  fontSize: "sm",
+  _hover: {
+    borderColor: "brand.300",
+  },
+  _focusVisible: {
+    borderColor: "brand.400",
+    boxShadow: `0 0 0 3px ${brand100}`,
+  },
+};
 
-      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
-        <Select value={pricingFilter} onChange={(event) => setPricingFilter(event.target.value as typeof pricingFilter)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
-          <option value="all">Paid / Free</option>
-          <option value="free">Free</option>
-          <option value="paid">Paid</option>
-        </Select>
-        <Select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
-          {availableCategories.map((category) => (
-            <option key={category} value={category}>
-              {category === "all" ? "Category" : category}
-            </option>
-          ))}
-        </Select>
-        <Select value={courseTypeFilter} onChange={(event) => setCourseTypeFilter(event.target.value as typeof courseTypeFilter)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
-          <option value="all">Course Type</option>
-          <option value="standard">Standard</option>
-          <option value="scorm">SCORM</option>
-        </Select>
-        <Select value={languageFilter} onChange={(event) => setLanguageFilter(event.target.value)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
-          {availableLanguages.map((language) => (
-            <option key={language} value={language}>
-              {language === "all" ? "Language" : language}
-            </option>
-          ))}
-        </Select>
-      </SimpleGrid>
+const FilterPanel = (
+  <VStack align="stretch" spacing={2.5}>
+    <InputGroup>
+      <InputLeftElement h="38px" pointerEvents="none">
+        <Icon as={FiSearch} color={softText} fontSize="sm" />
+      </InputLeftElement>
 
-      <Select value={sortBy} onChange={(event) => setSortBy(event.target.value as CatalogSort)} bg={cardBg} borderColor={borderColor} h={{ base: "40px", md: "46px" }} fontSize={{ base: "sm", md: "md" }}>
-        <option value="latest">Latest</option>
-        <option value="popularity">Popularity</option>
-        <option value="price_asc">Price: Low to High</option>
-        <option value="price_desc">Price: High to Low</option>
-        <option value="highest_rated">Highest Rated</option>
+      <Input
+        value={searchQuery}
+        onChange={(event) => setSearchQuery(event.target.value)}
+        placeholder="Search course, category, language..."
+        pl={9}
+        {...filterInputStyles}
+      />
+    </InputGroup>
+
+    <SimpleGrid columns={{ base: 1, md: 4 }} spacing={2.5}>
+      <Select
+        value={pricingFilter}
+        onChange={(event) =>
+          setPricingFilter(event.target.value as typeof pricingFilter)
+        }
+        {...filterInputStyles}
+      >
+        <option value="all">Paid / Free</option>
+        <option value="free">Free</option>
+        <option value="paid">Paid</option>
       </Select>
-    </VStack>
-  );
+
+      <Select
+        value={categoryFilter}
+        onChange={(event) => setCategoryFilter(event.target.value)}
+        {...filterInputStyles}
+      >
+        {availableCategories.map((category) => (
+          <option key={category} value={category}>
+            {category === "all" ? "Category" : category}
+          </option>
+        ))}
+      </Select>
+
+      <Select
+        value={courseTypeFilter}
+        onChange={(event) =>
+          setCourseTypeFilter(event.target.value as typeof courseTypeFilter)
+        }
+        {...filterInputStyles}
+      >
+        <option value="all">Type</option>
+        <option value="standard">Standard</option>
+        <option value="scorm">SCORM</option>
+      </Select>
+
+      <Select
+        value={languageFilter}
+        onChange={(event) => setLanguageFilter(event.target.value)}
+        {...filterInputStyles}
+      >
+        {availableLanguages.map((language) => (
+          <option key={language} value={language}>
+            {language === "all" ? "Language" : language}
+          </option>
+        ))}
+      </Select>
+    </SimpleGrid>
+
+    <Select
+      value={sortBy}
+      onChange={(event) => setSortBy(event.target.value as CatalogSort)}
+      {...filterInputStyles}
+    >
+      <option value="latest">Latest courses</option>
+      <option value="popularity">Most popular</option>
+      <option value="price_asc">Price: Low to High</option>
+      <option value="price_desc">Price: High to Low</option>
+      <option value="highest_rated">Highest Rated</option>
+    </Select>
+  </VStack>
+);
 
   return (
     <Box minH="100vh" bg={pageBg} overflowX="hidden">
-      <Box bgImage={heroBg} borderBottomWidth="1px" borderColor={borderColor}>
-        <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 5, md: 12 }}>
-          <Grid templateColumns={{ base: "1fr", lg: "1.16fr 0.84fr" }} gap={{ base: 4, lg: 10 }} alignItems="center">
-            <Box>
-              <Badge colorScheme="blue" borderRadius="full" px={3} py={1} textTransform="none" fontSize="xs">
-                Course catalog
-              </Badge>
-              <Heading mt={3} fontSize={{ base: "2xl", md: "5xl" }} lineHeight={{ base: "1.12", md: "1.06" }} maxW="3xl">
-                Find the right course,
-                <Text as="span" color="blue.500"> faster.</Text>
-              </Heading>
-              <Text mt={4} fontSize={{ base: "sm", md: "lg" }} color={mutedText} maxW="2xl" lineHeight="1.7" display={{ base: "none", sm: "block" }}>
-                Search by title, narrow by pricing, category, course type, and language, then sort by the signals that matter most.
-              </Text>
+<Box
+  bg={heroBg}
+  borderBottomWidth="1px"
+  borderColor={borderColor}
+  position="relative"
+  overflow="hidden"
+>
+  {/* Decorative background blobs */}
+  <Box
+    position="absolute"
+    top="-80px"
+    right="-70px"
+    w="260px"
+    h="260px"
+    bg={brand400}
+    opacity={{ base: 0.14, md: 0.18 }}
+    filter="blur(40px)"
+    borderRadius="full"
+    pointerEvents="none"
+  />
 
-              <HStack mt={{ base: 4, md: 7 }} spacing={3} flexWrap="wrap" display={{ base: "none", sm: "flex" }}>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={3}
-                  px={4}
-                  py={3}
-                  borderRadius="xl"
-                  bg={cardBg}
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                >
-                  <Icon as={FiBookOpen} color="blue.500" />
-                  <Box>
-                    <Text fontSize="sm" fontWeight="700">{publicCourses.length}</Text>
-                    <Text fontSize="xs" color={softText}>Courses</Text>
-                  </Box>
-                </Box>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={3}
-                  px={4}
-                  py={3}
-                  borderRadius="xl"
-                  bg={cardBg}
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                >
-                  <Icon as={FiTrendingUp} color="purple.500" />
-                  <Box>
-                    <Text fontSize="sm" fontWeight="700">
-                      {publicCourses.reduce((sum, course) => sum + Number(course.metrics?.popularityScore || 0), 0)}
-                    </Text>
-                    <Text fontSize="xs" color={softText}>Enrollments</Text>
-                  </Box>
-                </Box>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={3}
-                  px={4}
-                  py={3}
-                  borderRadius="xl"
-                  bg={cardBg}
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                >
-                  <Icon as={FiGlobe} color="green.500" />
-                  <Box>
-                    <Text fontSize="sm" fontWeight="700">Open to all</Text>
-                    <Text fontSize="xs" color={softText}>Open access</Text>
-                  </Box>
-                </Box>
-              </HStack>
+  <Box
+    maxW="8xl"
+    mx="auto"
+    px={{ base: 4, md: 8 }}
+    py={{ base: 4, md: 8 }}
+    position="relative"
+  >
+    <Grid
+      templateColumns={{ base: "1fr", lg: "1.08fr 0.92fr" }}
+      gap={{ base: 5, lg: 8 }}
+      alignItems="center"
+    >
+      <Box>
+        <Badge
+          bg={brand50}
+          color={brand700}
+          borderRadius="full"
+          px={3}
+          py={1}
+          textTransform="none"
+          fontSize="xs"
+          boxShadow={heroButtonShadow}
+        >
+          Course catalog
+        </Badge>
 
-              <Button
-                mt={5}
-                display={{ base: "inline-flex", md: "none" }}
-                colorScheme="blue"
-                borderRadius="full"
-                leftIcon={<FiFilter />}
-                size="sm"
-                minH="38px"
-                onClick={onOpen}
-              >
-                Filters
-              </Button>
-            </Box>
+        <Heading
+          mt={{ base: 2.5, md: 3 }}
+          fontSize={{ base: "2xl", md: "4xl", xl: "5xl" }}
+          lineHeight={{ base: "1.12", md: "1.05" }}
+          maxW="3xl"
+          letterSpacing="-0.04em"
+        >
+          Find the right course,
+          <Text
+            as="span"
+            bgGradient={heroHeadingAccent}
+            bgClip="text"
+          >
+            {" "}
+            faster.
+          </Text>
+        </Heading>
 
+        <Text
+          mt={{ base: 3, md: 4 }}
+          fontSize={{ base: "sm", md: "md" }}
+          color={mutedText}
+          maxW="2xl"
+          lineHeight="1.65"
+          display={{ base: "none", sm: "block" }}
+        >
+          Search, filter, and sort public courses by the signals that matter most.
+        </Text>
+
+        <HStack
+          mt={{ base: 4, md: 6 }}
+          spacing={2.5}
+          flexWrap="wrap"
+          display={{ base: "none", sm: "flex" }}
+        >
+          {[
+            {
+              icon: FiBookOpen,
+              color: brand700,
+              colorBg: brand50,
+              label: "Courses",
+              value: publicCourses.length,
+            },
+            {
+              icon: FiTrendingUp,
+              color: brand500,
+              colorBg: brand100,
+              label: "Enrollments",
+              value: publicCourses.reduce(
+                (sum, course) =>
+                  sum + Number(course.metrics?.popularityScore || 0),
+                0
+              ),
+            },
+            {
+              icon: FiGlobe,
+              colorBg: brand200,
+              color: "green.500",
+              label: "Open access",
+              value: "Open to all",
+            },
+          ].map((item) => (
             <Box
-              display={{ base: "none", md: "block" }}
+              key={item.label}
+              display="flex"
+              alignItems="center"
+              gap={3}
+              px={3.5}
+              py={2.5}
               borderRadius="2xl"
+              bg={cardBg}
               borderWidth="1px"
               borderColor={borderColor}
-              bg={cardBg}
-              p={{ base: 5, md: 6 }}
-              boxShadow="0 28px 70px rgba(15, 23, 42, 0.08)"
+              boxShadow={heroStatShadow}
+              transition="all 0.2s ease"
+              _hover={{
+                transform: "translateY(-2px)",
+                boxShadow: heroPanelShadow,
+              }}
             >
-              <HStack spacing={3} mb={4}>
-                <Icon as={FiSearch} color="blue.500" />
-                <Text fontSize="sm" fontWeight="700" textTransform="uppercase" letterSpacing="0.08em" color={softText}>
-                  Find Courses
-                </Text>
-              </HStack>
-              {FilterPanel}
-              <Button
-                mt={5}
-                w="full"
-                h="48px"
-                colorScheme="blue"
+              <Box
+                w="34px"
+                h="34px"
+                display="grid"
+                placeItems="center"
                 borderRadius="xl"
-                leftIcon={<FiFilter />}
-                onClick={onOpen}
+                bg={item.colorBg}
               >
-                Refine catalog
-              </Button>
+                <Icon as={item.icon} color={item.color} />
+              </Box>
+
+              <Box>
+                <Text fontSize="sm" fontWeight="800" lineHeight="1.1">
+                  {item.value}
+                </Text>
+                <Text fontSize="xs" color={softText}>
+                  {item.label}
+                </Text>
+              </Box>
             </Box>
-          </Grid>
-        </Box>
+          ))}
+        </HStack>
+
+        <Button
+          mt={{ base: 3, md: 5 }}
+          display={{ base: "inline-flex", md: "none" }}
+          colorScheme="brand"
+          borderRadius="full"
+          leftIcon={<FiFilter />}
+          size="sm"
+          onClick={onOpen}
+          boxShadow={heroButtonShadow}
+        >
+          Filters
+        </Button>
       </Box>
 
-      <Box maxW="7xl" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 7, md: 10 }}>
+     <Box
+  display={{ base: "none", md: "block" }}
+  borderRadius="2xl"
+  borderWidth="1px"
+  borderColor={borderColor}
+  bg={cardBg}
+  p={{ md: 4, lg: 4 }}
+  boxShadow="0 18px 50px rgba(15, 23, 42, 0.08)"
+  position="relative"
+  overflow="hidden"
+  maxW="760px"
+  w="full"
+>
+  <Box
+    position="absolute"
+    inset={0}
+    bgGradient={heroPanelOverlay}
+    opacity={1}
+    pointerEvents="none"
+  />
+
+  <Box position="relative">
+    <HStack justify="space-between" align="center" mb={3}>
+      <HStack spacing={2.5}>
+        <Box
+          w="34px"
+          h="34px"
+          display="grid"
+          placeItems="center"
+          borderRadius="xl"
+          bg={brand500}
+          color="white"
+          boxShadow={heroButtonShadow}
+        >
+          <Icon as={FiSearch} fontSize="sm" />
+        </Box>
+
+        <Box>
+          <Text fontSize="sm" fontWeight="800" lineHeight="1.1">
+            Find Courses
+          </Text>
+          <Text fontSize="xs" color={softText}>
+            Search and refine quickly
+          </Text>
+        </Box>
+      </HStack>
+
+      <Badge
+        borderRadius="full"
+        bg={brand50}
+        color={brand700}
+        px={2.5}
+        py={1}
+        textTransform="none"
+        fontSize="xs"
+      >
+        {publicCourses.length} total
+      </Badge>
+    </HStack>
+
+    {FilterPanel}
+
+    <HStack mt={3} spacing={2.5}>
+      <Button
+        flex="1"
+        h="38px"
+        colorScheme="brand"
+        borderRadius="xl"
+        leftIcon={<FiFilter />}
+        onClick={onOpen}
+        fontSize="sm"
+        boxShadow={heroButtonShadow}
+        _hover={{
+          transform: "translateY(-1px)",
+          boxShadow: heroPanelShadow,
+        }}
+        transition="all 0.2s ease"
+      >
+        Refine catalog
+      </Button>
+
+      <Button
+        h="38px"
+        px={4}
+        variant="outline"
+        borderRadius="xl"
+        borderColor={borderColor}
+        color={mutedText}
+        fontSize="sm"
+        onClick={() => {
+          setSearchQuery("");
+          setPricingFilter("all");
+          setCategoryFilter("all");
+          setCourseTypeFilter("all");
+          setLanguageFilter("all");
+          setSortBy("latest");
+        }}
+      >
+        Reset
+      </Button>
+    </HStack>
+  </Box>
+</Box>
+    </Grid>
+  </Box>
+</Box>
+
+
+      <Box maxW="8xl" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 7, md: 10 }}>
         {isLearner && featuredAssignedCourses.length > 0 ? (
           <Box mb={{ base: 7, md: 10 }}>
             <Flex justify="space-between" align="center" mb={5} flexWrap="wrap" gap={3}>
               <Box>
                 <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="700" color="blue.500" textTransform="uppercase" letterSpacing="0.08em">
-                  Assigned Private Courses
+                  Assigned Courses
                 </Text>
                 <Heading size={{ base: "md", md: "lg" }} mt={1}>Continue learning</Heading>
               </Box>
@@ -453,7 +680,7 @@ const CoursesPage = observer(function CoursesPage() {
                       </Text>
                     </HStack>
 
-                    <Button mt={{ base: 3, md: 4 }} h={{ base: "40px", md: "auto" }} w="full" colorScheme="blue" borderRadius="xl" onClick={() => router.push(`/course?courseId=${course.courseId}`)}>
+                    <Button mt={{ base: 3, md: 4 }} h={{ base: "36px", md: "40px" }} w="full" variant={'outline'}  colorScheme="blue" borderRadius="xl" onClick={() => router.push(`/course?courseId=${course.courseId}`)}>
                       Continue Course
                     </Button>
                   </Box>
@@ -463,7 +690,7 @@ const CoursesPage = observer(function CoursesPage() {
           </Box>
         ) : null}
 
-        <Flex justify="space-between" align="flex-end" mb={5} flexWrap="wrap" gap={4}>
+        <Flex justify="space-between" align="flex-end" mb={{base:3,md:5}} flexWrap="wrap" gap={4}>
           <Box>
             <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="700" color="blue.500" textTransform="uppercase" letterSpacing="0.08em">
               Explore Courses
@@ -480,7 +707,7 @@ const CoursesPage = observer(function CoursesPage() {
             borderRadius="full"
             leftIcon={<FiFilter />}
             size="sm"
-            minH="38px"
+            minH={{md:"38px"}}
             onClick={onOpen}
           >
             Filters
@@ -577,7 +804,7 @@ const CoursesPage = observer(function CoursesPage() {
                     </Box>
                   </SimpleGrid>
 
-                  <Button mt={{ base: 3, md: 5 }} h={{ base: "40px", md: "auto" }} w="full" colorScheme="blue" borderRadius="xl" rightIcon={<FiArrowRight />} onClick={() => setSelectedCourse(course)}>
+                  <Button mt={{ base: 3, md: 5 }} h={{ base: "40px", md: "40px" }} w="full" variant={'ghost'} colorScheme="blue" borderRadius="xl" rightIcon={<FiArrowRight />} onClick={() => setSelectedCourse(course)}>
                     View Course
                   </Button>
                 </Box>
@@ -684,4 +911,3 @@ const CoursesPage = observer(function CoursesPage() {
 });
 
 export default CoursesPage;
-

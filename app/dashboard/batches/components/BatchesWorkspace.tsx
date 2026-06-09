@@ -355,7 +355,7 @@ return (
     <Stack
       spacing={{ base: 3, md: 6 }}
       w="100%"
-      maxW={isLearner ? "7xl" : "none"}
+      maxW={isLearner ? "8xl" : "none"}
       mx={isLearner ? "auto" : 0}
     >
       <Box
