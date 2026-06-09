@@ -14,7 +14,6 @@ import {
   Heading,
   Icon,
   IconButton,
-  Image,
   Menu,
   MenuButton,
   MenuItem,
@@ -376,7 +375,7 @@ const BatchesWorkspace = observer(
 const BatchHeroIllustration = () => (
   <Box
     display={{ base: "none", md: "block" }}
-    w={{ md: "190px", lg: "230px" }}
+    w={{ md: "190px", lg: "200px" }}
     flexShrink={0}
     opacity={0.96}
   >
@@ -590,6 +589,8 @@ return (
           transform="translateY(-10px)"
         />
       </Box> */}
+
+      <BatchHeroIllustration />
 
       {/* CREATE BUTTON */}
       {canCreate && !isLearner && (
