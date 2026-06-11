@@ -83,11 +83,11 @@ const DashboardBatchesPage = observer(() => {
     >
       <Box
         minH="100dvh"
-        bg={shellBg}
+        // bg={shellBg}
         position="relative"
         overflowX="hidden"
-        px={{ base: 2.5, sm: 3, md: 5, xl: 6 }}
-        py={{ base: 2.5, sm: 3, md: 5 }}
+        // px={{ base: 2.5, sm: 3, md: 5, xl: 6 }}
+        // py={{ base: 2.5, sm: 3, md: 5 }}
       >
         {/* Soft background glow */}
         <Box
@@ -96,7 +96,7 @@ const DashboardBatchesPage = observer(() => {
           right={{ base: "-80px", md: "-120px" }}
           w={{ base: "180px", md: "320px" }}
           h={{ base: "180px", md: "320px" }}
-          bg={cardGlowOne}
+          // bg={cardGlowOne}
           rounded="full"
           opacity={{ base: 0.25, md: 0.28 }}
           filter="blur(70px)"

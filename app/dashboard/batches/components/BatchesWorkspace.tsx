@@ -590,7 +590,7 @@ return (
         />
       </Box> */}
 
-      <BatchHeroIllustration />
+      {/* <BatchHeroIllustration /> */}
 
       {/* CREATE BUTTON */}
       {canCreate && !isLearner && (

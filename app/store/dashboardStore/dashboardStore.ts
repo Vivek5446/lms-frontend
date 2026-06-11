@@ -61,11 +61,11 @@ class DashboardStore {
     makeAutoObservable(this);
   }
 
-  fetchScopedSummary = async () => {
+  fetchScopedSummary = async (params: Record<string, string> = {}) => {
     this.scopedSummaryLoading = true;
     this.scopedSummaryError = null;
     try {
-      const { data } = await axios.get(`/dashboard/summary`);
+      const { data } = await axios.get(`/dashboard/summary`, { params });
       this.scopedSummary = data?.data || null;
       return this.scopedSummary;
     } catch (err: any) {

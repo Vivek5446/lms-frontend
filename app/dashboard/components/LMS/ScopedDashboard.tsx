@@ -33,6 +33,8 @@ import {
   FiUsers,
 } from "react-icons/fi";
 import stores from "@/app/store/stores";
+import { SuperadminDashboard } from "./components/superadmin-dashboard/SuperadminDashboard";
+import { SuperadminDashboardSummary } from "./components/superadmin-dashboard/types";
 
 const chartAccentMap: Record<string, string> = {
   purple: "purple.500",
@@ -247,7 +249,7 @@ const ScopedDashboard = observer(() => {
     );
   }
 
-  if (scopedSummaryError) {
+  if (scopedSummaryError && !scopedSummary) {
     return (
       <Alert status="error" borderRadius="2xl">
         <AlertIcon />
@@ -256,6 +258,17 @@ const ScopedDashboard = observer(() => {
           <AlertDescription>{scopedSummaryError}</AlertDescription>
         </Box>
       </Alert>
+    );
+  }
+
+  if (role === "superadmin" && scopedSummary) {
+    return (
+      <SuperadminDashboard
+        summary={scopedSummary as SuperadminDashboardSummary}
+        isLoading={scopedSummaryLoading}
+        error={scopedSummaryError}
+        onRefresh={fetchScopedSummary}
+      />
     );
   }
 
