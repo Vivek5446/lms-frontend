@@ -182,6 +182,8 @@ interface CourseDetailsProps {
   courseQuizzes?: CourseQuizForLearner[];
   isCourseQuizzesLoading?: boolean;
   onTakeQuiz?: (quiz: CourseQuizForLearner) => void;
+  onDownloadCertificate?: (courseId: string) => void;
+  isCertificateDownloading?: boolean;
 }
 
 export default function CourseDetails({
@@ -194,6 +196,8 @@ export default function CourseDetails({
   courseQuizzes = [],
   isCourseQuizzesLoading = false,
   onTakeQuiz,
+  onDownloadCertificate,
+  isCertificateDownloading = false,
 }: CourseDetailsProps) {
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
   const isAssignedCourseView = Array.isArray(course.sources);
@@ -201,6 +205,11 @@ export default function CourseDetails({
   const answerSummary = summarizeAnswerSections(learnerAnswers);
   const totalSections = Number(course.curriculum?.totalSections || 0);
   const progressModules = Array.isArray(course.progressModules) ? course.progressModules : [];
+  const courseId = String(course._id || course.courseId || "").trim();
+  const certificateReason =
+    course.certificate?.reason || "Certificate will be available after eligibility is confirmed.";
+  const canDownloadCertificate = isAssignedCourseView;
+  const shouldShowCertificateStatus = isAssignedCourseView;
 
   const moduleProgressMap = useMemo(
     () => new Map<string, any>(progressModules.map((moduleRecord: any) => [moduleRecord.moduleId, moduleRecord])),
@@ -1213,6 +1222,34 @@ export default function CourseDetails({
                         ? nextLaunchLabel
                         : getStartLearningLabel(firstPlayableLaunchSection, course.scormFilePath)}
                     </MotionButton>
+
+                    {shouldShowCertificateStatus ? (
+                      <Box>
+                        <Button
+                          w="full"
+                          h="44px"
+                          variant="outline"
+                          colorScheme={canDownloadCertificate ? "green" : "gray"}
+                          borderRadius="xl"
+                          leftIcon={<Icon as={Award} />}
+                          rightIcon={<Icon as={Download} />}
+                          isDisabled={!canDownloadCertificate}
+                          isLoading={canDownloadCertificate && isCertificateDownloading}
+                          onClick={() => {
+                            if (canDownloadCertificate && courseId) {
+                              onDownloadCertificate?.(courseId);
+                            }
+                          }}
+                        >
+                          Download Certificate
+                        </Button>
+                        {!canDownloadCertificate ? (
+                          <Text mt={2} fontSize="xs" color={textMuted} textAlign="center">
+                            {certificateReason}
+                          </Text>
+                        ) : null}
+                      </Box>
+                    ) : null}
 
                     {isAssignedCourseView && nextLaunchSection ? (
                       <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4}>

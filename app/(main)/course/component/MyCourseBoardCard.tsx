@@ -18,8 +18,10 @@ import { motion } from "framer-motion";
 import React from "react";
 import {
   FiArrowRight,
+  FiAward,
   FiBookOpen,
   FiClock,
+  FiDownload,
   FiLayers,
   FiPlayCircle,
   FiStar,
@@ -31,6 +33,8 @@ interface CourseCardProps {
   course: any;
   index: number;
   handleOpenCourse: (id: string) => void;
+  handleDownloadCertificate?: (id: string) => void;
+  isCertificateDownloading?: boolean;
   getStatusColor: (status: string) => string;
   formatDate: (date: string) => string;
 }
@@ -45,6 +49,8 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
   course,
   index,
   handleOpenCourse,
+  handleDownloadCertificate,
+  isCertificateDownloading = false,
   getStatusColor,
   formatDate,
 }) => {
@@ -100,6 +106,9 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
       : assessmentOutcome === "failed"
         ? "red.600"
         : "orange.600";
+  const shouldShowCertificateButton = true;
+  const canDownloadCertificate = shouldShowCertificateButton;
+  const certificateButtonLabel = "Download Certificate";
 
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -220,21 +229,43 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
             </HStack>
           </Box>
 
-          <Button
-            alignSelf="flex-start"
-            size="sm"
-            h="34px"
-            px={4}
-            colorScheme="blue"
-            borderRadius="lg"
-            rightIcon={<FiArrowRight />}
-            onClick={(event) => {
-              event.stopPropagation();
-              handleOpenCourse(course.courseId);
-            }}
-          >
-            {progress > 0 ? "Continue" : "Start"}
-          </Button>
+          <HStack spacing={2} flexWrap="wrap">
+            <Button
+              size="sm"
+              h="34px"
+              px={4}
+              colorScheme="blue"
+              borderRadius="lg"
+              rightIcon={<FiArrowRight />}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleOpenCourse(course.courseId);
+              }}
+            >
+              {progress > 0 ? "Continue" : "Start"}
+            </Button>
+            {shouldShowCertificateButton ? (
+              <Button
+                size="sm"
+                h="34px"
+                px={3}
+                variant="outline"
+                colorScheme={canDownloadCertificate ? "green" : "gray"}
+                borderRadius="lg"
+                leftIcon={<FiDownload />}
+                isDisabled={!canDownloadCertificate}
+                isLoading={canDownloadCertificate && isCertificateDownloading}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (canDownloadCertificate) {
+                    handleDownloadCertificate?.(course.courseId);
+                  }
+                }}
+              >
+                Certificate
+              </Button>
+            ) : null}
+          </HStack>
         </Flex>
       </Flex>
 
@@ -410,6 +441,28 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
         >
           {progress > 0 ? "Continue" : "Start"}
         </Button>
+        {shouldShowCertificateButton ? (
+          <Button
+            mt={2}
+            w="full"
+            h={{ base: "42px", md: "44px" }}
+            variant="outline"
+            colorScheme={canDownloadCertificate ? "green" : "gray"}
+            borderRadius="xl"
+            leftIcon={<FiAward />}
+            rightIcon={<FiDownload />}
+            isDisabled={!canDownloadCertificate}
+            isLoading={canDownloadCertificate && isCertificateDownloading}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (canDownloadCertificate) {
+                handleDownloadCertificate?.(course.courseId);
+              }
+            }}
+          >
+            {certificateButtonLabel}
+          </Button>
+        ) : null}
       </Box>
       </Box>
     </MotionBox>

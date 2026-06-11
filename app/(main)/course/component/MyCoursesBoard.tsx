@@ -197,6 +197,24 @@ const MyCoursesBoard = observer(
       router.push(`${basePath}?courseId=${courseId}`);
     };
 
+    const handleDownloadCertificate = async (courseId: string) => {
+      try {
+        await courseStore.downloadMyCertificate(courseId);
+        toast({
+          title: "Certificate downloaded",
+          status: "success",
+          duration: 3000,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Certificate unavailable",
+          description: error?.message || error?.data || "Please try again.",
+          status: "error",
+          duration: 4000,
+        });
+      }
+    };
+
     const syncNonScormSectionProgress = async (
       status: "in_progress" | "completed",
       extra?: {
@@ -274,6 +292,10 @@ const MyCoursesBoard = observer(
             courseQuizzes={courseStore.courseQuizzes}
             isCourseQuizzesLoading={courseStore.isCourseQuizzesLoading}
             onTakeQuiz={(quiz) => setActiveQuiz(quiz)}
+            onDownloadCertificate={handleDownloadCertificate}
+            isCertificateDownloading={
+              courseStore.certificateDownloadCourseId === (activeCourse._id || activeCourse.courseId)
+            }
           />
 
           <AnimatePresence>
@@ -549,6 +571,8 @@ const MyCoursesBoard = observer(
                   course={course}
                   index={index}
                   handleOpenCourse={handleOpenCourse}
+                  handleDownloadCertificate={handleDownloadCertificate}
+                  isCertificateDownloading={courseStore.certificateDownloadCourseId === course.courseId}
                   getStatusColor={getStatusColor}
                   formatDate={formatDate}
                 />

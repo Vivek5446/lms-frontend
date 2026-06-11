@@ -23,6 +23,18 @@ export interface CourseAssessmentSummary extends CourseAssessmentConfig {
   outcome: "passed" | "failed" | "pending" | "not_configured";
 }
 
+export interface CourseCertificateSummary {
+  enabled: boolean;
+  status: "disabled" | "not_eligible" | "eligible" | "issued";
+  canIssue: boolean;
+  reason: string;
+  certificateNo?: string;
+  issuedAt?: string | null;
+  downloadUrl?: string;
+  templateId?: string;
+  templateName?: string;
+}
+
 export interface CourseMetrics {
   averageRating: number | null;
   popularityScore: number;
@@ -46,6 +58,7 @@ export interface CourseListItem {
     completionWindowDays?: number | null;
     dripEnabled?: boolean;
     certificateEnabled?: boolean;
+    certificateTemplateId?: string | null;
     mandatoryModules?: boolean;
   };
   curriculum: {
@@ -201,11 +214,13 @@ export interface MyCourseItem {
     completionWindowDays?: number | null;
     dripEnabled?: boolean;
     certificateEnabled?: boolean;
+    certificateTemplateId?: string | null;
     mandatoryModules?: boolean;
   };
   visibility?: CourseVisibilityConfig;
   assessment?: CourseAssessmentConfig;
   assessmentSummary?: CourseAssessmentSummary;
+  certificate?: CourseCertificateSummary;
 }
 
 export interface MyCourseSectionProgressItem {
@@ -252,6 +267,7 @@ export interface MyCourseDetailItem extends CourseListItem {
     completionWindowDays?: number | null;
     dripEnabled?: boolean;
     certificateEnabled?: boolean;
+    certificateTemplateId?: string | null;
     mandatoryModules?: boolean;
   };
   sources: MyCourseSourceItem[];
@@ -260,6 +276,7 @@ export interface MyCourseDetailItem extends CourseListItem {
   isExpired: boolean;
   visibilityStatus: "active" | "expired" | "expiring_soon";
   assessmentSummary?: CourseAssessmentSummary;
+  certificate?: CourseCertificateSummary;
   progressModules?: MyCourseModuleProgressItem[];
 }
 
@@ -555,6 +572,7 @@ class CourseStoreClass {
   isMyCoursesLoading: boolean = false;
   isMyCourseDetailLoading: boolean = false;
   isCourseQuizzesLoading: boolean = false;
+  certificateDownloadCourseId: string | null = null;
   isQuizSubmitting: boolean = false;
   isCourseAssignmentAuditLoading: boolean = false;
   isSubmitting: boolean = false;
@@ -789,6 +807,109 @@ class CourseStoreClass {
   clearCurrentCourse = () => {
     this.currentCourse = null;
     this.courseQuizzes = [];
+  };
+
+  applyCertificateSnapshot = (courseId: string, certificate: CourseCertificateSummary) => {
+    const normalizedCourseId = String(courseId || "").trim();
+    if (!normalizedCourseId) {
+      return;
+    }
+
+    this.myCourses = this.myCourses.map((course) =>
+      String(course.courseId || "").trim() === normalizedCourseId
+        ? {
+            ...course,
+            certificate,
+          }
+        : course
+    );
+
+    const currentCourseId = String(this.currentCourse?._id || this.currentCourse?.courseId || "").trim();
+    if (this.currentCourse && currentCourseId === normalizedCourseId) {
+      this.currentCourse = {
+        ...this.currentCourse,
+        certificate,
+      };
+    }
+  };
+
+  fetchMyCertificate = async (courseId: string) => {
+    try {
+      const { data } = await axios.get(`/certificates/my/${courseId}`);
+      const certificate = data?.data || null;
+      if (certificate) {
+        runInAction(() => {
+          this.applyCertificateSnapshot(courseId, certificate);
+        });
+      }
+      return certificate;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err);
+    }
+  };
+
+  issueMyCertificate = async (courseId: string) => {
+    try {
+      const { data } = await axios.post(`/certificates/my/${courseId}/issue`);
+      const certificate = data?.data || null;
+      if (certificate) {
+        runInAction(() => {
+          this.applyCertificateSnapshot(courseId, certificate);
+        });
+      }
+      return certificate;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err);
+    }
+  };
+
+  parseCertificateDownloadError = async (err: any) => {
+    const responseData = err?.response?.data;
+    if (responseData instanceof Blob) {
+      const text = await responseData.text().catch(() => "");
+      if (text) {
+        try {
+          const parsed = JSON.parse(text);
+          return parsed?.message || parsed?.error || text;
+        } catch {
+          return text;
+        }
+      }
+    }
+
+    return responseData?.message || responseData?.error || err?.message || "Please try again.";
+  };
+
+  downloadMyCertificate = async (courseId: string) => {
+    this.certificateDownloadCourseId = courseId;
+    try {
+      const response = await axios.get(`/certificates/my/${courseId}/download`, {
+        responseType: "blob",
+      });
+      const disposition = response.headers?.["content-disposition"] || "";
+      const match = disposition.match(/filename="?([^"]+)"?/i);
+      const fileName = match?.[1] || "certificate.pdf";
+      const blob = new Blob([response.data], {
+        type: response.data?.type || "application/pdf",
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      await this.fetchMyCertificate(courseId).catch(() => undefined);
+      return true;
+    } catch (err: any) {
+      return Promise.reject(new Error(await this.parseCertificateDownloadError(err)));
+    } finally {
+      runInAction(() => {
+        this.certificateDownloadCourseId = null;
+      });
+    }
   };
 
   clearCourseQuizzes = () => {
