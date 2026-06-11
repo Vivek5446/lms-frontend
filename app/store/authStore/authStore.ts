@@ -23,6 +23,7 @@ class AuthStore {
   error: string | null = null;
   notification: Notification | null = null;
   company: any = undefined
+  sessionReady = false;
 
   constructor() {
     makeAutoObservable(this);
@@ -54,7 +55,7 @@ class AuthStore {
     );
 
     if (typeof window !== "undefined") {
-      this.initializeUser();
+      this.initializeUser().catch(() => undefined);
     }
   }
 
@@ -70,12 +71,20 @@ class AuthStore {
 
   // Initialize User Session
   initializeUser = async () => {
-    if (typeof window !== "undefined") {  // ✅ Prevent SSR errors
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    this.isLoading = true;
+    try {
       const savedToken = localStorage.getItem(AUTH_TOKEN);
       if (savedToken) {
         this.token = savedToken;
         await this.fetchUser();
       }
+    } finally {
+      this.isLoading = false;
+      this.sessionReady = true;
     }
   };
 
@@ -175,6 +184,7 @@ class AuthStore {
       }
 
       await this.fetchUser();
+      this.sessionReady = true;
       return response?.data
     } catch (err: any) {
       this.error = err?.response?.data?.message || "Login failed.";
@@ -272,6 +282,7 @@ class AuthStore {
     this.userType = null;
     this.company = undefined;
     this.error = null;
+    this.sessionReady = true;
 
     if (typeof window !== "undefined") {
       this.clearLocalStorage();

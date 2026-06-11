@@ -7,54 +7,57 @@ import {
   AlertTitle,
   Badge,
   Box,
+  Button,
   Flex,
-  Grid,
   Heading,
   HStack,
-  Spinner,
+  Icon,
+  SimpleGrid,
+  Skeleton,
   Stack,
   Stat,
   StatLabel,
   StatNumber,
   Text,
-  VStack,
   useColorModeValue,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   FiActivity,
+  FiAlertCircle,
   FiBookOpen,
   FiBriefcase,
+  FiCheckCircle,
+  FiClock,
   FiGrid,
   FiLayers,
+  FiRefreshCw,
+  FiTarget,
   FiTrendingUp,
-  FiUser,
   FiUsers,
 } from "react-icons/fi";
 import stores from "@/app/store/stores";
 import { SuperadminDashboard } from "./components/superadmin-dashboard/SuperadminDashboard";
 import { SuperadminDashboardSummary } from "./components/superadmin-dashboard/types";
+import { DashboardCharts } from "./components/scoped-dashboard/DashboardCharts";
+import { DashboardFilters } from "./components/scoped-dashboard/DashboardFilters";
+import { DashboardInsights } from "./components/scoped-dashboard/DashboardInsights";
+import {
+  EMPTY_SCOPED_FILTERS,
+  ScopedDashboardFilters,
+  ScopedDashboardSummary,
+} from "./components/scoped-dashboard/types";
 
-const chartAccentMap: Record<string, string> = {
-  purple: "purple.500",
-  blue: "blue.500",
-  teal: "teal.500",
-  orange: "orange.500",
-  green: "green.500",
+type StatCardProps = {
+  label: string;
+  value: number | string;
+  helper: string;
+  icon: any;
+  colorScheme: string;
 };
 
-function StatCard({
-  label,
-  value,
-  helper,
-  accent = "blue.500",
-}: {
-  label: string;
-  value: string | number;
-  helper: string;
-  accent?: string;
-}) {
+function StatCard({ label, value, helper, icon, colorScheme }: StatCardProps) {
   const bg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
 
@@ -64,139 +67,55 @@ function StatCard({
       borderWidth="1px"
       borderColor={borderColor}
       borderRadius="xl"
-      p={{ base: 4, md: 5 }}
+      p={{ base: 3.5, md: 4 }}
       boxShadow="sm"
+      transition="transform .18s ease, box-shadow .18s ease"
+      _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
+      minW={0}
     >
-      <Stat>
-        <StatLabel color="gray.500" fontSize={{ base: "xs", md: "sm" }}>
-          {label}
-        </StatLabel>
-        <StatNumber fontSize={{ base: "2xl", md: "3xl" }} color={accent}>
-          {typeof value === "number" ? value.toLocaleString() : value}
-        </StatNumber>
-        <Text mt={2} fontSize="sm" color="gray.500" display={{ base: "none", md: "block" }}>
-          {helper}
-        </Text>
-      </Stat>
+      <Flex justify="space-between" gap={3}>
+        <Stat minW={0}>
+          <StatLabel color="gray.500" fontSize="xs" noOfLines={1}>
+            {label}
+          </StatLabel>
+          <StatNumber mt={1} fontSize={{ base: "xl", md: "2xl" }} lineHeight="1.15">
+            {typeof value === "number" ? value.toLocaleString() : value}
+          </StatNumber>
+          <Text mt={1.5} fontSize="xs" color="gray.500" noOfLines={1}>
+            {helper}
+          </Text>
+        </Stat>
+        <Flex
+          align="center"
+          justify="center"
+          w="36px"
+          h="36px"
+          flexShrink={0}
+          borderRadius="lg"
+          bg={`${colorScheme}.50`}
+          color={`${colorScheme}.600`}
+        >
+          <Icon as={icon} boxSize={4.5} />
+        </Flex>
+      </Flex>
     </Box>
   );
 }
 
-function MiniChart({
-  title,
-  entries,
-  color = "blue.500",
-}: {
-  title: string;
-  entries: Array<{ label: string; value: number }>;
-  color?: string;
-}) {
-  const bg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const trackColor = useColorModeValue("gray.100", "gray.700");
-  const maxValue = Math.max(...entries.map((entry) => entry.value), 1);
-
+function DashboardSkeleton() {
   return (
-    <Box
-      bg={bg}
-      borderWidth="1px"
-      borderColor={borderColor}
-      borderRadius="xl"
-      p={{ base: 4, md: 5 }}
-      boxShadow="sm"
-    >
-      <Heading size="sm" mb={{ base: 3, md: 4 }}>
-        {title}
-      </Heading>
-      <Stack spacing={{ base: 3, md: 4 }}>
-        {entries.length ? (
-          entries.map((entry) => (
-            <Box key={`${title}-${entry.label}`}>
-              <Flex justify="space-between" align="center" mb={1}>
-                <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
-                  {entry.label}
-                </Text>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.500">
-                  {entry.value.toLocaleString()}
-                </Text>
-              </Flex>
-              <Box h="9px" borderRadius="full" bg={trackColor} overflow="hidden">
-                <Box
-                  h="100%"
-                  borderRadius="full"
-                  bg={color}
-                  width={`${Math.max(8, Math.round((entry.value / maxValue) * 100))}%`}
-                />
-              </Box>
-            </Box>
-          ))
-        ) : (
-          <Text fontSize="sm" color="gray.500">
-            No chart data available yet.
-          </Text>
-        )}
-      </Stack>
-    </Box>
-  );
-}
-
-function ActivityList({
-  title,
-  icon,
-  items,
-  emptyText,
-}: {
-  title: string;
-  icon: any;
-  items: Array<{
-    title: string;
-    subtitle?: string;
-    meta?: string;
-  }>;
-  emptyText: string;
-}) {
-  const bg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-
-  return (
-    <Box
-      bg={bg}
-      borderWidth="1px"
-      borderColor={borderColor}
-      borderRadius="xl"
-      p={{ base: 4, md: 5 }}
-      boxShadow="sm"
-    >
-      <HStack spacing={3} mb={{ base: 3, md: 4 }}>
-        <Box p={2} borderRadius="xl" bg="blue.50" color="blue.500">
-          {icon}
-        </Box>
-        <Heading size="sm">{title}</Heading>
-      </HStack>
-      <Stack spacing={{ base: 3, md: 4 }}>
-        {items.length ? (
-          items.map((item, index) => (
-            <Box key={`${title}-${index}`} borderBottomWidth={index === items.length - 1 ? "0" : "1px"} borderColor={borderColor} pb={index === items.length - 1 ? 0 : 4}>
-              <Text fontWeight="semibold" fontSize={{ base: "sm", md: "md" }}>{item.title}</Text>
-              {item.subtitle ? (
-                <Text fontSize="sm" color="gray.500" mt={1} noOfLines={1}>
-                  {item.subtitle}
-                </Text>
-              ) : null}
-              {item.meta ? (
-                <Text fontSize="xs" color="gray.400" mt={2} display={{ base: "none", md: "block" }}>
-                  {item.meta}
-                </Text>
-              ) : null}
-            </Box>
-          ))
-        ) : (
-          <Text fontSize="sm" color="gray.500">
-            {emptyText}
-          </Text>
-        )}
-      </Stack>
-    </Box>
+    <Stack spacing={4} p={{ base: 3, md: 5 }}>
+      <Skeleton h="132px" borderRadius="2xl" />
+      <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3}>
+        {Array.from({ length: 8 }).map((_, index) => (
+          <Skeleton key={index} h="112px" borderRadius="xl" />
+        ))}
+      </SimpleGrid>
+      <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4}>
+        <Skeleton h="300px" borderRadius="xl" />
+        <Skeleton h="300px" borderRadius="xl" />
+      </SimpleGrid>
+    </Stack>
   );
 }
 
@@ -204,67 +123,54 @@ const ScopedDashboard = observer(() => {
   const {
     dashboardStore: { fetchScopedSummary, scopedSummary, scopedSummaryError, scopedSummaryLoading },
   } = stores;
+  const [draftFilters, setDraftFilters] =
+    useState<ScopedDashboardFilters>(EMPTY_SCOPED_FILTERS);
+  const [appliedFilters, setAppliedFilters] =
+    useState<ScopedDashboardFilters>(EMPTY_SCOPED_FILTERS);
 
   const pageBg = useColorModeValue("gray.50", "gray.900");
   const heroBg = useColorModeValue("white", "gray.800");
   const heroBorder = useColorModeValue("gray.200", "gray.700");
-  const role = String(scopedSummary?.role || "").toLowerCase();
-  const scope = scopedSummary?.scope || {};
-  const stats = scopedSummary?.stats || {};
-  const charts = scopedSummary?.charts || {};
-  const highlights = scopedSummary?.highlights || {};
+  const summary = scopedSummary as ScopedDashboardSummary | SuperadminDashboardSummary | null;
+  const role = String(summary?.role || "").toLowerCase();
 
   useEffect(() => {
-    fetchScopedSummary().catch(() => undefined);
-  }, [fetchScopedSummary]);
+    const params = Object.fromEntries(
+      Object.entries(appliedFilters).filter(([, value]) => Boolean(value))
+    );
+    fetchScopedSummary(params).catch(() => undefined);
+  }, [appliedFilters, fetchScopedSummary]);
 
-  const roleCopy =
-    role === "superadmin"
-      ? {
-          title: "Platform Command Center",
-          subtitle: "A platform-wide view across companies, users, courses, and batches.",
-          badge: "Platform scope",
-          accent: "purple.500",
-        }
-      : role === "admin"
-        ? {
-            title: scope.companyName ? `${scope.companyName} Dashboard` : "Company Dashboard",
-            subtitle: "Company-only analytics for the users, courses, assignments, and batches you manage.",
-            badge: "Company scope",
-            accent: "blue.500",
-          }
-        : {
-            title: scope.departmentName ? `${scope.departmentName} Department Dashboard` : "Department Dashboard",
-            subtitle: "Department-only visibility for your team, learning activity, and course coverage.",
-            badge: "Department scope",
-            accent: "teal.500",
-          };
+  if (scopedSummaryLoading && !summary) {
+    return <DashboardSkeleton />;
+  }
 
-  if (scopedSummaryLoading && !scopedSummary) {
+  if (scopedSummaryError && !summary) {
     return (
-      <Flex minH="60vh" align="center" justify="center" gap={4} bg={pageBg}>
-        <Spinner size="xl" color="blue.500" />
-        <Text color="gray.500">Loading dashboard summary...</Text>
-      </Flex>
+      <Box p={{ base: 3, md: 6 }}>
+        <Alert status="error" borderRadius="xl">
+          <AlertIcon />
+          <Box flex={1}>
+            <AlertTitle>Unable to load dashboard</AlertTitle>
+            <AlertDescription>{scopedSummaryError}</AlertDescription>
+          </Box>
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<FiRefreshCw />}
+            onClick={() => fetchScopedSummary().catch(() => undefined)}
+          >
+            Retry
+          </Button>
+        </Alert>
+      </Box>
     );
   }
 
-  if (scopedSummaryError && !scopedSummary) {
-    return (
-      <Alert status="error" borderRadius="2xl">
-        <AlertIcon />
-        <Box>
-          <AlertTitle>Unable to load dashboard</AlertTitle>
-          <AlertDescription>{scopedSummaryError}</AlertDescription>
-        </Box>
-      </Alert>
-    );
-  }
-
-  if (role === "superadmin" && scopedSummary) {
+  if (role === "superadmin" && summary) {
     return (
       <SuperadminDashboard
-        summary={scopedSummary as SuperadminDashboardSummary}
+        summary={summary as SuperadminDashboardSummary}
         isLoading={scopedSummaryLoading}
         error={scopedSummaryError}
         onRefresh={fetchScopedSummary}
@@ -272,152 +178,232 @@ const ScopedDashboard = observer(() => {
     );
   }
 
+  if (!summary || !["admin", "departmenthead"].includes(role)) {
+    return <DashboardSkeleton />;
+  }
+
+  const scoped = summary as ScopedDashboardSummary;
+  const scope = scoped.scope || {};
+  const stats = scoped.stats || {};
+  const isAdmin = role === "admin";
+  const completionRate =
+    typeof stats.completionRate === "number" ? `${stats.completionRate}%` : "No data";
+  const averageProgress =
+    typeof stats.averageProgress === "number" ? `${stats.averageProgress}%` : "No data";
+  const averageQuizScore =
+    typeof stats.averageQuizScore === "number" ? `${stats.averageQuizScore}%` : "No data";
+
+  const statCards: StatCardProps[] = isAdmin
+    ? [
+        {
+          label: "Company users",
+          value: stats.totalUsers || 0,
+          helper: `${stats.activeUsers || 0} active`,
+          icon: FiUsers,
+          colorScheme: "purple",
+        },
+        {
+          label: "Departments",
+          value: stats.totalDepartments || 0,
+          helper: "Company structure",
+          icon: FiLayers,
+          colorScheme: "blue",
+        },
+        {
+          label: "Courses",
+          value: stats.totalCourses || 0,
+          helper: `${stats.publishedCourses || 0} published`,
+          icon: FiBookOpen,
+          colorScheme: "teal",
+        },
+        {
+          label: "Completion rate",
+          value: completionRate,
+          helper: `${stats.completedEnrollments || 0} completions`,
+          icon: FiCheckCircle,
+          colorScheme: "green",
+        },
+        {
+          label: "Average progress",
+          value: averageProgress,
+          helper: `${stats.totalEnrollments || 0} enrollments`,
+          icon: FiTrendingUp,
+          colorScheme: "purple",
+        },
+        {
+          label: "Active batches",
+          value: stats.activeBatches || 0,
+          helper: `${stats.totalBatches || 0} total batches`,
+          icon: FiGrid,
+          colorScheme: "orange",
+        },
+        {
+          label: "Quiz average",
+          value: averageQuizScore,
+          helper: `${stats.quizAttempts || 0} attempts`,
+          icon: FiTarget,
+          colorScheme: "pink",
+        },
+        {
+          label: "Needs attention",
+          value: stats.lowEngagementUsers || 0,
+          helper: `${stats.pendingCompletions || 0} pending`,
+          icon: FiAlertCircle,
+          colorScheme: "red",
+        },
+      ]
+    : [
+        {
+          label: "Department users",
+          value: stats.totalUsers || 0,
+          helper: `${stats.activeUsers || 0} active`,
+          icon: FiUsers,
+          colorScheme: "teal",
+        },
+        {
+          label: "Assigned courses",
+          value: stats.totalCourses || 0,
+          helper: `${stats.publishedCourses || 0} published`,
+          icon: FiBookOpen,
+          colorScheme: "blue",
+        },
+        {
+          label: "Completion rate",
+          value: completionRate,
+          helper: `${stats.completedEnrollments || 0} complete`,
+          icon: FiCheckCircle,
+          colorScheme: "green",
+        },
+        {
+          label: "Pending courses",
+          value: stats.pendingCompletions || 0,
+          helper: "Still to complete",
+          icon: FiClock,
+          colorScheme: "orange",
+        },
+        {
+          label: "Average progress",
+          value: averageProgress,
+          helper: `${stats.totalEnrollments || 0} enrollments`,
+          icon: FiTrendingUp,
+          colorScheme: "purple",
+        },
+        {
+          label: "Quiz average",
+          value: averageQuizScore,
+          helper: `${stats.quizAttempts || 0} attempts`,
+          icon: FiTarget,
+          colorScheme: "pink",
+        },
+        {
+          label: "Learners at risk",
+          value: stats.lowEngagementUsers || 0,
+          helper: "Inactive for 30+ days",
+          icon: FiAlertCircle,
+          colorScheme: "red",
+        },
+        {
+          label: "Upcoming deadlines",
+          value: stats.expiringItems || 0,
+          helper: "Within 30 days",
+          icon: FiActivity,
+          colorScheme: "orange",
+        },
+      ];
+
   return (
-    <Box minH="100vh" bg={pageBg} p={{ base: 3, md: 6 }}>
-      <Stack spacing={{ base: 4, md: 6 }}>
+    <Box minH="100vh" bg={pageBg} p={{ base: 3, md: 5 }}>
+      <Stack spacing={4} maxW="1600px" mx="auto">
         <Box
           bg={heroBg}
           borderWidth="1px"
           borderColor={heroBorder}
-          borderRadius={{ base: "2xl", md: "3xl" }}
-          p={{ base: 4, md: 8 }}
+          borderRadius="2xl"
+          p={{ base: 4, md: 5 }}
           boxShadow="sm"
+          overflow="hidden"
+          position="relative"
         >
-          <Flex justify="space-between" gap={{ base: 4, md: 6 }} wrap="wrap" align="flex-start">
-            <Box maxW="760px">
-              <Badge colorScheme={role === "superadmin" ? "purple" : role === "admin" ? "blue" : "teal"} px={3} py={1} borderRadius="full" fontSize="0.68rem">
-                {roleCopy.badge}
-              </Badge>
-              <Heading mt={3} size={{ base: "md", md: "lg" }}>
-                {roleCopy.title}
+          <Box
+            position="absolute"
+            insetY={0}
+            right={0}
+            w={{ base: "35%", md: "28%" }}
+            bgGradient={isAdmin ? "linear(to-l, purple.100, transparent)" : "linear(to-l, teal.100, transparent)"}
+            opacity={useColorModeValue(0.8, 0.08)}
+            pointerEvents="none"
+          />
+          <Flex justify="space-between" align="flex-start" gap={4} position="relative">
+            <Box minW={0}>
+              <HStack spacing={2} mb={2}>
+                <Badge
+                  colorScheme={isAdmin ? "purple" : "teal"}
+                  borderRadius="full"
+                  px={2.5}
+                  py={0.5}
+                  fontSize="0.65rem"
+                >
+                  {isAdmin ? "Company scope" : "Department scope"}
+                </Badge>
+                {scopedSummaryLoading ? (
+                  <Badge variant="subtle" borderRadius="full">
+                    Refreshing
+                  </Badge>
+                ) : null}
+              </HStack>
+              <Heading size={{ base: "md", md: "lg" }} noOfLines={1}>
+                {isAdmin
+                  ? scope.companyName || "Company dashboard"
+                  : scope.departmentName || "Department dashboard"}
               </Heading>
-              <Text mt={2} color="gray.500" lineHeight="1.6" display={{ base: "none", sm: "block" }}>
-                {roleCopy.subtitle}
+              <Text mt={1.5} color="gray.500" fontSize={{ base: "sm", md: "md" }}>
+                {isAdmin
+                  ? "Company learning health, people activity, and course performance."
+                  : `Learning progress and engagement inside ${scope.companyName || "your company"}.`}
               </Text>
             </Box>
-            <VStack align="stretch" spacing={3} minW={{ base: "full", md: "260px" }} display={{ base: "none", md: "flex" }}>
-              {scope.companyName ? (
-                <HStack spacing={3}>
-                  <Box p={2} borderRadius="xl" bg="blue.50" color="blue.500">
-                    <FiBriefcase />
-                  </Box>
-                  <Box>
-                    <Text fontSize="xs" textTransform="uppercase" color="gray.500">
-                      Company
-                    </Text>
-                    <Text fontWeight="semibold">{scope.companyName}</Text>
-                  </Box>
-                </HStack>
-              ) : null}
-              {scope.departmentName ? (
-                <HStack spacing={3}>
-                  <Box p={2} borderRadius="xl" bg="teal.50" color="teal.500">
-                    <FiLayers />
-                  </Box>
-                  <Box>
-                    <Text fontSize="xs" textTransform="uppercase" color="gray.500">
-                      Department
-                    </Text>
-                    <Text fontWeight="semibold">{scope.departmentName}</Text>
-                  </Box>
-                </HStack>
-              ) : null}
-            </VStack>
+            <HStack display={{ base: "none", md: "flex" }} color={isAdmin ? "purple.500" : "teal.500"}>
+              <Icon as={isAdmin ? FiBriefcase : FiLayers} boxSize={5} />
+              <Text fontSize="sm" fontWeight="semibold">
+                Live scoped analytics
+              </Text>
+            </HStack>
           </Flex>
         </Box>
 
-        <Grid templateColumns={{ base: "repeat(2, minmax(0, 1fr))", md: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" }} gap={4}>
-          {role === "superadmin" ? (
-            <StatCard
-              label="Companies"
-              value={stats.totalCompanies || 0}
-              helper="Organizations currently inside your LMS network."
-              accent="purple.500"
-            />
-          ) : null}
-          <StatCard
-            label="Users"
-            value={stats.totalUsers || 0}
-            helper={role === "departmenthead" ? "Team members inside your department scope." : "Users inside your current dashboard scope."}
-            accent={roleCopy.accent}
+        <Flex justify="flex-end" w={'100%'}>
+          <DashboardFilters
+            role={role as "admin" | "departmenthead"}
+            value={draftFilters}
+            options={scoped.filterOptions}
+            isLoading={scopedSummaryLoading}
+            onChange={setDraftFilters}
+            onApply={() => setAppliedFilters(draftFilters)}
+            onClear={() => {
+              setDraftFilters(EMPTY_SCOPED_FILTERS);
+              setAppliedFilters(EMPTY_SCOPED_FILTERS);
+            }}
           />
-          <StatCard
-            label="Courses"
-            value={stats.totalCourses || 0}
-            helper="Visible courses after permission and scope filtering."
-            accent="blue.500"
-          />
-          <StatCard
-            label="Assignments"
-            value={stats.totalAssignments || 0}
-            helper="Active course grants visible in your allowed scope."
-            accent="orange.500"
-          />
-          <StatCard
-            label="Enrollments"
-            value={stats.totalEnrollments || 0}
-            helper="Course enrollment records tied to your scoped users."
-            accent="green.500"
-          />
-          <StatCard
-            label="Batches"
-            value={stats.totalBatches || 0}
-            helper="Batches accessible within your current scope."
-            accent="teal.500"
-          />
-          <StatCard
-            label="Published Courses"
-            value={stats.publishedCourses || 0}
-            helper="Published courses in the scoped course library."
-            accent="blue.500"
-          />
-          <StatCard
-            label="Active Batches"
-            value={stats.activeBatches || 0}
-            helper="Batches currently running in the visible scope."
-            accent="purple.500"
-          />
-        </Grid>
+        </Flex>
 
-        <Grid templateColumns={{ base: "1fr", xl: "repeat(2, 1fr)" }} gap={4}>
-          <MiniChart title="Users By Role" entries={charts.usersByRole || []} color="blue.500" />
-          <MiniChart title="Courses By Status" entries={charts.coursesByStatus || []} color="green.500" />
-          <MiniChart title="Batches By Status" entries={charts.batchesByStatus || []} color="orange.500" />
-          <MiniChart title="Top Course Categories" entries={charts.coursesByCategory || []} color="purple.500" />
-        </Grid>
+        {scopedSummaryError ? (
+          <Alert status="warning" borderRadius="xl" py={2}>
+            <AlertIcon />
+            <Text fontSize="sm">{scopedSummaryError}. Showing the last available result.</Text>
+          </Alert>
+        ) : null}
 
-        <Grid templateColumns={{ base: "1fr", xl: "repeat(3, 1fr)" }} gap={4}>
-          <ActivityList
-            title="Top Courses"
-            icon={<FiTrendingUp />}
-            items={(highlights.topCourses || []).map((course: any) => ({
-              title: course.title,
-              subtitle: `${course.enrollmentCount || 0} enrollments`,
-              meta: `Status: ${course.status || "draft"}`,
-            }))}
-            emptyText="No course activity is available yet."
-          />
-          <ActivityList
-            title="Recent Users"
-            icon={<FiUsers />}
-            items={(highlights.recentUsers || []).map((user: any) => ({
-              title: user.name,
-              subtitle: `${user.role}${user.department ? ` · ${user.department}` : ""}`,
-              meta: user.email,
-            }))}
-            emptyText="No recent users were found in this scope."
-          />
-          <ActivityList
-            title="Recent Batches"
-            icon={<FiActivity />}
-            items={(highlights.recentBatches || []).map((batch: any) => ({
-              title: batch.name,
-              subtitle: `${batch.userCount || 0} learners`,
-              meta: `Status: ${batch.status}`,
-            }))}
-            emptyText="No recent batches were found in this scope."
-          />
-        </Grid>
+        <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3}>
+          {statCards.map((card) => (
+            <StatCard key={card.label} {...card} />
+          ))}
+        </SimpleGrid>
+
+        <DashboardCharts
+          role={role as "admin" | "departmenthead"}
+          charts={scoped.charts}
+        />
+        <DashboardInsights highlights={scoped.highlights} />
       </Stack>
     </Box>
   );

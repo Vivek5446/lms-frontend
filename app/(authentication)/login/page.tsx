@@ -25,6 +25,7 @@ import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { RiArrowLeftLine, RiEyeLine, RiEyeOffLine } from "react-icons/ri";
 import CustomButton from "../../component/common/CustomButton/CustomButton";
+import { getDefaultAuthenticatedRoute } from "../../config/utils/roleAccess";
 import stores from "../../store/stores";
 
 const Login = observer(() => {
@@ -63,14 +64,14 @@ const Login = observer(() => {
         duration: 3000,
       });
 
-      const userType = String(response?.data?.userType || response?.data?.role || "").toLowerCase();
-      if (userType === "superadmin") {
-        router.push("/dashboard/admins");
-      } else if (userType === "admin" || userType === "departmenthead") {
-        router.push("/dashboard/users");
-      } else {
-        router.push("/");
-      }
+      router.replace(
+        getDefaultAuthenticatedRoute(
+          stores.auth.user || {
+            userType: response?.data?.userType,
+            role: response?.data?.role,
+          }
+        )
+      );
     } catch (error: any) {
       openNotification({
         title: "Login Failed",

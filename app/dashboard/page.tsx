@@ -14,13 +14,13 @@ const Page = observer(() => {
   const router = useRouter();
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const canViewDashboard = hasPermission(auth.user, PERMISSION_KEYS.VIEW_DASHBOARD);
-  const isLoading = auth.isLoading;
+  const isLoading = auth.isLoading || !auth.sessionReady;
 
   useEffect(() => {
-    if (!isLoading && role && (!["admin", "superadmin", "departmenthead"].includes(role) || !canViewDashboard)) {
+    if (!isLoading && (!role || !["admin", "superadmin", "departmenthead"].includes(role))) {
       router.replace("/");
     }
-  }, [canViewDashboard, isLoading, role, router]);
+  }, [isLoading, role, router]);
 
   if (isLoading) {
     return (

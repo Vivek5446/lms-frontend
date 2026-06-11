@@ -1,9 +1,10 @@
 import { makeAutoObservable } from "mobx";
 import axios from "axios";
 import { authStore } from "../authStore/authStore";
+import { ScopedDashboardSummary } from "@/app/dashboard/components/LMS/components/scoped-dashboard/types";
 
 class DashboardStore {
-  scopedSummary: any = null;
+  scopedSummary: ScopedDashboardSummary | any = null;
   scopedSummaryLoading = false;
   scopedSummaryError: string | null = null;
 

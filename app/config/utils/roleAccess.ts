@@ -24,3 +24,10 @@ export function expandRoleAliases(roles: string[] = []) {
 
   return Array.from(expanded);
 }
+
+export function getDefaultAuthenticatedRoute(user: any) {
+  const role = normalizeRole(user?.role || user?.userType);
+  return ["superadmin", "admin", "departmenthead"].includes(role)
+    ? "/dashboard"
+    : "/";
+}

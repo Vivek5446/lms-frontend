@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { observer } from 'mobx-react-lite';
 import { Box, Spinner, useBreakpointValue } from '@chakra-ui/react';
 import styled from 'styled-components';
@@ -16,12 +17,13 @@ import PageLoader from '../../component/common/Loader/PageLoader';
 
 const DashboardLayout = observer(({ children }: { children: React.ReactNode }) => {
   const {
-    auth: { user },
+    auth: { user, sessionReady },
     dashboardStore : {getMasterData},
     layout: { fullScreenMode, mediumScreenMode, isCallapse, openDashSidebarFun, openMobileSideDrawer, setOpenMobileSideDrawer },
     themeStore: { themeConfig },
   } = stores;
   const [hasMounted, setHasMounted] = useState(false);
+  const router = useRouter();
   const isMobile = useBreakpointValue({ base: true, xl: false }) ?? false;
   const sidebarOffset = isMobile ? '0px' : isCallapse ? mediumSidebarWidth : sidebarWidth;
   const sidebarRef = useRef<HTMLDivElement | null>(null);
@@ -39,6 +41,12 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (hasMounted && sessionReady && !user) {
+      router.replace('/login');
+    }
+  }, [hasMounted, router, sessionReady, user]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -59,7 +67,7 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
     }
   },[user , getMasterData])
 
-  if (!hasMounted) {
+  if (!hasMounted || !sessionReady) {
     return (
       <PageLoader loading={true}>
         <Spinner />
