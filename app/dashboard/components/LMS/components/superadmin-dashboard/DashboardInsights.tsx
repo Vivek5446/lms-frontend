@@ -94,7 +94,6 @@ export function DashboardInsights({ highlights }: DashboardInsightsProps) {
   const activity = highlights.recentActivity || [];
   const recentUsers = highlights.recentUsers || [];
   const lowEngagementCompanies = highlights.lowEngagementCompanies || [];
-  const lowEngagementUsers = highlights.lowEngagementUsers || [];
   const expiringBatches = highlights.expiringBatches || [];
   const expiringEnrollments = highlights.expiringEnrollments || [];
 
@@ -224,15 +223,6 @@ export function DashboardInsights({ highlights }: DashboardInsightsProps) {
               )}
             </Stack>
           </Box>
-          {lowEngagementUsers.length ? (
-            <HStack spacing={2} wrap="wrap">
-              {lowEngagementUsers.slice(0, 5).map((user) => (
-                <Badge key={user._id} colorScheme="orange" variant="subtle" px={2} py={1}>
-                  {user.name}
-                </Badge>
-              ))}
-            </HStack>
-          ) : null}
         </Stack>
       </Panel>
 

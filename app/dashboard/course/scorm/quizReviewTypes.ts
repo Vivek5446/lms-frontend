@@ -32,6 +32,7 @@ export interface ScormInteractionReview {
   time?: string;
   maxMarks?: number | null;
   source?: "cmi.interactions" | "suspend_data" | "course_quiz";
+  rawData?: Record<string, any> | null;
   isReviewable?: boolean;
   review: {
     status: ScormReviewStatus;

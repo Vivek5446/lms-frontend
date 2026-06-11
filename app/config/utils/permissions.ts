@@ -17,6 +17,7 @@ export const PERMISSION_KEYS = {
   ASSIGN_COURSES: "assign_courses",
   VIEW_BATCHES: "view_batches",
   MANAGE_BATCHES: "manage_batches",
+  VIEW_LEARNER_PROGRESS_RESULTS: "view_learner_progress_results",
   MANAGE_PERMISSIONS: "manage_permissions",
   VIEW_PROFILE: "view_profile",
 } as const;

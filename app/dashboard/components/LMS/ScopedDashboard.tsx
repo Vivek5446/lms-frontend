@@ -42,7 +42,6 @@ import { SuperadminDashboard } from "./components/superadmin-dashboard/Superadmi
 import { SuperadminDashboardSummary } from "./components/superadmin-dashboard/types";
 import { DashboardCharts } from "./components/scoped-dashboard/DashboardCharts";
 import { DashboardFilters } from "./components/scoped-dashboard/DashboardFilters";
-import { DashboardInsights } from "./components/scoped-dashboard/DashboardInsights";
 import {
   EMPTY_SCOPED_FILTERS,
   ScopedDashboardFilters,
@@ -403,7 +402,6 @@ const ScopedDashboard = observer(() => {
           role={role as "admin" | "departmenthead"}
           charts={scoped.charts}
         />
-        <DashboardInsights highlights={scoped.highlights} />
       </Stack>
     </Box>
   );

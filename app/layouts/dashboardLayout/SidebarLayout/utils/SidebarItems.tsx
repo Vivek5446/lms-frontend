@@ -6,7 +6,7 @@ import { FaPeopleGroup } from "react-icons/fa6";
 import { HiOutlineComputerDesktop } from "react-icons/hi2";
 import { LucideBriefcaseBusiness } from "lucide-react";
 import { BiCategory } from "react-icons/bi";
-import { FiBell } from "react-icons/fi";
+import { FiBell, FiTrendingUp } from "react-icons/fi";
 
 interface SidebarItem {
   id: number;
@@ -124,6 +124,14 @@ const sidebarDatas: SidebarItem[] = [
     },
   ],
 },
+  {
+    id: 19,
+    name: "Learner Progress",
+    icon: <FiTrendingUp />,
+    url: "/dashboard/learner-progress",
+    role: ["superadmin", "admin", "departmenthead"],
+    permissionKey: PERMISSION_KEYS.VIEW_LEARNER_PROGRESS_RESULTS,
+  },
 ];
 
 export const sidebarFooterData: SidebarItem[] = [
