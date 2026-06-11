@@ -14,6 +14,7 @@ export interface ScormInteractionReview {
   _id: string;
   uniqueKey?: string;
   index: number;
+  questionNumber?: number;
   id: string;
   type?: string;
   question?: string;
@@ -28,8 +29,11 @@ export interface ScormInteractionReview {
   correctResponsesRaw?: string[];
   correctResponseTexts?: string[];
   result?: string;
+  isCorrect?: boolean | null;
+  score?: number | null;
   latency?: string;
   time?: string;
+  attemptTimestamp?: string;
   maxMarks?: number | null;
   source?: "cmi.interactions" | "suspend_data" | "course_quiz";
   rawData?: Record<string, any> | null;
@@ -91,10 +95,6 @@ function normalizeString(value: unknown) {
   return String(value || "").trim();
 }
 
-function toTitleCase(value: string) {
-  return value.replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
 function isGenericQuestionLabel(value: unknown) {
   const normalizedValue = normalizeString(value).toLowerCase();
   if (!normalizedValue) {
@@ -109,141 +109,42 @@ function isGenericQuestionLabel(value: unknown) {
   );
 }
 
-function normalizeQuestionFromId(id: string) {
-  const tokens = normalizeString(id)
-    .split(/[^A-Za-z0-9]+/)
-    .map((token) => token.trim())
-    .filter(Boolean)
-    .filter((token) => /[A-Za-z]/.test(token))
-    .filter((token) => {
-      const normalizedToken = token.toLowerCase();
-      return !["question", "questions", "interaction", "interactions", "item", "items", "quiz", "quizzes", "q", "slide", "slides", "scorm"].includes(normalizedToken);
-    });
-
-  return tokens.length ? toTitleCase(tokens.join(" ")) : "";
-}
-
-// export function formatQuestionTitle(
-//   interaction: Pick<ScormInteractionReview, "questionTitle" | "question" | "id" | "index">,
-//   fallbackIndex?: number
-// ) {
-//   const explicitTitle = normalizeString(interaction.questionTitle);
-//   if (explicitTitle.length > 8 && !isGenericQuestionLabel(explicitTitle)) {
-//     return explicitTitle;
-//   }
-
-//   const explicitQuestion = normalizeString(interaction.question);
-//   if (explicitQuestion.length > 8 && !isGenericQuestionLabel(explicitQuestion)) {
-//     return explicitQuestion;
-//   }
-
-//   const fromId = normalizeQuestionFromId(interaction.id || "");
-//   if (fromId.length > 3 && !isGenericQuestionLabel(fromId)) {
-//     return fromId;
-//   }
-
-//   return `Question ${Number(interaction.index ?? fallbackIndex ?? 0) + 1}`;
-// }
-
 export function formatQuestionTitle(
-  interaction: Pick<ScormInteractionReview, "questionPrompt" | "questionTitle" | "question" | "id" | "index">,
+  interaction: Pick<
+    ScormInteractionReview,
+    "questionPrompt" | "questionTitle" | "question" | "id" | "index" | "questionNumber" | "type" | "source"
+  >,
   fallbackIndex?: number
 ) {
-  /**
-   * Articulate Storyline IDs follow this pattern:
-   *   SlideX_Q_<alphanumeric-hash>_<Readable_Question_With_Underscores>
-   *
-   * Examples:
-   *   "Slide24_Q_xfhsktlrf94k-96j763y9znbj_What_does_Customer_Centricity_mean_"
-   *     → "What does Customer Centricity mean"
-   *   "Slide16_Q_2mxl1mff5xlw-mrqgotadctue_Time_For_Reflection"
-   *     → "Time For Reflection"
-   *   "Slide2_Q_bj8mu5dw8s29-3d3vi3ylzj3a_"
-   *     → "" (no text after hash, fall through)
-   */
-  const extractFromArticulateId = (id: string): string => {
-    if (!id) return "";
+  const questionNumber = Math.max(
+    1,
+    Number(interaction.questionNumber || Number(interaction.index ?? fallbackIndex ?? 0) + 1)
+  );
+  const normalizedType = normalizeString(interaction.type)
+    .toLowerCase()
+    .replace(/_/g, "-");
+  const isManualInput = [
+    "essay",
+    "fill-in",
+    "long-fill-in",
+    "long-fillin",
+    "short-answer",
+    "text",
+  ].includes(normalizedType);
+  const authoredQuestion = [
+    interaction.questionPrompt,
+    interaction.questionTitle,
+    interaction.question,
+  ]
+    .map(normalizeString)
+    .find((value) => value.length > 3 && !isGenericQuestionLabel(value));
 
-    // Capture everything after the hash segment (e.g. _Q_abc123-def456_<HERE>)
-    const match = id.match(/_Q_[a-z0-9]+(?:-[a-z0-9]+)?_(.+)$/i);
-    if (match?.[1]) {
-      const text = match[1].replace(/_/g, " ").trim();
-      // Only return if it's actually meaningful text (not just whitespace/punctuation)
-      if (text.length > 2) return text;
-    }
-
-    // Fallback: at least humanize "Slide8" → "Slide 8 Question"
-    const slideMatch = id.match(/Slide(\d+)/i);
-    if (slideMatch) return `Slide ${slideMatch[1]} Question`;
-
-    return "";
-  };
-
-  const prompt = normalizeString(interaction.questionPrompt ?? "");
-  const title = normalizeString(interaction.questionTitle ?? "");
-  if (prompt.length > 4 && prompt.toLowerCase() !== title.toLowerCase()) {
-    return prompt;
+  if (isManualInput) {
+    return authoredQuestion || "Question text not available";
   }
 
-  // 1. Use questionTitle if it's meaningful and doesn't contain a raw Articulate hash
-  if (title.length > 4 && !isGenericQuestionLabel(title) && !title.includes("_Q_")) {
-    return title;
-  }
-
-  // 2. Use question field if it's meaningful and not a raw "SlideX" stub
-  const question = normalizeString(interaction.question ?? "");
-  if (question.length > 4 && !isGenericQuestionLabel(question) && !/^slide\d+$/i.test(question)) {
-    return question;
-  }
-
-  // 3. Parse the ID to recover the human-readable question text
-  const fromId = extractFromArticulateId(interaction.id ?? "");
-  if (fromId.length > 3) return fromId;
-
-  // 4. Last resort
-  if (normalizeString(interaction.id)) {
-    return interaction.id;
-  }
-
-  return `Question ${Number(interaction.index ?? fallbackIndex ?? 0) + 1}`;
+  return authoredQuestion || `Question ${questionNumber}`;
 }
-
-
-// export function formatQuestionTitle(
-//   interaction: Pick<ScormInteractionReview, "questionTitle" | "question" | "id" | "index">,
-//   fallbackIndex?: number
-// ) {
-//   // Helper to intercept and clean Articulate Storyline hashes (e.g., Slide2_Q_hash_)
-//   const cleanArticulateHash = (text: string) => {
-//     if (!text || !text.includes("_Q_")) return text;
-    
-//     // Look for "SlideX_Q_" and extract the number
-//     const match = text.match(/Slide(\d+)_Q_/i);
-//     if (match && match[1]) {
-//       return `Slide ${match[1]} Question`;
-//     }
-    
-//     // Fallback: drop the hash and separate CamelCase words if present
-//     return text.split('_')[0].replace(/([a-z])([A-Z])/g, '$1 $2');
-//   };
-
-//   const explicitTitle = cleanArticulateHash(normalizeString(interaction.questionTitle));
-//   if (explicitTitle.length > 8 && !isGenericQuestionLabel(explicitTitle)) {
-//     return explicitTitle;
-//   }
-
-//   const explicitQuestion = cleanArticulateHash(normalizeString(interaction.question));
-//   if (explicitQuestion.length > 8 && !isGenericQuestionLabel(explicitQuestion)) {
-//     return explicitQuestion;
-//   }
-
-//   const fromId = cleanArticulateHash(normalizeQuestionFromId(interaction.id || ""));
-//   if (fromId.length > 3 && !isGenericQuestionLabel(fromId)) {
-//     return fromId;
-//   }
-
-//   return `Question ${Number(interaction.index ?? fallbackIndex ?? 0) + 1}`;
-// }
 
 export function isReviewableInteraction(
   interaction: Pick<ScormInteractionReview, "isReviewable" | "type" | "correctResponses">
@@ -256,12 +157,14 @@ export function isReviewableInteraction(
     .toLowerCase()
     .replace(/_/g, "-");
 
-  return (
-    normalizedType === "fill-in" ||
-    normalizedType === "long-fill-in" ||
-    normalizedType === "text" ||
-    !(Array.isArray(interaction.correctResponses) && interaction.correctResponses.length > 0)
-  );
+  return [
+    "essay",
+    "fill-in",
+    "long-fill-in",
+    "long-fillin",
+    "short-answer",
+    "text",
+  ].includes(normalizedType);
 }
 
 export function getEffectiveInteractionResult(interaction: Pick<ScormInteractionReview, "result" | "review" | "type" | "correctResponses" | "isReviewable" | "maxMarks">) {
@@ -335,8 +238,17 @@ function compareStructuredValues(left: { orderKey: string; title: string }, righ
 }
 
 function hasVisibleResponse(interaction: ScormInteractionReview) {
-  const learnerResponse = normalizeString(interaction.learnerResponse);
-  return learnerResponse.length > 0 && !learnerResponse.toLowerCase().includes("loading") && normalizeString(interaction.id).length > 0;
+  const learnerResponse = normalizeString(
+    interaction.learnerResponseRaw || interaction.learnerResponse
+  );
+  return Boolean(
+    normalizeString(interaction.id) &&
+    (
+      (learnerResponse.length > 0 && !learnerResponse.toLowerCase().includes("loading")) ||
+      normalizeString(interaction.result) ||
+      normalizeString(interaction.type)
+    )
+  );
 }
 
 function shouldIncludeReviewedOnly(interaction: ScormInteractionReview) {

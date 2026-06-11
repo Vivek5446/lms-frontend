@@ -15,6 +15,7 @@ import {
   HStack,
   Image,
   Input,
+  Progress,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -39,6 +40,7 @@ type ScormQuizReviewContentProps = {
   sections: ScormAnswerSectionRecord[];
   isLoading?: boolean;
   mode?: "learner" | "manager";
+  compact?: boolean;
   emptyState?: string;
   onSaveReview?: (
     trackingId: string,
@@ -61,7 +63,15 @@ function formatResponse(interaction: Pick<ScormInteractionReview, "learnerRespon
     interaction.learnerResponseRaw ||
     ""
   ).trim();
-  return text || "No answer captured";
+  if (
+    !text ||
+    text.toLowerCase().includes("loading") ||
+    ["undefined", "null", "[object object]"].includes(text.toLowerCase()) ||
+    /^data:[^;]+;base64,/i.test(text)
+  ) {
+    return "Not answered";
+  }
+  return text;
 }
 
 function getCorrectResponses(
@@ -156,8 +166,26 @@ function getInteractionStatusMeta(interaction: ScormInteractionReview): StatusMe
     };
   }
 
+  if (effectiveResult === "unanswered" || formatResponse(interaction) === "Not answered") {
+    return {
+      label: "Not answered",
+      colorScheme: "gray",
+      icon: <AlertCircle size={15} />,
+      borderColor: "gray.300",
+    };
+  }
+
+  if (effectiveResult === "neutral" || effectiveResult === "unanticipated") {
+    return {
+      label: "Neutral",
+      colorScheme: "blue",
+      icon: <AlertCircle size={15} />,
+      borderColor: "blue.200",
+    };
+  }
+
   return {
-    label: "Submitted",
+    label: "Neutral",
     colorScheme: "gray",
     icon: <AlertCircle size={15} />,
     borderColor: "gray.300",
@@ -194,13 +222,21 @@ function SummaryCard({
   );
 }
 
-function AnswerBlock({ label, value }: { label: string; value: string }) {
+function AnswerBlock({
+  label,
+  value,
+  compact = false,
+}: {
+  label: string;
+  value: string;
+  compact?: boolean;
+}) {
   const bg = useColorModeValue("gray.50", "whiteAlpha.50");
   const border = useColorModeValue("gray.200", "gray.700");
   const muted = useColorModeValue("gray.500", "gray.400");
 
   return (
-    <Box bg={bg} borderWidth="1px" borderColor={border} borderRadius="xl" p={3}>
+    <Box bg={bg} borderWidth="1px" borderColor={border} borderRadius="lg" p={compact ? 2.5 : 3}>
       <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color={muted} fontWeight="600" mb={1}>
         {label}
       </Text>
@@ -372,6 +408,7 @@ export default function ScormQuizReviewContent({
   sections,
   isLoading = false,
   mode = "learner",
+  compact = false,
   emptyState = "Quiz answers will appear here after the SCORM lesson commits progress.",
   onSaveReview,
   isSubmittingReview = false,
@@ -400,7 +437,13 @@ export default function ScormQuizReviewContent({
 
   if (moduleGroups.length === 0) {
     return (
-      <Box borderWidth="1px" borderColor={border} borderRadius="2xl" p={6} textAlign="center">
+      <Box
+        borderWidth="1px"
+        borderColor={border}
+        borderRadius={compact ? "lg" : "2xl"}
+        p={compact ? 3 : 6}
+        textAlign="center"
+      >
         <Text color={muted} fontSize="sm">
           {emptyState}
         </Text>
@@ -409,31 +452,64 @@ export default function ScormQuizReviewContent({
   }
 
   return (
-    <Stack spacing={5}>
-      <SimpleGrid columns={{ base: 1, md: mode === "manager" ? 3 : 2 }} spacing={3}>
-        {hasProgressSummary ? (
+    <Stack spacing={compact ? 3 : 5}>
+      {compact ? (
+        <HStack spacing={2} flexWrap="wrap">
+          <Badge colorScheme="blue" borderRadius="full" px={2.5} py={1}>
+            {summary.totalQuestions} question{summary.totalQuestions !== 1 ? "s" : ""}
+          </Badge>
+          <Badge colorScheme="green" borderRadius="full" px={2.5} py={1}>
+            Marks {summary.awardedMarks}/{summary.possibleMarks}
+          </Badge>
+          {mode === "manager" && summary.pending ? (
+            <Badge colorScheme="orange" borderRadius="full" px={2.5} py={1}>
+              {summary.pending} pending
+            </Badge>
+          ) : null}
+        </HStack>
+      ) : (
+        <SimpleGrid columns={{ base: 1, md: mode === "manager" ? 3 : 2 }} spacing={3}>
+          {hasProgressSummary ? (
+            <SummaryCard
+              label="Course Progress"
+              value={`${Math.round(Number(progressSummary?.progressPercent || 0))}%`}
+              icon={<Trophy size={14} />}
+              accent="blue.400"
+            />
+          ) : null}
           <SummaryCard
-            label="Course Progress"
-            value={`${Math.round(Number(progressSummary?.progressPercent || 0))}%`}
-            icon={<Trophy size={14} />}
-            accent="blue.400"
+            label="Marks"
+            value={`${summary.awardedMarks} / ${summary.possibleMarks}`}
+            icon={<Layers3 size={14} />}
+            accent="green.400"
           />
-        ) : null}
-        <SummaryCard
-          label="Marks"
-          value={`${summary.awardedMarks} / ${summary.possibleMarks}`}
-          icon={<Layers3 size={14} />}
-          accent="green.400"
-        />
-        {mode === "manager" ? (
-          <SummaryCard
-            label="Pending Review"
-            value={summary.pending}
-            icon={<AlertCircle size={14} />}
-            accent="orange.400"
+          {mode === "manager" ? (
+            <SummaryCard
+              label="Pending Review"
+              value={summary.pending}
+              icon={<AlertCircle size={14} />}
+              accent="orange.400"
+            />
+          ) : null}
+        </SimpleGrid>
+      )}
+
+      {hasProgressSummary && !compact ? (
+        <Box>
+          <Flex justify="space-between" mb={1.5}>
+            <Text fontSize="xs" fontWeight="semibold">Progress</Text>
+            <Text fontSize="xs" color={muted}>
+              {Math.round(Number(progressSummary?.progressPercent || 0))}%
+            </Text>
+          </Flex>
+          <Progress
+            value={Number(progressSummary?.progressPercent || 0)}
+            size="sm"
+            colorScheme={Number(progressSummary?.progressPercent || 0) >= 100 ? "green" : "blue"}
+            borderRadius="full"
           />
-        ) : null}
-      </SimpleGrid>
+        </Box>
+      ) : null}
 
       <Accordion allowMultiple defaultIndex={[0]}>
         {moduleGroups.map((moduleGroup, moduleIndex) => (
@@ -441,18 +517,18 @@ export default function ScormQuizReviewContent({
             key={moduleGroup.moduleId || `module-${moduleIndex}`}
             borderWidth="1px"
             borderColor={border}
-            borderRadius="2xl"
+            borderRadius={compact ? "xl" : "2xl"}
             bg={moduleBg}
             overflow="hidden"
-            mb={3}
+            mb={compact ? 2 : 3}
           >
-            <AccordionButton px={5} py={4} _hover={{ bg: "transparent" }}>
+            <AccordionButton px={compact ? 3 : 5} py={compact ? 2.5 : 4} _hover={{ bg: "transparent" }}>
               <Flex flex="1" align="center" justify="space-between" gap={4}>
                 <Box textAlign="left">
                   <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color={muted} fontWeight="600">
                     Module {moduleIndex + 1}
                   </Text>
-                  <Text mt={1} fontSize="md" fontWeight="semibold">
+                  <Text mt={compact ? 0.5 : 1} fontSize={compact ? "sm" : "md"} fontWeight="semibold">
                     {moduleGroup.moduleTitle}
                   </Text>
                 </Box>
@@ -468,7 +544,7 @@ export default function ScormQuizReviewContent({
               </Flex>
             </AccordionButton>
 
-            <AccordionPanel px={4} pb={4} pt={0}>
+            <AccordionPanel px={compact ? 2.5 : 4} pb={compact ? 2.5 : 4} pt={0}>
               <Accordion allowMultiple defaultIndex={[0]}>
                 {moduleGroup.sections.map((section, sectionIndex) => {
                   const statusValue = String(section.lessonStatus || "").toLowerCase();
@@ -484,18 +560,18 @@ export default function ScormQuizReviewContent({
                       key={section._id}
                       borderWidth="1px"
                       borderColor={border}
-                      borderRadius="xl"
+                      borderRadius={compact ? "lg" : "xl"}
                       bg={sectionBg}
                       overflow="hidden"
-                      mb={3}
+                      mb={compact ? 2 : 3}
                     >
-                      <AccordionButton px={4} py={3} _hover={{ bg: "transparent" }}>
+                      <AccordionButton px={compact ? 3 : 4} py={compact ? 2.5 : 3} _hover={{ bg: "transparent" }}>
                         <Flex flex="1" align="center" justify="space-between" gap={4}>
                           <Box textAlign="left">
                             <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color={muted} fontWeight="600">
                               Section {sectionIndex + 1}
                             </Text>
-                            <Text mt={1} fontWeight="semibold">
+                            <Text mt={compact ? 0.5 : 1} fontSize={compact ? "sm" : undefined} fontWeight="semibold">
                               {section.sectionTitle || section.sectionId}
                             </Text>
                           </Box>
@@ -511,7 +587,7 @@ export default function ScormQuizReviewContent({
                         </Flex>
                       </AccordionButton>
 
-                      <AccordionPanel px={3} pb={3} pt={0}>
+                      <AccordionPanel px={compact ? 2 : 3} pb={compact ? 2 : 3} pt={0}>
                         <Accordion allowMultiple>
                           {section.interactions.map((interaction, questionIndex) => {
                             const statusMeta = getInteractionStatusMeta(interaction);
@@ -523,12 +599,12 @@ export default function ScormQuizReviewContent({
                                 key={interaction.uniqueKey || interaction._id}
                                 borderWidth="1px"
                                 borderColor={statusMeta.borderColor}
-                                borderRadius="xl"
+                                borderRadius={compact ? "lg" : "xl"}
                                 bg={moduleBg}
                                 overflow="hidden"
-                                mb={3}
+                                mb={compact ? 2 : 3}
                               >
-                                <AccordionButton px={4} py={3} _hover={{ bg: "transparent" }}>
+                                <AccordionButton px={compact ? 3 : 4} py={compact ? 2.5 : 3} _hover={{ bg: "transparent" }}>
                                   <Flex flex="1" align="center" justify="space-between" gap={3} minW={0}>
                                     <HStack spacing={3} minW={0} flex="1" align="center">
                                       <Box
@@ -547,7 +623,7 @@ export default function ScormQuizReviewContent({
                                       </Box>
                                       <Box minW={0}>
                                         <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
-                                          Q{questionIndex + 1}: {questionTitle}
+                                          {questionTitle}
                                         </Text>
                                       </Box>
                                     </HStack>
@@ -560,7 +636,7 @@ export default function ScormQuizReviewContent({
                                   </Flex>
                                 </AccordionButton>
 
-                                <AccordionPanel px={4} pb={4} pt={0}>
+                                <AccordionPanel px={compact ? 3 : 4} pb={compact ? 3 : 4} pt={0}>
                                   <Stack spacing={3}>
                                     <QuestionPromptAssets assetPaths={interaction.questionAssetPaths} />
 
@@ -571,14 +647,24 @@ export default function ScormQuizReviewContent({
                                       }}
                                       gap={3}
                                     >
-                                      <AnswerBlock label="Your Answer" value={formatResponse(interaction)} />
+                                      <AnswerBlock label="Your Answer" value={formatResponse(interaction)} compact={compact} />
                                       {correctResponses.length ? (
                                         <AnswerBlock
                                           label="Correct Answer"
                                           value={correctResponses.join(", ")}
+                                          compact={compact}
                                         />
                                       ) : null}
                                     </Grid>
+
+                                    {interaction.score !== null && interaction.score !== undefined ? (
+                                      <Text fontSize="xs" color={muted}>
+                                        Score: {interaction.score}
+                                        {interaction.maxMarks !== null && interaction.maxMarks !== undefined
+                                          ? ` / ${interaction.maxMarks}`
+                                          : ""}
+                                      </Text>
+                                    ) : null}
 
                                     <ReviewStatusBlock interaction={interaction} />
 

@@ -60,6 +60,18 @@ export type LearnerResultRow = {
   completionDate?: string | null;
   quizAttempts: number;
   scormAttempts: number;
+  manualQuizResults: Array<{
+    _id: string;
+    quizId: string;
+    title: string;
+    type: "Module Quiz" | "Course Quiz";
+    moduleTitle: string;
+    score: number;
+    maxScore: number;
+    percentage: number;
+    attemptNumber: number;
+    submittedAt?: string | null;
+  }>;
 };
 
 export type LearnerResultsResponse = {

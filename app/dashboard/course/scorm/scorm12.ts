@@ -23,18 +23,28 @@ export type ScormProgressSnapshot = {
   completionStatus?: string;
   successStatus?: string;
   progressMeasure?: number | null;
+  scoreRaw?: number | null;
+  scoreScaled?: number | null;
+  scoreMin?: number | null;
+  scoreMax?: number | null;
 };
 
 export type ScormInteractionPayload = {
   index: number;
+  questionNumber?: number;
   id?: string;
   type?: string;
   question?: string;
+  questionPrompt?: string | null;
   learnerResponse?: string;
+  learnerResponseRaw?: string;
   correctResponses?: string[];
   result?: string;
+  isCorrect?: boolean | null;
+  score?: number | null;
   latency?: string;
   time?: string;
+  attemptTimestamp?: string;
   maxMarks?: number | null;
   source?: "cmi.interactions" | "suspend_data";
   rawData?: Record<string, any>;
@@ -51,6 +61,10 @@ export type ScormTrackingPayload = {
   success_status: string;
   progress_measure: number | null;
   score: number | null;
+  score_raw: number | null;
+  score_scaled: number | null;
+  score_min: number | null;
+  score_max: number | null;
   lesson_location: string;
   suspend_data: string;
   session_time: string;
@@ -68,6 +82,14 @@ type CreateScorm12ApiOptions = {
 const DEFAULT_SCORM_TIME = "00:00:00";
 const DEFAULT_SCORM_2004_TIME = "PT0H0M0S";
 const COMPLETED_STATUSES = new Set(["completed", "passed"]);
+const MANUAL_INTERACTION_TYPES = new Set([
+  "essay",
+  "fill-in",
+  "long-fill-in",
+  "long-fillin",
+  "short-answer",
+  "text",
+]);
 
 const ERROR_MESSAGES: Record<string, string> = {
   "0": "No error",
@@ -383,6 +405,43 @@ function normalizeInteractionType(value: unknown) {
     .replace(/_/g, "-");
 }
 
+function isManualInteractionType(value: unknown) {
+  return MANUAL_INTERACTION_TYPES.has(normalizeInteractionType(value));
+}
+
+function normalizeInteractionResult(value: unknown) {
+  const result = normalizeString(value).toLowerCase();
+  if (result === "wrong" || result === "false") return "incorrect";
+  if (result === "true") return "correct";
+  if (result === "not answered") return "unanswered";
+  return result;
+}
+
+function getIsCorrect(result: unknown) {
+  const normalizedResult = normalizeInteractionResult(result);
+  if (normalizedResult === "correct" || normalizedResult === "passed") return true;
+  if (normalizedResult === "incorrect" || normalizedResult === "failed") return false;
+  return null;
+}
+
+function sanitizeLearnerResponse(value: unknown, interactionType: unknown) {
+  const response = normalizeString(value);
+  if (!response) return "";
+
+  const normalizedResponse = response.toLowerCase();
+  if (
+    normalizedResponse.includes("loading") ||
+    normalizedResponse === "undefined" ||
+    normalizedResponse === "null" ||
+    normalizedResponse === "[object object]" ||
+    /^data:[^;]+;base64,/i.test(response)
+  ) {
+    return "";
+  }
+
+  return response.slice(0, isManualInteractionType(interactionType) ? 10000 : 1000);
+}
+
 function isPlainObject(value: unknown): value is Record<string, any> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -426,15 +485,58 @@ function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.map((value) => normalizeString(value)).filter(Boolean)));
 }
 
-function shouldPersistInteraction(interaction: Pick<ScormInteractionPayload, "id" | "learnerResponse">) {
+function shouldPersistInteraction(
+  interaction: Pick<ScormInteractionPayload, "id" | "learnerResponse" | "learnerResponseRaw" | "result" | "type">
+) {
   const interactionId = normalizeString(interaction.id);
-  const learnerResponse = normalizeString(interaction.learnerResponse);
 
   return Boolean(
     interactionId &&
-    learnerResponse &&
-    !learnerResponse.toLowerCase().includes("loading")
+    (
+      sanitizeLearnerResponse(
+        interaction.learnerResponseRaw || interaction.learnerResponse,
+        interaction.type
+      ) ||
+      normalizeString(interaction.result) ||
+      normalizeString(interaction.type)
+    )
   );
+}
+
+function toLightweightInteraction(
+  interaction: ScormInteractionPayload,
+  fallbackIndex: number
+): ScormInteractionPayload {
+  const type = normalizeInteractionType(interaction.type);
+  const result = normalizeInteractionResult(interaction.result);
+  const learnerResponseRaw = sanitizeLearnerResponse(
+    interaction.learnerResponseRaw || interaction.learnerResponse,
+    type
+  );
+  const manualInput = isManualInteractionType(type);
+  const prompt = manualInput ? normalizeString(interaction.questionPrompt || interaction.question) : "";
+
+  return {
+    index: Number.isFinite(Number(interaction.index)) ? Number(interaction.index) : fallbackIndex,
+    questionNumber: Number.isFinite(Number(interaction.questionNumber))
+      ? Math.max(1, Number(interaction.questionNumber))
+      : fallbackIndex + 1,
+    id: normalizeString(interaction.id),
+    type,
+    question: prompt,
+    questionPrompt: prompt || null,
+    learnerResponse: learnerResponseRaw,
+    learnerResponseRaw,
+    correctResponses: [],
+    result,
+    isCorrect: getIsCorrect(result),
+    score: normalizeScore(interaction.score),
+    latency: normalizeString(interaction.latency),
+    time: normalizeString(interaction.time),
+    attemptTimestamp: normalizeString(interaction.attemptTimestamp || interaction.time),
+    maxMarks: normalizeScore(interaction.maxMarks),
+    source: interaction.source || "cmi.interactions",
+  };
 }
 
 function normalizeQuestionFingerprint(value: unknown) {
@@ -818,13 +920,16 @@ export function buildScorm12InitialState(options: {
   const successStatus = normalizeSuccessStatus(progress?.successStatus) || scorm2004Statuses.successStatus;
   const progressMeasure = normalizeProgressMeasure(progress?.progressMeasure ?? progress?.progress)
     ?? (COMPLETED_STATUSES.has(lessonStatus) ? 1 : null);
-  const score = normalizeScore(progress?.score);
+  const score = normalizeScore(progress?.scoreRaw ?? progress?.score);
+  const scoreScaled = normalizeScore(progress?.scoreScaled);
   const state: Record<string, string> = {
     "cmi.core.student_id": normalizeString(options.context.userId),
     "cmi.core.student_name": normalizeString(options.context.learnerName),
     "cmi.core.lesson_status": lessonStatus,
     "cmi.core.lesson_mode": "normal",
     "cmi.core.score.raw": score === null ? "" : String(score),
+    "cmi.core.score.min": progress?.scoreMin == null ? "" : String(progress.scoreMin),
+    "cmi.core.score.max": progress?.scoreMax == null ? "" : String(progress.scoreMax),
     "cmi.core.lesson_location": normalizeString(progress?.lessonLocation),
     "cmi.suspend_data": normalizeString(progress?.suspendData),
     "cmi.core.total_time": toScorm12Time(progress?.totalTime),
@@ -837,7 +942,9 @@ export function buildScorm12InitialState(options: {
     "cmi.total_time": toScorm2004Time(progress?.totalTime),
     "cmi.progress_measure": progressMeasure === null ? "" : String(progressMeasure),
     "cmi.score.raw": score === null ? "" : String(score),
-    "cmi.score.scaled": toScaledScore(score),
+    "cmi.score.scaled": scoreScaled === null ? toScaledScore(score) : String(scoreScaled),
+    "cmi.score.min": progress?.scoreMin == null ? "" : String(progress.scoreMin),
+    "cmi.score.max": progress?.scoreMax == null ? "" : String(progress.scoreMax),
   };
 
   if (options.includeSessionTime !== false) {
@@ -868,9 +975,12 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
     const suspendData = normalizeString(state["cmi.suspend_data"]);
     const nativeInteractions = extractScormInteractions(state);
     const fallbackInteractions = buildSuspendDataInteractions(suspendData);
-    const interactions = nativeInteractions.length
+    const resolvedInteractions = nativeInteractions.length
       ? enrichNativeInteractions(nativeInteractions, fallbackInteractions)
       : fallbackInteractions;
+    const interactions = resolvedInteractions
+      .map((interaction, index) => toLightweightInteraction(interaction, index))
+      .filter((interaction) => shouldPersistInteraction(interaction));
     const inferredVersion = activeVersion
       || (
         normalizeCompletionStatus(state["cmi.completion_status"])
@@ -906,6 +1016,31 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
       success_status: successStatus || mapLessonStatusTo2004Statuses(lessonStatus).successStatus,
       progress_measure: progressMeasure,
       score: resolveRawScore(state, inferredVersion),
+      score_raw: normalizeScore(
+        readVersionedStateValue(
+          state,
+          inferredVersion,
+          ["cmi.core.score.raw"],
+          ["cmi.score.raw"]
+        )
+      ),
+      score_scaled: normalizeScore(state["cmi.score.scaled"]),
+      score_min: normalizeScore(
+        readVersionedStateValue(
+          state,
+          inferredVersion,
+          ["cmi.core.score.min"],
+          ["cmi.score.min"]
+        )
+      ),
+      score_max: normalizeScore(
+        readVersionedStateValue(
+          state,
+          inferredVersion,
+          ["cmi.core.score.max"],
+          ["cmi.score.max"]
+        )
+      ),
       lesson_location: readVersionedStateValue(
         state,
         inferredVersion,
@@ -931,7 +1066,7 @@ export function createScorm12Api(options: CreateScorm12ApiOptions) {
         ),
         DEFAULT_SCORM_TIME
       ),
-      interactions: interactions.filter((interaction) => shouldPersistInteraction(interaction)),
+      interactions,
     };
   };
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { CourseQuizForLearner } from "@/app/store/courseStore/courseStore";
 import {
   Badge,
   Box,
@@ -27,7 +28,6 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CourseQuizForLearner } from "@/app/store/courseStore/courseStore";
 
 interface CourseQuizPlayerProps {
   quiz: CourseQuizForLearner;
