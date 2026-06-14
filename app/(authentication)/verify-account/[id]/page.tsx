@@ -1,17 +1,9 @@
-'use client';
+import VerifyAccountClient from './VerifyAccountClient';
 
-import { useParams } from 'next/navigation';
+export function generateStaticParams() {
+  return [];
+}
 
-const VerifyAccount = () => {
-  const params = useParams();
-  const id = params?.id;
-
-  return (
-    <div>
-      <h1>Verify Account</h1>
-      <p>Verification ID: {id}</p>
-    </div>
-  );
-};
+const VerifyAccount = () => <VerifyAccountClient />;
 
 export default VerifyAccount;

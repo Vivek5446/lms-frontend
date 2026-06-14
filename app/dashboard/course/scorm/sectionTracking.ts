@@ -58,7 +58,22 @@ export function buildLaunchSection(moduleRecord: any, sectionRecord: any) {
 }
 
 export function buildCourseAssetUrl(assetPath: string) {
+  if (/^(https?:|data:|blob:)/i.test(assetPath)) {
+    return assetPath;
+  }
+
   const normalizedPath = assetPath.startsWith("/") ? assetPath : `/${assetPath}`;
+
+  if (process.env.NEXT_PUBLIC_MOBILE_BUNDLE === "true") {
+    const backendUrl = String(process.env.NEXT_PUBLIC_BACKEND_URL || "")
+      .replace(/\/api\/?$/, "")
+      .replace(/\/$/, "");
+
+    if (backendUrl) {
+      return `${backendUrl}/courses${normalizedPath}`;
+    }
+  }
+
   return `/courses${normalizedPath}`;
 }
 

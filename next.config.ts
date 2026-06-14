@@ -1,8 +1,17 @@
 import type { NextConfig } from "next";
 
+const isMobileExport = process.env.NEXT_OUTPUT_EXPORT === "true";
+
 const nextConfig: NextConfig = {
   reactStrictMode: false,
+  ...(isMobileExport
+    ? {
+        output: "export",
+        trailingSlash: true,
+      }
+    : {}),
   images: {
+    ...(isMobileExport ? { unoptimized: true } : {}),
     remotePatterns: [
       {
         protocol: "https",
@@ -16,20 +25,24 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async rewrites() {
-    const rewrites = [
-      {
-        source: "/sitemap.xml",
-        destination: "/api/sitemap",
-      },
-      {
-        source: "/robots.txt",
-        destination: "/api/robots",
-      },
-    ];
+  ...(isMobileExport
+    ? {}
+    : {
+        async rewrites() {
+          const rewrites = [
+            {
+              source: "/sitemap.xml",
+              destination: "/api/sitemap",
+            },
+            {
+              source: "/robots.txt",
+              destination: "/api/robots",
+            },
+          ];
 
-    return rewrites;
-  },
+          return rewrites;
+        },
+      }),
 };
 
 export default nextConfig;
