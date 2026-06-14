@@ -334,6 +334,18 @@ const PermissionsPage = observer(() => {
     );
   };
 
+  const PermissionStatus = ({ checked }: { checked: boolean }) => (
+    <Text
+      minW="72px"
+      fontSize="xs"
+      fontWeight="700"
+      textAlign="left"
+      color={checked ? "green.500" : textMutedColor}
+    >
+      {checked ? "Allowed" : "Not allowed"}
+    </Text>
+  );
+
   const renderDesktopPermissionTable = (
     draft: Record<string, boolean>,
     onToggle: (key: string, value: boolean) => void
@@ -412,12 +424,17 @@ const PermissionsPage = observer(() => {
                       </Td>
 
                       <Td textAlign="center" borderColor={borderColor}>
-                        <CustomSwitch
-                          checked={Boolean(draft?.[permission.key])}
-                          onChange={(value) => onToggle(permission.key, value)}
-                          gradient={gradient}
-                          ariaLabel={`Toggle ${permission.label}`}
-                        />
+                        <HStack justify="center" spacing={3}>
+                          <PermissionStatus
+                            checked={Boolean(draft?.[permission.key])}
+                          />
+                          <CustomSwitch
+                            checked={Boolean(draft?.[permission.key])}
+                            onChange={(value) => onToggle(permission.key, value)}
+                            gradient={gradient}
+                            ariaLabel={`Toggle ${permission.label}`}
+                          />
+                        </HStack>
                       </Td>
                     </Tr>
                   ))}
@@ -507,13 +524,18 @@ const PermissionsPage = observer(() => {
                       ) : null}
                     </Box>
 
-                    <CustomSwitch
-                      compact
-                      checked={Boolean(draft?.[permission.key])}
-                      onChange={(value) => onToggle(permission.key, value)}
-                      gradient={gradient}
-                      ariaLabel={`Toggle ${permission.label}`}
-                    />
+                    <VStack spacing={1} align="end" flexShrink={0}>
+                      <PermissionStatus
+                        checked={Boolean(draft?.[permission.key])}
+                      />
+                      <CustomSwitch
+                        compact
+                        checked={Boolean(draft?.[permission.key])}
+                        onChange={(value) => onToggle(permission.key, value)}
+                        gradient={gradient}
+                        ariaLabel={`Toggle ${permission.label}`}
+                      />
+                    </VStack>
                   </HStack>
 
                   {index < permissionItems.length - 1 ? (
@@ -636,7 +658,7 @@ const PermissionsPage = observer(() => {
                       borderColor={selectBorderColor}
                       color={textColor}
                       rounded="full"
-                      h={{ base: 10, md: 11 }}
+                      h={{ base: 10, md: 12 }}
                       fontSize={{ base: "sm", md: "base" }}
                       _hover={{ borderColor: "teal.300" }}
                       _focus={{ borderColor: "teal.300", boxShadow: "0 0 0 1px teal" }}
@@ -712,7 +734,7 @@ const PermissionsPage = observer(() => {
                   </Box>
                 </HStack>
 
-                <FormControl>
+                <FormControl w={{md:"50%"}}>
                   <FormLabel
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="700"
@@ -729,7 +751,7 @@ const PermissionsPage = observer(() => {
                     borderColor={selectBorderColor}
                     color={textColor}
                     rounded="full"
-                    h={{ base: 10, md: 11 }}
+                    h={{ base: 10, md: 12 }}
                     fontSize={{ base: "sm", md: "base" }}
                     _hover={{ borderColor: "teal.300" }}
                     _focus={{ borderColor: "teal.300", boxShadow: "0 0 0 1px teal" }}

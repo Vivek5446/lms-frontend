@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
   Text,
   useColorModeValue,
+  useTheme,
   VStack,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
@@ -62,6 +63,9 @@ const CompanyAvatar = ({
   showOnlineDot?: boolean;
 }) => {
   const dotBorder = useColorModeValue("white", "gray.800");
+  const theme = useTheme();
+  const brandScale = (theme.colors?.brand || {}) as Record<number, string>;
+  const accentScale = (theme.colors?.purple || {}) as Record<number, string>;
   return (
     <Box position="relative" flexShrink={0}>
       {company?.logo?.url ? (
@@ -76,7 +80,7 @@ const CompanyAvatar = ({
       ) : (
         <Avatar
           name={company?.company_name}
-          bgGradient="linear(135deg, purple.500, purple.300)"
+          bgGradient={`linear(135deg, ${accentScale[500] || brandScale[600] || "#805AD5"}, ${brandScale[300] || brandScale[500] || "#9F7AEA"})`}
           color="white"
           fontWeight="700"
           borderRadius="9px"
@@ -213,8 +217,10 @@ const CompanyRow = ({
 /* ─── Main component ─── */
 const HeaderCompanySelector = observer(() => {
   const { auth, companyStore } = stores;
+  const theme = useTheme();
   const role = String(auth.userType || auth.user?.role || "").toLowerCase();
   const isSuperadmin = role === "superadmin";
+  const brandScale = (theme.colors?.brand || {}) as Record<number, string>;
 
   const companies        = companyStore.companies.data || [];
   const selectedCompanyId = companyStore.getActiveCompanyId();
@@ -226,10 +232,10 @@ const HeaderCompanySelector = observer(() => {
   /* ── colour tokens ── */
   const triggerBg           = useColorModeValue("gray.100", "whiteAlpha.50");
   const triggerHoverBg      = useColorModeValue("gray.200", "whiteAlpha.100");
-  const triggerActiveBorder = useColorModeValue("purple.400", "purple.500");
+  const triggerActiveBorder = useColorModeValue(brandScale[400] || "blue.400", brandScale[500] || "blue.500");
   const triggerActiveShadow = useColorModeValue(
-    "0 0 0 3px rgba(124,111,255,0.15)",
-    "0 0 0 3px rgba(124,111,255,0.2)"
+    `0 0 0 3px ${(brandScale[500] || "#2563EB")}26`,
+    `0 0 0 3px ${(brandScale[500] || "#2563EB")}33`
   );
   const popoverBg      = useColorModeValue("white", "#1a1a1f");
   const popoverBorder  = useColorModeValue("gray.200", "whiteAlpha.100");

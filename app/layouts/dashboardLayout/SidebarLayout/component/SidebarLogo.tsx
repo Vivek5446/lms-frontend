@@ -2,7 +2,7 @@
 
 import { observer } from "mobx-react-lite";
 import styled, { keyframes } from "styled-components";
-import { Avatar } from "@chakra-ui/react";
+import { Avatar, useTheme } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import stores from "../../../../store/stores";
 import { dashboard } from "../../../../config/utils/routes";
@@ -25,6 +25,13 @@ const SidebarLogo: React.FC<SidebarLogoProps> = observer(({ showBrand = false })
     layout: { isCallapse },
     auth: { user },
   } = stores;
+  const theme = useTheme();
+  const brandScale = (theme.colors?.brand || {}) as Record<number, string>;
+  const accentScale = (theme.colors?.purple || {}) as Record<number, string>;
+  const ringBackground = `linear-gradient(135deg, ${brandScale[600] || "#7c3aed"} 0%, ${accentScale[500] || brandScale[500] || "#a855f7"} 50%, ${brandScale[400] || "#6366f1"} 100%)`;
+  const ringShadow = `0 0 0 2px ${(brandScale[500] || "#7c3aed")}40, 0 4px 12px ${(accentScale[500] || brandScale[500] || "#a855f7")}4D`;
+  const ringHoverShadow = `0 0 0 3px ${(accentScale[500] || brandScale[500] || "#a855f7")}66, 0 10px 24px ${(accentScale[500] || brandScale[500] || "#a855f7")}80`;
+  const accentLineBackground = `linear-gradient(90deg, transparent, ${(accentScale[500] || brandScale[500] || "#a855f7")}99 30%, ${(brandScale[400] || "#6366f1")}99 70%, transparent)`;
 
   const companyName = user?.companyDetails?.company_name ?? "Dashboard";
   const logoUrl = user?.companyDetails?.logo?.url;
@@ -45,13 +52,17 @@ const SidebarLogo: React.FC<SidebarLogoProps> = observer(({ showBrand = false })
       aria-label="Go to home"
     >
       {/* Avatar / logo */}
-      <AvatarRing>
+      <AvatarRing
+        $background={ringBackground}
+        $boxShadow={ringShadow}
+        $hoverBoxShadow={ringHoverShadow}
+      >
         {logoUrl ? (
           <Avatar
             src={logoUrl}
             size="sm"
             borderRadius="10px"
-            bg="transparent"
+            bg={brandScale[500] || "transparent"}
             style={{ objectFit: "contain" }}
           />
         ) : (
@@ -67,7 +78,7 @@ const SidebarLogo: React.FC<SidebarLogoProps> = observer(({ showBrand = false })
         </BrandText>
       )}
 
-      <AccentLine />
+      <AccentLine $background={accentLineBackground} />
     </LogoWrapper>
   );
 });
@@ -104,7 +115,11 @@ const LogoWrapper = styled.div<{ $height: string }>`
   transition: all 0.2s ease;
 `;
 
-const AvatarRing = styled.div`
+const AvatarRing = styled.div<{
+  $background: string;
+  $boxShadow: string;
+  $hoverBoxShadow: string;
+}>`
   flex-shrink: 0;
   width: 38px;
   height: 38px;
@@ -112,20 +127,13 @@ const AvatarRing = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #6366f1 100%);
-
-  box-shadow:
-    0 0 0 2px rgba(124, 58, 237, 0.25),
-    0 4px 12px rgba(168, 85, 247, 0.3);
-
+  background: ${({ $background }) => $background};
+  box-shadow: ${({ $boxShadow }) => $boxShadow};
   transition: all 0.25s ease;
 
   ${LogoWrapper}:hover & {
     transform: scale(1.08);
-    box-shadow:
-      0 0 0 3px rgba(168, 85, 247, 0.4),
-      0 10px 24px rgba(168, 85, 247, 0.5);
+    box-shadow: ${({ $hoverBoxShadow }) => $hoverBoxShadow};
   }
 `;
 
@@ -168,18 +176,11 @@ const TagLine = styled.span`
   color: rgba(255, 255, 255, 0.6);
 `;
 
-const AccentLine = styled.div`
+const AccentLine = styled.div<{ $background: string }>`
   position: absolute;
   bottom: 0;
   left: 18px;
   right: 18px;
   height: 1px;
-
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(168, 85, 247, 0.6) 30%,
-    rgba(99, 102, 241, 0.6) 70%,
-    transparent
-  );
+  background: ${({ $background }) => $background};
 `;
