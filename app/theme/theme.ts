@@ -2,6 +2,7 @@ import { extendTheme, StyleFunctionProps } from "@chakra-ui/react";
 import { Lato } from "next/font/google";
 
 export const DEFAULT_LEARNER_PRIMARY_COLOR = "#2563EB";
+export const DASHBOARD_DEFAULT_PRIMARY_COLOR = DEFAULT_LEARNER_PRIMARY_COLOR;
 
 const lato = Lato({
   variable: "--font-lato",
@@ -162,7 +163,9 @@ type BrandShadeKey = (typeof BRAND_SHADE_KEYS)[number];
 
 type ThemeBuildOptions = {
   enableLearnerBranding?: boolean;
+  enableDashboardBranding?: boolean;
   learnerPrimaryColor?: string;
+  dashboardPrimaryColor?: string;
   themeConfig?: Record<string, any>;
 };
 
@@ -240,17 +243,39 @@ export function createLearnerBrandScale(primaryColor?: string): BrandScale {
   }, {} as BrandScale);
 }
 
+export function shouldUseCompanyDashboardBranding(user?: Record<string, any> | null) {
+  const role = String(user?.userType || user?.role || "").trim().toLowerCase();
+  return role === "admin" || role === "department head" || role === "department_head";
+}
+
+function createAccentBrandScale(primaryColor?: string, targetHex = "#312E81", amount = 0.18) {
+  const baseColor = normalizeHexColor(primaryColor);
+  return createLearnerBrandScale(mixHexColors(baseColor, targetHex, amount));
+}
+
 export function buildAppTheme(options: ThemeBuildOptions = {}) {
-  const { enableLearnerBranding = false, learnerPrimaryColor, themeConfig = {} } = options;
-  const learnerBrandScale = createLearnerBrandScale(learnerPrimaryColor);
+  const {
+    enableLearnerBranding = false,
+    enableDashboardBranding = false,
+    learnerPrimaryColor,
+    dashboardPrimaryColor,
+    themeConfig = {},
+  } = options;
+  const resolvedPrimaryColor = enableDashboardBranding ? dashboardPrimaryColor : learnerPrimaryColor;
+  const learnerBrandScale = createLearnerBrandScale(resolvedPrimaryColor);
+  const accentBrandScale = createAccentBrandScale(resolvedPrimaryColor);
   const { colors: _themeColors, ...restThemeConfig } = themeConfig;
+  const shouldApplyBranding = enableLearnerBranding || enableDashboardBranding;
 
   const mergedColors = {
     ...baseColors,
-    ...(enableLearnerBranding
+    ...(shouldApplyBranding
       ? {
           blue: learnerBrandScale,
           brand: learnerBrandScale,
+          purple: accentBrandScale,
+          indigo: accentBrandScale,
+          pink: accentBrandScale,
           custom: {
             light: {
               primary: learnerBrandScale[500],
@@ -279,5 +304,5 @@ export function buildAppTheme(options: ThemeBuildOptions = {}) {
 
 const theme = buildAppTheme();
 
-export { theme, lato, normalizeHexColor };
+export { theme, lato, normalizeHexColor, mixHexColors };
 export default theme;

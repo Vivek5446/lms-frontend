@@ -11,11 +11,17 @@ import {
 } from "@chakra-ui/react";
 import axios from "axios";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { memo, RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FiMaximize2, FiMinimize2, FiX } from "react-icons/fi";
-import ScormQuizReviewContent from "./ScormQuizReviewContent";
+import { FiMaximize2, FiMinimize2, FiRefreshCw, FiX } from "react-icons/fi";
 import { ScormAnswerSectionRecord } from "./quizReviewTypes";
 import { buildScorm12InitialState, createScorm12Api, ScormTrackingPayload } from "./scorm12";
+import { preloadCourseAsset } from "./sectionTracking";
+
+const ScormQuizReviewContent = dynamic(() => import("./ScormQuizReviewContent"), {
+  ssr: false,
+  loading: () => <p className="text-sm text-gray-500">Loading quiz review...</p>,
+});
 
 interface CoursePlayerProps {
   courseUrl: string;
@@ -26,6 +32,7 @@ interface CoursePlayerProps {
   sectionId?: string;
   userId?: string;
   learnerName?: string;
+  initialProgress?: any;
   answerSections?: ScormAnswerSectionRecord[];
   isAnswerSectionsLoading?: boolean;
   onRefreshAnswerSections?: () => void | Promise<void>;
@@ -57,6 +64,7 @@ const StableScormIframe = memo(function StableScormIframe({
       title={title}
       className="w-full h-full bg-white"
       allowFullScreen
+      loading="eager"
       onError={onError}
     />
   );
@@ -71,6 +79,7 @@ export default function CoursePlayer({
   sectionId,
   userId,
   learnerName,
+  initialProgress,
   answerSections = [],
   isAnswerSectionsLoading = false,
   onRefreshAnswerSections,
@@ -86,6 +95,7 @@ export default function CoursePlayer({
     sectionId,
     userId,
     learnerName,
+    initialProgress,
   });
   const iframeSrcRef = useRef("about:blank");
   const hasAttachedIframeSrcRef = useRef(false);
@@ -101,6 +111,7 @@ export default function CoursePlayer({
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isQuizReviewOpen, setIsQuizReviewOpen] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   const visibleAnswerSections = useMemo(() => {
     if (!sectionId) {
@@ -291,35 +302,18 @@ export default function CoursePlayer({
       const initialConfig = initialConfigRef.current;
       const trackingEnabled = Boolean(initialConfig.userId && initialConfig.courseId);
       trackingEnabledRef.current = trackingEnabled;
+      void preloadCourseAsset(initialConfig.courseUrl).catch(() => undefined);
 
       try {
-        let progress = null;
+        let runtime: ReturnType<typeof createScorm12Api> | null = null;
         let initializeError: any = null;
 
-        if (trackingEnabled) {
-          try {
-            const response = await axios.post("/scorm/initialize", {
-              userId: initialConfig.userId,
-              courseId: initialConfig.courseId,
-              moduleId: initialConfig.moduleId,
-              sectionId: initialConfig.sectionId,
-            });
-            progress = response?.data?.data || null;
-          } catch (error: any) {
-            initializeError = error;
-            console.error("SCORM initialize failed", error);
+        const launchPlayer = (progress: any) => {
+          if (!isActive || runtime) {
+            return;
           }
-        }
 
-        const runtime = createScorm12Api({
-          context: {
-            userId: initialConfig.userId,
-            courseId: initialConfig.courseId,
-            moduleId: initialConfig.moduleId,
-            sectionId: initialConfig.sectionId,
-            learnerName: initialConfig.learnerName,
-          },
-          initialState: buildScorm12InitialState({
+          runtime = createScorm12Api({
             context: {
               userId: initialConfig.userId,
               courseId: initialConfig.courseId,
@@ -327,14 +321,82 @@ export default function CoursePlayer({
               sectionId: initialConfig.sectionId,
               learnerName: initialConfig.learnerName,
             },
-            progress,
-          }),
-          onCommit: (payload) => queueTrackingSync("commit", payload),
-          onFinish: (payload) => queueTrackingSync("finish", payload),
-        });
+            initialState: buildScorm12InitialState({
+              context: {
+                userId: initialConfig.userId,
+                courseId: initialConfig.courseId,
+                moduleId: initialConfig.moduleId,
+                sectionId: initialConfig.sectionId,
+                learnerName: initialConfig.learnerName,
+              },
+              progress,
+            }),
+            onCommit: (payload) => queueTrackingSync("commit", payload),
+            onFinish: (payload) => queueTrackingSync("finish", payload),
+          });
 
-        apiRef.current = runtime;
-        attachApiToWindow(window);
+          apiRef.current = runtime;
+          attachApiToWindow(window);
+          iframeSrcRef.current = initialConfig.courseUrl;
+          hasAttachedIframeSrcRef.current = true;
+          if (iframeRef.current) {
+            iframeRef.current.src = iframeSrcRef.current;
+          }
+          setIsBootstrapping(false);
+        };
+
+        const initializePromise = trackingEnabled
+          ? axios.post(
+            "/scorm/initialize",
+            {
+              userId: initialConfig.userId,
+              courseId: initialConfig.courseId,
+              moduleId: initialConfig.moduleId,
+              sectionId: initialConfig.sectionId,
+            },
+            { timeout: 15000 }
+          )
+          : Promise.resolve(null);
+
+        if (trackingEnabled) {
+          syncQueueRef.current = initializePromise.then(
+            () => undefined,
+            () => undefined
+          );
+        }
+
+        if (initialConfig.initialProgress) {
+          launchPlayer(initialConfig.initialProgress);
+        }
+
+        let initializedProgress = null;
+        if (trackingEnabled) {
+          try {
+            const response = await initializePromise;
+            initializedProgress = response?.data?.data || null;
+          } catch (error: any) {
+            initializeError = error;
+            console.error("SCORM initialize failed", error);
+          }
+        }
+
+        if (!runtime) {
+          launchPlayer(initializedProgress);
+        } else if (initializedProgress) {
+          runtime.mergeState(
+            buildScorm12InitialState({
+              context: {
+                userId: initialConfig.userId,
+                courseId: initialConfig.courseId,
+                moduleId: initialConfig.moduleId,
+                sectionId: initialConfig.sectionId,
+                learnerName: initialConfig.learnerName,
+              },
+              progress: initializedProgress,
+              includeSessionTime: false,
+            })
+          );
+        }
 
         if (!isActive) {
           return;
@@ -347,18 +409,13 @@ export default function CoursePlayer({
             "SCORM tracking could not be initialized. The lesson is loading without saved progress sync."
           );
         }
-        iframeSrcRef.current = initialConfig.courseUrl;
-        hasAttachedIframeSrcRef.current = true;
-        if (iframeRef.current) {
-          iframeRef.current.src = iframeSrcRef.current;
-        }
       } catch (error: any) {
         console.error("SCORM player bootstrap failed", error);
         if (isActive) {
           setPlayerError(
             error?.response?.data?.message ||
             error?.response?.data?.error ||
-            "We couldn't initialize SCORM tracking for this course."
+            "We couldn't initialize this SCORM course."
           );
         }
       } finally {
@@ -377,7 +434,6 @@ export default function CoursePlayer({
         window.clearTimeout(refreshTimerRef.current);
       }
 
-      const currentRuntime = apiRef.current;
       apiRef.current = null;
 
       detachApiFromWindow(iframeRef.current?.contentWindow);
@@ -446,19 +502,50 @@ export default function CoursePlayer({
   }, []);
 
   useEffect(() => {
+    if ((!isBootstrapping && !isFrameLoading) || playerError) {
+      return;
+    }
+
     const slowLoadTimer = window.setTimeout(() => {
       setHasSlowLoad(true);
     }, 6000);
+    const failedLoadTimer = window.setTimeout(() => {
+      setPlayerError("This lesson is taking too long to respond. Please retry the launch.");
+      setIsBootstrapping(false);
+      setIsFrameLoading(false);
+    }, 30000);
 
     return () => {
       window.clearTimeout(slowLoadTimer);
+      window.clearTimeout(failedLoadTimer);
     };
-  }, []);
+  }, [isBootstrapping, isFrameLoading, loadAttempt, playerError]);
 
   const handleIframeError = useCallback(() => {
     setPlayerError("We couldn't load this SCORM package.");
     setIsFrameLoading(false);
   }, []);
+
+  const handleRetry = useCallback(() => {
+    const iframeElement = iframeRef.current;
+    if (!iframeElement || !apiRef.current) {
+      setPlayerError("Close this player and reopen the lesson to retry initialization.");
+      return;
+    }
+
+    setPlayerError(null);
+    setSyncError(null);
+    setHasSlowLoad(false);
+    setIsFrameLoading(true);
+    setLoadAttempt((attempt) => attempt + 1);
+    void preloadCourseAsset(courseUrl, { force: true }).catch(() => undefined);
+
+    const separator = courseUrl.includes("?") ? "&" : "?";
+    iframeSrcRef.current = `${courseUrl}${separator}scorm_retry=${Date.now()}`;
+    hasAttachedIframeSrcRef.current = true;
+    attachApiToWindow(window);
+    iframeElement.src = iframeSrcRef.current;
+  }, [courseUrl]);
 
   const handleClosePlayer = useCallback(() => {
     persistLatestProgress();
@@ -551,16 +638,58 @@ export default function CoursePlayer({
 
           <div className="relative flex-1 bg-[#0B0B0B]">
             {showOverlay ? (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#0B0B0B] text-white">
-                <div className="scorm-spinner w-8 h-8 rounded-full border-[3px] border-white/20 border-t-white" />
-                <p className="text-sm font-medium">
-                  {playerError || "Loading course assets and reconnecting your SCORM session..."}
-                </p>
-                {hasSlowLoad && !playerError ? (
-                  <p className="text-xs text-white/70">
-                    This package is taking a bit longer than usual to load.
-                  </p>
-                ) : null}
+              <div
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6 text-center text-white"
+                role="status"
+                aria-live="polite"
+              >
+                {playerError ? (
+                  <>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/15 text-red-300">
+                      <FiRefreshCw size={22} />
+                    </div>
+                    <div className="max-w-md">
+                      <p className="text-sm font-semibold">Lesson launch interrupted</p>
+                      <p className="mt-2 text-xs leading-5 text-white/70">{playerError}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleRetry}
+                        className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/90"
+                      >
+                        Retry lesson
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClosePlayer}
+                        className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="scorm-spinner h-9 w-9 rounded-full border-[3px] border-white/20 border-t-white" />
+                    <div className="max-w-md">
+                      <p className="text-sm font-semibold">
+                        {isBootstrapping ? "Restoring your lesson progress..." : "Starting the lesson..."}
+                      </p>
+                      <p className="mt-2 text-xs leading-5 text-white/60">
+                        Course assets are being prepared in the background.
+                      </p>
+                    </div>
+                    <div className="h-1 w-48 overflow-hidden rounded-full bg-white/10">
+                      <div className="h-full w-2/3 animate-pulse rounded-full bg-cyan-400/80" />
+                    </div>
+                    {hasSlowLoad ? (
+                      <p className="text-xs text-white/70">
+                        This package is larger than usual, but it is still loading.
+                      </p>
+                    ) : null}
+                  </>
+                )}
               </div>
             ) : null}
 
@@ -586,11 +715,13 @@ export default function CoursePlayer({
           <DrawerCloseButton />
           <DrawerHeader borderBottomWidth="1px">Quiz Review</DrawerHeader>
           <DrawerBody py={6}>
-            <ScormQuizReviewContent
-              sections={visibleAnswerSections}
-              isLoading={isAnswerSectionsLoading}
-              emptyState="Answers will appear here after the SCORM package commits quiz data or when the lesson is completed."
-            />
+            {isQuizReviewOpen ? (
+              <ScormQuizReviewContent
+                sections={visibleAnswerSections}
+                isLoading={isAnswerSectionsLoading}
+                emptyState="Answers will appear here after the SCORM package commits quiz data or when the lesson is completed."
+              />
+            ) : null}
           </DrawerBody>
         </DrawerContent>
       </Drawer>

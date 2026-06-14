@@ -8,6 +8,7 @@ import CourseQuizPlayer from "@/app/dashboard/course/quiz/CourseQuizPlayer";
 import {
   buildCourseAssetUrl,
   CourseLaunchSection,
+  getCourseSectionProgress,
   isScormLaunchSection,
 } from "@/app/dashboard/course/scorm/sectionTracking";
 import { CourseQuizForLearner, courseStore } from "@/app/store/courseStore/courseStore";
@@ -127,6 +128,10 @@ const MyCoursesBoard = observer(
 
       return courseStore.currentCourse;
     }, [requestedCourseId, courseStore.currentCourse]);
+    const initialScormProgress = useMemo(
+      () => getCourseSectionProgress(activeCourse, playerSection?.sectionId),
+      [activeCourse, playerSection?.sectionId],
+    );
 
     useEffect(() => {
       const activeCourseId = activeCourse?._id || activeCourse?.courseId;
@@ -313,6 +318,7 @@ const MyCoursesBoard = observer(
                   courseId={activeCourse._id || activeCourse.courseId}
                   moduleId={playerSection.moduleId}
                   sectionId={playerSection.sectionId}
+                  initialProgress={initialScormProgress}
                   userId={stores.auth.user?._id}
                   learnerName={
                     stores.auth.user?.name ||

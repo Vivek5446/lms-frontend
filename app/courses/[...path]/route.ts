@@ -49,10 +49,14 @@ async function proxyCourseAsset(request: NextRequest, pathSegments: string[]) {
     "content-type",
     "content-length",
     "cache-control",
+    "content-encoding",
+    "content-range",
     "etag",
+    "expires",
     "last-modified",
     "accept-ranges",
     "content-disposition",
+    "vary",
   ];
 
   for (const headerName of passthroughHeaders) {
@@ -62,7 +66,11 @@ async function proxyCourseAsset(request: NextRequest, pathSegments: string[]) {
     }
   }
 
-  return new NextResponse(upstreamResponse.body, {
+  if (!headers.has("cache-control")) {
+    headers.set("cache-control", "public, max-age=604800, stale-while-revalidate=2592000");
+  }
+
+  return new NextResponse(request.method === "HEAD" ? null : upstreamResponse.body, {
     status: upstreamResponse.status,
     headers,
   });

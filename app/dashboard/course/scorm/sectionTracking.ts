@@ -11,6 +11,8 @@ export type CourseLaunchSection = {
   sectionTitle: string;
 };
 
+const courseAssetWarmups = new Map<string, Promise<void>>();
+
 function normalizeKeySegment(value: unknown) {
   return String(value || "")
     .trim()
@@ -77,8 +79,63 @@ export function buildCourseAssetUrl(assetPath: string) {
   return `/courses${normalizedPath}`;
 }
 
+export function preloadCourseAsset(assetPathOrUrl: string, options?: { force?: boolean }) {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  const assetUrl = assetPathOrUrl.startsWith("/courses/")
+    ? assetPathOrUrl
+    : buildCourseAssetUrl(assetPathOrUrl);
+
+  if (!options?.force) {
+    const existingWarmup = courseAssetWarmups.get(assetUrl);
+    if (existingWarmup) {
+      return existingWarmup;
+    }
+  }
+
+  const warmup = fetch(assetUrl, {
+    method: "GET",
+    credentials: "same-origin",
+    cache: options?.force ? "reload" : "force-cache",
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Course asset warmup failed with status ${response.status}`);
+      }
+
+      return response.arrayBuffer();
+    })
+    .then(() => undefined)
+    .catch((error) => {
+      courseAssetWarmups.delete(assetUrl);
+      throw error;
+    });
+
+  courseAssetWarmups.set(assetUrl, warmup);
+  return warmup;
+}
+
 export function isScormLaunchSection(section: CourseLaunchSection | null | undefined) {
   return Boolean(section && (section.contentKind === "scorm" || section.contentKind === "zip"));
+}
+
+export function getCourseSectionProgress(course: any, sectionId?: string | null) {
+  if (!sectionId) {
+    return null;
+  }
+
+  const progressModules = Array.isArray(course?.progressModules) ? course.progressModules : [];
+  for (const moduleRecord of progressModules) {
+    const sections = Array.isArray(moduleRecord?.sections) ? moduleRecord.sections : [];
+    const matchingSection = sections.find((sectionRecord: any) => sectionRecord?.sectionId === sectionId);
+    if (matchingSection) {
+      return matchingSection;
+    }
+  }
+
+  return null;
 }
 
 export function getFirstPlayableLaunchSection(course: any) {

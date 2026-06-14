@@ -17,15 +17,14 @@ import {
   Portal,
   Text,
   VStack,
-  useColorModeValue,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
   DrawerContent,
   DrawerOverlay,
   useBreakpointValue,
-  useColorMode,
   Tooltip,
+  useTheme,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { getSidebarDataByRole, sidebarFooterData } from "./utils/SidebarItems";
@@ -56,10 +55,6 @@ interface SidebarProps {
   setOpenMobileSideDrawer: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const SIDEBAR_BG =
-  "linear-gradient(180deg, #1a0533 0%, #2d1b69 40%, #4a1d96 100%)";
-const SIDEBAR_BG_DARK =
-  "linear-gradient(180deg, #12021f 0%, #1e0a4a 50%, #3b0764 100%)";
 const ACTIVE_BG = "rgba(255,255,255,0.1)";
 const HOVER_BG = "rgba(255,255,255,0.06)";
 const ACTIVE_TEXT = "rgba(255,255,255,0.95)"; // soft white (not harsh)
@@ -177,9 +172,9 @@ const SidebarPopover = observer(
       themeStore: { themeConfig },
     } = stores;
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-    const { colorMode } = useColorMode();
-
-    const primaryColor = themeConfig.colors.custom.light.primary;
+    const theme = useTheme();
+    const primaryColor = ((theme.colors?.brand || {}) as Record<number, string>)[500]
+      || themeConfig.colors.custom.light.primary;
     const itemIsActive = checkIsActive(item, activeItemId);
     const isLeaf = !item.children || item.children.length === 0;
 
@@ -219,7 +214,7 @@ const SidebarPopover = observer(
           transition="all 0.15s ease"
           borderRadius="12px"
           borderLeft={itemIsActive ? "3px solid" : "3px solid transparent"}
-         borderColor={itemIsActive ? "#c084fc" : "transparent"}
+         borderColor={itemIsActive ? primaryColor : "transparent"}
           _hover={{
             bg: "rgba(255,255,255,0.12)",
             transform: "translateX(4px)",
@@ -357,9 +352,9 @@ const SidebarAccordion = observer(
     const {
       themeStore: { themeConfig },
     } = stores;
-    const { colorMode } = useColorMode();
-
-    const primaryColor = themeConfig.colors.custom.light.primary;
+    const theme = useTheme();
+    const primaryColor = ((theme.colors?.brand || {}) as Record<number, string>)[500]
+      || themeConfig.colors.custom.light.primary;
     const expandedIndex =
       expandedPath.length > depth ? expandedPath[depth] : null;
 
@@ -463,7 +458,11 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
     const router = useRouter();
     const pathname = usePathname();
     const isMobile = useBreakpointValue({ base: true, xl: false }) ?? false;
-    const { colorMode } = useColorMode();
+    const theme = useTheme();
+    const brandScale = (theme.colors?.brand || {}) as Record<number, string>;
+    const accentScale = (theme.colors?.purple || {}) as Record<number, string>;
+    const sidebarGradient = `linear-gradient(180deg, ${brandScale[900] || "#1a0533"} 0%, ${accentScale[800] || brandScale[700] || "#2d1b69"} 45%, ${brandScale[600] || "#4a1d96"} 100%)`;
+    const sidebarGradientDark = `linear-gradient(180deg, #12021f 0%, ${brandScale[900] || "#1e0a4a"} 52%, ${accentScale[800] || brandScale[800] || "#3b0764"} 100%)`;
 
     const [sidebarData, setSidebarData] = useState<SidebarItem[]>([]);
     const [footerItems, setFooterItems] = useState<SidebarItem[]>([]);
@@ -549,7 +548,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
         >
           <DrawerOverlay />
           <DrawerContent
-            bgGradient={SIDEBAR_BG}
+            bgGradient={sidebarGradient}
             maxW="320px"
             borderTopRightRadius="24px"
             borderBottomRightRadius="24px"
@@ -586,7 +585,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
             minH="100vh"
             transition="width 0.3s ease"
             zIndex={1000}
-            bgGradient={SIDEBAR_BG_DARK}
+            bgGradient={sidebarGradientDark}
             borderRight="1px solid"
             borderRightColor={BORDER_COLOR}
             boxShadow="4px 0 24px rgba(0,0,0,0.3)"
@@ -596,7 +595,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
               position="sticky"
               top={0}
               zIndex={200}
-              bgGradient={SIDEBAR_BG_DARK}
+              bgGradient={sidebarGradientDark}
               borderBottom="1px solid"
               borderBottomColor={BORDER_COLOR}
             >
@@ -644,7 +643,7 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
               py={3}
               zIndex={11}
               overflowX="hidden"
-              bgGradient={SIDEBAR_BG_DARK}
+              bgGradient={sidebarGradientDark}
               borderTop="1px solid"
               borderTopColor={BORDER_COLOR}
             >

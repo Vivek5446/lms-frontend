@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { observer } from 'mobx-react-lite';
-import { Box, Spinner, useBreakpointValue } from '@chakra-ui/react';
+import { Box, Spinner, useBreakpointValue, useTheme } from '@chakra-ui/react';
 import styled from 'styled-components';
 import stores from '../../store/stores';
 // import { authenticastion } from '../../config/utils/routes';
@@ -24,9 +24,11 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
   } = stores;
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
+  const theme = useTheme();
   const isMobile = useBreakpointValue({ base: true, xl: false }) ?? false;
   const sidebarOffset = isMobile ? '0px' : isCallapse ? mediumSidebarWidth : sidebarWidth;
   const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const brandScale = (theme.colors?.brand || {}) as Record<number, string>;
 
   const closeDrawerModel = () => {
     setOpenMobileSideDrawer(false);
@@ -90,7 +92,7 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
         <Container $isMobile={isMobile} $sidebarOffset={sidebarOffset}>
           <HeaderContainer
             $sidebarOffset={sidebarOffset}
-            $backgroundColor={themeConfig.colors.custom.light.primary}
+            $backgroundColor={brandScale[500] || themeConfig.colors.custom.light.primary}
           >
             <HeaderLayout />
           </HeaderContainer>
@@ -155,11 +157,11 @@ const HeaderContainer = styled.div<{
   background: linear-gradient(
     135deg,
     #ffffff 0%,
-    #f8f9ff 30%,
-    #f0f2ff 80%
+    ${({ $backgroundColor }) => `${$backgroundColor}12`} 32%,
+    ${({ $backgroundColor }) => `${$backgroundColor}1F`} 80%
   );
-  border-bottom: 1px solid rgba(99, 102, 241, 0.12);
-  box-shadow: 0 1px 3px rgba(30, 40, 100, 0.06), 0 4px 16px rgba(99, 102, 241, 0.07);
+  border-bottom: 1px solid ${({ $backgroundColor }) => `${$backgroundColor}26`};
+  box-shadow: 0 1px 3px rgba(30, 40, 100, 0.06), 0 4px 16px ${({ $backgroundColor }) => `${$backgroundColor}1F`};
 
   animation: navbarSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 

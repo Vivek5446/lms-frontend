@@ -29,7 +29,12 @@ import CourseDetails from "./CourseDetails";
 import AssignCourseModal from "./components/AssignCourseModal";
 import CoursePlayer from "./scorm/CoursePlayer";
 import CourseAssetModal from "./scorm/CourseAssetModal";
-import { buildCourseAssetUrl, CourseLaunchSection, isScormLaunchSection } from "./scorm/sectionTracking";
+import {
+  buildCourseAssetUrl,
+  CourseLaunchSection,
+  getCourseSectionProgress,
+  isScormLaunchSection,
+} from "./scorm/sectionTracking";
 import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore";
 import stores from "@/app/store/stores";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
@@ -297,6 +302,7 @@ function CoursePage() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentCourses = filteredCourses.slice(startIndex, endIndex);
+  const initialScormProgress = getCourseSectionProgress(activeCourse, playerSection?.sectionId);
 
   if (isLearner) {
     return null;
@@ -345,6 +351,7 @@ function CoursePage() {
                 courseUrl={buildCourseAssetUrl(playerSection.assetPath)}
                 moduleId={playerSection.moduleId}
                 sectionId={playerSection.sectionId}
+                initialProgress={initialScormProgress}
                 onBack={() => setPlayerSection(null)}
               />
             </motion.div>

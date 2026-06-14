@@ -2,7 +2,7 @@
 
 import { observer } from "mobx-react-lite";
 import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
-import { buildAppTheme, lato } from "./theme/theme";
+import { buildAppTheme, lato, shouldUseCompanyDashboardBranding } from "./theme/theme";
 import "./globals.css";
 import MainLayout from "./layouts/mainLayout/MainLayout";
 import AuthenticationLayout from "./layouts/authenticationLayout/AuthenticationLayout";
@@ -68,7 +68,9 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
   };
 
   const LayoutComponent = getLayout();
-  const isLearnerThemeEnabled = !pathname?.startsWith("/dashboard");
+  const isDashboardPath = pathname?.startsWith("/dashboard");
+  const isLearnerThemeEnabled = !isDashboardPath;
+  const isDashboardThemeEnabled = isDashboardPath && shouldUseCompanyDashboardBranding(user);
   const themeConfigSnapshot = isLearnerThemeEnabled
     ? "{}"
     : JSON.stringify(themeConfig || {});
@@ -76,10 +78,17 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
     () =>
       buildAppTheme({
         enableLearnerBranding: isLearnerThemeEnabled,
+        enableDashboardBranding: isDashboardThemeEnabled,
         learnerPrimaryColor: user?.companyDetails?.primaryThemeColor,
+        dashboardPrimaryColor: user?.companyDetails?.primaryThemeColor,
         themeConfig: isLearnerThemeEnabled ? {} : JSON.parse(themeConfigSnapshot),
       }),
-    [isLearnerThemeEnabled, themeConfigSnapshot, user?.companyDetails?.primaryThemeColor]
+    [
+      isLearnerThemeEnabled,
+      isDashboardThemeEnabled,
+      themeConfigSnapshot,
+      user?.companyDetails?.primaryThemeColor,
+    ]
   );
 
   return (
