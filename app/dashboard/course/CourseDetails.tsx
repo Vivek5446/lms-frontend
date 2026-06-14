@@ -19,6 +19,7 @@ import {
   deriveSectionId,
   getFirstPlayableLaunchSection,
   isScormLaunchSection,
+  preloadCourseAsset,
 } from "@/app/dashboard/course/scorm/sectionTracking";
 import {
   Accordion,
@@ -210,6 +211,11 @@ export default function CourseDetails({
     course.certificate?.reason || "Certificate will be available after eligibility is confirmed.";
   const canDownloadCertificate = isAssignedCourseView;
   const shouldShowCertificateStatus = isAssignedCourseView;
+  const warmLaunchSection = (launchSection?: CourseLaunchSection | null) => {
+    if (launchSection && isScormLaunchSection(launchSection)) {
+      void preloadCourseAsset(launchSection.assetPath).catch(() => undefined);
+    }
+  };
 
   const moduleProgressMap = useMemo(
     () => new Map<string, any>(progressModules.map((moduleRecord: any) => [moduleRecord.moduleId, moduleRecord])),
@@ -763,7 +769,10 @@ export default function CourseDetails({
                                       align="flex-start"
                                       gap={4}
                                       mb={isLast ? 0 : 6}
-                                      onMouseEnter={() => setHoveredSection(secId)}
+                                      onMouseEnter={() => {
+                                        setHoveredSection(secId);
+                                        warmLaunchSection(launchSection);
+                                      }}
                                       onMouseLeave={() => setHoveredSection(null)}
                                       cursor={isPlayable ? "pointer" : "default"}
                                       onClick={() => {
@@ -956,6 +965,8 @@ export default function CourseDetails({
                                                 : "outline"
                                             }
                                             borderRadius="full"
+                                            onMouseEnter={() => warmLaunchSection(launchSection)}
+                                            onFocus={() => warmLaunchSection(launchSection)}
                                             onClick={(event) => {
                                               event.stopPropagation();
                                               onLaunchSection(launchSection);
@@ -1193,6 +1204,20 @@ export default function CourseDetails({
                     <MotionButton
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
+                      onMouseEnter={() => {
+                        if (nextLaunchSection) {
+                          warmLaunchSection(nextLaunchSection);
+                        } else if (course.scormFilePath) {
+                          void preloadCourseAsset(course.scormFilePath).catch(() => undefined);
+                        }
+                      }}
+                      onFocus={() => {
+                        if (nextLaunchSection) {
+                          warmLaunchSection(nextLaunchSection);
+                        } else if (course.scormFilePath) {
+                          void preloadCourseAsset(course.scormFilePath).catch(() => undefined);
+                        }
+                      }}
                       onClick={() => {
                         if (nextLaunchSection) {
                           onLaunchSection(nextLaunchSection);
