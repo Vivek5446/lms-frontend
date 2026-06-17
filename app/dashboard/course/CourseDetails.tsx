@@ -327,21 +327,22 @@ export default function CourseDetails({
     return (
       <Flex
         key={quiz.quizId}
-        mt={4}
-        p={4}
+        mt={{ base: 3, md: 4 }}
+        p={{ base: 3, md: 4 }}
         borderWidth="1px"
         borderColor={completed ? completedSectionBorder : "orange.200"}
         borderRadius="xl"
         bg={completed ? completedSectionBg : pendingQuizBg}
-        align="center"
+        align={{ base: "stretch", sm: "center" }}
         justify="space-between"
         gap={3}
+        direction={{ base: "column", sm: "row" }}
         wrap="wrap"
       >
-        <HStack spacing={3} align="start">
+        <HStack spacing={3} align="start" minW={0}>
           <Box
-            w={10}
-            h={10}
+            w={{ base: 9, md: 10 }}
+            h={{ base: 9, md: 10 }}
             borderRadius="xl"
             bg={completed ? "green.500" : "orange.500"}
             color="white"
@@ -351,8 +352,8 @@ export default function CourseDetails({
           >
             <Icon as={Award} boxSize={5} />
           </Box>
-          <Box>
-            <Text fontWeight="bold">{quiz.title}</Text>
+          <Box minW={0}>
+            <Text fontWeight="bold" noOfLines={2}>{quiz.title}</Text>
             <Text fontSize="sm" color={textMuted}>
               {quiz.questionCount} question{quiz.questionCount === 1 ? "" : "s"} - {quiz.totalMarks} marks
             </Text>
@@ -372,6 +373,7 @@ export default function CourseDetails({
             size="sm"
             colorScheme={completed ? "green" : "orange"}
             borderRadius="full"
+            w={{ base: "full", sm: "auto" }}
             onClick={(event) => {
               event.stopPropagation();
               onTakeQuiz(quiz);
@@ -389,17 +391,17 @@ export default function CourseDetails({
       {/* Sticky Header */}
       <Box
         position="sticky"
-        top={-4}
+        top={0}
         zIndex="sticky"
         borderBottomWidth="1px"
         borderBottomColor={borderColor}
         backdropFilter="blur(12px)"
         bg={useColorModeValue("rgba(255, 255, 255, 0.9)", "rgba(26, 32, 44, 0.9)")}
-        px={{ base: 4, md: 6 }}
-        py={3}
+        px={{ base: 2, md: 6 }}
+        py={{ base: 2, md: 3 }}
       >
-        <Container maxW="container.2xl">
-          <Flex align="center" gap={4}>
+        <Container maxW="container.2xl" px={{ base: 1, md: 4 }}>
+          <Flex align={{ base: "start", md: "center" }} gap={{ base: 2, md: 4 }}>
             <MotionButton
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -407,16 +409,17 @@ export default function CourseDetails({
               variant="ghost"
               rounded="full"
               p={0}
-              minW="auto"
+              minW={{ base: "36px", md: "auto" }}
+              h={{ base: "36px", md: "40px" }}
               aria-label="Go back"
             >
               <Icon as={ChevronLeft} boxSize={5} />
             </MotionButton>
-            <Box>
-              <Heading as="h1" size="lg" fontWeight="bold">
+            <Box minW={0} flex="1">
+              <Heading as="h1" size={{ base: "sm", md: "lg" }} fontWeight="bold" noOfLines={{ base: 2, md: 1 }} lineHeight="1.2">
                 {course.title}
               </Heading>
-              <Flex gap={2} mt={1}>
+              <Flex gap={1.5} mt={1.5} flexWrap="wrap">
                 <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
                   {course.taxonomy?.level || "Beginner"}
                 </Badge>
@@ -442,7 +445,8 @@ export default function CourseDetails({
             </Box>
             {onAssignCourse ? (
               <Button
-                ml="auto"
+                ml={{ base: 0, md: "auto" }}
+                size={{ base: "sm", md: "md" }}
                 colorScheme="blue"
                 variant="outline"
                 borderRadius="full"
@@ -455,24 +459,24 @@ export default function CourseDetails({
         </Container>
       </Box>
 
-      <Container maxW="container.2xl" py={8}>
-        <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
+      <Container maxW="container.2xl" py={{ base: 4, md: 8 }} px={{ base: 3, md: 4 }}>
+        <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={{ base: 4, md: 8 }}>
           {/* Main content */}
-          <Stack spacing={8}>
+          <Stack spacing={{ base: 4, md: 8 }} minW={0}>
             {/* Overview Card */}
             <MotionBox
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
-                <CardHeader pb={0}>
+              <Card bg={cardBg} shadow="sm" borderRadius={{ base: "xl", md: "2xl" }} borderWidth="1px" borderColor={borderColor}>
+                <CardHeader pb={0} px={{ base: 4, md: 5 }} pt={{ base: 4, md: 5 }}>
                   <Flex align="center" gap={2}>
-                    <Icon as={GraduationCap} boxSize={6} color={accentColor} />
-                    <Heading size="md">About this course</Heading>
+                    <Icon as={GraduationCap} boxSize={{ base: 5, md: 6 }} color={accentColor} />
+                    <Heading size={{ base: "sm", md: "md" }}>About this course</Heading>
                   </Flex>
                 </CardHeader>
-                <CardBody>
+                <CardBody px={{ base: 4, md: 5 }} py={{ base: 4, md: 5 }}>
                   <Box
                     dangerouslySetInnerHTML={{
                       __html:
@@ -483,7 +487,7 @@ export default function CourseDetails({
                     className="prose prose-sm max-w-none"
                     color={useColorModeValue("gray.600", "gray.300")}
                   />
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={6}>
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 3, md: 4 }} mt={{ base: 4, md: 6 }}>
                     <Flex align="center" gap={3} p={3} bg={accentLight} borderRadius="xl">
                       <Icon as={Clock} boxSize={5} color={accentColor} />
                       <Box>
@@ -551,12 +555,12 @@ export default function CourseDetails({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
-              <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
-                <CardHeader pb={0}>
+              <Card bg={cardBg} shadow="sm" borderRadius={{ base: "xl", md: "2xl" }} borderWidth="1px" borderColor={borderColor}>
+                <CardHeader pb={0} px={{ base: 4, md: 5 }} pt={{ base: 4, md: 5 }}>
                   <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
                     <Flex align="center" gap={2} wrap="wrap">
-                      <Icon as={Layers} boxSize={6} color={accentColor} />
-                      <Heading size="md">Course Curriculum</Heading>
+                      <Icon as={Layers} boxSize={{ base: 5, md: 6 }} color={accentColor} />
+                      <Heading size={{ base: "sm", md: "md" }}>Course Curriculum</Heading>
                       {isAssignedCourseView ? (
                         <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
                           {sectionSummary.completed}/{sectionSummary.total} complete
@@ -568,7 +572,7 @@ export default function CourseDetails({
                     </Badge>
                   </Flex>
                 </CardHeader>
-                <CardBody>
+                <CardBody px={{ base: 3, md: 5 }} py={{ base: 4, md: 5 }}>
                   <Accordion allowMultiple defaultIndex={[0]}>
                     {course.curriculum?.modules?.map((mod: any) => {
                       const moduleTracking = moduleProgressMap.get(deriveModuleId(mod));
@@ -581,9 +585,9 @@ export default function CourseDetails({
                       <AccordionItem
                         key={mod.order}
                         border="none"
-                        mb={4}
+                        mb={{ base: 3, md: 4 }}
                         bg={useColorModeValue("white", "gray.800")}
-                        borderRadius="2xl"
+                        borderRadius={{ base: "xl", md: "2xl" }}
                         borderWidth="1px"
                         borderColor={borderColor}
                         overflow="hidden"
@@ -592,14 +596,14 @@ export default function CourseDetails({
                         {({ isExpanded }) => (
                           <>
                             <AccordionButton
-                              px={5}
-                              py={4}
+                              px={{ base: 3, md: 5 }}
+                              py={{ base: 3, md: 4 }}
                               _hover={{ bg: useColorModeValue("gray.50", "gray.700") }}
                             >
-                              <Flex align="center" gap={4} w="full">
+                              <Flex align="center" gap={{ base: 3, md: 4 }} w="full">
                                 <Box
-                                  w={10}
-                                  h={10}
+                                  w={{ base: 9, md: 10 }}
+                                  h={{ base: 9, md: 10 }}
                                   borderRadius="xl"
                                   bg={
                                     isAssignedCourseView && moduleProgressMeta.state === "completed"
@@ -621,16 +625,16 @@ export default function CourseDetails({
                                     mod.order
                                   )}
                                 </Box>
-                                <Box flex="1" textAlign="left">
-                                  <HStack spacing={3} flexWrap="wrap">
-                                    <Text fontWeight="bold" fontSize="lg">{mod.title}</Text>
+                                <Box flex="1" textAlign="left" minW={0}>
+                                  <HStack spacing={2} flexWrap="wrap">
+                                    <Text fontWeight="bold" fontSize={{ base: "sm", md: "lg" }} noOfLines={2}>{mod.title}</Text>
                                     {isAssignedCourseView ? (
                                       <Badge colorScheme={moduleProgressMeta.colorScheme} borderRadius="full" px={3} py={1}>
                                         {moduleProgressMeta.label}
                                       </Badge>
                                     ) : null}
                                   </HStack>
-                                  <HStack spacing={3} mt={1} flexWrap="wrap">
+                                  <HStack spacing={{ base: 2, md: 3 }} mt={1} flexWrap="wrap">
                                     <Text fontSize="sm" color={textMuted}>
                                       {mod.sections?.length} {mod.sections?.length === 1 ? "lesson" : "lessons"}
                                     </Text>
@@ -650,15 +654,15 @@ export default function CourseDetails({
                               </Flex>
                             </AccordionButton>
                             
-                            <AccordionPanel pb={6} pt={2} px={6}>
+                            <AccordionPanel pb={{ base: 4, md: 6 }} pt={2} px={{ base: 3, md: 6 }}>
                               {mod.summary && (
-                                <Text fontSize="sm" color={textMuted} mb={6} pl={14}>
+                                <Text fontSize="sm" color={textMuted} mb={{ base: 4, md: 6 }} pl={{ base: 0, md: 14 }}>
                                   {mod.summary}
                                 </Text>
                               )}
 
                               {normalizeMaterials(mod.studyMaterial).length > 0 ? (
-                                <Box mb={6} pl={14}>
+                                <Box mb={{ base: 4, md: 6 }} pl={{ base: 0, md: 14 }}>
                                   <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" color={textMuted} mb={3}>
                                     Module Study Material
                                   </Text>
@@ -667,21 +671,22 @@ export default function CourseDetails({
                                       const materialUrl = buildCourseAssetUrl(String(material?.previewUrl || ""));
 
                                       return (
-                                        <Flex
-                                          key={`${mod.order}-module-material-${materialIndex}`}
-                                          align="center"
-                                          justify="space-between"
-                                          gap={3}
+                                          <Flex
+                                            key={`${mod.order}-module-material-${materialIndex}`}
+                                           align={{ base: "stretch", sm: "center" }}
+                                            justify="space-between"
+                                            gap={3}
+                                            direction={{ base: "column", sm: "row" }}
                                           borderWidth="1px"
                                           borderColor={borderColor}
                                           borderRadius="xl"
                                           p={3}
                                           bg={useColorModeValue("gray.50", "gray.800")}
                                         >
-                                          <HStack align="start" spacing={3}>
+                                          <HStack align="start" spacing={3} minW={0}>
                                             <Icon as={FileText} boxSize={4} color={accentColor} mt={0.5} />
-                                            <Box>
-                                              <Text fontSize="sm" fontWeight="medium">
+                                            <Box minW={0}>
+                                              <Text fontSize="sm" fontWeight="medium" noOfLines={2}>
                                                 {material?.name || `Module PDF ${materialIndex + 1}`}
                                               </Text>
                                               <Text fontSize="xs" color={textMuted}>
@@ -689,13 +694,14 @@ export default function CourseDetails({
                                               </Text>
                                             </Box>
                                           </HStack>
-                                          <HStack spacing={2}>
+                                          <HStack spacing={2} justify={{ base: "stretch", sm: "flex-end" }} w={{ base: "full", sm: "auto" }}>
                                             <Button
                                               as="a"
                                               href={materialUrl}
                                               target="_blank"
                                               rel="noreferrer"
-                                              size="sm"
+                                              size={{ base: "xs", sm: "sm" }}
+                                              flex={{ base: 1, sm: "initial" }}
                                               variant="outline"
                                               borderRadius="full"
                                               leftIcon={<Icon as={ExternalLink} boxSize={3.5} />}
@@ -706,7 +712,8 @@ export default function CourseDetails({
                                               as="a"
                                               href={materialUrl}
                                               download
-                                              size="sm"
+                                              size={{ base: "xs", sm: "sm" }}
+                                              flex={{ base: 1, sm: "initial" }}
                                               variant="ghost"
                                               borderRadius="full"
                                               leftIcon={<Icon as={Download} boxSize={3.5} />}
@@ -722,7 +729,7 @@ export default function CourseDetails({
                               ) : null}
                               
                               {/* Timeline Container */}
-                              <Box position="relative" pl={4}>
+                              <Box position="relative" pl={{ base: 0, md: 4 }}>
                                 {/* Vertical Timeline Line */}
                                 <Box
                                   position="absolute"
@@ -732,6 +739,7 @@ export default function CourseDetails({
                                   width="2px"
                                   bg={timelineColor}
                                   zIndex={0}
+                                  display={{ base: "none", md: "block" }}
                                 />
 
                                 {mod.sections?.map((sec: any, idx: number) => {
@@ -767,8 +775,8 @@ export default function CourseDetails({
                                       position="relative"
                                       zIndex={1}
                                       align="flex-start"
-                                      gap={4}
-                                      mb={isLast ? 0 : 6}
+                                      gap={{ base: 3, md: 4 }}
+                                      mb={isLast ? 0 : { base: 3, md: 6 }}
                                       onMouseEnter={() => {
                                         setHoveredSection(secId);
                                         warmLaunchSection(launchSection);
@@ -782,8 +790,9 @@ export default function CourseDetails({
                                       }}
                                     >
                                       <Box
-                                        w={10}
-                                        h={10}
+                                        w={{ base: 8, md: 10 }}
+                                        h={{ base: 8, md: 10 }}
+                                        flexShrink={0}
                                         borderRadius="full"
                                         bg={
                                           sectionProgressMeta.state === "completed"
@@ -792,7 +801,7 @@ export default function CourseDetails({
                                               ? surfaceBg
                                               : "transparent"
                                         }
-                                        border="4px solid"
+                                        border={{ base: "3px solid", md: "4px solid" }}
                                         borderColor={
                                           sectionProgressMeta.state === "completed"
                                             ? "green.100"
@@ -810,7 +819,7 @@ export default function CourseDetails({
                                       >
                                         <Icon
                                           as={sectionIcon}
-                                          boxSize={5}
+                                          boxSize={{ base: 4, md: 5 }}
                                           color={
                                             sectionProgressMeta.state === "completed"
                                               ? "white"
@@ -823,7 +832,7 @@ export default function CourseDetails({
 
                                       <Box
                                         flex="1"
-                                        p={4}
+                                        p={{ base: 3, md: 4 }}
                                         bg={
                                           isAssignedCourseView && sectionProgressMeta.state === "completed"
                                             ? completedSectionBg
@@ -837,15 +846,15 @@ export default function CourseDetails({
                                               ? completedSectionBorder
                                               : borderColor
                                         }
-                                        borderRadius="xl"
+                                        borderRadius={{ base: "lg", md: "xl" }}
                                         shadow={hoveredSection === secId ? "md" : "sm"}
                                         transition="all 0.2s"
-                                        transform={hoveredSection === secId ? "translateX(4px)" : "translateX(0)"}
+                                        transform={{ base: "none", md: hoveredSection === secId ? "translateX(4px)" : "translateX(0)" }}
                                       >
                                         <Flex justify="space-between" align="flex-start" wrap="wrap" gap={2}>
-                                          <Box flex="1">
-                                            <HStack spacing={3} flexWrap="wrap" mb={1}>
-                                              <Heading size="sm">{sec.title}</Heading>
+                                          <Box flex="1" minW={0}>
+                                            <HStack spacing={2} flexWrap="wrap" mb={1}>
+                                              <Heading size="sm" fontSize={{ base: "sm", md: "md" }} noOfLines={2}>{sec.title}</Heading>
                                               {isAssignedCourseView ? (
                                                 <Badge colorScheme={sectionProgressMeta.colorScheme} borderRadius="full" px={3} py={1}>
                                                   {sectionProgressMeta.label}
@@ -859,7 +868,7 @@ export default function CourseDetails({
                                             )}
                                           </Box>
 
-                                          <HStack spacing={2} align="start" flexWrap="wrap" justify="flex-end">
+                                          <HStack spacing={2} align="start" flexWrap="wrap" justify={{ base: "flex-start", md: "flex-end" }}>
                                             {contentTagLabel ? (
                                               <Tag size="sm" variant="subtle" colorScheme="gray" borderRadius="md" mt={1}>
                                                 <Icon as={FileBox} boxSize={3} mr={1} />
@@ -875,7 +884,7 @@ export default function CourseDetails({
                                         </Flex>
 
                                         {isAssignedCourseView ? (
-                                          <Box mt={4}>
+                                          <Box mt={{ base: 3, md: 4 }}>
                                             <HStack justify="space-between" mb={2}>
                                               <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase" color={textMuted}>
                                                 Lesson progress
@@ -895,27 +904,28 @@ export default function CourseDetails({
                                         ) : null}
 
                                         {sectionStudyMaterials.length > 0 ? (
-                                          <Stack spacing={2} mt={4}>
+                                          <Stack spacing={2} mt={{ base: 3, md: 4 }}>
                                             {sectionStudyMaterials.map((material: any, materialIndex: number) => {
                                               const materialUrl = buildCourseAssetUrl(String(material?.previewUrl || ""));
 
                                               return (
                                                 <Flex
                                                   key={`${sec.order}-section-material-${materialIndex}`}
-                                                  align="center"
+                                                  align={{ base: "stretch", sm: "center" }}
                                                   justify="space-between"
                                                   gap={3}
-                                                  p={3}
+                                                  direction={{ base: "column", sm: "row" }}
+                                                  p={{ base: 2.5, md: 3 }}
                                                   borderRadius="lg"
                                                   borderWidth="1px"
                                                   borderColor={borderColor}
                                                   bg={mutedSurfaceBg}
                                                   onClick={(event) => event.stopPropagation()}
                                                 >
-                                                  <HStack align="start" spacing={3}>
+                                                  <HStack align="start" spacing={3} minW={0}>
                                                     <Icon as={FileText} boxSize={4} color={accentColor} mt={0.5} />
-                                                    <Box>
-                                                      <Text fontSize="sm" fontWeight="medium">
+                                                    <Box minW={0}>
+                                                      <Text fontSize="sm" fontWeight="medium" noOfLines={2}>
                                                         {material?.name || `Section PDF ${materialIndex + 1}`}
                                                       </Text>
                                                       <Text fontSize="xs" color={textMuted}>
@@ -923,13 +933,14 @@ export default function CourseDetails({
                                                       </Text>
                                                     </Box>
                                                   </HStack>
-                                                  <HStack spacing={2}>
+                                                  <HStack spacing={2} justify={{ base: "stretch", sm: "flex-end" }} w={{ base: "full", sm: "auto" }}>
                                                     <Button
                                                       as="a"
                                                       href={materialUrl}
                                                       target="_blank"
                                                       rel="noreferrer"
                                                       size="xs"
+                                                      flex={{ base: 1, sm: "initial" }}
                                                       variant="outline"
                                                       borderRadius="full"
                                                       leftIcon={<Icon as={ExternalLink} boxSize={3} />}
@@ -941,6 +952,7 @@ export default function CourseDetails({
                                                       href={materialUrl}
                                                       download
                                                       size="xs"
+                                                      flex={{ base: 1, sm: "initial" }}
                                                       variant="ghost"
                                                       borderRadius="full"
                                                       leftIcon={<Icon as={Download} boxSize={3} />}
@@ -958,6 +970,7 @@ export default function CourseDetails({
                                           <Button
                                             mt={4}
                                             size="sm"
+                                            w={{ base: "full", sm: "auto" }}
                                             colorScheme={sectionProgressMeta.colorScheme === "gray" ? "blue" : sectionProgressMeta.colorScheme}
                                             variant={
                                               launchSection.contentKind === "video" || sectionProgressMeta.state === "in_progress"
@@ -1004,14 +1017,14 @@ export default function CourseDetails({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.18 }}
             >
-              <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
-                <CardHeader pb={0}>
+              <Card bg={cardBg} shadow="sm" borderRadius={{ base: "xl", md: "2xl" }} borderWidth="1px" borderColor={borderColor}>
+                <CardHeader pb={0} px={{ base: 4, md: 5 }} pt={{ base: 4, md: 5 }}>
                   <Flex align="center" justify="space-between" gap={3} wrap="wrap">
                     <Flex align="center" gap={2}>
-                      <Icon as={Award} boxSize={6} color={accentColor} />
-                      <Heading size="md">Quiz Review</Heading>
+                      <Icon as={Award} boxSize={{ base: 5, md: 6 }} color={accentColor} />
+                      <Heading size={{ base: "sm", md: "md" }}>Quiz Review</Heading>
                     </Flex>
-                    <HStack spacing={2}>
+                    <HStack spacing={2} flexWrap="wrap">
                       <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
                         Score {answerSummary.correctCount}/{answerSummary.totalQuestions}
                       </Badge>
@@ -1028,7 +1041,7 @@ export default function CourseDetails({
                     </HStack>
                   </Flex>
                 </CardHeader>
-                <CardBody>
+                <CardBody px={{ base: 4, md: 5 }} py={{ base: 4, md: 5 }}>
                   <ScormQuizReviewContent
                     sections={learnerAnswers}
                     isLoading={isLearnerAnswersLoading}
@@ -1049,7 +1062,7 @@ export default function CourseDetails({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
               >
-                <Card bg={cardBg} shadow="sm" borderRadius="2xl" borderWidth="1px" borderColor={borderColor}>
+                <Card bg={cardBg} shadow="sm" borderRadius={{ base: "xl", md: "2xl" }} borderWidth="1px" borderColor={borderColor}>
                   <CardHeader pb={0}>
                     <Flex align="center" gap={2}>
                       <Icon as={Users} boxSize={6} color={accentColor} />
@@ -1088,20 +1101,20 @@ export default function CourseDetails({
           </Stack>
 
           {/* Sidebar */}
-          <Box>
+          <Box minW={0}>
             <MotionBox
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: 0.3 }}
-              position="sticky"
+              position={{ base: "static", lg: "sticky" }}
               top="6rem"
             >
-              <Card bg={cardBg} shadow="lg" borderRadius="2xl" borderWidth="1px" borderColor={borderColor} overflow="hidden">
+              <Card bg={cardBg} shadow="lg" borderRadius={{ base: "xl", md: "2xl" }} borderWidth="1px" borderColor={borderColor} overflow="hidden">
                 <Box position="relative">
                   <Image
                     src={course.thumbnailUrl}
                     alt={course.title}
-                    h="240px"
+                    h={{ base: "150px", sm: "190px", lg: "240px" }}
                     w="full"
                     objectFit="cover"
                   />
@@ -1111,13 +1124,13 @@ export default function CourseDetails({
                     </Badge>
                   )}
                 </Box>
-                <CardBody>
-                  <VStack spacing={5} align="stretch">
+                <CardBody px={{ base: 4, md: 5 }} py={{ base: 4, md: 5 }}>
+                  <VStack spacing={{ base: 4, md: 5 }} align="stretch">
                     <Box textAlign="center" pt={2}>
                       <Text fontSize="xs" fontWeight="bold" color={textMuted} textTransform="uppercase" letterSpacing="wide">
                         {isAssignedCourseView ? "Your progress" : "Enrollment Price"}
                       </Text>
-                      <Text fontSize="4xl" fontWeight="extrabold" color={accentColor}>
+                      <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="extrabold" color={accentColor}>
                         {isAssignedCourseView
                           ? `${clampLearningProgress(course.progress)}%`
                           : course.commerce?.pricingModel === "paid"
@@ -1132,7 +1145,7 @@ export default function CourseDetails({
                     </Box>
 
                     {isAssignedCourseView ? (
-                      <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4} bg={mutedSurfaceBg}>
+                      <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={{ base: 3, md: 4 }} bg={mutedSurfaceBg}>
                         <HStack justify="space-between" mb={2}>
                           <Text fontSize="sm" fontWeight="semibold">
                             Course progress
@@ -1142,7 +1155,7 @@ export default function CourseDetails({
                           </Text>
                         </HStack>
                         <Progress value={clampLearningProgress(course.progress)} colorScheme="blue" borderRadius="full" h="10px" />
-                        <SimpleGrid columns={3} spacing={3} mt={4}>
+                        <SimpleGrid columns={3} spacing={{ base: 2, md: 3 }} mt={4}>
                           <Box>
                             <Text fontSize="xs" textTransform="uppercase" color={textMuted}>
                               Done
@@ -1172,7 +1185,7 @@ export default function CourseDetails({
                     ) : null}
 
                     {isAssignedCourseView && courseQuizzes.length > 0 ? (
-                      <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4} bg={quizSidebarBg}>
+                      <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={{ base: 3, md: 4 }} bg={quizSidebarBg}>
                         <HStack justify="space-between" mb={2}>
                           <Text fontSize="sm" fontWeight="semibold">
                             Required quizzes

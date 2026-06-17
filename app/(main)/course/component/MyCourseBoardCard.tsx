@@ -128,7 +128,7 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
       data-group
       aria-label={`Open ${course.title}`}
       bg={cardBg}
-      borderRadius="2xl"
+      borderRadius={{ base: "xl", md: "2xl" }}
       overflow="hidden"
       boxShadow={shadowColor}
       borderWidth="1px"
@@ -138,13 +138,13 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
       onKeyDown={handleCardKeyDown}
       w="full"
     >
-      <Flex display={{ base: "flex", md: "none" }} p={3} gap={3} align="stretch">
+      <Flex display={{ base: "flex", md: "none" }} p={2.5} gap={2.5} align="stretch">
         <Box
           position="relative"
-          w="94px"
-          h="106px"
+          w="84px"
+          h="96px"
           flexShrink={0}
-          borderRadius="xl"
+          borderRadius="lg"
           overflow="hidden"
           bgGradient="linear(to-br, blue.700, teal.400)"
         >
@@ -232,8 +232,9 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
           <HStack spacing={2} flexWrap="wrap">
             <Button
               size="sm"
-              h="34px"
-              px={4}
+              h="32px"
+              px={3}
+              fontSize="xs"
               colorScheme="blue"
               borderRadius="lg"
               rightIcon={<FiArrowRight />}
@@ -247,8 +248,9 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
             {shouldShowCertificateButton ? (
               <Button
                 size="sm"
-                h="34px"
-                px={3}
+                h="32px"
+                px={2.5}
+                fontSize="xs"
                 variant="outline"
                 colorScheme={canDownloadCertificate ? "green" : "gray"}
                 borderRadius="lg"

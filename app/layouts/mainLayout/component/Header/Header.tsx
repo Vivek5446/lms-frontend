@@ -9,6 +9,7 @@ import {
   Box,
   Button,
   Link as ChakraLink,
+  Collapse,
   Container,
   Flex,
   HStack,
@@ -62,6 +63,10 @@ const Header: React.FC = observer(() => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const navLinks: NavLink[] = useMemo(() => ([
     { href: '/', label: 'Home' },
@@ -121,7 +126,7 @@ const Header: React.FC = observer(() => {
                   fontWeight="900"
                   fontSize={{ base: 'md', lg: '2xl' }}
                   letterSpacing="-1px"
-                  bgGradient={colorMode === 'light' ? 'linear(to-tr, blue.600, blue.400)' : 'linear(to-tr, blue.400, blue.200)'}
+                    bgGradient={colorMode === 'light' ? 'linear(to-tr, brand.600, brand.400)' : 'linear(to-tr, brand.400, brand.200)'}
                   bgClip="text"
                   display={{ base: 'none', lg: 'block' }}
                 >
@@ -147,12 +152,12 @@ const Header: React.FC = observer(() => {
                       fontSize="sm"
                       fontWeight="600"
                       borderRadius="full"
-                      color={isActive ? (colorMode === 'light' ? 'blue.700' : 'blue.300') : (colorMode === 'light' ? 'gray.600' : 'gray.300')}
-                      bg={isActive ? (colorMode === 'light' ? 'blue.50' : 'blue.900') : 'transparent'}
+                      color={isActive ? (colorMode === 'light' ? 'brand.700' : 'brand.300') : (colorMode === 'light' ? 'gray.600' : 'gray.300')}
+                      bg={isActive ? (colorMode === 'light' ? 'brand.50' : 'brand.900') : 'transparent'}
                       boxShadow={isActive ? 'sm' : 'none'}
                       transition="all 0.25s ease"
                       _hover={{
-                        color: colorMode === 'light' ? 'blue.700' : 'blue.300',
+                        color: colorMode === 'light' ? 'brand.700' : 'brand.300',
                         bg: colorMode === 'light' ? 'white' : 'gray.700',
                         textDecoration: 'none',
                         transform: 'translateY(-1px)'
@@ -172,12 +177,12 @@ const Header: React.FC = observer(() => {
                 onClick={toggleColorMode}
                 variant="outline"
                 size="md"
-                borderColor={colorMode === 'light' ? 'blue.200' : 'blue.600'}
-                color={colorMode === 'light' ? 'blue.600' : 'blue.400'}
+                borderColor={colorMode === 'light' ? 'brand.200' : 'brand.600'}
+                color={colorMode === 'light' ? 'brand.600' : 'brand.400'}
                 bg={colorMode === 'light' ? 'white' : 'gray.800'}
                 _hover={{
-                  bg: colorMode === 'light' ? 'blue.50' : 'gray.700',
-                  borderColor: 'blue.500',
+                  bg: colorMode === 'light' ? 'brand.50' : 'gray.700',
+                  borderColor: 'brand.500',
                   transform: 'scale(1.05)'
                 }}
                 _active={{ transform: 'scale(0.95)' }}
@@ -194,15 +199,15 @@ const Header: React.FC = observer(() => {
                     display={{ base: 'none', md: 'flex' }}
                     bg={colorMode === 'light' ? 'white' : 'gray.800'}
                     border="1px solid"
-                    borderColor={colorMode === 'light' ? 'blue.600' : 'blue.400'}
-                    color={colorMode === 'light' ? 'blue.600' : 'blue.400'}
+                    borderColor={colorMode === 'light' ? 'brand.600' : 'brand.400'}
+                    color={colorMode === 'light' ? 'brand.600' : 'brand.400'}
                     px={6}
                     py={2}
                     borderRadius="full"
                     fontWeight="bold"
                     fontSize="sm"
                     _hover={{
-                      bg: colorMode === 'light' ? 'blue.600' : 'blue.500',
+                      bg: colorMode === 'light' ? 'brand.600' : 'brand.500',
                       color: 'white',
                       transform: 'translateY(-1px)',
                       textDecoration: 'none',
@@ -220,14 +225,14 @@ const Header: React.FC = observer(() => {
                       h="auto"
                       borderRadius="full"
                       display={{ base: 'none', md: 'inline-flex' }}
-                      _hover={{ bg: colorMode === 'light' ? 'blue.50' : 'gray.800' }}
+                      _hover={{ bg: colorMode === 'light' ? 'brand.50' : 'gray.800' }}
                     >
                       <HStack spacing={3}>
                         <Avatar
                           size="sm"
                           name={displayName}
                           src={user?.pic?.url || ''}
-                          bg="blue.600"
+                          bg="brand.600"
                           color="white"
                         />
                         <Box textAlign="left" display={{ base: 'none', lg: 'block' }}>
@@ -264,15 +269,15 @@ const Header: React.FC = observer(() => {
                   display={{ base: 'none', sm: 'flex' }}
                   bg={colorMode === 'light' ? 'white' : 'gray.800'}
                   border="1px solid"
-                  borderColor={colorMode === 'light' ? 'blue.600' : 'blue.400'}
-                  color={colorMode === 'light' ? 'blue.600' : 'blue.400'}
+                  borderColor={colorMode === 'light' ? 'brand.600' : 'brand.400'}
+                  color={colorMode === 'light' ? 'brand.600' : 'brand.400'}
                   px={7}
                   py={2}
                   borderRadius="full"
                   fontWeight="bold"
                   fontSize="sm"
                   _hover={{
-                    bg: colorMode === 'light' ? 'blue.600' : 'blue.500',
+                    bg: colorMode === 'light' ? 'brand.600' : 'brand.500',
                     color: 'white',
                     transform: 'translateY(-1px)',
                     textDecoration: 'none',
@@ -292,14 +297,14 @@ const Header: React.FC = observer(() => {
                 minH="44px"
                 minW="44px"
                 p={0}
-                _hover={{ bg: colorMode === 'light' ? 'blue.50' : 'gray.700' }}
+                _hover={{ bg: colorMode === 'light' ? 'brand.50' : 'gray.700' }}
               >
                 <Box w="22px" h="22px" position="relative">
                   <Box
                     position="absolute"
                     h="2px"
                     w="100%"
-                    bg="blue.600"
+                    bg="brand.600"
                     borderRadius="full"
                     transition="0.3s"
                     top={mobileMenuOpen ? '50%' : '25%'}
@@ -309,7 +314,7 @@ const Header: React.FC = observer(() => {
                     position="absolute"
                     h="2px"
                     w="100%"
-                    bg="blue.600"
+                    bg="brand.600"
                     borderRadius="full"
                     transition="0.3s"
                     bottom={mobileMenuOpen ? '50%' : '25%'}
@@ -321,23 +326,24 @@ const Header: React.FC = observer(() => {
           </Flex>
         </Container>
 
-        {mobileMenuOpen && (
+        <Collapse in={mobileMenuOpen} animateOpacity>
           <Box
             bg={colorMode === 'light' ? 'white' : 'gray.800'}
             mx={{ base: 2, sm: 4 }}
             mt={3}
             shadow="lg"
-            borderRadius="xl"
+            borderRadius="2xl"
             border="1px solid"
             borderColor={colorMode === 'light' ? 'gray.100' : 'gray.700'}
             display={{ base: 'block', md: 'none' }}
             overflow="hidden"
+            transformOrigin="top"
           >
             <Stack p={{ base: 3, sm: 4 }} gap={{ base: 2, sm: 3 }}>
               {isLoggedIn ? (
                 <Box borderWidth="1px" borderColor={colorMode === 'light' ? 'gray.100' : 'gray.700'} borderRadius="xl" p={3}>
                   <HStack spacing={3}>
-                    <Avatar size="md" name={displayName} src={user?.pic?.url || ''} bg="blue.600" color="white" />
+                    <Avatar size="md" name={displayName} src={user?.pic?.url || ''} bg="brand.600" color="white" />
                     <Box>
                       <Text fontWeight="bold">{displayName}</Text>
                       <Text fontSize="sm" color="gray.500">{user?.username || ''}</Text>
@@ -353,8 +359,8 @@ const Header: React.FC = observer(() => {
                     borderRadius="lg"
                     fontWeight="600"
                     fontSize={{ base: 'sm', sm: 'md' }}
-                    color={pathname === link.href ? (colorMode === 'light' ? 'blue.600' : 'blue.300') : (colorMode === 'light' ? 'gray.700' : 'gray.200')}
-                    bg={pathname === link.href ? (colorMode === 'light' ? 'blue.50' : 'blue.900') : 'transparent'}
+                    color={pathname === link.href ? (colorMode === 'light' ? 'brand.600' : 'brand.300') : (colorMode === 'light' ? 'gray.700' : 'gray.200')}
+                    bg={pathname === link.href ? (colorMode === 'light' ? 'brand.50' : 'brand.900') : 'transparent'}
                     _hover={{
                       bg: colorMode === 'light' ? 'gray.100' : 'gray.700',
                       textDecoration: 'none',
@@ -431,7 +437,7 @@ const Header: React.FC = observer(() => {
                     fontWeight="bold"
                     fontSize={{ base: 'sm', sm: 'md' }}
                     color="white"
-                    bg={colorMode === 'light' ? 'blue.600' : 'blue.500'}
+                    bg={colorMode === 'light' ? 'brand.600' : 'brand.500'}
                     textAlign="center"
                     minH="48px"
                     display="flex"
@@ -440,7 +446,7 @@ const Header: React.FC = observer(() => {
                     onClick={() => setMobileMenuOpen(false)}
                     _hover={{
                       textDecoration: 'none',
-                      bg: colorMode === 'light' ? 'blue.700' : 'blue.600',
+                      bg: colorMode === 'light' ? 'brand.700' : 'brand.600',
                       transform: 'translateY(-2px)'
                     }}
                     transition="all 0.2s"
@@ -451,7 +457,7 @@ const Header: React.FC = observer(() => {
               )}
             </Stack>
           </Box>
-        )}
+        </Collapse>
       </Box>
 
       <Box
@@ -469,7 +475,14 @@ const Header: React.FC = observer(() => {
         borderColor={colorMode === 'light' ? 'gray.200' : 'gray.700'}
         backdropFilter="blur(18px)"
       >
-        <HStack justify="space-between" maxW="520px" mx="auto" spacing={1}>
+        <Box
+          display="grid"
+          gridTemplateColumns={`repeat(${bottomNavLinks.length + 1}, minmax(0, 1fr))`}
+          gap={1}
+          maxW="520px"
+          w="full"
+          mx="auto"
+        >
           {bottomNavLinks.map((link) => {
             const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
             return (
@@ -477,49 +490,53 @@ const Header: React.FC = observer(() => {
                 key={link.href}
                 as={NextLink}
                 href={link.href}
-                flex="1"
-                minH="54px"
+                w="full"
+                minW={0}
+                minH="50px"
                 borderRadius="xl"
                 display="flex"
                 flexDirection="column"
                 alignItems="center"
                 justifyContent="center"
                 gap={1}
-                color={isActive ? (colorMode === 'light' ? 'blue.600' : 'blue.300') : (colorMode === 'light' ? 'gray.500' : 'gray.400')}
-                bg={isActive ? (colorMode === 'light' ? 'blue.50' : 'whiteAlpha.100') : 'transparent'}
-                fontSize="11px"
+                color={isActive ? (colorMode === 'light' ? 'brand.600' : 'brand.300') : (colorMode === 'light' ? 'gray.500' : 'gray.400')}
+                bg={isActive ? (colorMode === 'light' ? 'brand.50' : 'whiteAlpha.100') : 'transparent'}
+                fontSize="10px"
                 fontWeight="700"
                 transition="all 0.2s ease"
                 onClick={() => setMobileMenuOpen(false)}
-                _hover={{ textDecoration: 'none', bg: colorMode === 'light' ? 'blue.50' : 'whiteAlpha.100', transform: 'translateY(-1px)' }}
+                _hover={{ textDecoration: 'none', bg: colorMode === 'light' ? 'brand.50' : 'whiteAlpha.100', transform: 'translateY(-1px)' }}
                 _active={{ transform: 'scale(0.96)' }}
               >
-                <Icon as={link.icon} boxSize={6} />
+                <Icon as={link.icon} boxSize={5} />
                 <Text lineHeight="1" noOfLines={1}>{link.label}</Text>
               </ChakraLink>
             );
           })}
           <Button
             flex="1"
-            minH="54px"
+            w="full"
+            minW={0}
+            minH="50px"
             borderRadius="xl"
+            px={0}
             variant="ghost"
             display="flex"
             flexDirection="column"
             gap={1}
-            fontSize="11px"
+            fontSize="10px"
             fontWeight="700"
-            color={mobileMenuOpen ? (colorMode === 'light' ? 'blue.600' : 'blue.300') : (colorMode === 'light' ? 'gray.500' : 'gray.400')}
-            bg={mobileMenuOpen ? (colorMode === 'light' ? 'blue.50' : 'whiteAlpha.100') : 'transparent'}
+            color={mobileMenuOpen ? (colorMode === 'light' ? 'brand.600' : 'brand.300') : (colorMode === 'light' ? 'gray.500' : 'gray.400')}
+            bg={mobileMenuOpen ? (colorMode === 'light' ? 'brand.50' : 'whiteAlpha.100') : 'transparent'}
             transition="all 0.2s ease"
-            _hover={{ bg: colorMode === 'light' ? 'blue.50' : 'whiteAlpha.100', transform: 'translateY(-1px)' }}
+            _hover={{ bg: colorMode === 'light' ? 'brand.50' : 'whiteAlpha.100', transform: 'translateY(-1px)' }}
             _active={{ transform: 'scale(0.96)' }}
             onClick={() => setMobileMenuOpen((open) => !open)}
           >
-            <Icon as={FiMenu} boxSize={6} />
+            <Icon as={FiMenu} boxSize={5} />
             <Text lineHeight="1">More</Text>
           </Button>
-        </HStack>
+        </Box>
       </Box>
 
       <UserProfileDrawer isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />

@@ -161,11 +161,11 @@ export default function ScormPlayerModal({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
-        maxW="90vw"
-        maxH="90vh"
-        w="90vw"
-        h="90vh"
-        borderRadius="2xl"
+        maxW={{ base: "100vw", sm: "96vw", lg: "90vw" }}
+        maxH={{ base: "100dvh", sm: "92dvh", lg: "90vh" }}
+        w={{ base: "100vw", sm: "96vw", lg: "90vw" }}
+        h={{ base: "100dvh", sm: "92dvh", lg: "90vh" }}
+        borderRadius={{ base: "0", sm: "2xl" }}
         overflow="hidden"
         m="auto"
       >
@@ -173,15 +173,15 @@ export default function ScormPlayerModal({
         <ModalHeader
           bg={bgHeader}
           borderBottomWidth="1px"
-          py={3}
-          px={4}
+          py={{ base: 2, md: 3 }}
+          px={{ base: 2, md: 4 }}
           display="flex"
           alignItems="center"
           justifyContent="space-between"
         >
-          <Flex align="center" gap={2}>
+          <Flex align="center" gap={2} minW={0} flex="1">
             <ModalCloseButton position="static" top="auto" right="auto" />
-            <Heading size="sm" fontWeight="medium" color="gray.600">
+            <Heading size="sm" fontSize={{ base: "sm", md: "md" }} fontWeight="medium" color="gray.600" noOfLines={1}>
               {courseTitle}
             </Heading>
             {sectionTitle && (

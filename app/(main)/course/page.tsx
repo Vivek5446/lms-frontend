@@ -412,9 +412,9 @@ const FilterPanel = (
           mt={{ base: 3, md: 4 }}
           fontSize={{ base: "sm", md: "md" }}
           color={mutedText}
-          maxW="2xl"
+          maxW={{ base: "20rem", sm: "2xl" }}
           lineHeight="1.65"
-          display={{ base: "none", sm: "block" }}
+          display={{ base: "none", md: "block" }}
         >
           Search, filter, and sort public courses by the signals that matter most.
         </Text>
@@ -650,16 +650,16 @@ const FilterPanel = (
                 >
                   <Box position="relative">
                     {course.thumbnailUrl ? (
-                      <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "128px", md: "190px" }} w="full" objectFit="cover" />
-                    ) : (
-                      <Box h={{ base: "128px", md: "190px" }} bgGradient="linear(to-br, blue.600, blue.300)" />
+                    <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "112px", sm: "140px", md: "190px" }} w="full" objectFit="cover" />
+                  ) : (
+                      <Box h={{ base: "112px", sm: "140px", md: "190px" }} bgGradient="linear(to-br, brand.600, brand.300)" />
                     )}
-                    <Badge position="absolute" top={4} left={4} colorScheme="blue" borderRadius="full" px={3} py={1}>
+                    <Badge position="absolute" top={{ base: 3, md: 4 }} left={{ base: 3, md: 4 }} colorScheme="blue" borderRadius="full" px={3} py={1}>
                       Private
                     </Badge>
                   </Box>
 
-                  <Box p={{ base: 4, md: 5 }}>
+                  <Box p={{ base: 3, md: 5 }}>
                     <HStack spacing={2} flexWrap="wrap" mb={3}>
                       <Badge colorScheme="gray" borderRadius="full" px={3} py={1}>
                         {course.taxonomy?.level || "Beginner"}
@@ -680,7 +680,7 @@ const FilterPanel = (
                       </Text>
                     </HStack>
 
-                    <Button mt={{ base: 3, md: 4 }} h={{ base: "36px", md: "40px" }} w="full" variant={'outline'}  colorScheme="blue" borderRadius="xl" onClick={() => router.push(`/course?courseId=${course.courseId}`)}>
+                    <Button mt={{ base: 3, md: 4 }} h={{ base: "34px", md: "40px" }} w="full" size={{ base: "sm", md: "md" }} variant={'outline'}  colorScheme="blue" borderRadius="xl" onClick={() => router.push(`/course?courseId=${course.courseId}`)}>
                       Continue Course
                     </Button>
                   </Box>
@@ -690,8 +690,14 @@ const FilterPanel = (
           </Box>
         ) : null}
 
-        <Flex justify="space-between" align="flex-end" mb={{base:3,md:5}} flexWrap="wrap" gap={4}>
-          <Box>
+        <Flex
+          justify="space-between"
+          align={{ base: "flex-start", md: "flex-end" }}
+          direction={{ base: "column", md: "row" }}
+          mb={{base:3,md:5}}
+          gap={{ base: 3, md: 4 }}
+        >
+          <Box minW={0}>
             <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="700" color="blue.500" textTransform="uppercase" letterSpacing="0.08em">
               Explore Courses
             </Text>
@@ -707,7 +713,8 @@ const FilterPanel = (
             borderRadius="full"
             leftIcon={<FiFilter />}
             size="sm"
-            minH={{md:"38px"}}
+            minH={{ base: "34px", md:"38px"}}
+            flexShrink={0}
             onClick={onOpen}
           >
             Filters
@@ -740,11 +747,11 @@ const FilterPanel = (
               >
                 <Box position="relative">
                   {course.thumbnailUrl ? (
-                    <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "128px", md: "210px" }} w="full" objectFit="cover" />
+                    <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "112px", sm: "148px", md: "210px" }} w="full" objectFit="cover" />
                   ) : (
-                    <Box h={{ base: "128px", md: "210px" }} bgGradient="linear(to-br, blue.600, teal.300)" />
+                    <Box h={{ base: "112px", sm: "148px", md: "210px" }} bgGradient="linear(to-br, brand.600, brand.300)" />
                   )}
-                  <HStack position="absolute" top={4} left={4} spacing={2} flexWrap="wrap">
+                  <HStack position="absolute" top={{ base: 3, md: 4 }} left={{ base: 3, md: 4 }} spacing={2} flexWrap="wrap">
                     <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
                       Public
                     </Badge>
@@ -754,7 +761,7 @@ const FilterPanel = (
                   </HStack>
                 </Box>
 
-                <Box p={{ base: 4, md: 5 }}>
+                <Box p={{ base: 3, md: 5 }}>
                   <HStack spacing={2} flexWrap="wrap" mb={3}>
                     {(course.taxonomy?.categories || []).slice(0, 2).map((category) => (
                       <Badge key={`${course._id}-${category}`} borderRadius="full" px={3} py={1}>
@@ -804,7 +811,7 @@ const FilterPanel = (
                     </Box>
                   </SimpleGrid>
 
-                  <Button mt={{ base: 3, md: 5 }} h={{ base: "40px", md: "40px" }} w="full" variant={'ghost'} colorScheme="blue" borderRadius="xl" rightIcon={<FiArrowRight />} onClick={() => setSelectedCourse(course)}>
+                  <Button mt={{ base: 3, md: 5 }} h={{ base: "36px", md: "40px" }} w="full" size={{ base: "sm", md: "md" }} variant={'ghost'} colorScheme="blue" borderRadius="xl" rightIcon={<FiArrowRight />} onClick={() => setSelectedCourse(course)}>
                     View Course
                   </Button>
                 </Box>
@@ -836,7 +843,7 @@ const FilterPanel = (
             {selectedCourse ? (
               <Stack spacing={5}>
                 {selectedCourse.thumbnailUrl ? (
-                  <Image src={selectedCourse.thumbnailUrl} alt={selectedCourse.title} borderRadius="2xl" h="220px" objectFit="cover" />
+                  <Image src={selectedCourse.thumbnailUrl} alt={selectedCourse.title} borderRadius="2xl" h={{ base: "150px", md: "220px" }} objectFit="cover" />
                 ) : null}
 
                 <Box>
@@ -851,22 +858,22 @@ const FilterPanel = (
                       {selectedCourse.taxonomy?.level || "Beginner"}
                     </Badge>
                   </HStack>
-                  <Heading size="lg">{selectedCourse.title}</Heading>
-                  <Text mt={3} color={mutedText} lineHeight="1.8">
+                  <Heading size={{ base: "md", md: "lg" }}>{selectedCourse.title}</Heading>
+                  <Text mt={3} color={mutedText} lineHeight="1.7" fontSize={{ base: "sm", md: "md" }}>
                     {selectedCourse.description?.text || "Course description will appear here once content is available."}
                   </Text>
                 </Box>
 
-                <SimpleGrid columns={2} spacing={4}>
-                  <Box p={4} borderRadius="2xl" bg={useColorModeValue("blue.50", "blue.900")} borderWidth="1px" borderColor={borderColor}>
+                <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={{ base: 3, md: 4 }}>
+                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={useColorModeValue("blue.50", "blue.900")} borderWidth="1px" borderColor={borderColor}>
                     <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Price</Text>
                     <Text mt={2} fontWeight="800" fontSize="lg">{formatCurrency(selectedCourse.commerce?.amountInRupees)}</Text>
                   </Box>
-                  <Box p={4} borderRadius="2xl" bg={useColorModeValue("purple.50", "purple.900")} borderWidth="1px" borderColor={borderColor}>
+                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={useColorModeValue("purple.50", "purple.900")} borderWidth="1px" borderColor={borderColor}>
                     <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Modules</Text>
                     <Text mt={2} fontWeight="800" fontSize="lg">{selectedCourse.curriculum?.totalModules || 0}</Text>
                   </Box>
-                  <Box p={4} borderRadius="2xl" bg={useColorModeValue("green.50", "green.900")} borderWidth="1px" borderColor={borderColor}>
+                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={useColorModeValue("green.50", "green.900")} borderWidth="1px" borderColor={borderColor}>
                     <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Pass Marks</Text>
                     <Text mt={2} fontWeight="800" fontSize="lg">
                       {selectedCourse.assessment?.passingMarks && selectedCourse.assessment?.totalMarks
@@ -874,7 +881,7 @@ const FilterPanel = (
                         : "Not set"}
                     </Text>
                   </Box>
-                  <Box p={4} borderRadius="2xl" bg={useColorModeValue("orange.50", "orange.900")} borderWidth="1px" borderColor={borderColor}>
+                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={useColorModeValue("orange.50", "orange.900")} borderWidth="1px" borderColor={borderColor}>
                     <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Rating</Text>
                     <Text mt={2} fontWeight="800" fontSize="lg">
                       {selectedCourse.metrics?.averageRating ? selectedCourse.metrics.averageRating.toFixed(1) : "New"}

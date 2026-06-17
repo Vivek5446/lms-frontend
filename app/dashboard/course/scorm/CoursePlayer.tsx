@@ -594,26 +594,29 @@ export default function CoursePlayer({
           className={`
             flex flex-col overflow-hidden bg-white dark:bg-[#0F0F0F]
             shadow-[0_24px_80px_rgba(0,0,0,0.5)]
-            ${isFullscreen ? "w-screen h-screen rounded-none" : "w-[60vw] h-[80vh] max-w-[1600px] rounded-2xl"}
+            ${isFullscreen ? "w-screen h-screen rounded-none" : "h-[100dvh] w-screen rounded-none sm:h-[92dvh] sm:w-[96vw] sm:rounded-2xl lg:h-[88dvh] lg:w-[88vw] xl:w-[78vw] max-w-[1600px]"}
           `}
         >
           <div
-            className="flex items-center justify-between gap-3 flex-shrink-0 px-3 bg-black dark:bg-[#0F0F0F] border-b border-gray-100 dark:border-white/10"
-            style={{ height: HEADER_H }}
+            className="flex min-h-12 flex-shrink-0 items-center justify-between gap-2 border-b border-gray-100 bg-black px-2 py-2 dark:border-white/10 dark:bg-[#0F0F0F] sm:gap-3 sm:px-3"
+            style={{ minHeight: HEADER_H }}
           >
-            <h2 className="text-sm font-medium text-gray-100 dark:text-gray-400 truncate ml-1 select-none">
+            <h2 className="ml-1 min-w-0 flex-1 truncate text-xs font-medium text-gray-100 select-none dark:text-gray-400 sm:text-sm">
               {courseTitle}
             </h2>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2">
               <Button
                 size="sm"
                 colorScheme="teal"
                 variant="outline"
                 onClick={() => setIsQuizReviewOpen(true)}
                 isDisabled={isBootstrapping}
+                h={{ base: "32px", sm: "36px" }}
+                px={{ base: 2, sm: 3 }}
+                fontSize={{ base: "11px", sm: "sm" }}
               >
-                View Quiz Review
+                Quiz Review
               </Button>
               <button
                 type="button"
