@@ -26,6 +26,9 @@ export interface CourseBasicInfo {
   slug: string;
   descriptionHtml: string;
   descriptionText: string;
+  learningOutcomes: string[];
+  instructorName: string;
+  instructorDesignation: string;
   thumbnail: StoredFile | null;
   languages: string[];
   categories: string[];
@@ -277,6 +280,9 @@ export const initialCourseFormState: CourseFormState = {
     slug: "",
     descriptionHtml: "",
     descriptionText: "",
+    learningOutcomes: [""],
+    instructorName: "",
+    instructorDesignation: "",
     thumbnail: null,
     languages: ["English"],
     categories: [],
@@ -518,6 +524,12 @@ export function courseToFormState(course: any): CourseFormState {
       slug: String(course?.slug || ""),
       descriptionHtml: String(course?.description?.html || ""),
       descriptionText: String(course?.description?.text || ""),
+      learningOutcomes:
+        Array.isArray(course?.highlights?.learningOutcomes) && course.highlights.learningOutcomes.length
+          ? course.highlights.learningOutcomes.map((item: any) => String(item || ""))
+          : [""],
+      instructorName: String(course?.instructor?.name || ""),
+      instructorDesignation: String(course?.instructor?.designation || ""),
       thumbnail: course?.thumbnailUrl
         ? createExistingStoredFile(
             {
@@ -592,6 +604,15 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
       description: {
         text: courseForm.basicInfo.descriptionText,
         html: courseForm.basicInfo.descriptionHtml,
+      },
+      highlights: {
+        learningOutcomes: courseForm.basicInfo.learningOutcomes
+          .map((item) => item.trim())
+          .filter(Boolean),
+      },
+      instructor: {
+        name: courseForm.basicInfo.instructorName.trim(),
+        designation: courseForm.basicInfo.instructorDesignation.trim(),
       },
       taxonomy: {
         languages: courseForm.basicInfo.languages,

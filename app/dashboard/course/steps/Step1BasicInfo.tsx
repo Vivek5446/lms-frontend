@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { FileText, ImagePlus, Images, Sparkles, X } from "lucide-react";
+import { Briefcase, FileText, ImagePlus, Images, Plus, Sparkles, Trash2, UserRound, X } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import RichTextEditor from "../richTextEditor/RichTextEditor";
 import { StepWrapper } from "./component/StepWrapper";
@@ -26,17 +26,41 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
     onChange({ ...value, ...patch });
   };
 
+  const updateLearningOutcome = (index: number, nextValue: string) => {
+    updateBasicInfo({
+      learningOutcomes: value.learningOutcomes.map((item, itemIndex) =>
+        itemIndex === index ? nextValue : item
+      ),
+    });
+  };
+
+  const addLearningOutcome = () => {
+    updateBasicInfo({
+      learningOutcomes: [...value.learningOutcomes, ""],
+    });
+  };
+
+  const removeLearningOutcome = (index: number) => {
+    const nextOutcomes = value.learningOutcomes.filter((_, itemIndex) => itemIndex !== index);
+    updateBasicInfo({
+      learningOutcomes: nextOutcomes.length ? nextOutcomes : [""],
+    });
+  };
+
   React.useEffect(() => {
     let filled = 0;
 
     if (value.courseName.trim()) filled++;
     if (value.descriptionText.trim()) filled++;
+    if (value.learningOutcomes.some((item) => item.trim())) filled++;
+    if (value.instructorName.trim()) filled++;
+    if (value.instructorDesignation.trim()) filled++;
     if (value.thumbnail) filled++;
     if (value.categories.length > 0) filled++;
     if (value.languages.length > 0) filled++;
     if (value.totalMarks.trim()) filled++;
 
-    onProgressChange?.(Math.round((filled / 6) * 100));
+    onProgressChange?.(Math.round((filled / 9) * 100));
   }, [value, onProgressChange]);
 
   const onDrop = useCallback(
@@ -187,6 +211,171 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
               })
             }
           />
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              marginBottom: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <label style={{ ...labelStyle, marginBottom: 4 }}>What you&apos;ll learn</label>
+              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>
+                Add the key benefits or skills learners should expect from this course.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={addLearningOutcome}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "9px 14px",
+                borderRadius: 999,
+                border: "1px solid #DBEAFE",
+                background: "#EFF6FF",
+                color: "#1D4ED8",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={14} />
+              Add Benefit
+            </button>
+          </div>
+
+          <div style={{ display: "grid", gap: 10 }}>
+            {value.learningOutcomes.map((item, index) => (
+              <div
+                key={`learning-outcome-${index}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  border: "1.5px solid #E5E7EB",
+                  background: "#FAFAFA",
+                }}
+              >
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    background: "#DBEAFE",
+                    color: "#1D4ED8",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {index + 1}
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g., Build production-ready dashboards with confidence"
+                  value={item}
+                  onChange={(event) => updateLearningOutcome(index, event.target.value)}
+                  style={inputStyle}
+                  onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
+                  onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeLearningOutcome(index)}
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "#FEE2E2",
+                    color: "#DC2626",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                  aria-label={`Remove learning outcome ${index + 1}`}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <UserRound className="h-4 w-4" color="#2563EB" />
+            <label style={{ ...labelStyle, marginBottom: 0 }}>Teacher Details</label>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 24,
+            }}
+          >
+            <div>
+              <label style={labelStyle}>Teacher Name</label>
+              <input
+                type="text"
+                placeholder="e.g., Maya Okafor"
+                value={value.instructorName}
+                onChange={(event) => updateBasicInfo({ instructorName: event.target.value })}
+                style={inputStyle}
+                onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
+                onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Designation</label>
+              <input
+                type="text"
+                placeholder="e.g., Staff Engineer"
+                value={value.instructorDesignation}
+                onChange={(event) => updateBasicInfo({ instructorDesignation: event.target.value })}
+                style={inputStyle}
+                onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
+                onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
+              />
+            </div>
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+              borderRadius: 14,
+              border: "1px solid #E5E7EB",
+              background: "#F8FAFC",
+              padding: "14px 16px",
+            }}
+          >
+            <Briefcase className="h-4 w-4" color="#64748B" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>
+                Company name is auto-resolved later
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: "#6B7280" }}>
+                We&apos;ll automatically attach the company name from the account/company that owns this course, so you only need to provide the teacher name and designation here.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div style={{ marginBottom: 24 }}>

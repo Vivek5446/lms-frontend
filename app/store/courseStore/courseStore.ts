@@ -41,6 +41,17 @@ export interface CourseMetrics {
   totalEnrollments: number;
 }
 
+export interface CourseInstructor {
+  name?: string;
+  designation?: string;
+  companyName?: string;
+  avatarUrl?: string;
+}
+
+export interface CourseHighlights {
+  learningOutcomes?: string[];
+}
+
 export interface CourseListItem {
   _id: string;
   courseCode?: string;
@@ -49,6 +60,8 @@ export interface CourseListItem {
   thumbnailUrl?: string;
   scormFilePath?: string;
   status: string;
+  highlights?: CourseHighlights;
+  instructor?: CourseInstructor;
   taxonomy?: {
     categories?: string[];
     languages?: string[];
@@ -210,6 +223,8 @@ export interface MyCourseItem {
     languages?: string[];
     level?: string;
   };
+  highlights?: CourseHighlights;
+  instructor?: CourseInstructor;
   progression?: {
     completionWindowDays?: number | null;
     dripEnabled?: boolean;
@@ -270,6 +285,8 @@ export interface MyCourseDetailItem extends CourseListItem {
     certificateTemplateId?: string | null;
     mandatoryModules?: boolean;
   };
+  highlights?: CourseHighlights;
+  instructor?: CourseInstructor;
   sources: MyCourseSourceItem[];
   progress: number;
   validTill?: string | null;

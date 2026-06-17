@@ -32,6 +32,7 @@ export default function Step8Review({
   isSubmitting = false,
 }: Step8ReviewProps) {
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
+  const learningOutcomeCount = courseForm.basicInfo.learningOutcomes.filter((item) => item.trim()).length;
   const quizQuestionCount =
     courseForm.structure.quizMode === "final"
       ? courseForm.structure.finalQuiz.questions.length
@@ -49,6 +50,24 @@ export default function Step8Review({
       colorClass: "text-step-1",
       bgClass: "bg-step-1/15",
       complete: Boolean(courseForm.basicInfo.courseName.trim()),
+      stepIndex: 0,
+    },
+    {
+      icon: FileText,
+      label: "Teacher & Benefits",
+      status:
+        courseForm.basicInfo.instructorName.trim() || learningOutcomeCount > 0
+          ? `${courseForm.basicInfo.instructorName.trim() || "Teacher name missing"} - ${
+              courseForm.basicInfo.instructorDesignation.trim() || "Designation missing"
+            } - ${learningOutcomeCount} learning outcome${learningOutcomeCount === 1 ? "" : "s"}`
+          : "Add teacher details and at least one learning outcome",
+      colorClass: "text-step-1",
+      bgClass: "bg-step-1/15",
+      complete: Boolean(
+        courseForm.basicInfo.instructorName.trim() &&
+          courseForm.basicInfo.instructorDesignation.trim() &&
+          learningOutcomeCount > 0
+      ),
       stepIndex: 0,
     },
     {

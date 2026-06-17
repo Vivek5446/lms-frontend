@@ -20,6 +20,7 @@ import {
   Skeleton,
   Stack,
   Text,
+  useBreakpointValue,
   useColorModeValue,
   VStack,
 } from "@chakra-ui/react";
@@ -419,6 +420,8 @@ export default function ScormQuizReviewContent({
   const muted = useColorModeValue("gray.500", "gray.400");
   const sectionBg = useColorModeValue("gray.50", "gray.900");
   const moduleBg = useColorModeValue("white", "gray.800");
+  const isMobile = useBreakpointValue({ base: true, md: false }) ?? false;
+  const useCompactLayout = compact || isMobile;
 
   const moduleGroups = groupAnswerSections(sections, { showOnlyReviewed });
   const visibleSections = moduleGroups.flatMap((moduleGroup) => moduleGroup.sections);
@@ -452,8 +455,8 @@ export default function ScormQuizReviewContent({
   }
 
   return (
-    <Stack spacing={compact ? 3 : 5}>
-      {compact ? (
+    <Stack spacing={useCompactLayout ? 3 : 5}>
+      {useCompactLayout ? (
         <HStack spacing={2} flexWrap="wrap">
           <Badge colorScheme="blue" borderRadius="full" px={2.5} py={1}>
             {summary.totalQuestions} question{summary.totalQuestions !== 1 ? "s" : ""}
@@ -494,7 +497,7 @@ export default function ScormQuizReviewContent({
         </SimpleGrid>
       )}
 
-      {hasProgressSummary && !compact ? (
+      {hasProgressSummary && !useCompactLayout ? (
         <Box>
           <Flex justify="space-between" mb={1.5}>
             <Text fontSize="xs" fontWeight="semibold">Progress</Text>
@@ -517,26 +520,32 @@ export default function ScormQuizReviewContent({
             key={moduleGroup.moduleId || `module-${moduleIndex}`}
             borderWidth="1px"
             borderColor={border}
-            borderRadius={compact ? "xl" : "2xl"}
+            borderRadius={useCompactLayout ? "xl" : "2xl"}
             bg={moduleBg}
             overflow="hidden"
-            mb={compact ? 2 : 3}
+            mb={useCompactLayout ? 2 : 3}
           >
-            <AccordionButton px={compact ? 3 : 5} py={compact ? 2.5 : 4} _hover={{ bg: "transparent" }}>
-              <Flex flex="1" align="center" justify="space-between" gap={4}>
+            <AccordionButton px={useCompactLayout ? 3 : 5} py={useCompactLayout ? 2.5 : 4} _hover={{ bg: "transparent" }}>
+              <Flex
+                flex="1"
+                align={{ base: "stretch", md: "center" }}
+                justify="space-between"
+                gap={useCompactLayout ? 2.5 : 4}
+                direction={{ base: "column", md: "row" }}
+              >
                 <Box textAlign="left">
                   <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color={muted} fontWeight="600">
                     Module {moduleIndex + 1}
                   </Text>
-                  <Text mt={compact ? 0.5 : 1} fontSize={compact ? "sm" : "md"} fontWeight="semibold">
+                  <Text mt={useCompactLayout ? 0.5 : 1} fontSize={useCompactLayout ? "sm" : "md"} fontWeight="semibold">
                     {moduleGroup.moduleTitle}
                   </Text>
                 </Box>
-                <HStack spacing={2} flexWrap="wrap" justify="flex-end">
-                  <Badge colorScheme="teal" borderRadius="full" px={3} py={1}>
+                <HStack spacing={2} flexWrap="wrap" justify={{ base: "flex-start", md: "flex-end" }} pr={1}>
+                  <Badge colorScheme="teal" borderRadius="full" px={useCompactLayout ? 2.5 : 3} py={1} fontSize="10px">
                     {moduleGroup.sections.length} section{moduleGroup.sections.length !== 1 ? "s" : ""}
                   </Badge>
-                  <Badge colorScheme="green" variant="subtle" borderRadius="full" px={3} py={1}>
+                  <Badge colorScheme="green" variant="subtle" borderRadius="full" px={useCompactLayout ? 2.5 : 3} py={1} fontSize="10px">
                     Marks {moduleGroup.awardedMarks}/{moduleGroup.possibleMarks}
                   </Badge>
                   <AccordionIcon color={muted} />
@@ -544,7 +553,7 @@ export default function ScormQuizReviewContent({
               </Flex>
             </AccordionButton>
 
-            <AccordionPanel px={compact ? 2.5 : 4} pb={compact ? 2.5 : 4} pt={0}>
+            <AccordionPanel px={useCompactLayout ? 2.5 : 4} pb={useCompactLayout ? 2.5 : 4} pt={0}>
               <Accordion allowMultiple defaultIndex={[0]}>
                 {moduleGroup.sections.map((section, sectionIndex) => {
                   const statusValue = String(section.lessonStatus || "").toLowerCase();
@@ -560,26 +569,32 @@ export default function ScormQuizReviewContent({
                       key={section._id}
                       borderWidth="1px"
                       borderColor={border}
-                      borderRadius={compact ? "lg" : "xl"}
+                      borderRadius={useCompactLayout ? "lg" : "xl"}
                       bg={sectionBg}
                       overflow="hidden"
-                      mb={compact ? 2 : 3}
+                      mb={useCompactLayout ? 2 : 3}
                     >
-                      <AccordionButton px={compact ? 3 : 4} py={compact ? 2.5 : 3} _hover={{ bg: "transparent" }}>
-                        <Flex flex="1" align="center" justify="space-between" gap={4}>
+                      <AccordionButton px={useCompactLayout ? 2.5 : 4} py={useCompactLayout ? 2.5 : 3} _hover={{ bg: "transparent" }}>
+                        <Flex
+                          flex="1"
+                          align={{ base: "stretch", md: "center" }}
+                          justify="space-between"
+                          gap={useCompactLayout ? 2.5 : 4}
+                          direction={{ base: "column", md: "row" }}
+                        >
                           <Box textAlign="left">
                             <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color={muted} fontWeight="600">
                               Section {sectionIndex + 1}
                             </Text>
-                            <Text mt={compact ? 0.5 : 1} fontSize={compact ? "sm" : undefined} fontWeight="semibold">
+                            <Text mt={useCompactLayout ? 0.5 : 1} fontSize={useCompactLayout ? "sm" : undefined} fontWeight="semibold">
                               {section.sectionTitle || section.sectionId}
                             </Text>
                           </Box>
-                          <HStack spacing={2} flexWrap="wrap" justify="flex-end">
-                            <Badge colorScheme={sectionStatusColor} borderRadius="full" px={3} py={1}>
+                          <HStack spacing={2} flexWrap="wrap" justify={{ base: "flex-start", md: "flex-end" }} pr={1}>
+                            <Badge colorScheme={sectionStatusColor} borderRadius="full" px={useCompactLayout ? 2.5 : 3} py={1} fontSize="10px">
                               {section.lessonStatus?.replace(/_/g, " ") || "not started"}
                             </Badge>
-                            <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={3} py={1}>
+                            <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={useCompactLayout ? 2.5 : 3} py={1} fontSize="10px">
                               Marks {section.awardedMarks ?? 0}/{section.possibleMarks ?? 0}
                             </Badge>
                             <AccordionIcon color={muted} />
@@ -587,7 +602,7 @@ export default function ScormQuizReviewContent({
                         </Flex>
                       </AccordionButton>
 
-                      <AccordionPanel px={compact ? 2 : 3} pb={compact ? 2 : 3} pt={0}>
+                      <AccordionPanel px={useCompactLayout ? 1.5 : 3} pb={useCompactLayout ? 2 : 3} pt={0}>
                         <Accordion allowMultiple>
                           {section.interactions.map((interaction, questionIndex) => {
                             const statusMeta = getInteractionStatusMeta(interaction);
@@ -599,14 +614,21 @@ export default function ScormQuizReviewContent({
                                 key={interaction.uniqueKey || interaction._id}
                                 borderWidth="1px"
                                 borderColor={statusMeta.borderColor}
-                                borderRadius={compact ? "lg" : "xl"}
+                                borderRadius={useCompactLayout ? "lg" : "xl"}
                                 bg={moduleBg}
                                 overflow="hidden"
-                                mb={compact ? 2 : 3}
+                                mb={useCompactLayout ? 2 : 3}
                               >
-                                <AccordionButton px={compact ? 3 : 4} py={compact ? 2.5 : 3} _hover={{ bg: "transparent" }}>
-                                  <Flex flex="1" align="center" justify="space-between" gap={3} minW={0}>
-                                    <HStack spacing={3} minW={0} flex="1" align="center">
+                                <AccordionButton px={useCompactLayout ? 2.5 : 4} py={useCompactLayout ? 2.5 : 3} _hover={{ bg: "transparent" }}>
+                                  <Flex
+                                    flex="1"
+                                    align={{ base: "stretch", md: "center" }}
+                                    justify="space-between"
+                                    gap={useCompactLayout ? 2.5 : 3}
+                                    minW={0}
+                                    direction={{ base: "column", md: "row" }}
+                                  >
+                                    <HStack spacing={2.5} minW={0} flex="1" align="center">
                                       <Box
                                         color={
                                           statusMeta.colorScheme === "green"
@@ -622,13 +644,22 @@ export default function ScormQuizReviewContent({
                                         {statusMeta.icon}
                                       </Box>
                                       <Box minW={0}>
-                                        <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+                                        <Text fontWeight="semibold" fontSize="sm" noOfLines={isMobile ? 2 : 1}>
                                           {questionTitle}
                                         </Text>
                                       </Box>
                                     </HStack>
-                                    <HStack spacing={2} flexShrink={0}>
-                                      <Badge colorScheme={statusMeta.colorScheme} borderRadius="full" px={3} py={1}>
+                                    <HStack spacing={2} flexShrink={0} justify={{ base: "space-between", md: "flex-end" }} w={{ base: "full", md: "auto" }}>
+                                      <Badge
+                                        colorScheme={statusMeta.colorScheme}
+                                        borderRadius="full"
+                                        px={useCompactLayout ? 2.5 : 3}
+                                        py={1}
+                                        fontSize="10px"
+                                        maxW={{ base: "calc(100% - 28px)", md: "none" }}
+                                        whiteSpace="normal"
+                                        textAlign="center"
+                                      >
                                         {statusMeta.label}
                                       </Badge>
                                       <AccordionIcon color={muted} />
@@ -636,7 +667,7 @@ export default function ScormQuizReviewContent({
                                   </Flex>
                                 </AccordionButton>
 
-                                <AccordionPanel px={compact ? 3 : 4} pb={compact ? 3 : 4} pt={0}>
+                                <AccordionPanel px={useCompactLayout ? 2.5 : 4} pb={useCompactLayout ? 2.5 : 4} pt={0}>
                                   <Stack spacing={3}>
                                     <QuestionPromptAssets assetPaths={interaction.questionAssetPaths} />
 
@@ -647,12 +678,12 @@ export default function ScormQuizReviewContent({
                                       }}
                                       gap={3}
                                     >
-                                      <AnswerBlock label="Your Answer" value={formatResponse(interaction)} compact={compact} />
+                                      <AnswerBlock label="Your Answer" value={formatResponse(interaction)} compact={useCompactLayout} />
                                       {correctResponses.length ? (
                                         <AnswerBlock
                                           label="Correct Answer"
                                           value={correctResponses.join(", ")}
-                                          compact={compact}
+                                          compact={useCompactLayout}
                                         />
                                       ) : null}
                                     </Grid>

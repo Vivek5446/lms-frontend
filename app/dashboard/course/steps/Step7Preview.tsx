@@ -13,6 +13,9 @@ interface Step7PreviewProps {
 
 export default function Step7Preview({ courseForm, onProgressChange }: Step7PreviewProps) {
   const modules = courseForm.structure.modules;
+  const learningOutcomes = courseForm.basicInfo.learningOutcomes
+    .map((item) => item.trim())
+    .filter(Boolean);
   const totalSections = modules.reduce((count, module) => count + module.sections.length, 0);
   const totalStudyMaterials = modules.reduce((count, module) => {
     return (
@@ -73,6 +76,17 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
                 {courseForm.basicInfo.descriptionText || "Your course description will appear here once you enter it."}
               </p>
             </div>
+            {(courseForm.basicInfo.instructorName || courseForm.basicInfo.instructorDesignation) && (
+              <div className="rounded-2xl border border-border bg-background px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Teacher</p>
+                <p className="mt-2 text-sm font-semibold text-foreground">
+                  {courseForm.basicInfo.instructorName || "Teacher name"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {courseForm.basicInfo.instructorDesignation || "Designation will appear here"}
+                </p>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               {courseForm.basicInfo.categories.map((category) => (
                 <Badge key={category} className="bg-primary/10 text-primary border-0 rounded-full">
@@ -119,6 +133,22 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
                   <p className="text-xs text-muted-foreground">{label}</p>
                 </div>
               ))}
+            </div>
+            <div className="pt-4 border-t border-border">
+              <h4 className="text-sm font-semibold text-foreground">What you&apos;ll learn</h4>
+              {learningOutcomes.length === 0 ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Add course benefits in the Basic Info step to preview them here.
+                </p>
+              ) : (
+                <div className="mt-3 grid gap-2 md:grid-cols-2">
+                  {learningOutcomes.map((outcome) => (
+                    <div key={outcome} className="rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground">
+                      {outcome}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
