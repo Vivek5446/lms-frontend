@@ -270,23 +270,23 @@ export default function CoursePlayer({
     return syncQueueRef.current;
   };
 
-  const persistLatestProgress = useCallback(() => {
+  const persistLatestProgress = useCallback((options?: { preferKeepalive?: boolean }) => {
     if (hasPersistedOnExitRef.current) {
-      return;
+      return Promise.resolve();
     }
 
     const currentRuntime = apiRef.current;
     if (!currentRuntime?.isInitialized()) {
-      return;
+      return Promise.resolve();
     }
 
     const payload = currentRuntime.buildTrackingPayload();
     if (!payload) {
-      return;
+      return Promise.resolve();
     }
 
     hasPersistedOnExitRef.current = true;
-    void queueTrackingSync("commit", payload, { preferKeepalive: true });
+    return queueTrackingSync("finish", payload, { preferKeepalive: options?.preferKeepalive ?? true });
   }, []);
 
   useEffect(() => {
@@ -443,7 +443,7 @@ export default function CoursePlayer({
 
   useEffect(() => {
     const handlePageHide = () => {
-      persistLatestProgress();
+      void persistLatestProgress({ preferKeepalive: true });
     };
 
     window.addEventListener("pagehide", handlePageHide);
@@ -548,10 +548,14 @@ export default function CoursePlayer({
   }, [courseUrl]);
 
   const handleClosePlayer = useCallback(() => {
-    persistLatestProgress();
     setIsQuizReviewOpen(false);
-    onBack();
-  }, [onBack, persistLatestProgress]);
+    persistLatestProgress({ preferKeepalive: false })
+      .catch(() => undefined)
+      .then(() => Promise.resolve(onRefreshProgress?.()).catch(() => undefined))
+      .finally(() => {
+        onBack();
+      });
+  }, [onBack, onRefreshProgress, persistLatestProgress]);
 
   const toggleFullscreen = async () => {
     if (!modalRef.current) {
