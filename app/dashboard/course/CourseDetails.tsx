@@ -256,7 +256,14 @@ export default function CourseDetails({
   const courseId = String(course._id || course.courseId || "").trim();
   const certificateReason =
     course.certificate?.reason || "Certificate will be available after eligibility is confirmed.";
-  const canDownloadCertificate = isAssignedCourseView;
+  const certificateStatus = String(course.certificate?.status || "").trim().toLowerCase();
+  const canDownloadCertificate = Boolean(
+    isAssignedCourseView &&
+    course.progression?.certificateEnabled !== false &&
+    course.certificate?.enabled !== false &&
+    course.certificate &&
+    (certificateStatus === "issued" || course.certificate.canIssue)
+  );
   const modules = Array.isArray(course.curriculum?.modules) ? course.curriculum.modules : [];
 
   const warmLaunchSection = (launchSection?: CourseLaunchSection | null) => {
@@ -1191,6 +1198,7 @@ export default function CourseDetails({
                 <button
                   type="button"
                   disabled={!canDownloadCertificate}
+                  title={canDownloadCertificate ? "Download certificate" : certificateReason}
                   onClick={() => {
                     if (canDownloadCertificate && courseId) {
                       onDownloadCertificate?.(courseId);

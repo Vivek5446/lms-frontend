@@ -106,9 +106,17 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
       : assessmentOutcome === "failed"
         ? "red.600"
         : "orange.600";
-  const shouldShowCertificateButton = true;
-  const canDownloadCertificate = shouldShowCertificateButton;
-  const certificateButtonLabel = "Download Certificate";
+  const certificateStatus = String(course.certificate?.status || "").trim().toLowerCase();
+  const shouldShowCertificateButton =
+    course.progression?.certificateEnabled !== false && course.certificate?.enabled !== false;
+  const canDownloadCertificate = Boolean(
+    shouldShowCertificateButton &&
+    course.certificate &&
+    (certificateStatus === "issued" || course.certificate.canIssue)
+  );
+  const certificateButtonLabel = canDownloadCertificate ? "Download Certificate" : "Certificate Locked";
+  const certificateReason =
+    course.certificate?.reason || "Complete the course and meet the passing marks requirement to unlock the certificate.";
 
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -257,6 +265,7 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
                 leftIcon={<FiDownload />}
                 isDisabled={!canDownloadCertificate}
                 isLoading={canDownloadCertificate && isCertificateDownloading}
+                title={canDownloadCertificate ? "Download certificate" : certificateReason}
                 onClick={(event) => {
                   event.stopPropagation();
                   if (canDownloadCertificate) {
@@ -455,6 +464,7 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
             rightIcon={<FiDownload />}
             isDisabled={!canDownloadCertificate}
             isLoading={canDownloadCertificate && isCertificateDownloading}
+            title={canDownloadCertificate ? "Download certificate" : certificateReason}
             onClick={(event) => {
               event.stopPropagation();
               if (canDownloadCertificate) {
