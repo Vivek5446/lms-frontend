@@ -22,6 +22,7 @@ export interface StoredFile {
 
 export interface CourseBasicInfo {
   courseCode: string;
+  companyId: string;
   courseName: string;
   slug: string;
   descriptionHtml: string;
@@ -276,6 +277,7 @@ export function createEmptyModule(): CourseModuleInput {
 export const initialCourseFormState: CourseFormState = {
   basicInfo: {
     courseCode: "",
+    companyId: "",
     courseName: "",
     slug: "",
     descriptionHtml: "",
@@ -520,6 +522,7 @@ export function courseToFormState(course: any): CourseFormState {
   return {
     basicInfo: {
       courseCode: String(course?.courseCode || ""),
+      companyId: String(course?.company?._id || course?.company || ""),
       courseName: String(course?.title || ""),
       slug: String(course?.slug || ""),
       descriptionHtml: String(course?.description?.html || ""),
@@ -599,6 +602,7 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
     generatedAt: new Date().toISOString(),
     course: {
       courseCode: courseForm.basicInfo.courseCode,
+      companyId: courseForm.basicInfo.companyId,
       title: courseForm.basicInfo.courseName.trim(),
       slug: courseForm.basicInfo.slug,
       description: {

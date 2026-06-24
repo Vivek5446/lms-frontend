@@ -81,7 +81,14 @@ export interface CourseListItem {
   commerce: {
     pricingModel: string;
     amountInRupees: number | null;
+    currency?: string;
+    accessDurationDays?: number | null;
   };
+  company?: {
+    _id?: string;
+    company_name?: string;
+    companyCode?: string;
+  } | string | null;
   visibility?: CourseVisibilityConfig;
   assessment?: CourseAssessmentConfig;
   metrics?: CourseMetrics;
@@ -184,7 +191,7 @@ export interface AssignedCourseAccessItem {
 }
 
 export interface MyCourseSourceItem {
-  type: "direct" | "batch";
+  type: "direct" | "batch" | "self";
   batchId?: string | null;
   batchName?: string | null;
   label: string;
@@ -594,6 +601,7 @@ class CourseStoreClass {
   isCourseAssignmentAuditLoading: boolean = false;
   isSubmitting: boolean = false;
   isAccessSubmitting: boolean = false;
+  enrollmentCourseId: string | null = null;
   isAssignmentSubmitting: boolean = false;
   submissionProgress: number = 0;
   submissionStage: string = "";
@@ -795,6 +803,36 @@ class CourseStoreClass {
     } finally {
       runInAction(() => {
         this.isMyCoursesLoading = false;
+      });
+    }
+  };
+
+  enrollInPublishedCourse = async (courseId: string) => {
+    const normalizedCourseId = String(courseId || "").trim();
+    if (!normalizedCourseId) {
+      return Promise.reject({ message: "Course is required" });
+    }
+
+    this.enrollmentCourseId = normalizedCourseId;
+    this.accessError = null;
+    try {
+      const { data } = await axios.post(`/courses/${normalizedCourseId}/enroll`);
+      await Promise.all([
+        this.fetchMyCourses(),
+        this.fetchPublicCourses(),
+      ]);
+      return data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.accessError =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "Unable to enroll in this course";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.enrollmentCourseId = null;
       });
     }
   };

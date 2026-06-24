@@ -15,6 +15,30 @@ interface Notification {
   duration?:number
 }
 
+export interface LearnerRegistrationPayload {
+  name: string;
+  phone: string;
+  email?: string;
+  password: string;
+  invitationToken?: string;
+  courseId?: string;
+}
+
+export interface AdminRegistrationPayload {
+  name: string;
+  phone: string;
+  email: string;
+  password: string;
+  companyName: string;
+  companyEmail?: string;
+}
+
+export interface GlobalLoginPayload {
+  username: string;
+  password: string;
+  loginType: "email" | "phone" | "code";
+}
+
 class AuthStore {
   user: any = null;
   userType : any = null
@@ -23,6 +47,8 @@ class AuthStore {
   error: string | null = null;
   notification: Notification | null = null;
   company: any = undefined
+  memberships: any[] = [];
+  activeMembership: any = null;
   sessionReady = false;
 
   constructor() {
@@ -118,20 +144,61 @@ class AuthStore {
     this.notification = null;
   };
 
-  // Register user
-  register = async (email: string, password: string) => {
+  registerLearner = async (payload: LearnerRegistrationPayload) => {
     this.isLoading = true;
+    this.error = null;
     try {
-      const response = await axios.post("/auth/register", { email, password });
-      this.token = response.data.token;
+      const response = await axios.post("/auth/register/learner", payload);
+      const responseToken =
+        response?.data?.data?.authorization_token ||
+        response?.data?.data?.accessToken ||
+        response?.data?.data?.token ||
+        response?.data?.accessToken ||
+        response?.data?.token ||
+        null;
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem(AUTH_TOKEN, this.token);
+      if (responseToken) {
+        this.token = responseToken;
+        if (typeof window !== "undefined") {
+          localStorage.setItem(AUTH_TOKEN, responseToken);
+        }
+        await this.fetchUser();
       }
 
-      await this.fetchUser();
+      return response?.data;
     } catch (err: any) {
-      this.error = err?.response?.data?.message || "Registration failed.";
+      this.error = err?.response?.data?.message || err?.response?.data?.error || "Registration failed.";
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      this.isLoading = false;
+    }
+  };
+
+  registerAdmin = async (payload: AdminRegistrationPayload) => {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const response = await axios.post("/auth/register/admin", payload);
+      const responseToken =
+        response?.data?.data?.authorization_token ||
+        response?.data?.data?.accessToken ||
+        response?.data?.data?.token ||
+        response?.data?.accessToken ||
+        response?.data?.token ||
+        null;
+
+      if (responseToken) {
+        this.token = responseToken;
+        if (typeof window !== "undefined") {
+          localStorage.setItem(AUTH_TOKEN, responseToken);
+        }
+        await this.fetchUser();
+      }
+
+      return response?.data;
+    } catch (err: any) {
+      this.error = err?.response?.data?.message || err?.response?.data?.error || "Registration failed.";
+      return Promise.reject(err?.response?.data || err);
     } finally {
       this.isLoading = false;
     }
@@ -172,12 +239,18 @@ class AuthStore {
     sessionStorage.removeItem(USER_SESSION_DATA!);
   };
   // Login user
-  login = async (payload: any) => {
+  login = async (payload: GlobalLoginPayload) => {
     this.isLoading = true;
     this.error = null;
     try {
       const response = await axios.post("/auth/login", payload);
-      this.token = response?.data?.data?.authorization_token;
+      this.token =
+        response?.data?.data?.authorization_token ||
+        response?.data?.data?.accessToken ||
+        response?.data?.data?.token ||
+        response?.data?.accessToken ||
+        response?.data?.token ||
+        null;
 
       if (this.token && typeof window !== "undefined") {
         localStorage.setItem(AUTH_TOKEN, this.token);
@@ -229,14 +302,27 @@ class AuthStore {
         }
       );
 
+      const responseData = response?.data?.data || {};
+      const identity = responseData?.user || responseData?.identity || responseData;
+      const memberships = Array.isArray(responseData?.memberships) ? responseData.memberships : [];
+      const activeMembership = responseData?.activeMembership || null;
+      const activeCompany = responseData?.activeCompany || activeMembership?.company || null;
       const resolvedUserType =
-        response?.data?.data?.userType || response?.data?.data?.role || "patient";
+        responseData?.effectiveRole ||
+        activeMembership?.role ||
+        identity?.userType ||
+        identity?.role ||
+        "user";
 
       this.user = {
-        ...response.data?.data,
+        ...identity,
+        company: activeCompany?._id || activeMembership?.companyId || identity?.company,
+        companyDetails: activeCompany || identity?.companyDetails,
         userType: resolvedUserType,
       };
-      this.company = response?.data?.data?.company
+      this.memberships = memberships;
+      this.activeMembership = activeMembership;
+      this.company = this.user.company;
       this.userType = resolvedUserType
       this.saveUserToSessionStorage(this.user);
 
@@ -281,6 +367,8 @@ class AuthStore {
     this.user = null;
     this.userType = null;
     this.company = undefined;
+    this.memberships = [];
+    this.activeMembership = null;
     this.error = null;
     this.sessionReady = true;
 

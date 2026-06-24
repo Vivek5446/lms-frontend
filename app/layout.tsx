@@ -22,7 +22,7 @@ const montserrat = Montserrat({
 const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
   const {
     companyStore: { getCompanyDetails },
-    auth: { user },
+    auth: { user, company },
     themeStore: { themeConfig },
   } = stores;
   const pathname = usePathname();
@@ -33,10 +33,10 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && company) {
       getCompanyDetails();
     }
-  }, [getCompanyDetails, user]);
+  }, [company, getCompanyDetails, user]);
 
   useEffect(() => {
     if (pathname) {

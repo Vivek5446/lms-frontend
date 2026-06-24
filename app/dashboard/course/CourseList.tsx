@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { observer } from "mobx-react-lite";
@@ -14,6 +14,7 @@ import Step7Preview from "./steps/Step7Preview";
 import Step8Review from "./steps/Step8Review";
 import { CourseFormState, buildCoursePayload, collectCourseUploadFiles, courseToFormState, initialCourseFormState } from "./courseForm";
 import { courseStore } from "@/app/store/courseStore/courseStore";
+import stores from "@/app/store/stores";
 
 const TOTAL_STEPS = 6;
 
@@ -36,6 +37,52 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
   const [finalAction, setFinalAction] = useState<"draft" | "publish">("publish");
   const router = useRouter();
   const isEditMode = mode === "edit";
+  const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
+  const isSuperadmin = role === "superadmin";
+  const companyOptions = useMemo(() => {
+    const managedCompanies = stores.companyStore.companies.data || [];
+    const accountCompany = stores.auth.user?.companyDetails;
+    const options = isSuperadmin
+      ? managedCompanies
+      : accountCompany?._id
+        ? [accountCompany]
+        : [];
+    const currentCompany = initialCourse?.company;
+
+    if (
+      currentCompany?._id &&
+      !options.some((company: any) => String(company?._id) === String(currentCompany._id))
+    ) {
+      return [currentCompany, ...options];
+    }
+
+    return options;
+  }, [initialCourse?.company, isSuperadmin, stores.auth.user?.companyDetails, stores.companyStore.companies.data]);
+
+  useEffect(() => {
+    if (isSuperadmin && !stores.companyStore.companies.data?.length) {
+      stores.companyStore.getManagedCompanies().catch(() => undefined);
+    }
+  }, [isSuperadmin]);
+
+  useEffect(() => {
+    if (courseForm.basicInfo.companyId) {
+      return;
+    }
+
+    const activeCompanyId = stores.companyStore.getActiveCompanyId();
+    if (!activeCompanyId) {
+      return;
+    }
+
+    setCourseForm((current) => ({
+      ...current,
+      basicInfo: {
+        ...current.basicInfo,
+        companyId: activeCompanyId,
+      },
+    }));
+  }, [companyOptions.length, courseForm.basicInfo.companyId]);
 
   useEffect(() => {
     if (isEditMode || courseForm.basicInfo.courseCode) {
@@ -111,6 +158,16 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
   };
 
   const handleSave = async (action: "draft" | "publish") => {
+    if (
+      action === "publish" &&
+      courseForm.basicInfo.visibilityType === "public" &&
+      !courseForm.basicInfo.companyId
+    ) {
+      courseStore.error = "Select a company before publishing a public course.";
+      setCurrentStep(0);
+      return;
+    }
+
     let wasSuccessful = false;
     const uploadFiles = collectCourseUploadFiles(courseForm);
     const payload = buildCoursePayload(courseForm, action);
@@ -161,6 +218,8 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
             value={courseForm.basicInfo}
             onChange={(basicInfo) => setCourseForm((prev) => ({ ...prev, basicInfo }))}
             onProgressChange={(progress) => updateStepProgress(0, progress)}
+            companies={companyOptions}
+            isCompanySelectionDisabled={!isSuperadmin}
           />
         );
       case 1:

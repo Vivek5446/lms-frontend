@@ -7,7 +7,7 @@ export function normalizeRole(value: unknown) {
 
 export function isLearnerRole(value: unknown) {
   const role = normalizeRole(value);
-  return role === "user" || role === "manager" || /^l\d+-manager$/i.test(role);
+  return role === "user" || role === "learner" || role === "manager" || /^l\d+-manager$/i.test(role);
 }
 
 export function isManagerRole(value: unknown) {

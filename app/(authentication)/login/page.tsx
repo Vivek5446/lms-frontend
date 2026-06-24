@@ -3,79 +3,155 @@
 import {
   Box,
   Button,
-  Checkbox,
   Flex,
   FormControl,
   FormLabel,
   Heading,
   HStack,
-  Icon,
+  IconButton,
   Input,
   InputGroup,
   InputRightElement,
-  Select,
+  Link as ChakraLink,
   Spinner,
   Text,
-  VStack
+  VStack,
 } from "@chakra-ui/react";
+import { ArrowLeft, BadgeCheck, Eye, EyeOff, Mail, Smartphone } from "lucide-react";
 import { observer } from "mobx-react-lite";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import NextLink from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { FcGoogle } from "react-icons/fc";
-import { RiArrowLeftLine, RiEyeLine, RiEyeOffLine } from "react-icons/ri";
-import CustomButton from "../../component/common/CustomButton/CustomButton";
 import { getDefaultAuthenticatedRoute } from "../../config/utils/roleAccess";
 import stores from "../../store/stores";
+import type { GlobalLoginPayload } from "../../store/authStore/authStore";
+
+type LoginMode = GlobalLoginPayload["loginType"];
+
+const loginModes: Array<{
+  value: LoginMode;
+  label: string;
+  icon: typeof Mail;
+}> = [
+  { value: "phone", label: "Phone", icon: Smartphone },
+  { value: "email", label: "Email", icon: Mail },
+  { value: "code", label: "User code", icon: BadgeCheck },
+];
+
+const inputStyles = {
+  bg: "white",
+  border: "1px solid",
+  borderColor: "gray.200",
+  borderRadius: "8px",
+  color: "gray.700",
+  fontSize: "sm",
+  h: "44px",
+  _placeholder: { color: "gray.400", fontSize: "13px" },
+  _focus: {
+    borderColor: "#D84315",
+    boxShadow: "0 0 0 2px rgba(216,67,21,0.1)",
+  },
+  _hover: { borderColor: "gray.300" },
+};
+
+const labelStyles = {
+  color: "gray.700",
+  fontSize: "13px",
+  fontWeight: "500",
+  mb: 1,
+};
+
+function getIdentifierMeta(loginType: LoginMode) {
+  if (loginType === "phone") {
+    return {
+      label: "Phone number",
+      placeholder: "9876543210",
+      inputMode: "tel" as const,
+      autoComplete: "tel",
+    };
+  }
+
+  if (loginType === "code") {
+    return {
+      label: "User code",
+      placeholder: "Enter your user code",
+      inputMode: "text" as const,
+      autoComplete: "username",
+    };
+  }
+
+  return {
+    label: "Email",
+    placeholder: "you@example.com",
+    inputMode: "email" as const,
+    autoComplete: "email",
+  };
+}
 
 const Login = observer(() => {
-  const {
-    auth: { login, openNotification },
-  } = stores;
-
-  const [formData, setFormData] = useState({
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login, openNotification } = stores.auth;
+  const [formData, setFormData] = useState<GlobalLoginPayload>({
     username: "",
     password: "",
-    loginType: "email", // username | email | code
+    loginType: "phone",
   });
-
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
+  const identifierMeta = getIdentifierMeta(formData.loginType);
+  const requestedRedirect = String(searchParams.get("redirect") || "").trim();
+  const redirectTarget =
+    requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//")
+      ? requestedRedirect
+      : "";
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const setLoginMode = (loginType: LoginMode) => {
+    setFormData((current) => ({ ...current, loginType, username: "" }));
   };
 
-  const handleTogglePassword = () => setShowPassword(!showPassword);
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const username = formData.username.trim();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (formData.loginType === "email" && !/^\S+@\S+\.\S+$/.test(username)) {
+      openNotification({ title: "Check your email", message: "Enter a valid email address.", type: "error" });
+      return;
+    }
+
+    if (formData.loginType === "phone" && !/^\d{10}$/.test(username)) {
+      openNotification({
+        title: "Check your phone number",
+        message: "Enter a valid 10-digit phone number.",
+        type: "error",
+      });
+      return;
+    }
+
     setIsLoading(true);
-
     try {
-      const response: any = await login(formData);
+      const response: any = await login({ ...formData, username });
 
       openNotification({
-        title: "Login Successful",
-        message: `${response.message}!`,
+        title: "Signed in",
+        message: response?.message || "Welcome back.",
         type: "success",
         duration: 3000,
       });
 
       router.replace(
-        getDefaultAuthenticatedRoute(
-          stores.auth.user || {
-            userType: response?.data?.userType,
-            role: response?.data?.role,
-          }
-        )
+        redirectTarget ||
+          getDefaultAuthenticatedRoute(
+            stores.auth.user || {
+              userType: response?.data?.userType,
+              role: response?.data?.role,
+            }
+          )
       );
     } catch (error: any) {
       openNotification({
-        title: "Login Failed",
-        message: error?.message || error?.error || "Invalid credentials",
+        title: "Login failed",
+        message: error?.message || error?.error || "Invalid credentials.",
         type: "error",
       });
     } finally {
@@ -83,176 +159,152 @@ const Login = observer(() => {
     }
   };
 
-  const inputStyles = {
-    bg: "white",
-    border: "1px solid",
-    borderColor: "gray.200",
-    borderRadius: "8px",
-    fontSize: "sm",
-    h: "44px",
-    color: "gray.700",
-    _placeholder: { color: "gray.400", fontSize: "13px" },
-    _focus: {
-      borderColor: "#D84315",
-      boxShadow: "0 0 0 2px rgba(216,67,21,0.1)",
-    },
-    _hover: { borderColor: "gray.300" },
-  };
-
-  const labelStyles = {
-    fontSize: "13px",
-    fontWeight: "500",
-    color: "gray.700",
-    mb: 1,
-  };
-
   return (
     <VStack spacing={0} align="stretch">
-      {/* --- Added Back to Home Link --- */}
       <Box mb={6}>
-        <Link href="/">
-          <HStack 
-            spacing={1} 
-            color="gray.500" 
-            cursor="pointer" 
-            _hover={{ color: "#D84315" }} 
-            transition="all 0.2s"
-            w="fit-content"
-          >
-            <Icon as={RiArrowLeftLine} />
-            <Text fontSize="13px" fontWeight="500">Back to home</Text>
-          </HStack>
-        </Link>
+        <ChakraLink
+          as={NextLink}
+          href="/"
+          display="inline-flex"
+          alignItems="center"
+          gap={1.5}
+          color="gray.500"
+          fontSize="13px"
+          fontWeight="500"
+          _hover={{ color: "#D84315", textDecoration: "none" }}
+        >
+          <ArrowLeft size={15} />
+          Back to home
+        </ChakraLink>
       </Box>
 
-      {/* Heading */}
       <Box mb={5}>
-        <Heading fontSize="2xl" fontWeight="600" color="gray.800" mb={1}>
-          Login
+        <Heading color="gray.800" fontSize="2xl" fontWeight="600" mb={1}>
+          Sign in
         </Heading>
-        <Text fontSize="13px" color="gray.400">
-          Enter your credentials to login to your account
+        <Text color="gray.500" fontSize="13px">
+          Continue to your learning workspace.
         </Text>
       </Box>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <VStack spacing={4} align="stretch">
-          {/* Login Type */}
           <FormControl>
-            <FormLabel {...labelStyles}>Login using</FormLabel>
-            <Select
-              name="loginType"
-              value={formData.loginType}
-              onChange={handleInputChange}
-              {...inputStyles}
-            >
-              <option value="email">Email</option>
-              <option value="code">User Code</option>
-            </Select>
+            <FormLabel {...labelStyles}>Sign in with</FormLabel>
+            <Flex bg="gray.100" borderRadius="8px" p="4px" gap="4px">
+              {loginModes.map((mode) => {
+                const ModeIcon = mode.icon;
+                const selected = formData.loginType === mode.value;
+
+                return (
+                  <Button
+                    key={mode.value}
+                    type="button"
+                    flex="1"
+                    minW={0}
+                    h="36px"
+                    px={2}
+                    borderRadius="6px"
+                    bg={selected ? "white" : "transparent"}
+                    color={selected ? "#D84315" : "gray.500"}
+                    boxShadow={selected ? "sm" : "none"}
+                    fontSize="12px"
+                    fontWeight={selected ? "600" : "500"}
+                    leftIcon={<ModeIcon size={14} />}
+                    onClick={() => setLoginMode(mode.value)}
+                    _hover={{ bg: selected ? "white" : "gray.200" }}
+                    aria-pressed={selected}
+                  >
+                    {mode.label}
+                  </Button>
+                );
+              })}
+            </Flex>
           </FormControl>
 
-          {/* Email / Code */}
-          <FormControl>
-            <FormLabel {...labelStyles}>
-              {formData.loginType === "email" ? "Email" : "User Code"}
-            </FormLabel>
+          <FormControl isRequired>
+            <FormLabel {...labelStyles}>{identifierMeta.label}</FormLabel>
             <Input
-              type="text"
               name="username"
-              placeholder={
-                formData.loginType === "email"
-                  ? "example.educationpro@gmail.com"
-                  : "Enter your user code"
-              }
+              type={formData.loginType === "email" ? "email" : "text"}
+              inputMode={identifierMeta.inputMode}
+              autoComplete={identifierMeta.autoComplete}
+              placeholder={identifierMeta.placeholder}
+              maxLength={formData.loginType === "phone" ? 10 : undefined}
               value={formData.username}
-              onChange={handleInputChange}
-              required
+              onChange={(event) => setFormData((current) => ({ ...current, username: event.target.value }))}
               {...inputStyles}
             />
           </FormControl>
 
-          {/* Password */}
-          <FormControl>
+          <FormControl isRequired>
             <FormLabel {...labelStyles}>Password</FormLabel>
             <InputGroup>
               <Input
-                type={showPassword ? "text" : "password"}
                 name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 placeholder="Enter your password"
                 value={formData.password}
-                onChange={handleInputChange}
-                required
-                {...inputStyles}
+                onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
                 pr="44px"
+                {...inputStyles}
               />
-              <InputRightElement h="44px" cursor="pointer" onClick={handleTogglePassword}>
-                {showPassword ? (
-                  <RiEyeOffLine size={16} color="#9CA3AF" />
-                ) : (
-                  <RiEyeLine size={16} color="#9CA3AF" />
-                )}
+              <InputRightElement h="44px">
+                <IconButton
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  icon={showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  onClick={() => setShowPassword((current) => !current)}
+                  size="sm"
+                  variant="ghost"
+                  color="gray.500"
+                />
               </InputRightElement>
             </InputGroup>
           </FormControl>
 
-          {/* Remember me + Forgot */}
-          <Flex justify="space-between" align="center" mt={-1}>
-            <Checkbox
-              size="sm"
-              colorScheme="orange"
-              sx={{
-                ".chakra-checkbox__label": { fontSize: "13px", color: "gray.500" },
-                ".chakra-checkbox__control": { borderRadius: "3px", borderColor: "gray.300" },
-              }}
+          <Flex justify="flex-end" mt={-1}>
+            <ChakraLink
+              as={NextLink}
+              href="/forgot-password"
+              color="#D84315"
+              fontSize="13px"
+              fontWeight="500"
+              _hover={{ textDecoration: "underline" }}
             >
-              Remember me
-            </Checkbox>
-            <Link href="/forgot-password">
-              <Text fontSize="13px" color="#D84315" fontWeight="500" _hover={{ textDecoration: "underline" }}>
-                Forgot Password?
-              </Text>
-            </Link>
+              Forgot password?
+            </ChakraLink>
           </Flex>
 
-          {/* Sign In */}
-          <CustomButton
+          <Button
             type="submit"
-            size="md"
-            width="100%"
-            mt={1}
+            h="44px"
             borderRadius="8px"
             bg="#D84315"
             color="white"
-            fontWeight="500"
             fontSize="sm"
-            h="44px"
+            fontWeight="600"
+            isDisabled={!formData.username.trim() || !formData.password || isLoading}
             _hover={{ bg: "#BF360C" }}
             _active={{ bg: "#BF360C", transform: "scale(0.99)" }}
-            isDisabled={!formData.username || !formData.password || isLoading}
           >
-            {isLoading ? <Spinner size="sm" color="white" /> : "Sign In"}
-          </CustomButton>
-
-          {/* Google */}
-          <Button
-            size="md"
-            width="100%"
-            leftIcon={<FcGoogle size="18px" />}
-            fontSize="13px"
-            fontWeight="400"
-            bg="white"
-            color="gray.600"
-            border="1px solid"
-            borderColor="gray.200"
-            borderRadius="8px"
-            h="44px"
-            _hover={{ bg: "gray.50" }}
-          >
-            Sign in with google
+            {isLoading ? <Spinner size="sm" /> : "Sign in"}
           </Button>
         </VStack>
       </form>
+
+      <HStack justify="center" spacing={1.5} mt={5}>
+        <Text color="gray.500" fontSize="13px">Need an account?</Text>
+        <ChakraLink
+          as={NextLink}
+          href={redirectTarget ? `/register?redirect=${encodeURIComponent(redirectTarget)}` : "/register"}
+          color="#D84315"
+          fontSize="13px"
+          fontWeight="600"
+        >
+          Create account
+        </ChakraLink>
+      </HStack>
     </VStack>
   );
 });

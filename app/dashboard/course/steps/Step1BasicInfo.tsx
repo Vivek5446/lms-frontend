@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { Briefcase, FileText, ImagePlus, Images, Plus, Sparkles, Trash2, UserRound, X } from "lucide-react";
+import { FileText, ImagePlus, Images, Plus, Sparkles, Trash2, UserRound, X } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import RichTextEditor from "../richTextEditor/RichTextEditor";
 import { StepWrapper } from "./component/StepWrapper";
@@ -19,9 +19,17 @@ interface Step1Props {
   value: CourseBasicInfo;
   onChange: (value: CourseBasicInfo) => void;
   onProgressChange?: (progress: number) => void;
+  companies?: Array<{ _id: string; company_name: string }>;
+  isCompanySelectionDisabled?: boolean;
 }
 
-export default function Step1BasicInfo({ value, onChange, onProgressChange }: Step1Props) {
+export default function Step1BasicInfo({
+  value,
+  onChange,
+  onProgressChange,
+  companies = [],
+  isCompanySelectionDisabled = false,
+}: Step1Props) {
   const updateBasicInfo = (patch: Partial<CourseBasicInfo>) => {
     onChange({ ...value, ...patch });
   };
@@ -59,8 +67,9 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
     if (value.categories.length > 0) filled++;
     if (value.languages.length > 0) filled++;
     if (value.totalMarks.trim()) filled++;
+    if (value.companyId.trim()) filled++;
 
-    onProgressChange?.(Math.round((filled / 9) * 100));
+    onProgressChange?.(Math.round((filled / 10) * 100));
   }, [value, onProgressChange]);
 
   const onDrop = useCallback(
@@ -354,28 +363,6 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
               />
             </div>
           </div>
-          <div
-            style={{
-              marginTop: 12,
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 10,
-              borderRadius: 14,
-              border: "1px solid #E5E7EB",
-              background: "#F8FAFC",
-              padding: "14px 16px",
-            }}
-          >
-            <Briefcase className="h-4 w-4" color="#64748B" style={{ flexShrink: 0, marginTop: 2 }} />
-            <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>
-                Company name is auto-resolved later
-              </p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: "#6B7280" }}>
-                We&apos;ll automatically attach the company name from the account/company that owns this course, so you only need to provide the teacher name and designation here.
-              </p>
-            </div>
-          </div>
         </div>
 
         <div style={{ marginBottom: 24 }}>
@@ -625,6 +612,29 @@ export default function Step1BasicInfo({ value, onChange, onProgressChange }: St
               );
             })}
           </div>
+        </div>
+
+        <div style={{ marginTop: 24 }}>
+          <label style={labelStyle}>
+            Course Company{value.visibilityType === "public" ? " *" : ""}
+          </label>
+          <select
+            value={value.companyId}
+            onChange={(event) => updateBasicInfo({ companyId: event.target.value })}
+            disabled={isCompanySelectionDisabled}
+            style={{
+              ...inputStyle,
+              cursor: isCompanySelectionDisabled ? "not-allowed" : "pointer",
+              background: isCompanySelectionDisabled ? "#F3F4F6" : "#FFFFFF",
+            }}
+          >
+            <option value="">Select company</option>
+            {companies.map((company) => (
+              <option key={company._id} value={company._id}>
+                {company.company_name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div style={{ marginTop: 24 }}>

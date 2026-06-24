@@ -93,6 +93,7 @@ const CoursesPage = observer(function CoursesPage() {
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
   const isLearner = Boolean(stores.auth.user) && isLearnerRole(role);
   const requestedCourseId = String(searchParams.get("courseId") || "").trim();
+  const requestedEnrollmentCourseId = String(searchParams.get("enrollCourseId") || "").trim();
   const initialSearch = String(searchParams.get("search") || "").trim();
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
@@ -133,6 +134,10 @@ const CoursesPage = observer(function CoursesPage() {
     "0 12px 28px rgba(37, 99, 235, 0.24)",
     "0 16px 32px rgba(15, 23, 42, 0.34)"
   );
+  const priceSummaryBg = useColorModeValue("blue.50", "blue.900");
+  const moduleSummaryBg = useColorModeValue("purple.50", "purple.900");
+  const assessmentSummaryBg = useColorModeValue("green.50", "green.900");
+  const ratingSummaryBg = useColorModeValue("orange.50", "orange.900");
   const [brand50, brand100, brand200, brand400, brand500, brand700] = useToken("colors", [
     "brand.50",
     "brand.100",
@@ -155,6 +160,83 @@ const CoursesPage = observer(function CoursesPage() {
 
   const publicCourses = stores.courseStore.publicCourses || [];
   const assignedCourses = stores.courseStore.myCourses || [];
+  const enrolledCourseIds = useMemo(
+    () => new Set(assignedCourses.map((course) => String(course.courseId || "").trim()).filter(Boolean)),
+    [assignedCourses]
+  );
+
+  useEffect(() => {
+    if (!requestedEnrollmentCourseId || selectedCourse) {
+      return;
+    }
+
+    const requestedCourse = publicCourses.find(
+      (course) => String(course._id || "").trim() === requestedEnrollmentCourseId
+    );
+    if (requestedCourse) {
+      setSelectedCourse(requestedCourse);
+    }
+  }, [publicCourses, requestedEnrollmentCourseId, selectedCourse]);
+
+  const selectedCourseId = String(selectedCourse?._id || "").trim();
+  const selectedCourseIsEnrolled = Boolean(selectedCourseId && enrolledCourseIds.has(selectedCourseId));
+  const selectedCourseRequiresPayment =
+    String(selectedCourse?.commerce?.pricingModel || "free").toLowerCase() === "paid";
+  const selectedCourseIsEnrolling = stores.courseStore.enrollmentCourseId === selectedCourseId;
+
+  const handleEnrollmentAction = async () => {
+    if (!selectedCourseId) {
+      return;
+    }
+
+    if (selectedCourseIsEnrolled) {
+      setSelectedCourse(null);
+      router.push(`/course?courseId=${selectedCourseId}`);
+      return;
+    }
+
+    if (!stores.auth.user) {
+      const redirectPath = `/course?enrollCourseId=${selectedCourseId}`;
+      router.push(`/login?redirect=${encodeURIComponent(redirectPath)}`);
+      return;
+    }
+
+    if (!isLearner) {
+      stores.auth.openNotification({
+        title: "Learner account required",
+        message: "Sign in with a learner account to enroll in this course.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (selectedCourseRequiresPayment) {
+      stores.auth.openNotification({
+        title: "Payment required",
+        message: "Complete payment before enrolling in this course.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      const response = await stores.courseStore.enrollInPublishedCourse(selectedCourseId);
+      await stores.auth.fetchUser();
+      stores.auth.openNotification({
+        title: response?.data?.alreadyEnrolled ? "Already enrolled" : "Enrollment complete",
+        message: response?.message || "The course is now available in your learning dashboard.",
+        type: "success",
+      });
+      setSelectedCourse(null);
+      router.push(`/course?courseId=${selectedCourseId}`);
+    } catch (error: any) {
+      stores.auth.openNotification({
+        title: "Enrollment failed",
+        message: error?.message || error?.error || "Unable to enroll in this course.",
+        type: "error",
+      });
+    }
+  };
 
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -758,6 +840,11 @@ const FilterPanel = (
                     <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
                       {course.courseType === "scorm" ? "SCORM" : "Standard"}
                     </Badge>
+                    {enrolledCourseIds.has(String(course._id)) ? (
+                      <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
+                        Enrolled
+                      </Badge>
+                    ) : null}
                   </HStack>
                 </Box>
 
@@ -857,6 +944,11 @@ const FilterPanel = (
                     <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
                       {selectedCourse.taxonomy?.level || "Beginner"}
                     </Badge>
+                    {selectedCourseIsEnrolled ? (
+                      <Badge colorScheme="teal" borderRadius="full" px={3} py={1}>
+                        Enrolled
+                      </Badge>
+                    ) : null}
                   </HStack>
                   <Heading size={{ base: "md", md: "lg" }}>{selectedCourse.title}</Heading>
                   <Text mt={3} color={mutedText} lineHeight="1.7" fontSize={{ base: "sm", md: "md" }}>
@@ -865,15 +957,15 @@ const FilterPanel = (
                 </Box>
 
                 <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={{ base: 3, md: 4 }}>
-                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={useColorModeValue("blue.50", "blue.900")} borderWidth="1px" borderColor={borderColor}>
+                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={priceSummaryBg} borderWidth="1px" borderColor={borderColor}>
                     <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Price</Text>
                     <Text mt={2} fontWeight="800" fontSize="lg">{formatCurrency(selectedCourse.commerce?.amountInRupees)}</Text>
                   </Box>
-                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={useColorModeValue("purple.50", "purple.900")} borderWidth="1px" borderColor={borderColor}>
+                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={moduleSummaryBg} borderWidth="1px" borderColor={borderColor}>
                     <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Modules</Text>
                     <Text mt={2} fontWeight="800" fontSize="lg">{selectedCourse.curriculum?.totalModules || 0}</Text>
                   </Box>
-                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={useColorModeValue("green.50", "green.900")} borderWidth="1px" borderColor={borderColor}>
+                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={assessmentSummaryBg} borderWidth="1px" borderColor={borderColor}>
                     <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Pass Marks</Text>
                     <Text mt={2} fontWeight="800" fontSize="lg">
                       {selectedCourse.assessment?.passingMarks && selectedCourse.assessment?.totalMarks
@@ -881,7 +973,7 @@ const FilterPanel = (
                         : "Not set"}
                     </Text>
                   </Box>
-                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={useColorModeValue("orange.50", "orange.900")} borderWidth="1px" borderColor={borderColor}>
+                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={ratingSummaryBg} borderWidth="1px" borderColor={borderColor}>
                     <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Rating</Text>
                     <Text mt={2} fontWeight="800" fontSize="lg">
                       {selectedCourse.metrics?.averageRating ? selectedCourse.metrics.averageRating.toFixed(1) : "New"}
@@ -902,12 +994,25 @@ const FilterPanel = (
                   </HStack>
                 </Box>
 
-                <Button colorScheme="blue" borderRadius="xl" h="48px">
-                  Enroll / Purchase Flow
+                <Button
+                  colorScheme="blue"
+                  borderRadius="xl"
+                  h="48px"
+                  isLoading={selectedCourseIsEnrolling}
+                  loadingText="Enrolling"
+                  isDisabled={Boolean(stores.auth.user && !isLearner)}
+                  onClick={handleEnrollmentAction}
+                >
+                  {selectedCourseIsEnrolled
+                    ? "Open course"
+                    : !stores.auth.user
+                      ? "Sign in to enroll"
+                      : !isLearner
+                        ? "Learner account required"
+                        : selectedCourseRequiresPayment
+                          ? "Purchase course"
+                          : "Enroll now"}
                 </Button>
-                <Text fontSize="sm" color={softText}>
-                  Public visibility is enabled for this course. Hook this CTA into your checkout or self-enrollment flow when that backend is ready.
-                </Text>
               </Stack>
             ) : null}
           </DrawerBody>
