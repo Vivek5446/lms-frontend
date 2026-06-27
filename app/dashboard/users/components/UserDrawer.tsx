@@ -4,17 +4,16 @@ import {
   Badge,
   Box,
   Button,
-    Checkbox,
-    Drawer,
-    DrawerBody,
-    DrawerCloseButton,
-    DrawerContent,
-    DrawerFooter,
-    DrawerHeader,
-    DrawerOverlay,
-    Flex,
-    Icon,
-    SimpleGrid,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
+  Flex,
+  Icon,
+  SimpleGrid,
   Text,
   VStack,
   useColorModeValue,
@@ -87,13 +86,11 @@ const buildUserFormErrors = ({
   userForm,
   isSuperadmin,
   availableDepartments,
-  needsDirectPassword,
   isDepartmentRequired,
 }: {
   userForm: any;
   isSuperadmin: boolean;
   availableDepartments: string[];
-  needsDirectPassword: boolean;
   isDepartmentRequired: boolean;
 }) => {
   const errors: Record<string, string> = {};
@@ -103,8 +100,6 @@ const buildUserFormErrors = ({
   const trimmedMobile = String(userForm.mobileNumber || "").trim();
   const trimmedDesignation = String(userForm.designation || "").trim();
   const trimmedDepartment = String(userForm.department || "").trim();
-  const trimmedPassword = String(userForm.password || "").trim();
-  const trimmedConfirmPassword = String(userForm.confirmPassword || "").trim();
   const requiresGender = !userForm.id;
 
   if (!trimmedCode) {
@@ -115,9 +110,7 @@ const buildUserFormErrors = ({
     errors.name = "Full name is required.";
   }
 
-  if (!trimmedEmail) {
-    errors.email = "Email address is required.";
-  } else if (!EMAIL_PATTERN.test(trimmedEmail)) {
+  if (trimmedEmail && !EMAIL_PATTERN.test(trimmedEmail)) {
     errors.email = "Enter a valid email address.";
   }
 
@@ -157,30 +150,6 @@ const buildUserFormErrors = ({
     errors.dateOfBirth = "Date of birth cannot be in the future.";
   }
 
-  if (!userForm.id && needsDirectPassword) {
-    if (!trimmedPassword) {
-      errors.password = "Password is required for admin and department head accounts.";
-    } else if (trimmedPassword.length < 6) {
-      errors.password = "Password must be at least 6 characters.";
-    }
-
-    if (!trimmedConfirmPassword) {
-      errors.confirmPassword = "Confirm password is required.";
-    } else if (trimmedPassword !== trimmedConfirmPassword) {
-      errors.confirmPassword = "Password and confirm password must match.";
-    }
-  }
-
-  if (userForm.id && needsDirectPassword && (trimmedPassword || trimmedConfirmPassword)) {
-    if (trimmedPassword.length < 6) {
-      errors.password = "Password must be at least 6 characters.";
-    }
-
-    if (trimmedPassword !== trimmedConfirmPassword) {
-      errors.confirmPassword = "Password and confirm password must match.";
-    }
-  }
-
   return errors;
 };
 
@@ -209,8 +178,6 @@ const UserDrawer = ({
   const availableDepartments = isSuperadmin
     ? filteredCompanies.find((company: any) => company?._id === userForm.companyId)?.departments || []
     : currentCompanyDepartments || [];
-  const needsDirectPassword =
-    userForm.role === "admin" || userForm.role === "departmenthead";
   const isDepartmentRequired =
     userForm.role === "departmenthead" || /^l\d+-manager$/i.test(String(userForm.role || ""));
   const validationErrors = useMemo(
@@ -219,14 +186,12 @@ const UserDrawer = ({
         userForm,
         isSuperadmin,
         availableDepartments,
-        needsDirectPassword,
         isDepartmentRequired,
       }),
     [
       availableDepartments,
       isDepartmentRequired,
       isSuperadmin,
-      needsDirectPassword,
       userForm,
     ]
   );
@@ -381,7 +346,7 @@ const UserDrawer = ({
                   }
                 />
                 <CustomInput
-                  label="Email"
+                  label="Email (Optional)"
                   name="email"
                   placeholder="Enter email address"
                   value={userForm.email}
@@ -502,58 +467,9 @@ const UserDrawer = ({
             </SectionCard>
 
             <SectionCard title="Authentication" icon={Lock} color="green">
-              {needsDirectPassword ? (
-                <>
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                    <CustomInput
-                      label={userForm.id ? "New Password" : "Password"}
-                      name="password"
-                      type="password"
-                      placeholder="Enter password"
-                      value={userForm.password}
-                      error={validationErrors.password}
-                      showError={submitAttempted}
-                      onChange={(e: any) =>
-                        setUserForm((p: any) => ({ ...p, password: e.target.value }))
-                      }
-                    />
-                    <CustomInput
-                      label={userForm.id ? "Confirm New Password" : "Confirm Password"}
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="Confirm password"
-                      value={userForm.confirmPassword}
-                      error={validationErrors.confirmPassword}
-                      showError={submitAttempted}
-                      onChange={(e: any) =>
-                        setUserForm((p: any) => ({ ...p, confirmPassword: e.target.value }))
-                      }
-                    />
-                  </SimpleGrid>
-                  <Text fontSize="sm" color={muted} mt={3}>
-                    {userForm.id
-                      ? "Leave these blank if you do not want to change the password."
-                      : "Admin and department head accounts get an immediate password instead of a setup email."}
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Checkbox
-                    isChecked={userForm.resendSetupEmail}
-                    onChange={(e) =>
-                      setUserForm((p: any) => ({
-                        ...p,
-                        resendSetupEmail: e.target.checked,
-                      }))
-                    }
-                  >
-                    Send setup email
-                  </Checkbox>
-                  <Text fontSize="sm" color={muted} mt={3}>
-                    Users and managers receive an email to set their own password.
-                  </Text>
-                </>
-              )}
+              <Text fontSize="sm" color={muted}>
+                All managed accounts now sign in with their phone number and OTP. No password setup or account emails are sent from this flow.
+              </Text>
             </SectionCard>
 
             {/* COMPANY */}

@@ -19,7 +19,7 @@ export interface LearnerRegistrationPayload {
   name: string;
   phone: string;
   email?: string;
-  password: string;
+  verificationToken: string;
   invitationToken?: string;
   courseId?: string;
 }
@@ -27,16 +27,26 @@ export interface LearnerRegistrationPayload {
 export interface AdminRegistrationPayload {
   name: string;
   phone: string;
-  email: string;
-  password: string;
+  email?: string;
+  verificationToken: string;
   companyName: string;
   companyEmail?: string;
 }
 
 export interface GlobalLoginPayload {
-  username: string;
-  password: string;
-  loginType: "email" | "phone" | "code";
+  phone: string;
+  otp: string;
+}
+
+export interface OtpRequestPayload {
+  phone: string;
+  purpose: "login" | "register";
+}
+
+export interface OtpVerifyPayload {
+  phone: string;
+  otp: string;
+  purpose: "login" | "register";
 }
 
 class AuthStore {
@@ -144,6 +154,24 @@ class AuthStore {
     this.notification = null;
   };
 
+  requestOtp = async (payload: OtpRequestPayload) => {
+    try {
+      const response = await axios.post("/auth/otp/request", payload);
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err);
+    }
+  };
+
+  verifyOtp = async (payload: OtpVerifyPayload) => {
+    try {
+      const response = await axios.post("/auth/otp/verify", payload);
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err);
+    }
+  };
+
   registerLearner = async (payload: LearnerRegistrationPayload) => {
     this.isLoading = true;
     this.error = null;
@@ -243,7 +271,10 @@ class AuthStore {
     this.isLoading = true;
     this.error = null;
     try {
-      const response = await axios.post("/auth/login", payload);
+      const response = await axios.post("/auth/otp/verify", {
+        ...payload,
+        purpose: "login",
+      });
       this.token =
         response?.data?.data?.authorization_token ||
         response?.data?.data?.accessToken ||

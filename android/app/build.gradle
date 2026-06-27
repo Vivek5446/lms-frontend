@@ -3,6 +3,10 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.lms.frontend"
     compileSdk = rootProject.ext.compileSdkVersion
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
     defaultConfig {
         applicationId "com.lms.frontend"
         minSdkVersion rootProject.ext.minSdkVersion

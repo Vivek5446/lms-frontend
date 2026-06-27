@@ -23,13 +23,11 @@ import {
   FaUser,
   FaKey,
   FaHome,
-  FaLock,
 } from "react-icons/fa";
 import stores from "../../../../../../store/stores";
 import { authentication, main } from "../../../../../../config/utils/routes";
 import { useRouter, usePathname } from "next/navigation";
 import { WEBSITE_TITLE } from "../../../../../../config/utils/variables";
-import ChangePasswordModal from "./component/ChangePasswordModal";
 import ProfileDetailsModal from "../../../../../../component/ProfileSettings/component/ProfileDetailsModal/ProfileDetailsModal";
 
 const HeaderProfile = observer(() => {
@@ -40,7 +38,6 @@ const HeaderProfile = observer(() => {
     auth: { user },
     themeStore: { setOpenThemeDrawer },
   } = stores;
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen:profileIsOpen, onOpen:profileOnOpen, onClose:profileOnClose } = useDisclosure()
 
 
@@ -84,9 +81,6 @@ const HeaderProfile = observer(() => {
               >
                 <FaCog style={{ marginRight: "8px" }} /> Profile Settings
               </MenuItem>
-              <MenuItem onClick={onOpen}>
-                <FaLock style={{ marginRight: "8px" }} /> Change Password
-              </MenuItem>
               <MenuItem onClick={setOpenThemeDrawer}>
                 <FaPalette style={{ marginRight: "8px" }} /> Customize Theme
               </MenuItem>
@@ -103,7 +97,6 @@ const HeaderProfile = observer(() => {
           </MenuList>
         </Portal>
       </Menu>
-      <ChangePasswordModal isOpen={isOpen} onClose={onClose} />
       <ProfileDetailsModal isOpen={profileIsOpen} onClose={profileOnClose} user={user} />
     </>
   ) : (

@@ -951,7 +951,7 @@ const AssignCourseModal = observer(
                                     Upload spreadsheet
                                   </Text>
                                   <Text color="gray.500" fontSize="sm" mt={1} lineHeight="1.6">
-                                    Upload CSV or Excel with user email IDs or employee IDs.
+                                    Upload CSV or Excel with user phone numbers or employee IDs.
                                   </Text>
                                 </Box>
                               </HStack>
@@ -1049,9 +1049,9 @@ const AssignCourseModal = observer(
                                   return (
                                     <WrapItem key={user._id}>
                                       <Tag size="lg" borderRadius="full" variant="subtle" colorScheme="blue" pl={1} pr={3} py={1.5} boxShadow="none">
-                                        <Avatar size="xs" name={user.name || user.email} src={user.profilePicture} mr={2} />
+                                        <Avatar size="xs" name={user.name || user.mobileNumber || user.email} src={user.profilePicture} mr={2} />
                                         <TagLabel fontWeight="700" fontSize="sm">
-                                          {user.name || user.email}
+                                          {user.name || user.mobileNumber || user.email}
                                         </TagLabel>
                                         {isManualSelection ? <TagCloseButton onClick={() => toggleSelectedUser(user)} ml={2} /> : null}
                                       </Tag>
@@ -1071,8 +1071,8 @@ const AssignCourseModal = observer(
                                   </AlertDescription>
                                   <Stack spacing={1.5} mt={3}>
                                     {csvPreview.failedEntries.slice(0, 8).map((entry: any, index: number) => (
-                                      <Text key={`${entry.userId || entry.email || entry.rowNumber}-${index}`} fontSize="sm" color="orange.800">
-                                        {entry.email || entry.reference || `Row ${entry.rowNumber}`}: {entry.reason}
+                                      <Text key={`${entry.userId || entry.phone || entry.rowNumber}-${index}`} fontSize="sm" color="orange.800">
+                                        {entry.phone || entry.reference || `Row ${entry.rowNumber}`}: {entry.reason}
                                       </Text>
                                     ))}
                                   </Stack>

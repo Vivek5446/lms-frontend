@@ -124,8 +124,8 @@ const BulkUploadModal = ({
   const expectedColumns = [
     "Employee Code",
     "Employee Name",
-    "Email ID",
-    "Contact Number",
+    "Phone Number",
+    "Email ID (Optional)",
     bulkForm.uploadRole === "user" ? "Branch (Optional)" : "Branch",
     "City",
     "State",
@@ -298,6 +298,7 @@ const BulkUploadModal = ({
                       <Tr>
                         <Th>Row</Th>
                         <Th>Name</Th>
+                        <Th>Phone Number</Th>
                         <Th>Email</Th>
                         <Th>Department</Th>
                         <Th>City</Th>
@@ -313,7 +314,7 @@ const BulkUploadModal = ({
                     <Tbody>
                       {loading ? (
                         <Tr>
-                          <Td colSpan={11} textAlign="center" py={6}>
+                          <Td colSpan={12} textAlign="center" py={6}>
                             Loading preview...
                           </Td>
                         </Tr>
@@ -322,6 +323,7 @@ const BulkUploadModal = ({
                           <Tr key={row.rowNumber}>
                             <Td>{row.rowNumber}</Td>
                             <Td fontWeight="medium">{row.name}</Td>
+                            <Td>{row.mobileNumber || "--"}</Td>
                             <Td>{row.email}</Td>
                             <Td>{row.department || "--"}</Td>
                             <Td>{row.city || "--"}</Td>

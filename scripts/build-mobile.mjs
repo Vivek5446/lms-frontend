@@ -48,6 +48,11 @@ function getMobileBackendUrl() {
     return explicitBackend;
   }
 
+  const envMobileBackend = readDotEnvValue('NEXT_PUBLIC_MOBILE_BACKEND_URL');
+  if (envMobileBackend) {
+    return envMobileBackend;
+  }
+
   const envBackend = readDotEnvValue('NEXT_PUBLIC_BACKEND_URL');
   if (!envBackend) {
     return undefined;
@@ -67,6 +72,14 @@ function getMobileBackendUrl() {
 }
 
 const mobileBackendUrl = getMobileBackendUrl();
+
+if (process.platform === 'win32') {
+  const jbrPath = 'C:\\Program Files\\Android\\Android Studio\\jbr';
+  if (existsSync(jbrPath)) {
+    process.env.JAVA_HOME = jbrPath;
+    process.env.PATH = `${resolve(jbrPath, 'bin')};${process.env.PATH}`;
+  }
+}
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {

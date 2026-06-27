@@ -1417,7 +1417,7 @@ const BatchCreationModal = observer(
                                     Users
                                   </Text>
                                   <Text color="gray.500" fontSize="sm" mt={1}>
-                                    Use <strong>email</strong> or{" "}
+                                    Use <strong>phone number</strong> or{" "}
                                     <strong>employeeId/code</strong>
                                   </Text>
                                 </Box>
@@ -1641,7 +1641,7 @@ const BatchCreationModal = observer(
                                           <HStack spacing={3} minW={0} align="start">
                                             <Avatar
                                               size="sm"
-                                              name={user.name || user.email || user.username}
+                                              name={user.name || user.mobileNumber || user.email || user.username}
                                             />
 
                                             <Stack spacing={1} minW={0}>
@@ -1650,11 +1650,12 @@ const BatchCreationModal = observer(
                                                 color="gray.950"
                                                 noOfLines={1}
                                               >
-                                                {user.name || user.email || "Unnamed user"}
+                                                {user.name || user.mobileNumber || user.email || "Unnamed user"}
                                               </Text>
 
                                               <Text fontSize="sm" color="gray.500" noOfLines={1}>
-                                                {user.email ||
+                                                {user.mobileNumber ||
+                                                  user.email ||
                                                   user.username ||
                                                   user.code ||
                                                   "No identifier available"}
@@ -1822,7 +1823,7 @@ const BatchCreationModal = observer(
                                                     User row {entry.rowNumber}
                                                   </Badge>
                                                 ) : null}
-                                                {entry.email ? (
+                                                {entry.phone ? (
                                                   <Badge
                                                     colorScheme="gray"
                                                     variant="subtle"
@@ -1831,7 +1832,7 @@ const BatchCreationModal = observer(
                                                     py={1}
                                                     textTransform="none"
                                                   >
-                                                    {entry.email}
+                                                    {entry.phone}
                                                   </Badge>
                                                 ) : null}
                                               </HStack>

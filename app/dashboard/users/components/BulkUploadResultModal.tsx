@@ -92,6 +92,7 @@ const BulkUploadResultModal = ({
                   <Thead bg={tableHeadBg}>
                     <Tr>
                       <Th>Row</Th>
+                      <Th>Phone Number</Th>
                       <Th>Email</Th>
                       <Th>Status</Th>
                       <Th>Message</Th>
@@ -101,7 +102,8 @@ const BulkUploadResultModal = ({
                     {items.map((item: any, index: number) => (
                       <Tr key={index}>
                         <Td>{item.rowNumber}</Td>
-                        <Td fontWeight="medium">{item.email}</Td>
+                        <Td fontWeight="medium">{item.mobileNumber || "--"}</Td>
+                        <Td>{item.email || "--"}</Td>
                         <Td>
                           <Badge
                             colorScheme={item.success ? "green" : "red"}

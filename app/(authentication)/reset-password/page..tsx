@@ -1,107 +1,25 @@
-'use client'
+"use client";
 
-import {
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Heading,
-  Text,
-  useToast,
-} from '@chakra-ui/react';
-import { useState } from 'react';
+import { Box, Button, Heading, Text, VStack } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
+import AuthenticationLayout from "../../layouts/authenticationLayout/AuthenticationLayout";
 
-const ResetPassword = () => {
-  const [formData, setFormData] = useState({ newPassword: '', confirmPassword: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const toast = useToast();
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (formData.newPassword !== formData.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-
-      // Simulate password reset
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      toast({
-        title: "Password Reset Successful",
-        description: "You can now log in with your new password.",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-
-      setFormData({ newPassword: '', confirmPassword: '' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+export default function ResetPasswordPage() {
+  const router = useRouter();
 
   return (
-    <>
-      <Heading mb={4} size="lg" color="teal.600">
-        Reset Password
-      </Heading>
-      <Text mb={8} color="gray.500">
-        Enter your new password below.
-      </Text>
-      <form onSubmit={handleSubmit}>
-        <FormControl id="newPassword" mb={4}>
-          <FormLabel>New Password</FormLabel>
-          <Input
-            type="password"
-            name="newPassword"
-            placeholder="Enter your new password"
-            value={formData.newPassword}
-            onChange={handleInputChange}
-            focusBorderColor="teal.500"
-            required
-          />
-        </FormControl>
-        <FormControl id="confirmPassword" mb={6}>
-          <FormLabel>Confirm New Password</FormLabel>
-          <Input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm your new password"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            focusBorderColor="teal.500"
-            required
-          />
-        </FormControl>
-        <Button
-          type="submit"
-          colorScheme="teal"
-          size="lg"
-          w="full"
-          isLoading={isSubmitting}
-          loadingText="Resetting Password"
-          isDisabled={!formData.newPassword || !formData.confirmPassword || isSubmitting}
-        >
-          Reset Password
-        </Button>
-      </form>
-    </>
+    <AuthenticationLayout>
+      <Box maxW="420px" w="100%">
+        <VStack align="stretch" spacing={5}>
+          <Heading size="lg">Password Reset Retired</Heading>
+          <Text color="gray.500">
+            Password-based sign-in has been removed. Please return to login and continue with your phone number and OTP.
+          </Text>
+          <Button colorScheme="blue" size="lg" onClick={() => router.push("/login")}>
+            Back To Login
+          </Button>
+        </VStack>
+      </Box>
+    </AuthenticationLayout>
   );
-};
-
-export default ResetPassword;
+}

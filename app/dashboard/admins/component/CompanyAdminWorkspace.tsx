@@ -923,8 +923,8 @@ const CompanyAdminWorkspace = ({
                           <Icon as={FiExternalLink} boxSize={8} color="blue.400" />
                           <Heading size="md">Unified User Management</Heading>
                           <Text color={mutedText}>
-                            Users and managers now use the shared user-management flow with enhanced
-                            capabilities including setup-email handling, manager hierarchy, and scoped company filtering.
+                            Users and managers now use the shared user-management flow with phone OTP authentication,
+                            manager hierarchy, and scoped company filtering.
                           </Text>
                           <Button
                             leftIcon={<FiUsers />}

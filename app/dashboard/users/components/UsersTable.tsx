@@ -127,7 +127,7 @@ const UsersTable = ({
     active: users.filter((u: any) => getUserStatusMeta(u).label === "Active").length,
     inactive: users.filter((u: any) => getUserStatusMeta(u).label === "Inactive").length,
     pending: users.filter((u: any) => getUserStatusMeta(u).label === "Pending").length,
-    passwordSet: users.filter((u: any) => u.passwordStatus === "SET").length,
+    otpEnabled: users.filter((u: any) => u.authMethod === "PHONE_OTP").length,
   };
 
   const cardBg = useColorModeValue("white", "gray.800");
@@ -436,12 +436,12 @@ const UsersTable = ({
       metaData: {
         component: (user: any) => (
           <Tooltip
-            label={user.passwordStatus === "SET" ? "Password configured" : "Password not set"}
+            label="Phone number + OTP authentication"
             hasArrow
           >
             <Badge
               variant="solid"
-              colorScheme={user.passwordStatus === "SET" ? "green" : "red"}
+              colorScheme="green"
               px={2.5}
               py={1}
               borderRadius="full"
@@ -449,7 +449,7 @@ const UsersTable = ({
             >
               <HStack spacing={1}>
                 <Icon as={FiShield} boxSize={3} />
-                <Text>{user.passwordStatus === "SET" ? "Secure" : "Insecure"}</Text>
+                <Text>Phone OTP</Text>
               </HStack>
             </Badge>
           </Tooltip>
@@ -556,14 +556,14 @@ const UsersTable = ({
         >
           <Stat>
             <StatLabel color={muted} fontSize="sm">
-              Password Secure
+              Phone OTP Ready
             </StatLabel>
             <StatNumber fontSize="2xl" fontWeight="bold" color={secureNumberColor}>
-              {stats.passwordSet}
+              {stats.otpEnabled}
             </StatNumber>
             <StatHelpText fontSize="xs" color={muted}>
               <Icon as={FiShield} mr={1} />
-              {stats.total > 0 ? ((stats.passwordSet / stats.total) * 100).toFixed(1) : "0"}% secured
+              {stats.total > 0 ? ((stats.otpEnabled / stats.total) * 100).toFixed(1) : "0"}% using OTP
             </StatHelpText>
           </Stat>
         </Box>
@@ -740,7 +740,7 @@ const UsersTable = ({
                       </Box>
                       <Box>
                         <Text fontSize="10px" textTransform="uppercase" color={muted}>Security</Text>
-                        <Text fontSize="xs" fontWeight="medium">{user.passwordStatus === "SET" ? "Secure" : "Insecure"}</Text>
+                        <Text fontSize="xs" fontWeight="medium">Phone OTP</Text>
                       </Box>
                     </SimpleGrid>
 

@@ -47,6 +47,7 @@ export interface BatchDetailsItem {
   users: Array<{
     _id: string;
     name: string;
+    mobileNumber?: string;
     email?: string;
     department?: string;
   }>;
@@ -73,6 +74,7 @@ export interface BatchDetailsItem {
 export interface BatchUploadPreviewUser {
   _id: string;
   name: string;
+  mobileNumber?: string;
   email?: string;
   username?: string;
   code?: string;
@@ -88,14 +90,14 @@ export interface BatchUploadPreviewCourseError {
 
 export interface BatchUploadPreviewUserError {
   rowNumber?: number;
-  email?: string;
+  phone?: string;
   employeeId?: string;
   userId?: string;
   reason: string;
 }
 
 export interface BatchUploadPreviewFailure {
-  email?: string;
+  phone?: string;
   reason: string;
   rowNumber?: number;
   userId?: string;

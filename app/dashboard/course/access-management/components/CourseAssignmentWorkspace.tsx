@@ -250,7 +250,7 @@ const CourseAssignmentWorkspace = observer(() => {
       });
       toast({
         title: "Upload validated",
-        description: `${response?.data?.matchedCount || 0} user${response?.data?.matchedCount === 1 ? "" : "s"} matched successfully.`,
+        description: `${response?.data?.matchedCount || 0} user${response?.data?.matchedCount === 1 ? "" : "s"} matched successfully by phone number.`,
         status: "success",
         duration: 3500,
       });
@@ -402,7 +402,7 @@ const CourseAssignmentWorkspace = observer(() => {
                     <Input
                       value={userSearch}
                       onChange={(event) => setUserSearch(event.target.value)}
-                      placeholder="Search by name, email, code, or department"
+                      placeholder="Search by name, phone number, code, or department"
                     />
                   </FormControl>
 
@@ -411,7 +411,7 @@ const CourseAssignmentWorkspace = observer(() => {
                       combinedSelectedUsers.map((user) => (
                         <WrapItem key={user._id}>
                           <Tag size="lg" borderRadius="full" colorScheme="blue">
-                            <TagLabel>{user.name || user.email}</TagLabel>
+                            <TagLabel>{user.name || user.mobileNumber || user.email}</TagLabel>
                             {selectedUsers.some((selectedUser) => selectedUser._id === user._id) ? (
                               <TagCloseButton onClick={() => toggleSelectedUser(user)} />
                             ) : null}
@@ -449,9 +449,9 @@ const CourseAssignmentWorkspace = observer(() => {
                             >
                               <HStack justify="space-between" align="start">
                                 <Box>
-                                  <Text fontWeight="semibold">{user.name || user.email}</Text>
+                                  <Text fontWeight="semibold">{user.name || user.mobileNumber || user.email}</Text>
                                   <Text color="gray.600" fontSize="sm">
-                                    {user.email || user.username}
+                                    {user.mobileNumber || user.email || user.username}
                                   </Text>
                                 </Box>
                                 <Badge colorScheme={isSelected ? "blue" : "gray"} borderRadius="full" px={3} py={1}>
@@ -490,7 +490,7 @@ const CourseAssignmentWorkspace = observer(() => {
                   </FormControl>
 
                   <Text color="gray.600" fontSize="sm">
-                    Upload a spreadsheet with an <strong>email</strong> or <strong>employee ID / code</strong> column. We will validate existing users first, show the matched learners here, and only then submit the assignment.
+                    Upload a spreadsheet with a <strong>phone number</strong> or <strong>employee ID / code</strong> column. We will validate existing users first, show the matched learners here, and only then submit the assignment.
                   </Text>
 
                   {uploadPreview ? (
@@ -502,8 +502,8 @@ const CourseAssignmentWorkspace = observer(() => {
                       {uploadPreview.failedEntries.length ? (
                         <Stack spacing={2} mt={3}>
                           {uploadPreview.failedEntries.slice(0, 6).map((entry, index) => (
-                            <Text key={`${entry.userId || entry.email || entry.rowNumber}-${index}`} fontSize="sm" color="orange.700">
-                              {entry.email || entry.reference || `Row ${entry.rowNumber}`}: {entry.reason}
+                            <Text key={`${entry.userId || entry.phone || entry.rowNumber}-${index}`} fontSize="sm" color="orange.700">
+                              {entry.phone || entry.reference || `Row ${entry.rowNumber}`}: {entry.reason}
                             </Text>
                           ))}
                         </Stack>
@@ -704,8 +704,8 @@ const CourseAssignmentWorkspace = observer(() => {
           {lastResult.failedEntries?.length ? (
             <Stack spacing={2} mt={4}>
               {lastResult.failedEntries.slice(0, 8).map((entry, index) => (
-                <Text key={`${entry.userId || entry.email || entry.rowNumber}-${index}`} fontSize="sm" color="orange.700">
-                  {entry.email || entry.reference || entry.userId || `Row ${entry.rowNumber}`}: {entry.reason}
+                <Text key={`${entry.userId || entry.phone || entry.rowNumber}-${index}`} fontSize="sm" color="orange.700">
+                  {entry.phone || entry.reference || entry.userId || `Row ${entry.rowNumber}`}: {entry.reason}
                 </Text>
               ))}
             </Stack>

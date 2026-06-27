@@ -1,42 +1,30 @@
 "use client";
 
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
   Box,
   Button,
-  Flex,
+  Link as ChakraLink,
   FormControl,
   FormLabel,
   Heading,
   HStack,
-  IconButton,
   Input,
-  InputGroup,
-  InputRightElement,
-  Link as ChakraLink,
   Spinner,
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ArrowLeft, BadgeCheck, Eye, EyeOff, Mail, Smartphone } from "lucide-react";
+import { ArrowLeft, Smartphone } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import NextLink from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getDefaultAuthenticatedRoute } from "../../config/utils/roleAccess";
 import stores from "../../store/stores";
-import type { GlobalLoginPayload } from "../../store/authStore/authStore";
 
-type LoginMode = GlobalLoginPayload["loginType"];
-
-const loginModes: Array<{
-  value: LoginMode;
-  label: string;
-  icon: typeof Mail;
-}> = [
-  { value: "phone", label: "Phone", icon: Smartphone },
-  { value: "email", label: "Email", icon: Mail },
-  { value: "code", label: "User code", icon: BadgeCheck },
-];
+const DUMMY_OTP = "123456";
 
 const inputStyles = {
   bg: "white",
@@ -61,65 +49,39 @@ const labelStyles = {
   mb: 1,
 };
 
-function getIdentifierMeta(loginType: LoginMode) {
-  if (loginType === "phone") {
-    return {
-      label: "Phone number",
-      placeholder: "9876543210",
-      inputMode: "tel" as const,
-      autoComplete: "tel",
-    };
-  }
-
-  if (loginType === "code") {
-    return {
-      label: "User code",
-      placeholder: "Enter your user code",
-      inputMode: "text" as const,
-      autoComplete: "username",
-    };
-  }
-
-  return {
-    label: "Email",
-    placeholder: "you@example.com",
-    inputMode: "email" as const,
-    autoComplete: "email",
-  };
-}
+type LoginStep = "phone" | "otp";
 
 const Login = observer(() => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, openNotification } = stores.auth;
-  const [formData, setFormData] = useState<GlobalLoginPayload>({
-    username: "",
-    password: "",
-    loginType: "phone",
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const identifierMeta = getIdentifierMeta(formData.loginType);
+  const { login, openNotification, requestOtp } = stores.auth;
   const requestedRedirect = String(searchParams.get("redirect") || "").trim();
+  const wasRegistered = searchParams.get("registered") === "1";
   const redirectTarget =
     requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//")
       ? requestedRedirect
       : "";
+  const [step, setStep] = useState<LoginStep>("phone");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [requestingOtp, setRequestingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
-  const setLoginMode = (loginType: LoginMode) => {
-    setFormData((current) => ({ ...current, loginType, username: "" }));
-  };
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const username = formData.username.trim();
-
-    if (formData.loginType === "email" && !/^\S+@\S+\.\S+$/.test(username)) {
-      openNotification({ title: "Check your email", message: "Enter a valid email address.", type: "error" });
-      return;
+  useEffect(() => {
+    if (wasRegistered) {
+      openNotification({
+        title: "Account created",
+        message: "Sign in with your phone number and OTP to continue.",
+        type: "success",
+      });
     }
+  }, [openNotification, wasRegistered]);
 
-    if (formData.loginType === "phone" && !/^\d{10}$/.test(username)) {
+  const normalizedPhone = phone.trim();
+  const normalizedOtp = otp.trim();
+
+  const requestLoginOtp = async () => {
+    if (!/^\d{10}$/.test(normalizedPhone)) {
       openNotification({
         title: "Check your phone number",
         message: "Enter a valid 10-digit phone number.",
@@ -127,10 +89,54 @@ const Login = observer(() => {
       });
       return;
     }
-
-    setIsLoading(true);
+    setRequestingOtp(true);
     try {
-      const response: any = await login({ ...formData, username });
+      await requestOtp({
+        phone: normalizedPhone,
+        purpose: "login",
+      });
+
+      setOtp("");
+      setStep("otp");
+      openNotification({
+        title: "OTP sent",
+        message: `Use ${DUMMY_OTP} while the dummy flow is enabled.`,
+        type: "success",
+      });
+    } catch (error: any) {
+      openNotification({
+        title: "Unable to send OTP",
+        message: error?.message || error?.error || "We could not start the login flow.",
+        type: "error",
+      });
+    } finally {
+      setRequestingOtp(false);
+    }
+  };
+
+  const handleRequestOtp = async (event: React.FormEvent) => {
+    event.preventDefault();
+    await requestLoginOtp();
+  };
+
+  const handleVerifyOtp = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!/^\d{6}$/.test(normalizedOtp)) {
+      openNotification({
+        title: "Check your OTP",
+        message: "Enter the 6-digit OTP.",
+        type: "error",
+      });
+      return;
+    }
+
+    setVerifyingOtp(true);
+    try {
+      const response: any = await login({
+        phone: normalizedPhone,
+        otp: normalizedOtp,
+      });
 
       openNotification({
         title: "Signed in",
@@ -151,11 +157,11 @@ const Login = observer(() => {
     } catch (error: any) {
       openNotification({
         title: "Login failed",
-        message: error?.message || error?.error || "Invalid credentials.",
+        message: error?.message || error?.error || "Unable to verify that OTP.",
         type: "error",
       });
     } finally {
-      setIsLoading(false);
+      setVerifyingOtp(false);
     }
   };
 
@@ -183,115 +189,111 @@ const Login = observer(() => {
           Sign in
         </Heading>
         <Text color="gray.500" fontSize="13px">
-          Continue to your learning workspace.
+          {step === "phone"
+            ? "Continue with your phone number."
+            : `Enter the OTP sent to ${normalizedPhone}.`}
         </Text>
       </Box>
 
-      <form onSubmit={handleSubmit} noValidate>
-        <VStack spacing={4} align="stretch">
-          <FormControl>
-            <FormLabel {...labelStyles}>Sign in with</FormLabel>
-            <Flex bg="gray.100" borderRadius="8px" p="4px" gap="4px">
-              {loginModes.map((mode) => {
-                const ModeIcon = mode.icon;
-                const selected = formData.loginType === mode.value;
-
-                return (
-                  <Button
-                    key={mode.value}
-                    type="button"
-                    flex="1"
-                    minW={0}
-                    h="36px"
-                    px={2}
-                    borderRadius="6px"
-                    bg={selected ? "white" : "transparent"}
-                    color={selected ? "#D84315" : "gray.500"}
-                    boxShadow={selected ? "sm" : "none"}
-                    fontSize="12px"
-                    fontWeight={selected ? "600" : "500"}
-                    leftIcon={<ModeIcon size={14} />}
-                    onClick={() => setLoginMode(mode.value)}
-                    _hover={{ bg: selected ? "white" : "gray.200" }}
-                    aria-pressed={selected}
-                  >
-                    {mode.label}
-                  </Button>
-                );
-              })}
-            </Flex>
-          </FormControl>
-
-          <FormControl isRequired>
-            <FormLabel {...labelStyles}>{identifierMeta.label}</FormLabel>
-            <Input
-              name="username"
-              type={formData.loginType === "email" ? "email" : "text"}
-              inputMode={identifierMeta.inputMode}
-              autoComplete={identifierMeta.autoComplete}
-              placeholder={identifierMeta.placeholder}
-              maxLength={formData.loginType === "phone" ? 10 : undefined}
-              value={formData.username}
-              onChange={(event) => setFormData((current) => ({ ...current, username: event.target.value }))}
-              {...inputStyles}
-            />
-          </FormControl>
-
-          <FormControl isRequired>
-            <FormLabel {...labelStyles}>Password</FormLabel>
-            <InputGroup>
+      {step === "phone" ? (
+        <form onSubmit={handleRequestOtp} noValidate>
+          <VStack spacing={4} align="stretch">
+            <FormControl isRequired>
+              <FormLabel {...labelStyles}>Phone number</FormLabel>
               <Input
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
-                pr="44px"
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="9876543210"
+                maxLength={10}
+                value={phone}
+                onChange={(event) => setPhone(event.target.value.replace(/\D/g, ""))}
                 {...inputStyles}
               />
-              <InputRightElement h="44px">
-                <IconButton
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  icon={showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  onClick={() => setShowPassword((current) => !current)}
-                  size="sm"
-                  variant="ghost"
-                  color="gray.500"
-                />
-              </InputRightElement>
-            </InputGroup>
-          </FormControl>
+            </FormControl>
 
-          <Flex justify="flex-end" mt={-1}>
-            <ChakraLink
-              as={NextLink}
-              href="/forgot-password"
-              color="#D84315"
-              fontSize="13px"
-              fontWeight="500"
-              _hover={{ textDecoration: "underline" }}
+            <Button
+              type="submit"
+              h="44px"
+              borderRadius="8px"
+              bg="#D84315"
+              color="white"
+              fontSize="sm"
+              fontWeight="600"
+              leftIcon={requestingOtp ? undefined : <Smartphone size={16} />}
+              isDisabled={!normalizedPhone || requestingOtp}
+              _hover={{ bg: "#BF360C" }}
+              _active={{ bg: "#BF360C", transform: "scale(0.99)" }}
             >
-              Forgot password?
-            </ChakraLink>
-          </Flex>
+              {requestingOtp ? <Spinner size="sm" /> : "Send OTP"}
+            </Button>
+          </VStack>
+        </form>
+      ) : (
+        <form onSubmit={handleVerifyOtp} noValidate>
+          <VStack spacing={4} align="stretch">
+            <FormControl isRequired>
+              <FormLabel {...labelStyles}>OTP</FormLabel>
+              <Input
+                name="otp"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="123456"
+                maxLength={6}
+                value={otp}
+                onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))}
+                letterSpacing="0.3em"
+                textAlign="center"
+                {...inputStyles}
+              />
+            </FormControl>
 
-          <Button
-            type="submit"
-            h="44px"
-            borderRadius="8px"
-            bg="#D84315"
-            color="white"
-            fontSize="sm"
-            fontWeight="600"
-            isDisabled={!formData.username.trim() || !formData.password || isLoading}
-            _hover={{ bg: "#BF360C" }}
-            _active={{ bg: "#BF360C", transform: "scale(0.99)" }}
-          >
-            {isLoading ? <Spinner size="sm" /> : "Sign in"}
-          </Button>
-        </VStack>
-      </form>
+            <HStack spacing={3}>
+              <Button
+                type="button"
+                variant="outline"
+                borderRadius="8px"
+                h="44px"
+                flex="1"
+                onClick={() => {
+                  setStep("phone");
+                  setOtp("");
+                }}
+              >
+                Change phone
+              </Button>
+              <Button
+                type="submit"
+                h="44px"
+                borderRadius="8px"
+                bg="#D84315"
+                color="white"
+                fontSize="sm"
+                fontWeight="600"
+                flex="1"
+                isDisabled={!normalizedOtp || verifyingOtp}
+                _hover={{ bg: "#BF360C" }}
+                _active={{ bg: "#BF360C", transform: "scale(0.99)" }}
+              >
+                {verifyingOtp ? <Spinner size="sm" /> : "Verify OTP"}
+              </Button>
+            </HStack>
+
+            <Button
+              type="button"
+              variant="ghost"
+              color="#D84315"
+              fontSize="sm"
+              onClick={requestLoginOtp}
+              isDisabled={requestingOtp}
+            >
+              Resend OTP
+            </Button>
+          </VStack>
+        </form>
+      )}
 
       <HStack justify="center" spacing={1.5} mt={5}>
         <Text color="gray.500" fontSize="13px">Need an account?</Text>

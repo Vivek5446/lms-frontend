@@ -634,24 +634,23 @@ const UsersView = observer(() => {
       }))
       .filter((manager) => manager.managerEmail);
 
-    const needsDirectPassword = roleValue === "admin" || roleValue === "departmenthead";
     const isDepartmentRequired =
       roleValue === "departmenthead" || Boolean(parseManagerLevel(roleValue));
 
-    if (!code || !name || !email || !roleValue || !designation || !mobileNumber || (!userForm.id && !gender) || (isDepartmentRequired && !department)) {
+    if (!code || !name || !roleValue || !designation || !mobileNumber || (!userForm.id && !gender) || (isDepartmentRequired && !department)) {
       showToast({
         title: "Missing details",
-        description: `Employee code, full name, email, mobile number, designation, ${!userForm.id ? "gender, " : ""}${isDepartmentRequired ? "department, " : ""}and role are required.`,
+        description: `Employee code, full name, mobile number, designation, ${!userForm.id ? "gender, " : ""}${isDepartmentRequired ? "department, " : ""}and role are required.`,
         status: "warning",
         duration: 3000,
       });
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       showToast({
         title: "Invalid email address",
-        description: "Enter a valid email address before saving.",
+        description: "Enter a valid email address or leave it empty.",
         status: "warning",
         duration: 3000,
       });
@@ -684,7 +683,8 @@ const UsersView = observer(() => {
       }
     }
 
-    if (managers.some((manager) => manager.managerEmail === email)) {
+    const selfManagerIdentifiers = [email, mobileNumber].filter(Boolean);
+    if (managers.some((manager) => selfManagerIdentifiers.includes(manager.managerEmail))) {
       showToast({
         title: "Invalid hierarchy",
         description: "A user cannot be their own manager.",
@@ -734,42 +734,10 @@ const UsersView = observer(() => {
       return;
     }
 
-    if (needsDirectPassword && !userForm.id) {
-      if (!userForm.password.trim()) {
-        showToast({
-          title: "Password is required",
-          description: "Enter a password for admin or department head accounts.",
-          status: "warning",
-          duration: 3000,
-        });
-        return;
-      }
-
-      if (userForm.password.trim().length < 6) {
-        showToast({
-          title: "Weak password",
-          description: "Password must be at least 6 characters.",
-          status: "warning",
-          duration: 3000,
-        });
-        return;
-      }
-
-      if (userForm.password !== userForm.confirmPassword) {
-        showToast({
-          title: "Passwords do not match",
-          description: "Confirm password should match the password field.",
-          status: "warning",
-          duration: 3000,
-        });
-        return;
-      }
-    }
-
     const payload: any = {
       code,
       name,
-      email,
+      email: email || undefined,
       mobileNumber,
       department,
       city,
@@ -780,7 +748,6 @@ const UsersView = observer(() => {
       gender: gender ? Number(gender) : undefined,
       role: roleValue,
       managers,
-      resendSetupEmail: userForm.resendSetupEmail,
     };
 
     if (userForm.pic?.isDeleted) {
@@ -799,10 +766,6 @@ const UsersView = observer(() => {
         isAdd: 1,
         isDeleted: userForm.pic?.isDeleted || 0,
       };
-    }
-
-    if (needsDirectPassword) {
-      payload.password = userForm.password.trim();
     }
 
     if (isSuperadmin) {
@@ -841,11 +804,10 @@ const UsersView = observer(() => {
       const response = userForm.id
         ? await userStore.updateManagedUser(userForm.id, payload)
         : await userStore.createManagedUser(payload);
-      const emailDelivery = response?.data?.emailDelivery;
       showToast({
         title: userForm.id ? "User updated" : "User created",
         description: response?.message || "Saved successfully.",
-        status: emailDelivery?.success || emailDelivery?.skipped ? "success" : "info",
+        status: "success",
         duration: 3500,
       });
       setIsUserDrawerOpen(false);
