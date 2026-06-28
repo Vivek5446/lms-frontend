@@ -8,7 +8,7 @@ import MainLayout from "./layouts/mainLayout/MainLayout";
 import AuthenticationLayout from "./layouts/authenticationLayout/AuthenticationLayout";
 import DashboardLayout from "./layouts/dashboardLayout/DashboardLayout";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import stores from "./store/stores";
 import Notification from "./component/common/Notification/Notification";
 import { Montserrat } from "next/font/google";
@@ -107,7 +107,9 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
       <body className={`${lato.className} ${montserrat.className}`}>
         <ChakraProvider theme={activeTheme}>
           <Notification />
-          <LayoutComponent>{children}</LayoutComponent>
+          <Suspense fallback={null}>
+            <LayoutComponent>{children}</LayoutComponent>
+          </Suspense>
         </ChakraProvider>
       </body>
     </html>
