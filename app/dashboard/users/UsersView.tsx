@@ -34,6 +34,11 @@ import UserDrawer from "./components/UserDrawer";
 import UsersHeader from "./components/UsersHeader";
 import UsersTable from "./components/UsersTable";
 
+type UsersViewProps = {
+  scopedCompanyId?: string;
+  embedded?: boolean;
+};
+
 type ManagerRow = {
   level: number;
   selectedManager: any | null;
@@ -218,7 +223,7 @@ const initialForm = (): UserFormState => ({
   managers: reconcileManagersForRole("user", [], 3),
 });
 
-const UsersView = observer(() => {
+const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = false }: UsersViewProps) => {
   const toast = useToast();
   const { userStore, companyStore, auth } = stores;
   const [search, setSearch] = useState("");
@@ -264,7 +269,7 @@ const UsersView = observer(() => {
   );
   const isSuperadmin = role === "superadmin";
   const isDepartmentHead = role === "departmenthead";
-  const scopedCompanyId = companyStore.getActiveCompanyId();
+  const scopedCompanyId = scopedCompanyIdProp || companyStore.getActiveCompanyId();
   const managedCompanies = companyStore.companies.data || [];
   const currentCompanyName =
     auth.user?.companyDetails?.company_name ||
@@ -1126,7 +1131,7 @@ const UsersView = observer(() => {
       description="This account does not currently have access to the users workspace."
       fallbackHref="/dashboard/profile"
     >
-    <Box minH="100vh" p={{ base: 4, md: 6 }}>
+    <Box minH={embedded ? "auto" : "100vh"} p={embedded ? 0 : { base: 4, md: 6 }}>
       <VStack align="stretch" spacing={6}>
 
         {isManagementBlocked ? (

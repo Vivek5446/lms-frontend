@@ -54,7 +54,6 @@ import {
   FiBriefcase,
   FiCheckCircle,
   FiEdit2,
-  FiExternalLink,
   FiGlobe,
   FiInfo,
   FiLock,
@@ -69,6 +68,7 @@ import ConfirmationModal from "../../../component/common/ConfirmationModal/Confi
 import { getApiErrorMessage } from "../../../config/utils/apiError";
 import { readFileAsBase64 } from "../../../config/utils/utils";
 import stores from "../../../store/stores";
+import UsersView from "../../users/UsersView";
 import UserDrawer from "../../users/components/UserDrawer";
 import CompanyForm from "./CompanyForm";
 import UserTable from "./users/UserTable";
@@ -745,10 +745,10 @@ const CompanyAdminWorkspace = ({
           {/* Stats Row - Modern Cards */}
           <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={5}>
             <StatCard
-              label="Total Admins"
-              value={company?.adminCount || 0}
+              label="Total Users"
+              value={company?.userCount || 0}
               icon={FiUsers}
-              subtext={`${company?.activeAdminCount || 0} active`}
+              subtext={`${company?.activeUserCount || 0} active`}
             />
             <StatCard
               label="Departments"
@@ -911,34 +911,7 @@ const CompanyAdminWorkspace = ({
                 )}
                 <TabPanel px={0}>
                   {isUsersTab && (
-                    <Card
-                      bg={cardBg}
-                      border="1px solid"
-                      borderColor={borderColor}
-                      borderRadius="2xl"
-                      shadow="sm"
-                    >
-                      <CardBody>
-                        <VStack spacing={4} align="flex-start">
-                          <Icon as={FiExternalLink} boxSize={8} color="blue.400" />
-                          <Heading size="md">Unified User Management</Heading>
-                          <Text color={mutedText}>
-                            Users and managers now use the shared user-management flow with phone OTP authentication,
-                            manager hierarchy, and scoped company filtering.
-                          </Text>
-                          <Button
-                            leftIcon={<FiUsers />}
-                            colorScheme="blue"
-                            variant="solid"
-                            onClick={openUsersManagement}
-                            borderRadius="full"
-                            size="sm"
-                          >
-                            Open Users Management
-                          </Button>
-                        </VStack>
-                      </CardBody>
-                    </Card>
+                    <UsersView scopedCompanyId={company._id} embedded />
                   )}
                 </TabPanel>
               </TabPanels>
@@ -959,8 +932,8 @@ const CompanyAdminWorkspace = ({
                 <InfoRow label="Tenant Slug" value={company?.tenantSlug || "—"} icon={FiShield} />
                 <InfoRow label="Address" value={addressText} icon={FiMapPin} />
                 <InfoRow
-                  label="Admin Activity"
-                  value={`${company?.activeAdminCount || 0} / ${company?.adminCount || 0} active`}
+                  label="User Activity"
+                  value={`${company?.activeUserCount || 0} / ${company?.userCount || 0} active`}
                   icon={FiUsers}
                 />
                 <InfoRow
