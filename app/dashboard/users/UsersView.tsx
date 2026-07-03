@@ -135,14 +135,14 @@ const getBulkUploadRoleOptions = (managerLevels: number) => {
       description:
         requiredManagers.length === 0
           ? "Top-level managers without any assigned manager."
-          : `Requires ${requiredManagers.join(", ")} manager email${requiredManagers.length > 1 ? "s" : ""}.`,
+          : `Optionally assign ${requiredManagers.join(", ")} manager phone number${requiredManagers.length > 1 ? "s" : ""}.`,
     });
   }
 
   options.push({
     value: "user",
     label: "Employees / Users",
-    description: `Requires L1 to L${totalLevels} manager emails.`,
+    description: `Optionally assign L1 to L${totalLevels} manager phone numbers.`,
   });
 
   return options;

@@ -130,7 +130,7 @@ const BulkUploadModal = ({
     "City",
     "State",
     ...(bulkForm.uploadRole === "user" ? ["Designation", "Joining Date"] : []),
-    ...expectedManagerLevels.map((level) => `L${level} Manager Email ID`),
+    ...expectedManagerLevels.map((level) => `L${level} Manager Phone Number (Name)`),
   ];
   const companyReady = Boolean(bulkForm.companyId);
   const getUniqueManagers = (managers: any[] = []) => {
