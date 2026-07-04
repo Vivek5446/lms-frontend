@@ -219,14 +219,15 @@ const Register = observer(() => {
     }
   };
 
-  const handleVerifyOtp = async () => {
-    if (normalizedOtp.length !== 6) {
+  const handleVerifyOtp = async (overrideOtp?: string) => {
+    const code = overrideOtp || normalizedOtp;
+    if (code.length !== 6) {
       openNotification({ title: "Check your OTP", message: "Enter the 6-digit OTP.", type: "error" });
       return;
     }
     setBusy(true);
     try {
-      const response: any = await verifyOtp({ phone: normalizedPhone, otp: normalizedOtp, purpose: "register", token: otpSessionToken || undefined });
+      const response: any = await verifyOtp({ phone: normalizedPhone, otp: code, purpose: "register", token: otpSessionToken || undefined });
       setVerificationToken(response?.data?.verificationToken || response?.verificationToken || "");
       setStep("profile");
       openNotification({ title: "Phone verified", message: "Finish the rest of your account details.", type: "success" });
@@ -379,7 +380,12 @@ const Register = observer(() => {
             fieldsToValidate.forEach((field) => formik.setFieldTouched(field, true, false));
             if (fieldsToValidate.some((field) => getIn(formErrors, field))) return;
           }
-          setStep(stepsForType[Math.min(currentIdx + 1, stepsForType.length - 1)]);
+          const nextStep = stepsForType[Math.min(currentIdx + 1, stepsForType.length - 1)];
+          setStep(nextStep);
+          
+          if (nextStep === "location" && !values.location.city) {
+            detectCurrentLocation(setFieldValue);
+          }
         };
         const prev = () => setStep(stepsForType[Math.max(currentIdx - 1, 0)]);
 
@@ -440,8 +446,10 @@ const Register = observer(() => {
                           newOtp[i] = val;
                           setOtp(newOtp);
                           if (val && i < 5) otpRefs.current[i + 1]?.focus();
-                          if (newOtp.join("").length === 6) {
-                            // We can't call handleVerifyOtp directly here because it uses state, but they can click Verify
+                          
+                          const currentCode = newOtp.join("");
+                          if (currentCode.length === 6) {
+                            handleVerifyOtp(currentCode);
                           }
                         }}
                         onKeyDown={(e) => {
