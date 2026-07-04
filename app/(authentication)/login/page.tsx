@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Loader2, Scan, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Scan, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { AuthLayout } from "../../../components/auth/AuthLayout";
 
@@ -133,12 +133,15 @@ const LoginPage = observer(() => {
           )}
           style={{ backfaceVisibility: 'hidden', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)', position: step === 'phone' ? 'relative' : 'absolute', top: 0, left: 0 }}
         >
-          <div className="flex justify-between items-center mb-6">
-            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary dark:drop-shadow-[0_0_10px_rgba(var(--primary),0.3)]">Secure Login</p>
-            <Scan className="w-3.5 h-3.5 text-black/10 dark:hidden" />
+          <div className="absolute top-8 left-8 right-8 flex justify-between items-center">
+            <NextLink href="/" className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-black/40 hover:text-primary dark:text-white/40 dark:hover:text-primary transition-colors">
+              <ArrowLeft className="h-3.5 w-3.5" /> Home
+            </NextLink>
+            <p className="text-[11px] font-[900] uppercase tracking-[0.3em] text-black/60 dark:text-white/60 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">Welcome Back</p>
+            <div className="w-3.5 h-3.5" />
           </div>
 
-          <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-primary/30 dark:focus-within:border-primary">
+          <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-primary/30 dark:focus-within:border-primary mt-12">
             <span className="text-xl font-semibold mr-3 text-black/40 dark:text-white/20">+91</span>
             <input
               type="tel"
@@ -171,7 +174,7 @@ const LoginPage = observer(() => {
                 "w-full py-3 rounded-2xl font-black text-[9px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all",
                 "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)] hover:brightness-110",
                 "dark:bg-primary dark:text-white dark:shadow-[0_10px_30px_rgba(237,56,85,0.3)] dark:hover:brightness-110",
-                phone.length === 10 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+                phone.length === 10 ? "opacity-100 translate-y-0" : "opacity-50 pointer-events-none"
               )}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>SEND OTP <CheckCircle2 className="w-3.5 h-3.5" /></>}
