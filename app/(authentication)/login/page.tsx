@@ -11,7 +11,7 @@ import { getDefaultAuthenticatedRoute } from "../../config/utils/roleAccess";
 import stores from "../../store/stores";
 import { observer } from "mobx-react-lite";
 
-const DUMMY_OTP = "123456";
+
 type Step = "phone" | "otp";
 
 function cn(...classes: (string | undefined | null | false)[]) {
@@ -29,6 +29,7 @@ const LoginPage = observer(() => {
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [errorText, setErrorText] = useState("");
@@ -54,7 +55,10 @@ const LoginPage = observer(() => {
     setLoading(true);
     setErrorText("");
     try {
-      await requestOtp({ phone: normalizedPhone, purpose: "login" });
+      const res = await requestOtp({ phone: normalizedPhone, purpose: "login" });
+      if (res?.data?.token) {
+        setToken(res.data.token);
+      }
       setIsFlipped(true);
       setTimeout(() => setStep("otp"), 300);
       setOtp(["", "", "", "", "", ""]);
@@ -72,7 +76,7 @@ const LoginPage = observer(() => {
     setLoading(true);
     setErrorText("");
     try {
-      const response: any = await login({ phone: normalizedPhone, otp: code });
+      const response: any = await login({ phone: normalizedPhone, otp: code, token: token || undefined });
       setIsUnlocked(true);
       setTimeout(() => {
         window.location.href = redirectTarget || getDefaultAuthenticatedRoute(stores.auth.user || { userType: response?.data?.userType, role: response?.data?.role });
@@ -99,7 +103,7 @@ const LoginPage = observer(() => {
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
-    
+
     const currentCode = newOtp.join("");
     if (currentCode.length === 6) {
       handleVerify(currentCode);
@@ -118,9 +122,9 @@ const LoginPage = observer(() => {
         "w-full relative transition-transform duration-1000",
         isFlipped ? "rotate-y-180" : ""
       )} style={{ transformStyle: 'preserve-3d', perspective: '1200px' }}>
-        
+
         {/* Phone Input Card (Front) */}
-        <div 
+        <div
           className={cn(
             "w-full rounded-[36px] px-8 transition-all duration-1000",
             "bg-white/60 border border-white/80 shadow-[0_30px_80px_rgba(0,0,0,0.08)] backdrop-blur-3xl pt-8 pb-6",
@@ -182,7 +186,7 @@ const LoginPage = observer(() => {
         </div>
 
         {/* OTP Cipher Card (Back) */}
-        <div 
+        <div
           className={cn(
             "w-full rounded-[40px] px-8 py-10 border transition-all duration-1000 flex flex-col justify-center",
             "bg-white/60 border-white/80 shadow-[0_30px_80px_rgba(0,0,0,0.08)] backdrop-blur-3xl",
@@ -229,7 +233,7 @@ const LoginPage = observer(() => {
               <p className="text-[10px] font-black uppercase tracking-[0.2em] leading-tight pt-[1px]">{errorText}</p>
             </div>
           )}
-          
+
           <div className="mt-8 flex flex-col items-center">
             <button
               onClick={() => {

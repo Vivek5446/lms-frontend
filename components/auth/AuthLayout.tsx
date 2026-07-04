@@ -59,9 +59,9 @@ export function AuthLayout({
 
       {/* Absolute Top Elements - Kept fixed so they don't scroll */}
       <div className="fixed top-8 left-0 w-full flex justify-between items-center px-8 z-[120] pointer-events-none">
-        <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-black/40 dark:text-white/30 transition-colors">PADHARO</span>
+        <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-black/40 dark:text-white/30 transition-colors">ACADEMY</span>
         <div className="flex items-center gap-2">
-          <span className="text-[8px] font-bold tracking-[0.3em] uppercase text-black/30 dark:text-white/20 transition-colors">Member Portal</span>
+          <span className="text-[8px] font-bold tracking-[0.3em] uppercase text-black/30 dark:text-white/20 transition-colors">Learner Access</span>
           <div className="w-1.5 h-1.5 rounded-full shadow-[0_0_10px] bg-primary shadow-primary/50 animate-pulse" />
         </div>
       </div>

@@ -91,7 +91,7 @@ const Header: React.FC = observer(() => {
     stores.auth.logout();
     setMobileMenuOpen(false);
     setIsProfileOpen(false);
-    router.push('/');
+    router.push('/login');
   };
 
   const displayName = user?.name || user?.username || 'Account';

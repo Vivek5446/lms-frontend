@@ -32,7 +32,7 @@ function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-const DUMMY_OTP = "123456";
+
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 const hasGoogleMapsKey = Boolean(GOOGLE_MAPS_API_KEY.trim());
 const GOOGLE_MAP_LIBRARIES: ("places")[] = ["places"];
@@ -123,6 +123,7 @@ const Register = observer(() => {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [otpSessionToken, setOtpSessionToken] = useState("");
   const [verificationToken, setVerificationToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [resendIn, setResendIn] = useState(0);
@@ -201,12 +202,16 @@ const Register = observer(() => {
     }
     setBusy(true);
     try {
-      await requestOtp({ phone: normalizedPhone, purpose: "register" });
+      const res = await requestOtp({ phone: normalizedPhone, purpose: "register" });
+      if (res?.data?.token) {
+        setOtpSessionToken(res.data.token);
+      }
       setOtp(["", "", "", "", "", ""]);
       setResendIn(30);
       setStep("otp");
       setTimeout(() => otpRefs.current[0]?.focus(), 500);
-      openNotification({ title: "OTP sent", message: `Use ${DUMMY_OTP} while dummy flow is on.`, type: "success" });
+      const hintMessage = res?.data?.otpHint || "Check your phone for the 6-digit code.";
+      openNotification({ title: "OTP sent", message: hintMessage, type: "success" });
     } catch (error: any) {
       openNotification({ title: "Unable to continue", message: error?.message || error?.error || "We could not start registration.", type: "error" });
     } finally {
@@ -221,7 +226,7 @@ const Register = observer(() => {
     }
     setBusy(true);
     try {
-      const response: any = await verifyOtp({ phone: normalizedPhone, otp: normalizedOtp, purpose: "register" });
+      const response: any = await verifyOtp({ phone: normalizedPhone, otp: normalizedOtp, purpose: "register", token: otpSessionToken || undefined });
       setVerificationToken(response?.data?.verificationToken || response?.verificationToken || "");
       setStep("profile");
       openNotification({ title: "Phone verified", message: "Finish the rest of your account details.", type: "success" });
@@ -362,7 +367,7 @@ const Register = observer(() => {
           ? ["phone", "otp", "profile", "company", "location", "review"]
           : ["phone", "otp", "profile", "location", "review"];
         const currentIdx = stepsForType.indexOf(step);
-        
+
         const next = async () => {
           let fieldsToValidate: string[] = [];
           if (step === "profile") fieldsToValidate = ["name", "email"];
@@ -384,9 +389,9 @@ const Register = observer(() => {
           switch (step) {
             case "phone":
               return (
-                <div key="phone" className="space-y-5">
+                <div key="phone" className="space-y-7">
                   <AccountTypePicker value={values.accountType} onChange={(v) => setFieldValue("accountType", v)} />
-                  <label className="block mt-2">
+                  <label className="block">
                     <span className="text-[9px] font-black uppercase tracking-[0.3em] text-center text-black/30 dark:text-white/30 mb-2 block">Phone number</span>
                     <div className="flex items-center justify-center border-b-[1.5px] pb-2 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-white/10 dark:focus-within:border-primary/50">
                       <span className="text-xl font-semibold mr-3 text-black/40 dark:text-white/20">+91</span>
@@ -528,8 +533,8 @@ const Register = observer(() => {
                       disabled={locationBusy}
                       className={cn(
                         "w-full py-4 rounded-2xl font-black text-[9px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all",
-                        locationBusy 
-                          ? "opacity-50 pointer-events-none bg-black/5 dark:bg-white/5 text-black dark:text-white" 
+                        locationBusy
+                          ? "opacity-50 pointer-events-none bg-black/5 dark:bg-white/5 text-black dark:text-white"
                           : values.location.city
                             ? "bg-black/5 dark:bg-white/5 text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10"
                             : "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)] hover:brightness-110"
@@ -537,7 +542,7 @@ const Register = observer(() => {
                     >
                       {locationBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : values.location.city ? "Re-Detect Signal" : "Detect Resonance"}
                     </button>
-                    
+
                     <div className={cn("transition-all duration-700", values.location.city ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 h-0 overflow-hidden pointer-events-none")}>
                       <PrimaryButton loading={busy} onClick={next} className="!mt-0">
                         Proceed to Review <ArrowRight className="h-4 w-4" />
@@ -550,12 +555,12 @@ const Register = observer(() => {
               return (
                 <div key="review" className="space-y-5">
                   <ReviewCard form={values} phone={normalizedPhone} />
-                  <label className="flex items-start gap-3 mt-4 p-4 rounded-xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-                    <input type="checkbox" className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" checked={values.termsAccepted} onChange={(e) => setFieldValue("termsAccepted", e.target.checked)} />
-                    <span className="text-sm font-medium text-black/80 dark:text-white/80">I agree to the terms and conditions and confirm these signup details are correct.</span>
+                  <label className="flex items-center gap-3 mt-4 px-2 cursor-pointer hover:opacity-80 transition-opacity">
+                    <input type="checkbox" className="w-3.5 h-3.5 rounded border-black/20 dark:border-white/20 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" checked={values.termsAccepted} onChange={(e) => setFieldValue("termsAccepted", e.target.checked)} />
+                    <span className="text-[9px] font-bold text-black/60 dark:text-white/60 uppercase tracking-widest pt-[1px]">I agree to terms & conditions</span>
                   </label>
-                  {touched.termsAccepted && errors.termsAccepted && <div className="text-xs text-red-500 mt-1">{errors.termsAccepted as string}</div>}
-                  
+                  {touched.termsAccepted && errors.termsAccepted && <div className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-2">{errors.termsAccepted as string}</div>}
+
                   <PrimaryButton loading={isSubmitting || busy} disabled={isSubmitting || busy} onClick={() => formik.handleSubmit()}>
                     {isSubmitting || busy ? "Creating account..." : "Complete Registration"}
                   </PrimaryButton>
@@ -574,8 +579,8 @@ const Register = observer(() => {
             }
           }}>
             <AuthLayout>
-              <motion.div 
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} 
+              <motion.div
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
                 className={cn(
                   "w-full rounded-[40px] px-8 py-8 transition-all duration-1000 flex flex-col justify-center space-y-5",
                   "bg-white/60 border border-white/80 shadow-[0_30px_80px_rgba(0,0,0,0.08)] backdrop-blur-3xl",
@@ -633,7 +638,7 @@ function AccountTypePicker({ value, onChange }: { value: AccountType; onChange: 
     { id: "admin", label: "Admin", sub: "Manage a team", icon: Building2 },
   ];
   return (
-    <div className="mb-4">
+    <div>
       <div className="flex relative bg-black/5 dark:bg-white/5 p-1 rounded-full items-center">
         {items.map((it) => {
           const active = value === it.id;
@@ -643,24 +648,21 @@ function AccountTypePicker({ value, onChange }: { value: AccountType; onChange: 
               type="button"
               onClick={() => onChange(it.id)}
               className={cn(
-                "flex-1 relative rounded-full py-2 text-center transition-all z-10 flex flex-col items-center justify-center",
+                "flex-1 relative rounded-[2rem] py-3 text-center transition-all z-10 flex items-center justify-center gap-2",
               )}
             >
               {active && (
                 <motion.div
                   layoutId="accountTypeBubble"
-                  className="absolute inset-0 bg-white dark:bg-primary shadow-sm shadow-primary/20 rounded-full z-[-1]"
+                  className="absolute inset-0 bg-white dark:bg-primary shadow-sm shadow-black/5 dark:shadow-primary/20 rounded-[2rem] z-[-1]"
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
+              <it.icon className={cn("w-3.5 h-3.5 transition-colors duration-300", active ? "text-primary dark:text-white" : "text-black/40 dark:text-white/40")} />
               <div className={cn(
-                "text-[10px] font-[900] uppercase tracking-widest transition-colors duration-300",
+                "text-[10px] font-[900] uppercase tracking-widest transition-colors duration-300 pt-[1px]",
                 active ? "text-primary dark:text-white" : "text-black/40 dark:text-white/40"
               )}>{it.label}</div>
-              <div className={cn(
-                "text-[7px] font-bold uppercase tracking-[0.2em] transition-colors duration-300",
-                active ? "text-primary/60 dark:text-white/70" : "text-black/30 dark:text-white/20"
-              )}>{it.sub}</div>
             </button>
           );
         })}
@@ -727,9 +729,9 @@ function ReviewCard({ form, phone }: { form: SignupValues; phone: string }) {
     );
   }
   return (
-    <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-transparent p-5 space-y-3">
+    <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-transparent p-4 space-y-2">
       {rows.map(([k, v]) => (
-        <div key={k} className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 text-sm">
+        <div key={k} className="grid grid-cols-[100px_minmax(0,1fr)] gap-3 text-sm">
           <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-black/40 dark:text-white/40 pt-0.5">{k}</div>
           <div className="font-semibold text-black dark:text-white break-words">{v || "—"}</div>
         </div>

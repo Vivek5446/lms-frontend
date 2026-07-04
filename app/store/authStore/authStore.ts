@@ -50,6 +50,7 @@ export interface RegistrationLocationPayload {
 export interface GlobalLoginPayload {
   phone: string;
   otp: string;
+  token?: string;
 }
 
 export interface OtpRequestPayload {
@@ -61,6 +62,7 @@ export interface OtpVerifyPayload {
   phone: string;
   otp: string;
   purpose: "login" | "register";
+  token?: string;
 }
 
 class AuthStore {
