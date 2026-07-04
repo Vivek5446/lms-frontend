@@ -22,6 +22,7 @@ export interface LearnerRegistrationPayload {
   verificationToken: string;
   invitationToken?: string;
   courseId?: string;
+  location?: RegistrationLocationPayload;
 }
 
 export interface AdminRegistrationPayload {
@@ -31,6 +32,19 @@ export interface AdminRegistrationPayload {
   verificationToken: string;
   companyName: string;
   companyEmail?: string;
+  location?: RegistrationLocationPayload;
+}
+
+export interface RegistrationLocationPayload {
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  formattedAddress?: string;
+  placeId?: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface GlobalLoginPayload {

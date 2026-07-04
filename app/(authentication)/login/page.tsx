@@ -1,71 +1,36 @@
 "use client";
 
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Box,
-  Button,
-  Link as ChakraLink,
-  FormControl,
-  FormLabel,
-  Heading,
-  HStack,
-  Input,
-  Spinner,
-  Text,
-  VStack,
-} from "@chakra-ui/react";
-import { ArrowLeft, Smartphone } from "lucide-react";
-import { observer } from "mobx-react-lite";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, Loader2, Phone, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AuthLayout } from "../../../components/auth/AuthLayout";
+import { OtpInput } from "../../../components/auth/OtpInput";
+import { StepDots } from "../../../components/auth/StepDots";
+
 import NextLink from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { getDefaultAuthenticatedRoute } from "../../config/utils/roleAccess";
 import stores from "../../store/stores";
+import { observer } from "mobx-react-lite";
 
 const DUMMY_OTP = "123456";
 
-const inputStyles = {
-  bg: "white",
-  border: "1px solid",
-  borderColor: "gray.200",
-  borderRadius: "8px",
-  color: "gray.700",
-  fontSize: "sm",
-  h: "44px",
-  _placeholder: { color: "gray.400", fontSize: "13px" },
-  _focus: {
-    borderColor: "#D84315",
-    boxShadow: "0 0 0 2px rgba(216,67,21,0.1)",
-  },
-  _hover: { borderColor: "gray.300" },
-};
+type Step = "phone" | "otp";
 
-const labelStyles = {
-  color: "gray.700",
-  fontSize: "13px",
-  fontWeight: "500",
-  mb: 1,
-};
-
-type LoginStep = "phone" | "otp";
-
-const Login = observer(() => {
+const LoginPage = observer(() => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, openNotification, requestOtp } = stores.auth;
   const requestedRedirect = String(searchParams.get("redirect") || "").trim();
   const wasRegistered = searchParams.get("registered") === "1";
-  const redirectTarget =
-    requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//")
-      ? requestedRedirect
-      : "";
-  const [step, setStep] = useState<LoginStep>("phone");
+  const redirectTarget = requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//") ? requestedRedirect : "";
+
+  const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [requestingOtp, setRequestingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
     if (wasRegistered) {
@@ -77,238 +42,231 @@ const Login = observer(() => {
     }
   }, [openNotification, wasRegistered]);
 
-  const normalizedPhone = phone.trim();
-  const normalizedOtp = otp.trim();
+  useEffect(() => {
+    if (!resendIn) return;
+    const t = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendIn]);
 
-  const requestLoginOtp = async () => {
+  const handleRequestOtp = async () => {
+    const normalizedPhone = phone.trim();
     if (!/^\d{10}$/.test(normalizedPhone)) {
-      openNotification({
-        title: "Check your phone number",
-        message: "Enter a valid 10-digit phone number.",
-        type: "error",
-      });
+      openNotification({ title: "Check your phone number", message: "Enter a valid 10-digit phone number.", type: "error" });
       return;
     }
-    setRequestingOtp(true);
+    setSending(true);
     try {
-      await requestOtp({
-        phone: normalizedPhone,
-        purpose: "login",
-      });
-
-      setOtp("");
+      await requestOtp({ phone: normalizedPhone, purpose: "login" });
       setStep("otp");
-      openNotification({
-        title: "OTP sent",
-        message: `Use ${DUMMY_OTP} while the dummy flow is enabled.`,
-        type: "success",
-      });
+      setOtp("");
+      setResendIn(30);
+      openNotification({ title: "OTP sent", message: `Use ${DUMMY_OTP} while dummy flow is on.`, type: "success" });
     } catch (error: any) {
-      openNotification({
-        title: "Unable to send OTP",
-        message: error?.message || error?.error || "We could not start the login flow.",
-        type: "error",
-      });
+      openNotification({ title: "Unable to send OTP", message: error?.message || error?.error || "We could not start the login flow.", type: "error" });
     } finally {
-      setRequestingOtp(false);
+      setSending(false);
     }
   };
 
-  const handleRequestOtp = async (event: React.FormEvent) => {
-    event.preventDefault();
-    await requestLoginOtp();
-  };
-
-  const handleVerifyOtp = async (event: React.FormEvent) => {
-    event.preventDefault();
-
+  const handleVerify = async () => {
+    const normalizedOtp = otp.trim();
+    const normalizedPhone = phone.trim();
     if (!/^\d{6}$/.test(normalizedOtp)) {
-      openNotification({
-        title: "Check your OTP",
-        message: "Enter the 6-digit OTP.",
-        type: "error",
-      });
+      openNotification({ title: "Check your OTP", message: "Enter the 6-digit OTP.", type: "error" });
       return;
     }
-
-    setVerifyingOtp(true);
+    setVerifying(true);
     try {
-      const response: any = await login({
-        phone: normalizedPhone,
-        otp: normalizedOtp,
-      });
-
-      openNotification({
-        title: "Signed in",
-        message: response?.message || "Welcome back.",
-        type: "success",
-        duration: 3000,
-      });
-
-      router.replace(
-        redirectTarget ||
-          getDefaultAuthenticatedRoute(
-            stores.auth.user || {
-              userType: response?.data?.userType,
-              role: response?.data?.role,
-            }
-          )
-      );
+      const response: any = await login({ phone: normalizedPhone, otp: normalizedOtp });
+      openNotification({ title: "Signed in", message: response?.message || "Welcome back.", type: "success", duration: 3000 });
+      router.replace(redirectTarget || getDefaultAuthenticatedRoute(stores.auth.user || { userType: response?.data?.userType, role: response?.data?.role }));
     } catch (error: any) {
-      openNotification({
-        title: "Login failed",
-        message: error?.message || error?.error || "Unable to verify that OTP.",
-        type: "error",
-      });
+      openNotification({ title: "Login failed", message: error?.message || error?.error || "Unable to verify that OTP.", type: "error" });
     } finally {
-      setVerifyingOtp(false);
+      setVerifying(false);
     }
   };
 
   return (
-    <VStack spacing={0} align="stretch">
-      <Box mb={6}>
-        <ChakraLink
-          as={NextLink}
-          href="/"
-          display="inline-flex"
-          alignItems="center"
-          gap={1.5}
-          color="gray.500"
-          fontSize="13px"
-          fontWeight="500"
-          _hover={{ color: "#D84315", textDecoration: "none" }}
-        >
-          <ArrowLeft size={15} />
-          Back to home
-        </ChakraLink>
-      </Box>
+    <AuthLayout
+      eyebrow="Secure sign-in"
+      title="Welcome back. Pick up right where you left off."
+      subtitle="Sign in with a phone number and one-time passcode — no passwords to remember."
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="space-y-7"
+      >
+        <div className="flex items-center justify-between">
+          <NextLink
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to home
+          </NextLink>
+          <StepDots total={2} current={step === "phone" ? 0 : 1} />
+        </div>
 
-      <Box mb={5}>
-        <Heading color="gray.800" fontSize="2xl" fontWeight="600" mb={1}>
-          Sign in
-        </Heading>
-        <Text color="gray.500" fontSize="13px">
-          {step === "phone"
-            ? "Continue with your phone number."
-            : `Enter the OTP sent to ${normalizedPhone}.`}
-        </Text>
-      </Box>
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-semibold uppercase tracking-wider">
+            <ShieldCheck className="h-3 w-3" /> OTP protected
+          </div>
+          <h1 className="font-display text-2xl sm:text-3xl leading-[1.05] text-foreground font-bold">
+            {step === "phone" ? "Sign in" : "Verify it's you"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {step === "phone"
+              ? "We'll text you a one-time code to confirm this number."
+              : (
+                <>
+                  Enter the 6-digit code sent to <span className="font-semibold text-foreground">+91 {phone}</span>.
+                </>
+              )}
+          </p>
+        </div>
 
-      {step === "phone" ? (
-        <form onSubmit={handleRequestOtp} noValidate>
-          <VStack spacing={4} align="stretch">
-            <FormControl isRequired>
-              <FormLabel {...labelStyles}>Phone number</FormLabel>
-              <Input
-                name="phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="9876543210"
-                maxLength={10}
-                value={phone}
-                onChange={(event) => setPhone(event.target.value.replace(/\D/g, ""))}
-                {...inputStyles}
-              />
-            </FormControl>
-
-            <Button
-              type="submit"
-              h="44px"
-              borderRadius="8px"
-              bg="#D84315"
-              color="white"
-              fontSize="sm"
-              fontWeight="600"
-              leftIcon={requestingOtp ? undefined : <Smartphone size={16} />}
-              isDisabled={!normalizedPhone || requestingOtp}
-              _hover={{ bg: "#BF360C" }}
-              _active={{ bg: "#BF360C", transform: "scale(0.99)" }}
+        <AnimatePresence mode="wait">
+          {step === "phone" ? (
+            <motion.form
+              key="phone"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleRequestOtp();
+              }}
+              className="space-y-5"
             >
-              {requestingOtp ? <Spinner size="sm" /> : "Send OTP"}
-            </Button>
-          </VStack>
-        </form>
-      ) : (
-        <form onSubmit={handleVerifyOtp} noValidate>
-          <VStack spacing={4} align="stretch">
-            <FormControl isRequired>
-              <FormLabel {...labelStyles}>OTP</FormLabel>
-              <Input
-                name="otp"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="123456"
-                maxLength={6}
-                value={otp}
-                onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))}
-                letterSpacing="0.3em"
-                textAlign="center"
-                {...inputStyles}
-              />
-            </FormControl>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold text-foreground/80">
+                  Phone number
+                </span>
+                <div className="group relative flex items-center rounded-2xl border border-input bg-zinc-50 dark:bg-zinc-800/50 transition-all focus-within:border-primary focus-within:bg-white dark:focus-within:bg-zinc-900 focus-within:ring-4 focus-within:ring-primary/15">
+                  <div className="pl-4 pr-2 flex items-center gap-2 border-r border-border/70 h-14">
+                    <span className="text-lg">🇮🇳</span>
+                    <span className="text-sm font-semibold text-foreground/80">+91</span>
+                  </div>
+                  <Phone className="ml-3 h-4 w-4 text-muted-foreground shrink-0" />
+                  <input
+                    autoFocus
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                    className="min-w-0 flex-1 bg-transparent px-3 h-14 text-base font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
+                  />
+                </div>
+              </label>
 
-            <HStack spacing={3}>
-              <Button
-                type="button"
-                variant="outline"
-                borderRadius="8px"
-                h="44px"
-                flex="1"
-                onClick={() => {
-                  setStep("phone");
-                  setOtp("");
-                }}
-              >
-                Change phone
-              </Button>
-              <Button
-                type="submit"
-                h="44px"
-                borderRadius="8px"
-                bg="#D84315"
-                color="white"
-                fontSize="sm"
-                fontWeight="600"
-                flex="1"
-                isDisabled={!normalizedOtp || verifyingOtp}
-                _hover={{ bg: "#BF360C" }}
-                _active={{ bg: "#BF360C", transform: "scale(0.99)" }}
-              >
-                {verifyingOtp ? <Spinner size="sm" /> : "Verify OTP"}
-              </Button>
-            </HStack>
+              <PrimaryButton loading={sending} disabled={!phone}>
+                Send OTP <ArrowRight className="h-4 w-4" />
+              </PrimaryButton>
 
-            <Button
-              type="button"
-              variant="ghost"
-              color="#D84315"
-              fontSize="sm"
-              onClick={requestLoginOtp}
-              isDisabled={requestingOtp}
+              <p className="text-center text-xs text-muted-foreground">
+                By continuing you agree to our{" "}
+                <a className="text-foreground underline underline-offset-2">Terms</a> &{" "}
+                <a className="text-foreground underline underline-offset-2">Privacy</a>.
+              </p>
+            </motion.form>
+          ) : (
+            <motion.form
+              key="otp"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleVerify();
+              }}
+              className="space-y-5"
             >
-              Resend OTP
-            </Button>
-          </VStack>
-        </form>
-      )}
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground/80 inline-flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5" /> One-time code
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("phone");
+                      setOtp("");
+                    }}
+                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Change number
+                  </button>
+                </div>
+                <OtpInput value={otp} onChange={setOtp} autoFocus />
+              </div>
 
-      <HStack justify="center" spacing={1.5} mt={5}>
-        <Text color="gray.500" fontSize="13px">Need an account?</Text>
-        <ChakraLink
-          as={NextLink}
-          href={redirectTarget ? `/register?redirect=${encodeURIComponent(redirectTarget)}` : "/register"}
-          color="#D84315"
-          fontSize="13px"
-          fontWeight="600"
-        >
-          Create account
-        </ChakraLink>
-      </HStack>
-    </VStack>
+              <PrimaryButton loading={verifying} disabled={otp.length !== 6}>
+                {otp.length === 6 ? (
+                  <>
+                    Verify & continue <CheckCircle2 className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>Enter 6-digit code</>
+                )}
+              </PrimaryButton>
+
+              <div className="text-center text-xs text-muted-foreground">
+                Didn't receive it?{" "}
+                {resendIn > 0 ? (
+                  <span>Resend in {resendIn}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRequestOtp}
+                    className="font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Resend OTP
+                  </button>
+                )}
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        <div className="border-t border-border/60 pt-5 text-center text-sm text-muted-foreground">
+          New here?{" "}
+          <NextLink href={redirectTarget ? `/register?redirect=${encodeURIComponent(redirectTarget)}` : "/register"} className="font-semibold text-primary hover:text-primary/80 transition-colors">
+            Create an account
+          </NextLink>
+        </div>
+      </motion.div>
+    </AuthLayout>
   );
 });
 
-export default Login;
+export default LoginPage;
+
+function PrimaryButton({
+  children,
+  loading,
+  disabled,
+}: {
+  children: React.ReactNode;
+  loading?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <motion.button
+      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
+      type="submit"
+      disabled={disabled || loading}
+      className="relative w-full rounded-2xl bg-primary text-primary-foreground font-semibold text-sm h-[52px] shadow-lg transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2 overflow-hidden"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <>{children}</>
+      )}
+    </motion.button>
+  );
+}
