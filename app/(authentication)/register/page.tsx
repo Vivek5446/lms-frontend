@@ -332,8 +332,19 @@ const Register = observer(() => {
     }
     setLocationBusy(true);
     setLocationStatus("Requesting current location permission...");
+    
+    // Add a manual timeout to prevent infinite loading if the user ignores the prompt
+    let timeoutFired = false;
+    const fallbackTimeout = setTimeout(() => {
+      timeoutFired = true;
+      setLocationBusy(false);
+      setLocationStatus("Permission prompt timed out. Please search or fill manually.");
+    }, 6000);
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        if (timeoutFired) return;
+        clearTimeout(fallbackTimeout);
         const point = { lat: position.coords.latitude, lng: position.coords.longitude };
         setSelectedPoint(point);
         setMapCenter(point);
@@ -342,11 +353,13 @@ const Register = observer(() => {
         await geocodePoint(point, setFieldValue);
       },
       () => {
+        if (timeoutFired) return;
+        clearTimeout(fallbackTimeout);
         setLocationBusy(false);
         setLocationStatus("Permission was blocked. Search or fill the location manually.");
         openNotification({ title: "Could not read current location", message: "Please allow location access or search for the address.", type: "error" });
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 5000 }
     );
   };
 
@@ -534,6 +547,21 @@ const Register = observer(() => {
                         <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-black/40 dark:text-white/40 max-w-[250px] truncate">{values.location.address}</p>
                       </div>
                     )}
+
+                    {!values.location.city && !locationBusy && (
+                      <div className="w-full mt-4 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="text-[9px] font-black uppercase tracking-[0.3em] text-center text-black/40 dark:text-white/40 mb-2">Or enter manually</div>
+                        <Field name="location.address" label="Address" placeholder="Street Address" value={values.location.address} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.address") ? getIn(errors, "location.address") : undefined} required />
+                        <div className="grid grid-cols-2 gap-3">
+                          <Field name="location.city" label="City" placeholder="City" value={values.location.city} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.city") ? getIn(errors, "location.city") : undefined} required />
+                          <Field name="location.state" label="State" placeholder="State" value={values.location.state} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.state") ? getIn(errors, "location.state") : undefined} required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Field name="location.country" label="Country" placeholder="Country" value={values.location.country} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.country") ? getIn(errors, "location.country") : undefined} required />
+                          <Field name="location.postalCode" label="Pincode" placeholder="Postal Code" value={values.location.postalCode} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.postalCode") ? getIn(errors, "location.postalCode") : undefined} required />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-3 pb-2 mt-4">
@@ -547,13 +575,13 @@ const Register = observer(() => {
                           ? "opacity-50 pointer-events-none bg-black/5 dark:bg-white/5 text-black dark:text-white"
                           : values.location.city
                             ? "bg-black/5 dark:bg-white/5 text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10"
-                            : "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)] hover:brightness-110"
+                            : "bg-primary/10 text-primary dark:bg-white/5 dark:text-white hover:bg-primary/20 transition-colors"
                       )}
                     >
                       {locationBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : values.location.city ? "Re-Detect Signal" : "Detect Resonance"}
                     </button>
 
-                    <div className={cn("transition-all duration-700", values.location.city ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 h-0 overflow-hidden pointer-events-none")}>
+                    <div className={cn("transition-all duration-700", values.location.city || (!locationBusy && touched.location?.address) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 h-0 overflow-hidden pointer-events-none")}>
                       <PrimaryButton loading={busy} onClick={next} className="!mt-0">
                         Proceed to Review <ArrowRight className="h-4 w-4" />
                       </PrimaryButton>
@@ -729,6 +757,8 @@ function Field({
 }
 
 function ReviewCard({ form, phone }: { form: SignupValues; phone: string }) {
+  const truncate = (str: string, max = 30) => str.length > max ? str.substring(0, max) + "..." : str;
+
   const rows: Array<[string, string]> = [
     ["Account type", form.accountType === "admin" ? "Admin" : "Learner"],
     ["Name", form.name],
@@ -739,15 +769,22 @@ function ReviewCard({ form, phone }: { form: SignupValues; phone: string }) {
     rows.push(
       ["Company", form.companyName],
       ["Company email", form.companyEmail],
-      ["Location", `${form.location.address}, ${form.location.city}, ${form.location.state}`],
     );
+  }
+  
+  const locationString = form.location.formattedAddress 
+    ? form.location.formattedAddress.replace(/^[A-Z0-9\+]{8,12},\s*/, "") 
+    : [form.location.address, form.location.city, form.location.state].filter(Boolean).join(", ");
+    
+  if (locationString) {
+    rows.push(["Location", locationString]);
   }
   return (
     <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-transparent p-4 space-y-2">
       {rows.map(([k, v]) => (
         <div key={k} className="grid grid-cols-[100px_minmax(0,1fr)] gap-3 text-sm">
           <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-black/40 dark:text-white/40 pt-0.5">{k}</div>
-          <div className="font-semibold text-black dark:text-white break-words">{v || "—"}</div>
+          <div className="font-semibold text-black dark:text-white break-words" title={v}>{v ? truncate(v, 30) : "—"}</div>
         </div>
       ))}
     </div>
