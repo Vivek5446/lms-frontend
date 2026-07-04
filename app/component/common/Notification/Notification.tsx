@@ -10,50 +10,58 @@ const Notification = observer(() => {
   } = stores;
   const toast = useToast();
 
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "success":
+        return <FiCheckCircle size={20} />;
+      case "error":
+        return <FiAlertCircle size={20} />;
+      case "info":
+        return <FiInfo size={20} />;
+      default:
+        return null;
+    }
+  };
+
   useEffect(() => {
     if (notification) {
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
       const toastId = toast({
-        title: notification.title,
-        description: notification.message,
-        status: notification.type,
         duration: notification.duration || 5000,
         isClosable: true,
-        position: notification.placement
-          ? (notification.placement as ToastPosition)
-          : "top-right",
-        containerStyle: {
-          borderRadius: "12px",
-          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.15)",
+        position: isMobile ? "bottom" : (notification.placement as ToastPosition) || "top-right",
+        render: () => {
+          const isError = notification.type === "error";
+          const isSuccess = notification.type === "success";
+          
+          return (
+            <div className={`flex items-start gap-4 px-5 py-4 rounded-2xl shadow-2xl w-full max-w-sm mx-auto mb-6 border backdrop-blur-xl ${
+              isError 
+                ? 'bg-[#130707]/95 border-red-500/30 shadow-red-500/20' 
+                : isSuccess 
+                  ? 'bg-[#071309]/95 border-green-500/30 shadow-green-500/20' 
+                  : 'bg-[#070D13]/95 border-blue-500/30 shadow-blue-500/20'
+            }`}>
+              <div className={`flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-full bg-white/5 mt-0.5 ${
+                isError ? 'text-red-500' : isSuccess ? 'text-green-500' : 'text-blue-500'
+              }`}>
+                {getNotificationIcon(notification.type)}
+              </div>
+              <div className="flex flex-col pt-0.5">
+                {notification.title && (
+                  <span className={`font-black text-[11px] uppercase tracking-widest mb-1 ${
+                    isError ? 'text-red-400' : isSuccess ? 'text-green-400' : 'text-blue-400'
+                  }`}>
+                    {notification.title}
+                  </span>
+                )}
+                <span className="text-[13.5px] font-medium text-white/90 leading-snug">
+                  {notification.message}
+                </span>
+              </div>
+            </div>
+          );
         },
-        render: () => (
-          <Box
-            bg={getBgColor(notification.type)}
-            color="white"
-            borderRadius="12px"
-            boxShadow="lg"
-            p={4}
-            maxWidth="400px"
-            fontSize="sm"
-            display="flex"
-            alignItems="center"
-            gap={3}
-            transition="all 0.3s ease"
-            _hover={{
-              transform: "translateY(-4px)",
-              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            {getNotificationIcon(notification.type)}
-            <Box>
-              <Text fontWeight="bold" fontSize="lg">
-                {notification.title}
-              </Text>
-              <Text fontSize="sm" opacity="0.9">
-                {notification.message}
-              </Text>
-            </Box>
-          </Box>
-        ),
       });
 
       setTimeout(() => {
@@ -62,32 +70,6 @@ const Notification = observer(() => {
       }, notification.duration || 5000);
     }
   }, [notification, toast, closeNotication]);
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "success":
-        return <FiCheckCircle size={24} color="white" />;
-      case "error":
-        return <FiAlertCircle size={24} color="white" />;
-      case "info":
-        return <FiInfo size={24} color="white" />;
-      default:
-        return null;
-    }
-  };
-
-  const getBgColor = (type: string) => {
-    switch (type) {
-      case "success":
-        return "green.500";
-      case "error":
-        return "red.500";
-      case "info":
-        return "blue.500";
-      default:
-        return "gray.500";
-    }
-  };
 
   return null;
 });

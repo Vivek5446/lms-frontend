@@ -21,13 +21,16 @@ import {
 import { observer } from "mobx-react-lite";
 import NextLink from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import * as Yup from "yup";
 import { AuthLayout } from "../../../components/auth/AuthLayout";
-import { OtpInput } from "../../../components/auth/OtpInput";
 import { StepDots } from "../../../components/auth/StepDots";
 import { getDefaultAuthenticatedRoute } from "../../config/utils/roleAccess";
 import stores from "../../store/stores";
+
+function cn(...classes: (string | undefined | null | false)[]) {
+  return classes.filter(Boolean).join(" ");
+}
 
 const DUMMY_OTP = "123456";
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
@@ -118,7 +121,8 @@ const Register = observer(() => {
 
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [verificationToken, setVerificationToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [resendIn, setResendIn] = useState(0);
@@ -142,7 +146,7 @@ const Register = observer(() => {
   }, [resendIn]);
 
   const normalizedPhone = phone.trim();
-  const normalizedOtp = otp.trim();
+  const normalizedOtp = otp.join("").trim();
 
   const initialValues = useMemo<SignupValues>(
     () => ({
@@ -164,7 +168,6 @@ const Register = observer(() => {
         accountType: Yup.mixed<AccountType>().oneOf(["learner", "admin"]).required(),
         name: Yup.string().trim().min(2, "Enter your full name").max(80, "Name is too long").required("Full name is required"),
         email: Yup.string().trim().lowercase().email("Enter a valid email address"),
-        phone: Yup.string().trim().matches(/^\d{10}$/, { message: "Enter a valid 10-digit phone number" }).required("Phone number is required"),
         companyName: Yup.string().when("accountType", {
           is: "admin",
           then: (schema) => schema.trim().min(2, "Enter your company name").max(120, "Company name is too long").required("Company name is required"),
@@ -199,9 +202,10 @@ const Register = observer(() => {
     setBusy(true);
     try {
       await requestOtp({ phone: normalizedPhone, purpose: "register" });
-      setOtp("");
+      setOtp(["", "", "", "", "", ""]);
       setResendIn(30);
       setStep("otp");
+      setTimeout(() => otpRefs.current[0]?.focus(), 500);
       openNotification({ title: "OTP sent", message: `Use ${DUMMY_OTP} while dummy flow is on.`, type: "success" });
     } catch (error: any) {
       openNotification({ title: "Unable to continue", message: error?.message || error?.error || "We could not start registration.", type: "error" });
@@ -272,7 +276,9 @@ const Register = observer(() => {
         duration: 4000,
       });
 
-      router.replace(redirectTarget || authenticatedRoute);
+      setTimeout(() => {
+        window.location.href = redirectTarget || authenticatedRoute;
+      }, 1500);
     } catch (error: any) {
       openNotification({ title: "Signup failed", message: error?.message || error?.error || "Unable to create your account.", type: "error" });
     }
@@ -339,12 +345,12 @@ const Register = observer(() => {
   };
 
   const stepTitles: Record<Step, { eyebrow: string; title: string; sub: string }> = {
-    phone: { eyebrow: "Step 1", title: "Let's start with your phone", sub: "We'll verify it with a one-time code." },
-    otp: { eyebrow: "Step 2", title: "Verify your phone", sub: `Enter the code sent to +91 ${phone}.` },
-    profile: { eyebrow: "About you", title: "Tell us who you are", sub: "This helps us personalize your workspace." },
-    company: { eyebrow: "Company", title: "About your organization", sub: "Admins bring their team along." },
-    location: { eyebrow: "Location", title: "Where are you based?", sub: "Helps us localize your experience." },
-    review: { eyebrow: "Almost done", title: "Review & confirm", sub: "Give this a quick look before finishing." },
+    phone: { eyebrow: "Step 1", title: "ACCOUNT SETUP", sub: "ENTER YOUR PHONE NUMBER" },
+    otp: { eyebrow: "Step 2", title: "VERIFY PHONE", sub: `CODE SENT TO +91 ${phone}` },
+    profile: { eyebrow: "About you", title: "YOUR DETAILS", sub: "PERSONAL INFORMATION" },
+    company: { eyebrow: "Company", title: "WORKSPACE", sub: "COMPANY INFORMATION" },
+    location: { eyebrow: "Location", title: "LOCATION", sub: "WHERE ARE YOU BASED?" },
+    review: { eyebrow: "Almost done", title: "FINALIZE", sub: "REVIEW YOUR DETAILS" },
   };
 
   return (
@@ -373,186 +379,187 @@ const Register = observer(() => {
         const prev = () => setStep(stepsForType[Math.max(currentIdx - 1, 0)]);
 
         const { eyebrow, title, sub } = stepTitles[step];
-        const animationProps = {
-          initial: { opacity: 0, x: 24 },
-          animate: { opacity: 1, x: 0 },
-          exit: { opacity: 0, x: -24 },
-          transition: { duration: 0.3 }
-        };
 
         const renderStep = () => {
           switch (step) {
             case "phone":
               return (
-                <motion.div key="phone" {...animationProps} className="space-y-5">
+                <div key="phone" className="space-y-5">
                   <AccountTypePicker value={values.accountType} onChange={(v) => setFieldValue("accountType", v)} />
-                  <label className="block">
-                    <span className="mb-1.5 block text-xs font-semibold text-foreground/80">Phone number</span>
-                    <div className="group relative flex items-center rounded-2xl border border-input bg-zinc-50 dark:bg-zinc-800/50 transition-all focus-within:border-primary focus-within:bg-white dark:focus-within:bg-zinc-900 focus-within:ring-4 focus-within:ring-primary/15">
-                      <div className="pl-4 pr-2 flex items-center gap-2 border-r border-border/70 h-14">
-                        <span className="text-lg">🇮🇳</span>
-                        <span className="text-sm font-semibold text-foreground/80">+91</span>
-                      </div>
-                      <Phone className="ml-3 h-4 w-4 text-muted-foreground shrink-0" />
+                  <label className="block mt-2">
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-center text-black/30 dark:text-white/30 mb-2 block">Phone number</span>
+                    <div className="flex items-center justify-center border-b-[1.5px] pb-2 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-white/10 dark:focus-within:border-primary/50">
+                      <span className="text-xl font-semibold mr-3 text-black/40 dark:text-white/20">+91</span>
                       <input
                         autoFocus
-                        inputMode="numeric"
+                        type="tel"
                         maxLength={10}
-                        placeholder="98765 43210"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                        placeholder="0000000000"
+                        value={values.phone}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          setPhone(val);
+                          setFieldValue("phone", val);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && phone) {
                             e.preventDefault();
                             sendOtp();
                           }
                         }}
-                        className="min-w-0 flex-1 bg-transparent px-3 h-14 text-base font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
+                        className="bg-transparent border-none outline-none font-semibold text-2xl w-[160px] text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/[0.05]"
                       />
                     </div>
                   </label>
                   <PrimaryButton loading={busy} disabled={!phone} onClick={sendOtp}>
                     Send OTP <ArrowRight className="h-4 w-4" />
                   </PrimaryButton>
-                </motion.div>
+                </div>
               );
             case "otp":
               return (
-                <motion.div key="otp" {...animationProps} className="space-y-5">
-                  <OtpInput value={otp} onChange={setOtp} autoFocus />
-                  <PrimaryButton loading={busy} disabled={otp.length !== 6} onClick={handleVerifyOtp}>
+                <div key="otp" className="space-y-5">
+                  <div className="flex justify-between gap-2 mt-4">
+                    {otp.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={(el) => { otpRefs.current[i] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        value={digit}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(-1);
+                          const newOtp = [...otp];
+                          newOtp[i] = val;
+                          setOtp(newOtp);
+                          if (val && i < 5) otpRefs.current[i + 1]?.focus();
+                          if (newOtp.join("").length === 6) {
+                            // We can't call handleVerifyOtp directly here because it uses state, but they can click Verify
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !otp[i] && i > 0) {
+                            otpRefs.current[i - 1]?.focus();
+                          }
+                          if (e.key === "Enter" && otp.join("").length === 6) {
+                            handleVerifyOtp();
+                          }
+                        }}
+                        maxLength={1}
+                        className={cn(
+                          "w-full aspect-[4/5] rounded-xl text-center font-mono text-xl font-bold outline-none transition-all",
+                          "bg-black/5 border-transparent focus:border-primary text-black",
+                          "dark:bg-black/40 dark:border-white/10 dark:text-white dark:focus:border-primary dark:focus:bg-primary/10"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <PrimaryButton loading={busy} disabled={otp.join("").length !== 6} onClick={handleVerifyOtp}>
                     Verify <CheckCircle2 className="h-4 w-4" />
                   </PrimaryButton>
-                  <div className="text-center text-xs text-muted-foreground">
+                  <div className="text-center text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
                     {resendIn > 0 ? (
-                      <>Resend in {resendIn}s</>
+                      <>RESEND IN {resendIn}S</>
                     ) : (
-                      <button type="button" onClick={sendOtp} className="font-semibold text-primary hover:text-primary/80 transition-colors">
-                        Resend OTP
+                      <button type="button" onClick={sendOtp} className="text-primary hover:brightness-110 transition-colors">
+                        RESEND OTP
                       </button>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             case "profile":
               return (
-                <motion.div key="profile" {...animationProps} className="space-y-5">
+                <div key="profile" className="space-y-5">
                   <Field icon={User} name="name" label="Full name" placeholder="Ada Lovelace" value={values.name} onChange={handleChange} onBlur={handleBlur} error={touched.name ? errors.name : undefined} autoFocus />
                   <Field icon={Mail} name="email" label="Email" type="email" placeholder="you@example.com" value={values.email} onChange={handleChange} onBlur={handleBlur} error={touched.email ? errors.email : undefined} />
-                  <PrimaryButton onClick={next}>
+                  <PrimaryButton loading={busy} onClick={next}>
                     Continue <ArrowRight className="h-4 w-4" />
                   </PrimaryButton>
-                </motion.div>
+                </div>
               );
             case "company":
               return (
-                <motion.div key="company" {...animationProps} className="space-y-5">
+                <div key="company" className="space-y-5">
                   <Field icon={Building2} name="companyName" label="Company name" placeholder="Acme Inc." value={values.companyName} onChange={handleChange} onBlur={handleBlur} error={touched.companyName ? errors.companyName : undefined} autoFocus />
                   <Field icon={Mail} name="companyEmail" label="Company email" type="email" placeholder="team@acme.com" value={values.companyEmail} onChange={handleChange} onBlur={handleBlur} error={touched.companyEmail ? errors.companyEmail : undefined} />
-                  <PrimaryButton onClick={next}>
+                  <PrimaryButton loading={busy} onClick={next}>
                     Continue <ArrowRight className="h-4 w-4" />
                   </PrimaryButton>
-                </motion.div>
+                </div>
               );
+
             case "location":
               return (
-                <motion.div key="location" {...animationProps} className="space-y-5">
-                  <div className="rounded-2xl border border-border/70 overflow-hidden shadow-sm">
-                    <div className="flex justify-between items-center px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border-b border-border/70">
-                      <div>
-                        <div className="text-sm font-semibold text-foreground">{values.accountType === "admin" ? "Business location" : "Your location"}</div>
-                        <div className="text-xs text-muted-foreground">{locationStatus}</div>
-                      </div>
-                      {locationBusy && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-                    </div>
-                    <div className="p-4 space-y-3">
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="flex-1">
-                          {hasGoogleMapsKey && isLoaded && !loadError ? (
-                            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-input overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                              <Autocomplete onLoad={setAutocomplete} onPlaceChanged={() => handlePlaceChanged(setFieldValue)}>
-                                <div className="relative flex items-center">
-                                  <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-                                  <input placeholder="Search location with Google" className="w-full h-12 bg-transparent pl-9 pr-3 text-sm outline-none" />
-                                </div>
-                              </Autocomplete>
-                            </div>
-                          ) : (
-                            <div className="relative flex items-center bg-zinc-50 rounded-xl border border-input overflow-hidden">
-                              <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-                              <input readOnly placeholder={loadError ? "Google Maps could not load" : hasGoogleMapsKey ? "Google search is loading..." : "No Google Maps Key"} className="w-full h-12 bg-transparent pl-9 pr-3 text-sm outline-none opacity-60" />
-                            </div>
-                          )}
-                        </div>
-                        <button type="button" onClick={() => detectCurrentLocation(setFieldValue)} className="h-12 px-4 rounded-xl bg-primary/10 text-primary font-semibold text-sm hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 whitespace-nowrap">
-                          <LocateFixed className="h-4 w-4" /> Use current
-                        </button>
+                <div key="location" className="space-y-5">
+                  <div className="flex flex-col items-center justify-center relative py-2 mt-0">
+                    {/* Radar System */}
+                    <div className="relative w-28 h-28 flex items-center justify-center overflow-hidden">
+                      <div className="absolute inset-0 rounded-full border border-primary/10 animate-ping duration-[4s]" />
+                      <div className="absolute inset-3 rounded-full border border-black/5 dark:border-white/5" />
+                      <div className={cn(
+                        "absolute inset-0 rounded-full border-2 border-transparent border-t-primary/40 animate-spin",
+                        locationBusy ? "duration-700" : "duration-[3s]"
+                      )} />
+                      <div className={cn(
+                        "relative w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-700",
+                        values.location.city ? "border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.3)]" : "border-black/10 bg-black/5 dark:border-white/10 dark:bg-white/5"
+                      )}>
+                        <MapPin className={cn(
+                          "w-5 h-5 transition-all duration-700",
+                          values.location.city ? "text-primary" : "text-black/20 dark:text-white/20"
+                        )} />
+                        {locationBusy && <div className="absolute inset-0 rounded-full border-2 border-primary animate-ping" />}
                       </div>
                     </div>
-                    <div className="h-[200px] bg-zinc-100 relative border-t border-border/70">
-                      {hasGoogleMapsKey && isLoaded && !loadError ? (
-                        <>
-                          <GoogleMap
-                            mapContainerStyle={mapContainerStyle}
-                            center={mapCenter}
-                            zoom={selectedPoint ? 15 : 5}
-                            options={mapOptions}
-                            onClick={(event) => {
-                              const lat = event.latLng?.lat();
-                              const lng = event.latLng?.lng();
-                              if (typeof lat !== "number" || typeof lng !== "number") return;
-                              const point = { lat, lng };
-                              setSelectedPoint(point);
-                              setMapCenter(point);
-                              setFieldValue("location.lat", lat);
-                              setFieldValue("location.lng", lng);
-                              geocodePoint(point, setFieldValue);
-                            }}
-                          >
-                            {selectedPoint ? <MarkerF position={selectedPoint} /> : null}
-                          </GoogleMap>
-                          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-md flex items-center gap-2 text-xs font-semibold">
-                            <div className={`h-2 w-2 rounded-full ${selectedPoint ? "bg-emerald-500" : "bg-zinc-400"}`} />
-                            <span className={selectedPoint ? "text-emerald-700" : "text-zinc-600"}>{selectedPoint ? `${selectedPoint.lat.toFixed(4)}, ${selectedPoint.lng.toFixed(4)}` : "No pin selected"}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="h-full flex flex-col items-center justify-center p-6 text-center text-sm text-muted-foreground">
-                          {hasGoogleMapsKey && !loadError && <Loader2 className="h-5 w-5 animate-spin mb-2" />}
-                          <div>{loadError ? "Google Maps failed to load." : "Google Maps is waiting for API key."}</div>
-                        </div>
-                      )}
-                    </div>
+
+                    {values.location.city && (
+                      <div className="mt-4 text-center animate-in zoom-in slide-in-from-top-2 duration-700">
+                        <h4 className="text-[12px] font-black mb-0.5 uppercase tracking-widest text-black dark:text-white">{values.location.city}, {values.location.country}</h4>
+                        <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-black/40 dark:text-white/40 max-w-[250px] truncate">{values.location.address}</p>
+                      </div>
+                    )}
                   </div>
 
-                  <Field name="location.address" label="Street address" placeholder="221B Baker Street" value={values.location.address} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.address") ? getIn(errors, "location.address") : undefined} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field name="location.city" label="City" placeholder="Bengaluru" value={values.location.city} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.city") ? getIn(errors, "location.city") : undefined} />
-                    <Field name="location.state" label="State" placeholder="Karnataka" value={values.location.state} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.state") ? getIn(errors, "location.state") : undefined} />
+                  <div className="flex flex-col gap-3 pb-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => detectCurrentLocation(setFieldValue)}
+                      disabled={locationBusy}
+                      className={cn(
+                        "w-full py-4 rounded-2xl font-black text-[9px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all",
+                        locationBusy 
+                          ? "opacity-50 pointer-events-none bg-black/5 dark:bg-white/5 text-black dark:text-white" 
+                          : values.location.city
+                            ? "bg-black/5 dark:bg-white/5 text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10"
+                            : "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)] hover:brightness-110"
+                      )}
+                    >
+                      {locationBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : values.location.city ? "Re-Detect Signal" : "Detect Resonance"}
+                    </button>
+                    
+                    <div className={cn("transition-all duration-700", values.location.city ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 h-0 overflow-hidden pointer-events-none")}>
+                      <PrimaryButton loading={busy} onClick={next} className="!mt-0">
+                        Proceed to Review <ArrowRight className="h-4 w-4" />
+                      </PrimaryButton>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field name="location.postalCode" label="Pincode" placeholder="560001" value={values.location.postalCode} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.postalCode") ? getIn(errors, "location.postalCode") : undefined} />
-                    <Field name="location.country" label="Country" placeholder="India" value={values.location.country} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.country") ? getIn(errors, "location.country") : undefined} />
-                  </div>
-                  <PrimaryButton onClick={next}>
-                    Continue <ArrowRight className="h-4 w-4" />
-                  </PrimaryButton>
-                </motion.div>
+                </div>
               );
             case "review":
               return (
-                <motion.div key="review" {...animationProps} className="space-y-5">
-                  <ReviewCard form={values} />
-                  <label className="flex items-start gap-3 mt-4 p-4 rounded-xl border border-border/60 bg-zinc-50 dark:bg-zinc-800/50 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                <div key="review" className="space-y-5">
+                  <ReviewCard form={values} phone={normalizedPhone} />
+                  <label className="flex items-start gap-3 mt-4 p-4 rounded-xl border border-black/5 dark:border-white/10 bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
                     <input type="checkbox" className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" checked={values.termsAccepted} onChange={(e) => setFieldValue("termsAccepted", e.target.checked)} />
-                    <span className="text-sm text-foreground/90">I agree to the terms and conditions and confirm these signup details are correct.</span>
+                    <span className="text-sm font-medium text-black/80 dark:text-white/80">I agree to the terms and conditions and confirm these signup details are correct.</span>
                   </label>
                   {touched.termsAccepted && errors.termsAccepted && <div className="text-xs text-red-500 mt-1">{errors.termsAccepted as string}</div>}
                   
-                  <PrimaryButton loading={isSubmitting} disabled={!values.termsAccepted || isSubmitting} type="submit">
-                    {isAdmin ? "Create workspace" : "Create account"} <CheckCircle2 className="h-4 w-4" />
+                  <PrimaryButton loading={isSubmitting || busy} disabled={isSubmitting || busy} onClick={() => formik.handleSubmit()}>
+                    {isSubmitting || busy ? "Creating account..." : "Complete Registration"}
                   </PrimaryButton>
-                </motion.div>
+                </div>
               );
             default:
               return null;
@@ -566,41 +573,45 @@ const Register = observer(() => {
               e.preventDefault();
             }
           }}>
-            <AuthLayout
-              eyebrow="Create your account"
-              title="Join a workspace built for learners and teams."
-              subtitle="Set up in under a minute — phone verified, ready to go."
-            >
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
+            <AuthLayout>
+              <motion.div 
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} 
+                className={cn(
+                  "w-full rounded-[40px] px-8 py-8 transition-all duration-1000 flex flex-col justify-center space-y-5",
+                  "bg-white/60 border border-white/80 shadow-[0_30px_80px_rgba(0,0,0,0.08)] backdrop-blur-3xl",
+                  "ring-1 ring-black/5 dark:ring-white/10 inner-border inner-border-white/50",
+                  "dark:bg-[#13072E]/40 dark:border-white/5 dark:backdrop-blur-[40px] dark:shadow-[0_40px_100px_rgba(139,92,246,0.15)] dark:inner-border-white/5"
+                )}
+              >
                 <div className="flex items-center justify-between">
                   {currentIdx > 0 ? (
-                    <button type="button" onClick={prev} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    <button type="button" onClick={prev} className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black/40 hover:text-primary dark:text-white/40 dark:hover:text-primary transition-colors">
                       <ArrowLeft className="h-3.5 w-3.5" /> Back
                     </button>
                   ) : (
-                    <NextLink href="/" className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    <a href="/" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black/40 hover:text-primary dark:text-white/40 dark:hover:text-primary transition-colors">
                       <ArrowLeft className="h-3.5 w-3.5" /> Home
-                    </NextLink>
+                    </a>
                   )}
                   <StepDots total={stepsForType.length} current={currentIdx} />
                 </div>
 
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-semibold uppercase tracking-wider">
-                    <Sparkles className="h-3 w-3" /> {eyebrow}
-                  </div>
-                  <h1 className="font-display text-2xl sm:text-3xl leading-[1.05] text-foreground font-bold">{title}</h1>
-                  <p className="text-sm text-muted-foreground">{sub}</p>
+                <div className="text-center">
+                  <p className="text-[15px] font-[900] uppercase tracking-widest text-black dark:text-white">
+                    {title}
+                  </p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] mt-2 text-black/40 dark:text-white/40">
+                    {sub}
+                  </p>
                 </div>
 
-                <AnimatePresence mode="wait">
+                <div className="transition-all duration-300">
                   {renderStep()}
-                </AnimatePresence>
+                </div>
 
-                <div className="border-t border-border/60 pt-5 text-center text-sm text-muted-foreground">
-                  Already have an account?{" "}
-                  <NextLink href={redirectTarget ? `/login?redirect=${encodeURIComponent(redirectTarget)}` : "/login"} className="font-semibold text-primary hover:text-primary/80 transition-colors">
-                    Sign in
+                <div className="pt-4 border-t border-black/5 dark:border-white/10 text-center text-[10px] font-bold text-black/40 dark:text-white/40">
+                  <NextLink href={redirectTarget ? `/login?redirect=${encodeURIComponent(redirectTarget)}` : "/login"} className="uppercase tracking-widest hover:text-primary dark:hover:text-white transition-colors">
+                    Already have an account? Sign in
                   </NextLink>
                 </div>
               </motion.div>
@@ -622,9 +633,8 @@ function AccountTypePicker({ value, onChange }: { value: AccountType; onChange: 
     { id: "admin", label: "Admin", sub: "Manage a team", icon: Building2 },
   ];
   return (
-    <div>
-      <span className="mb-1.5 block text-xs font-semibold text-foreground/80">I'm signing up as</span>
-      <div className="grid grid-cols-2 gap-2.5">
+    <div className="mb-4">
+      <div className="flex relative bg-black/5 dark:bg-white/5 p-1 rounded-full items-center">
         {items.map((it) => {
           const active = value === it.id;
           return (
@@ -632,26 +642,25 @@ function AccountTypePicker({ value, onChange }: { value: AccountType; onChange: 
               key={it.id}
               type="button"
               onClick={() => onChange(it.id)}
-              className={`relative rounded-2xl border p-3.5 text-left transition-all ${
-                active
-                  ? "border-primary bg-primary/5 shadow-[0_0_0_4px_rgba(216,67,21,0.12)]"
-                  : "border-input bg-zinc-50 dark:bg-zinc-800/50 hover:border-primary/40"
-              }`}
-            >
-              <div className="flex items-start gap-2.5">
-                <div className={`h-9 w-9 shrink-0 rounded-xl grid place-items-center ${active ? "bg-primary text-primary-foreground" : "bg-white dark:bg-zinc-900 border border-input text-foreground/70"}`}>
-                  <it.icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-foreground">{it.label}</div>
-                  <div className="text-[11px] text-muted-foreground leading-snug mt-0.5">{it.sub}</div>
-                </div>
-              </div>
-              {active && (
-                <motion.div layoutId="typeCheck" className="absolute right-2.5 top-2.5 text-primary">
-                  <CheckCircle2 className="h-4 w-4" />
-                </motion.div>
+              className={cn(
+                "flex-1 relative rounded-full py-2 text-center transition-all z-10 flex flex-col items-center justify-center",
               )}
+            >
+              {active && (
+                <motion.div
+                  layoutId="accountTypeBubble"
+                  className="absolute inset-0 bg-white dark:bg-primary shadow-sm shadow-primary/20 rounded-full z-[-1]"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              <div className={cn(
+                "text-[10px] font-[900] uppercase tracking-widest transition-colors duration-300",
+                active ? "text-primary dark:text-white" : "text-black/40 dark:text-white/40"
+              )}>{it.label}</div>
+              <div className={cn(
+                "text-[7px] font-bold uppercase tracking-[0.2em] transition-colors duration-300",
+                active ? "text-primary/60 dark:text-white/70" : "text-black/30 dark:text-white/20"
+              )}>{it.sub}</div>
             </button>
           );
         })}
@@ -684,10 +693,9 @@ function Field({
   autoFocus?: boolean;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-semibold text-foreground/80">{label}</span>
-      <div className={`group relative flex items-center rounded-2xl border ${error ? "border-red-400 bg-red-50 dark:bg-red-900/10" : "border-input bg-zinc-50 dark:bg-zinc-800/50"} transition-all focus-within:border-primary focus-within:bg-white dark:focus-within:bg-zinc-900 focus-within:ring-4 focus-within:ring-primary/15`}>
-        {Icon && <Icon className="ml-4 h-4 w-4 text-muted-foreground shrink-0" />}
+    <label className="block mt-4">
+      <span className="text-[9px] font-black uppercase tracking-[0.3em] ml-1 text-black/30 dark:text-white/30 mb-2 block">{label}</span>
+      <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-primary/30 dark:focus-within:border-primary">
         <input
           name={name}
           type={type}
@@ -696,20 +704,20 @@ function Field({
           value={value}
           onChange={onChange}
           onBlur={onBlur}
-          className="min-w-0 flex-1 bg-transparent px-3 h-13 py-3.5 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
+          className="bg-transparent border-none outline-none font-semibold text-[1.1rem] w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/[0.05]"
         />
       </div>
-      {error && <div className="mt-1.5 text-[11px] font-semibold text-red-500 ml-1">{error}</div>}
+      {error && <div className="mt-2 text-[10px] font-bold text-red-500 uppercase tracking-widest animate-in fade-in">{error}</div>}
     </label>
   );
 }
 
-function ReviewCard({ form }: { form: SignupValues }) {
+function ReviewCard({ form, phone }: { form: SignupValues; phone: string }) {
   const rows: Array<[string, string]> = [
     ["Account type", form.accountType === "admin" ? "Admin" : "Learner"],
     ["Name", form.name],
     ["Email", form.email],
-    ["Phone", `+91 ${form.phone}`],
+    ["Phone", `+91 ${phone}`],
   ];
   if (form.accountType === "admin") {
     rows.push(
@@ -719,11 +727,11 @@ function ReviewCard({ form }: { form: SignupValues }) {
     );
   }
   return (
-    <div className="rounded-2xl border border-border/70 bg-zinc-50 dark:bg-zinc-800/50 p-4 space-y-2.5">
+    <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-transparent p-5 space-y-3">
       {rows.map(([k, v]) => (
-        <div key={k} className="grid grid-cols-[110px_minmax(0,1fr)] gap-3 text-sm">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground pt-0.5">{k}</div>
-          <div className="font-medium text-foreground break-words">{v || "—"}</div>
+        <div key={k} className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 text-sm">
+          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-black/40 dark:text-white/40 pt-0.5">{k}</div>
+          <div className="font-semibold text-black dark:text-white break-words">{v || "—"}</div>
         </div>
       ))}
     </div>
@@ -736,12 +744,14 @@ function PrimaryButton({
   disabled,
   onClick,
   type = "button",
+  className,
 }: {
   children: React.ReactNode;
   loading?: boolean;
   disabled?: boolean;
   onClick?: () => void;
   type?: "button" | "submit";
+  className?: string;
 }) {
   return (
     <motion.button
@@ -749,9 +759,15 @@ function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className="relative w-full rounded-2xl bg-primary text-primary-foreground font-semibold text-sm h-[52px] shadow-lg transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2 overflow-hidden"
+      className={cn(
+        "w-full py-4 mt-8 rounded-2xl font-black text-[9px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all",
+        "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)] hover:brightness-110",
+        "dark:bg-primary dark:text-white dark:shadow-[0_10px_30px_rgba(237,56,85,0.3)] dark:hover:brightness-110",
+        disabled || loading ? "opacity-50 pointer-events-none" : "opacity-100",
+        className
+      )}
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : children}
+      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : children}
     </motion.button>
   );
 }

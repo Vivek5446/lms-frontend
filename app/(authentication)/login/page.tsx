@@ -1,11 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, Loader2, Phone, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Loader2, Scan, CheckCircle2, AlertCircle } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 import { AuthLayout } from "../../../components/auth/AuthLayout";
-import { OtpInput } from "../../../components/auth/OtpInput";
-import { StepDots } from "../../../components/auth/StepDots";
 
 import NextLink from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,8 +12,11 @@ import stores from "../../store/stores";
 import { observer } from "mobx-react-lite";
 
 const DUMMY_OTP = "123456";
-
 type Step = "phone" | "otp";
+
+function cn(...classes: (string | undefined | null | false)[]) {
+  return classes.filter(Boolean).join(" ");
+}
 
 const LoginPage = observer(() => {
   const router = useRouter();
@@ -27,10 +28,12 @@ const LoginPage = observer(() => {
 
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [sending, setSending] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [resendIn, setResendIn] = useState(0);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [loading, setLoading] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [errorText, setErrorText] = useState("");
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (wasRegistered) {
@@ -42,231 +45,220 @@ const LoginPage = observer(() => {
     }
   }, [openNotification, wasRegistered]);
 
-  useEffect(() => {
-    if (!resendIn) return;
-    const t = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(t);
-  }, [resendIn]);
-
   const handleRequestOtp = async () => {
     const normalizedPhone = phone.trim();
     if (!/^\d{10}$/.test(normalizedPhone)) {
-      openNotification({ title: "Check your phone number", message: "Enter a valid 10-digit phone number.", type: "error" });
+      setErrorText("INVALID NUMBER");
       return;
     }
-    setSending(true);
+    setLoading(true);
+    setErrorText("");
     try {
       await requestOtp({ phone: normalizedPhone, purpose: "login" });
-      setStep("otp");
-      setOtp("");
-      setResendIn(30);
-      openNotification({ title: "OTP sent", message: `Use ${DUMMY_OTP} while dummy flow is on.`, type: "success" });
+      setIsFlipped(true);
+      setTimeout(() => setStep("otp"), 300);
+      setOtp(["", "", "", "", "", ""]);
+      setTimeout(() => otpRefs.current[0]?.focus(), 800);
     } catch (error: any) {
-      openNotification({ title: "Unable to send OTP", message: error?.message || error?.error || "We could not start the login flow.", type: "error" });
+      const backendMessage = error?.message || error?.error || error?.response?.data?.message || "UNABLE TO SEND OTP";
+      setErrorText(backendMessage.toUpperCase());
     } finally {
-      setSending(false);
+      setLoading(false);
     }
   };
 
-  const handleVerify = async () => {
-    const normalizedOtp = otp.trim();
+  const handleVerify = async (code: string) => {
     const normalizedPhone = phone.trim();
-    if (!/^\d{6}$/.test(normalizedOtp)) {
-      openNotification({ title: "Check your OTP", message: "Enter the 6-digit OTP.", type: "error" });
-      return;
-    }
-    setVerifying(true);
+    setLoading(true);
+    setErrorText("");
     try {
-      const response: any = await login({ phone: normalizedPhone, otp: normalizedOtp });
-      openNotification({ title: "Signed in", message: response?.message || "Welcome back.", type: "success", duration: 3000 });
-      router.replace(redirectTarget || getDefaultAuthenticatedRoute(stores.auth.user || { userType: response?.data?.userType, role: response?.data?.role }));
+      const response: any = await login({ phone: normalizedPhone, otp: code });
+      setIsUnlocked(true);
+      setTimeout(() => {
+        window.location.href = redirectTarget || getDefaultAuthenticatedRoute(stores.auth.user || { userType: response?.data?.userType, role: response?.data?.role });
+      }, 1500);
     } catch (error: any) {
-      openNotification({ title: "Login failed", message: error?.message || error?.error || "Unable to verify that OTP.", type: "error" });
+      const backendMessage = error?.message || error?.error || error?.response?.data?.message || "INVALID OTP";
+      setErrorText(backendMessage.toUpperCase());
+      setTimeout(() => {
+        setErrorText("");
+        setOtp(["", "", "", "", "", ""]);
+        otpRefs.current[0]?.focus();
+      }, 1500);
     } finally {
-      setVerifying(false);
+      setLoading(false);
+    }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+    
+    const currentCode = newOtp.join("");
+    if (currentCode.length === 6) {
+      handleVerify(currentCode);
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
     }
   };
 
   return (
-    <AuthLayout
-      eyebrow="Secure sign-in"
-      title="Welcome back. Pick up right where you left off."
-      subtitle="Sign in with a phone number and one-time passcode — no passwords to remember."
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="space-y-7"
-      >
-        <div className="flex items-center justify-between">
-          <NextLink
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to home
-          </NextLink>
-          <StepDots total={2} current={step === "phone" ? 0 : 1} />
-        </div>
-
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-semibold uppercase tracking-wider">
-            <ShieldCheck className="h-3 w-3" /> OTP protected
-          </div>
-          <h1 className="font-display text-2xl sm:text-3xl leading-[1.05] text-foreground font-bold">
-            {step === "phone" ? "Sign in" : "Verify it's you"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {step === "phone"
-              ? "We'll text you a one-time code to confirm this number."
-              : (
-                <>
-                  Enter the 6-digit code sent to <span className="font-semibold text-foreground">+91 {phone}</span>.
-                </>
-              )}
-          </p>
-        </div>
-
-        <AnimatePresence mode="wait">
-          {step === "phone" ? (
-            <motion.form
-              key="phone"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleRequestOtp();
-              }}
-              className="space-y-5"
-            >
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold text-foreground/80">
-                  Phone number
-                </span>
-                <div className="group relative flex items-center rounded-2xl border border-input bg-zinc-50 dark:bg-zinc-800/50 transition-all focus-within:border-primary focus-within:bg-white dark:focus-within:bg-zinc-900 focus-within:ring-4 focus-within:ring-primary/15">
-                  <div className="pl-4 pr-2 flex items-center gap-2 border-r border-border/70 h-14">
-                    <span className="text-lg">🇮🇳</span>
-                    <span className="text-sm font-semibold text-foreground/80">+91</span>
-                  </div>
-                  <Phone className="ml-3 h-4 w-4 text-muted-foreground shrink-0" />
-                  <input
-                    autoFocus
-                    inputMode="numeric"
-                    maxLength={10}
-                    placeholder="98765 43210"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                    className="min-w-0 flex-1 bg-transparent px-3 h-14 text-base font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
-                  />
-                </div>
-              </label>
-
-              <PrimaryButton loading={sending} disabled={!phone}>
-                Send OTP <ArrowRight className="h-4 w-4" />
-              </PrimaryButton>
-
-              <p className="text-center text-xs text-muted-foreground">
-                By continuing you agree to our{" "}
-                <a className="text-foreground underline underline-offset-2">Terms</a> &{" "}
-                <a className="text-foreground underline underline-offset-2">Privacy</a>.
-              </p>
-            </motion.form>
-          ) : (
-            <motion.form
-              key="otp"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleVerify();
-              }}
-              className="space-y-5"
-            >
-              <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-foreground/80 inline-flex items-center gap-1.5">
-                    <KeyRound className="h-3.5 w-3.5" /> One-time code
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep("phone");
-                      setOtp("");
-                    }}
-                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Change number
-                  </button>
-                </div>
-                <OtpInput value={otp} onChange={setOtp} autoFocus />
-              </div>
-
-              <PrimaryButton loading={verifying} disabled={otp.length !== 6}>
-                {otp.length === 6 ? (
-                  <>
-                    Verify & continue <CheckCircle2 className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>Enter 6-digit code</>
-                )}
-              </PrimaryButton>
-
-              <div className="text-center text-xs text-muted-foreground">
-                Didn't receive it?{" "}
-                {resendIn > 0 ? (
-                  <span>Resend in {resendIn}s</span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleRequestOtp}
-                    className="font-semibold text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Resend OTP
-                  </button>
-                )}
-              </div>
-            </motion.form>
+    <AuthLayout>
+      <div className={cn(
+        "w-full relative transition-transform duration-1000",
+        isFlipped ? "rotate-y-180" : ""
+      )} style={{ transformStyle: 'preserve-3d', perspective: '1200px' }}>
+        
+        {/* Phone Input Card (Front) */}
+        <div 
+          className={cn(
+            "w-full rounded-[36px] px-8 transition-all duration-1000",
+            "bg-white/60 border border-white/80 shadow-[0_30px_80px_rgba(0,0,0,0.08)] backdrop-blur-3xl pt-8 pb-6",
+            "ring-1 ring-black/5 dark:ring-white/10 inner-border inner-border-white/50",
+            "dark:bg-[#13072E]/40 dark:border-white/5 dark:pt-10 dark:pb-8 dark:backdrop-blur-[40px] dark:shadow-[0_40px_100px_rgba(139,92,246,0.15)] dark:inner-border-white/5"
           )}
-        </AnimatePresence>
+          style={{ backfaceVisibility: 'hidden', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)', position: step === 'phone' ? 'relative' : 'absolute', top: 0, left: 0 }}
+        >
+          <div className="flex justify-between items-center mb-6">
+            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary dark:drop-shadow-[0_0_10px_rgba(var(--primary),0.3)]">Secure Login</p>
+            <Scan className="w-3.5 h-3.5 text-black/10 dark:hidden" />
+          </div>
 
-        <div className="border-t border-border/60 pt-5 text-center text-sm text-muted-foreground">
-          New here?{" "}
-          <NextLink href={redirectTarget ? `/register?redirect=${encodeURIComponent(redirectTarget)}` : "/register"} className="font-semibold text-primary hover:text-primary/80 transition-colors">
-            Create an account
-          </NextLink>
+          <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-primary/30 dark:focus-within:border-primary">
+            <span className="text-xl font-semibold mr-3 text-black/40 dark:text-white/20">+91</span>
+            <input
+              type="tel"
+              autoFocus
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && phone.length === 10) {
+                  e.preventDefault();
+                  handleRequestOtp();
+                }
+              }}
+              className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/[0.05]"
+              placeholder="0000000000"
+              disabled={loading}
+            />
+          </div>
+          {errorText && (
+            <div className="mt-4 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 animate-in slide-in-from-top-1 fade-in duration-300 backdrop-blur-md shadow-[0_4px_15px_rgba(239,68,68,0.15)]">
+              <AlertCircle className="w-4 h-4 shrink-0 animate-pulse text-red-500" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] leading-tight pt-[1px]">{errorText}</p>
+            </div>
+          )}
+
+          <div className="mt-8">
+            <button
+              onClick={handleRequestOtp}
+              disabled={phone.length !== 10 || loading}
+              className={cn(
+                "w-full py-3 rounded-2xl font-black text-[9px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all",
+                "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)] hover:brightness-110",
+                "dark:bg-primary dark:text-white dark:shadow-[0_10px_30px_rgba(237,56,85,0.3)] dark:hover:brightness-110",
+                phone.length === 10 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+              )}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>SEND OTP <CheckCircle2 className="w-3.5 h-3.5" /></>}
+            </button>
+          </div>
+
+          <div className="mt-6 text-center text-[10px] font-bold text-black/40 dark:text-white/40">
+            <NextLink href={redirectTarget ? `/register?redirect=${encodeURIComponent(redirectTarget)}` : "/register"} className="uppercase tracking-widest hover:text-primary dark:hover:text-white transition-colors">
+              New User? Create Account
+            </NextLink>
+          </div>
         </div>
-      </motion.div>
+
+        {/* OTP Cipher Card (Back) */}
+        <div 
+          className={cn(
+            "w-full rounded-[40px] px-8 py-10 border transition-all duration-1000 flex flex-col justify-center",
+            "bg-white/60 border-white/80 shadow-[0_30px_80px_rgba(0,0,0,0.08)] backdrop-blur-3xl",
+            "ring-1 ring-black/5 dark:ring-white/10 inner-border inner-border-white/50",
+            "dark:bg-[#13072E]/40 dark:border-white/5 dark:backdrop-blur-[40px] dark:shadow-[0_40px_100px_rgba(139,92,246,0.15)] dark:inner-border-white/5"
+          )}
+          style={{ backfaceVisibility: 'hidden', transform: isFlipped ? 'rotateY(0deg)' : 'rotateY(180deg)', position: step === 'otp' ? 'relative' : 'absolute', top: 0, left: 0 }}
+        >
+          <div className="text-center mt-2">
+            <p className={cn(
+              "text-[15px] font-[900] uppercase tracking-widest transition-colors",
+              errorText ? "text-red-500" : isUnlocked ? "text-green-500" : "text-black dark:text-white"
+            )}>
+              {isUnlocked ? "SIGN IN SUCCESSFUL" : errorText ? "INVALID CODE" : "VERIFY IT'S YOU"}
+            </p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.3em] mt-2 text-black/30 dark:text-white/40">
+              Enter the 6-digit OTP
+            </p>
+          </div>
+
+          <div className="flex justify-between gap-2 mt-8">
+            {otp.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => { otpRefs.current[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                value={digit}
+                onChange={(e) => handleOtpChange(i, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(i, e)}
+                maxLength={1}
+                className={cn(
+                  "w-full aspect-[4/5] rounded-xl text-center font-mono text-xl font-bold outline-none transition-all",
+                  "bg-black/5 border-transparent focus:border-primary text-black",
+                  "dark:bg-black/40 dark:border-white/10 dark:text-white dark:focus:border-primary dark:focus:bg-primary/10",
+                  errorText && "border-red-500/50 bg-red-500/10 dark:border-red-500/50 dark:bg-red-500/10"
+                )}
+              />
+            ))}
+          </div>
+          {errorText && (
+            <div className="mt-6 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 animate-in slide-in-from-bottom-2 fade-in duration-300 backdrop-blur-md shadow-[0_4px_15px_rgba(239,68,68,0.15)]">
+              <AlertCircle className="w-4 h-4 shrink-0 animate-pulse text-red-500" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] leading-tight pt-[1px]">{errorText}</p>
+            </div>
+          )}
+          
+          <div className="mt-8 flex flex-col items-center">
+            <button
+              onClick={() => {
+                setIsFlipped(false);
+                setTimeout(() => setStep("phone"), 500);
+              }}
+              className="text-[10px] font-bold uppercase tracking-[0.4em] transition-all text-black/30 hover:text-primary dark:text-white/30 dark:hover:text-primary"
+            >
+              Change Number
+            </button>
+          </div>
+
+          {loading && (
+            <div className="absolute inset-0 z-[50] flex flex-col items-center justify-center backdrop-blur-md animate-in fade-in duration-500 rounded-[40px] bg-white/40 dark:bg-black/40">
+              <div className="relative scale-75">
+                <div className="w-24 h-24 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-primary" />
+                </div>
+              </div>
+              <p className="mt-6 text-[9px] font-black uppercase tracking-[0.4em] text-black/40 dark:text-white/40">Verifying...</p>
+            </div>
+          )}
+        </div>
+
+      </div>
     </AuthLayout>
   );
 });
 
 export default LoginPage;
 
-function PrimaryButton({
-  children,
-  loading,
-  disabled,
-}: {
-  children: React.ReactNode;
-  loading?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <motion.button
-      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
-      type="submit"
-      disabled={disabled || loading}
-      className="relative w-full rounded-2xl bg-primary text-primary-foreground font-semibold text-sm h-[52px] shadow-lg transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2 overflow-hidden"
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <>{children}</>
-      )}
-    </motion.button>
-  );
-}
