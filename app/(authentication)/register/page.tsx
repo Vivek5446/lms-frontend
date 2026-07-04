@@ -392,7 +392,9 @@ const Register = observer(() => {
                 <div key="phone" className="space-y-7">
                   <AccountTypePicker value={values.accountType} onChange={(v) => setFieldValue("accountType", v)} />
                   <label className="block">
-                    <span className="text-[9px] font-black uppercase tracking-[0.3em] ml-1 text-left text-black/50 dark:text-white/50 mb-2 block">Phone number</span>
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] ml-1 text-left text-black/50 dark:text-white/50 mb-2 block">
+                      Phone number<span className="text-red-500 dark:text-red-400 ml-1">*</span>
+                    </span>
                     <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-white/10 dark:focus-within:border-primary/50">
                       <span className="text-xl font-semibold mr-3 text-black/40 dark:text-white/20">+91</span>
                       <input
@@ -412,7 +414,7 @@ const Register = observer(() => {
                             sendOtp();
                           }
                         }}
-                        className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/[0.05]"
+                        className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/20"
                       />
                     </div>
                   </label>
@@ -476,7 +478,7 @@ const Register = observer(() => {
             case "profile":
               return (
                 <div key="profile" className="space-y-5">
-                  <Field icon={User} name="name" label="Full name" placeholder="Ada Lovelace" value={values.name} onChange={handleChange} onBlur={handleBlur} error={touched.name ? errors.name : undefined} autoFocus />
+                  <Field icon={User} name="name" label="Full name" placeholder="Ada Lovelace" value={values.name} onChange={handleChange} onBlur={handleBlur} error={touched.name ? errors.name : undefined} autoFocus required />
                   <Field icon={Mail} name="email" label="Email" type="email" placeholder="you@example.com" value={values.email} onChange={handleChange} onBlur={handleBlur} error={touched.email ? errors.email : undefined} />
                   <PrimaryButton loading={busy} onClick={next}>
                     Continue <ArrowRight className="h-4 w-4" />
@@ -486,7 +488,7 @@ const Register = observer(() => {
             case "company":
               return (
                 <div key="company" className="space-y-5">
-                  <Field icon={Building2} name="companyName" label="Company name" placeholder="Acme Inc." value={values.companyName} onChange={handleChange} onBlur={handleBlur} error={touched.companyName ? errors.companyName : undefined} autoFocus />
+                  <Field icon={Building2} name="companyName" label="Company name" placeholder="Acme Inc." value={values.companyName} onChange={handleChange} onBlur={handleBlur} error={touched.companyName ? errors.companyName : undefined} autoFocus required />
                   <Field icon={Mail} name="companyEmail" label="Company email" type="email" placeholder="team@acme.com" value={values.companyEmail} onChange={handleChange} onBlur={handleBlur} error={touched.companyEmail ? errors.companyEmail : undefined} />
                   <PrimaryButton loading={busy} onClick={next}>
                     Continue <ArrowRight className="h-4 w-4" />
@@ -682,6 +684,7 @@ function Field({
   icon: Icon,
   type = "text",
   autoFocus,
+  required,
 }: {
   name: string;
   label: string;
@@ -693,10 +696,13 @@ function Field({
   icon?: typeof User;
   type?: string;
   autoFocus?: boolean;
+  required?: boolean;
 }) {
   return (
     <label className="block mt-4">
-      <span className="text-[9px] font-black uppercase tracking-[0.3em] ml-1 text-black/50 dark:text-white/50 mb-2 block">{label}</span>
+      <span className="text-[9px] font-black uppercase tracking-[0.3em] ml-1 text-black/50 dark:text-white/50 mb-2 block">
+        {label}{required && <span className="text-red-500 dark:text-red-400 ml-1">*</span>}
+      </span>
       <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-primary/30 dark:focus-within:border-primary">
         <input
           name={name}
@@ -706,7 +712,7 @@ function Field({
           value={value}
           onChange={onChange}
           onBlur={onBlur}
-          className="bg-transparent border-none outline-none font-semibold text-[1.1rem] w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/[0.05]"
+          className="bg-transparent border-none outline-none font-semibold text-[1.1rem] w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/20"
         />
       </div>
       {error && <div className="mt-2 text-[10px] font-bold text-red-500 uppercase tracking-widest animate-in fade-in">{error}</div>}

@@ -154,7 +154,7 @@ const LoginPage = observer(() => {
                   handleRequestOtp();
                 }
               }}
-              className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/[0.05]"
+              className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/20"
               placeholder="0000000000"
               disabled={loading}
             />
