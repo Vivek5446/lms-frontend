@@ -392,8 +392,8 @@ const Register = observer(() => {
                 <div key="phone" className="space-y-7">
                   <AccountTypePicker value={values.accountType} onChange={(v) => setFieldValue("accountType", v)} />
                   <label className="block">
-                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-center text-black/30 dark:text-white/30 mb-2 block">Phone number</span>
-                    <div className="flex items-center justify-center border-b-[1.5px] pb-2 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-white/10 dark:focus-within:border-primary/50">
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] ml-1 text-left text-black/50 dark:text-white/50 mb-2 block">Phone number</span>
+                    <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-white/10 dark:focus-within:border-primary/50">
                       <span className="text-xl font-semibold mr-3 text-black/40 dark:text-white/20">+91</span>
                       <input
                         autoFocus
@@ -412,7 +412,7 @@ const Register = observer(() => {
                             sendOtp();
                           }
                         }}
-                        className="bg-transparent border-none outline-none font-semibold text-2xl w-[160px] text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/[0.05]"
+                        className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/[0.05]"
                       />
                     </div>
                   </label>
@@ -605,7 +605,7 @@ const Register = observer(() => {
                   <p className="text-[15px] font-[900] uppercase tracking-widest text-black dark:text-white">
                     {title}
                   </p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] mt-2 text-black/40 dark:text-white/40">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] mt-2 text-black/50 dark:text-white/50">
                     {sub}
                   </p>
                 </div>
@@ -614,7 +614,7 @@ const Register = observer(() => {
                   {renderStep()}
                 </div>
 
-                <div className="pt-4 border-t border-black/5 dark:border-white/10 text-center text-[10px] font-bold text-black/40 dark:text-white/40">
+                <div className="pt-4 border-t border-black/5 dark:border-white/10 text-center text-[10px] font-bold text-black/50 dark:text-white/50">
                   <NextLink href={redirectTarget ? `/login?redirect=${encodeURIComponent(redirectTarget)}` : "/login"} className="uppercase tracking-widest hover:text-primary dark:hover:text-white transition-colors">
                     Already have an account? Sign in
                   </NextLink>
@@ -658,10 +658,10 @@ function AccountTypePicker({ value, onChange }: { value: AccountType; onChange: 
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
-              <it.icon className={cn("w-3.5 h-3.5 transition-colors duration-300", active ? "text-primary dark:text-white" : "text-black/40 dark:text-white/40")} />
+              <it.icon className={cn("w-3.5 h-3.5 transition-colors duration-300", active ? "text-primary dark:text-white" : "text-black/50 dark:text-white/50")} />
               <div className={cn(
                 "text-[10px] font-[900] uppercase tracking-widest transition-colors duration-300 pt-[1px]",
-                active ? "text-primary dark:text-white" : "text-black/40 dark:text-white/40"
+                active ? "text-primary dark:text-white" : "text-black/50 dark:text-white/50"
               )}>{it.label}</div>
             </button>
           );
@@ -696,7 +696,7 @@ function Field({
 }) {
   return (
     <label className="block mt-4">
-      <span className="text-[9px] font-black uppercase tracking-[0.3em] ml-1 text-black/30 dark:text-white/30 mb-2 block">{label}</span>
+      <span className="text-[9px] font-black uppercase tracking-[0.3em] ml-1 text-black/50 dark:text-white/50 mb-2 block">{label}</span>
       <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-primary/30 dark:focus-within:border-primary">
         <input
           name={name}

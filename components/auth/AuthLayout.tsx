@@ -69,10 +69,10 @@ export function AuthLayout({
       {/* Main Scrollable Wrapper */}
       <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center pt-16 pb-4 px-4">
         {/* Main UI Layer */}
-        <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center justify-center transition-transform duration-[1.5s] ease-[cubic-bezier(0.85,0,0.15,1)]">
+        <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center justify-center -mt-12 transition-transform duration-[1.5s] ease-[cubic-bezier(0.85,0,0.15,1)]">
         {/* Brand Header */}
         {!hideBrand && (
-          <div className="flex flex-col items-center mb-6 w-full animate-in slide-in-from-bottom-4 fade-in duration-1000">
+          <div className="flex flex-col items-center mb-2 w-full animate-in slide-in-from-bottom-4 fade-in duration-1000">
             <h1 className="text-[2.2rem] sm:text-[2.8rem] font-[900] leading-tight text-transparent bg-clip-text bg-gradient-to-br from-primary via-[#8b5cf6] to-[#F7B733] drop-shadow-[0_10px_20px_rgba(var(--primary),0.2)] tracking-tighter uppercase flex items-center justify-center transition-all duration-1000 pb-1 whitespace-nowrap">
               LUMA LMS
             </h1>
