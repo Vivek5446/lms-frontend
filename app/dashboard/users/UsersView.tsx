@@ -253,10 +253,11 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   const canViewUsers = hasPermission(auth.user, PERMISSION_KEYS.VIEW_USERS);
   const canCreateUsers = hasPermission(auth.user, PERMISSION_KEYS.CREATE_USERS);
   const canCreateManagers = hasPermission(auth.user, PERMISSION_KEYS.CREATE_MANAGERS);
+  const canCreateDepartmentHeads = hasPermission(auth.user, PERMISSION_KEYS.CREATE_DEPARTMENT_HEADS);
   const canEditUsers = hasPermission(auth.user, PERMISSION_KEYS.EDIT_USERS);
   const canAssignManagers = hasPermission(auth.user, PERMISSION_KEYS.ASSIGN_MANAGERS);
   const canDeleteUsers = canEditUsers;
-  const canOpenCreate = canCreateUsers || canCreateManagers;
+  const canOpenCreate = canCreateUsers || canCreateManagers || canCreateDepartmentHeads;
   const canOpenBulk = canOpenCreate || canEditUsers;
   const showToast = useCallback(
     (options: any) =>
@@ -326,6 +327,7 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   const roleOptions = useMemo(() => {
     const baseRoles = [
       ...(canCreateUsers ? ["user"] : []),
+      ...(canCreateDepartmentHeads ? ["departmenthead"] : []),
       ...(canCreateManagers
         ? Array.from({ length: selectedUserManagerLevels }, (_, index) => `l${index + 1}-manager`)
         : []),
@@ -639,8 +641,7 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       }))
       .filter((manager) => manager.managerEmail);
 
-    const isDepartmentRequired =
-      roleValue === "departmenthead" || Boolean(parseManagerLevel(roleValue));
+    const isDepartmentRequired = roleValue === "departmenthead";
 
     if (!code || !name || !roleValue || !designation || !mobileNumber || (!userForm.id && !gender) || (isDepartmentRequired && !department)) {
       showToast({

@@ -6,7 +6,7 @@ import { FaPeopleGroup } from "react-icons/fa6";
 import { HiOutlineComputerDesktop } from "react-icons/hi2";
 import { LucideBriefcaseBusiness } from "lucide-react";
 import { BiCategory } from "react-icons/bi";
-import { FiBell, FiTrendingUp } from "react-icons/fi";
+import { FiBell, FiSettings, FiTrendingUp } from "react-icons/fi";
 
 interface SidebarItem {
   id: number;
@@ -135,6 +135,14 @@ const sidebarDatas: SidebarItem[] = [
 ];
 
 export const sidebarFooterData: SidebarItem[] = [
+  {
+    id: 33,
+    name: "Company Settings",
+    icon: <FiSettings />,
+    url: "/dashboard/company-settings",
+    role: ["admin"],
+    permissionKey: PERMISSION_KEYS.COMPANY_SETTINGS,
+  },
   {
     id: 34,
     name: "Settings",

@@ -112,7 +112,7 @@ export const companyInitialValues = {
   tenantSlug: "",
   customDomain: "",
   companyEmail: "",
-  managerLevels: 3,
+  managerLevels: 0,
   mobileNo: "",
   workNo: "",
   webLink: "",
@@ -141,7 +141,7 @@ const createCompanyFormValues = (company?: any) => ({
   tenantSlug: company?.tenantSlug || "",
   customDomain: company?.customDomain || "",
   companyEmail: company?.companyEmail || "",
-  managerLevels: company?.managerLevels || 3,
+  managerLevels: company?.managerLevels ?? 0,
   mobileNo: company?.mobileNo || "",
   workNo: company?.workNo || "",
   webLink: company?.webLink || "",
@@ -167,7 +167,7 @@ const createCompanyFormValues = (company?: any) => ({
 });
 
 /* ================= FORM ================= */
-const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel = "Create Company" }: any) => {
+const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel = "Create Company", children }: any) => {
   const [preview, setPreview] = useState<string | null>(null);
   const toast = useToast();
 
@@ -207,7 +207,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
     managerLevels: Yup.number()
       .typeError("Manager levels must be a number")
       .integer("Manager levels must be a whole number")
-      .min(1, "Manager levels must be at least 1")
+      .min(0, "Manager levels cannot be negative")
       .max(20, "Manager levels must be 20 or less")
       .required("Manager levels are required"),
     mobileNo: Yup.string()
@@ -550,6 +550,8 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                   />
                 </Grid>
               </SectionCard>
+
+              {children}
 
               <Divider />
 

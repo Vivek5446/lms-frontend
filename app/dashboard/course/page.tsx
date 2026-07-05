@@ -27,6 +27,7 @@ import {
 import CourseList from "./CourseList";
 import CourseDetails from "./CourseDetails";
 import AssignCourseModal from "./components/AssignCourseModal";
+import CourseUsersModal from "./components/CourseUsersModal";
 import CoursePlayer from "./scorm/CoursePlayer";
 import CourseAssetModal from "./scorm/CourseAssetModal";
 import {
@@ -101,6 +102,7 @@ function CoursePage() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [playerSection, setPlayerSection] = useState<CourseLaunchSection | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [courseUsersModal, setCourseUsersModal] = useState<{ courseId: string; courseTitle: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "private" | "public">("all");
   const [pricingFilter, setPricingFilter] = useState<"all" | "free" | "paid">("all");
@@ -129,6 +131,7 @@ function CoursePage() {
   const canEditCourses = role === "superadmin" && hasPermission(stores.auth.user, PERMISSION_KEYS.EDIT_COURSES);
   const canDeleteCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.DELETE_COURSES);
   const canAssignCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.ASSIGN_COURSES);
+  const canViewUsers = hasPermission(stores.auth.user, PERMISSION_KEYS.VIEW_USERS) && (role === "admin" || role === "superadmin");
   const compactActionWidth = isCompact ? (canCreateCourses ? "calc(50% - 6px)" : "100%") : "auto";
   const scopeBadgeLabel =
     role === "superadmin"
@@ -824,6 +827,17 @@ function CoursePage() {
                               Delete
                             </MotionButton>
                           ) : null}
+                          {canViewUsers ? (
+                            <MotionButton
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => setCourseUsersModal({ courseId: course._id, courseTitle: course.title })}
+                              style={{ borderRadius: 12, border: `1px solid ${borderColor}`, background: surfaceBg, color: "#7C3AED", padding: "8px 12px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                            >
+                              <FiUsers size={12} />
+                              View Users
+                            </MotionButton>
+                          ) : null}
                         </div>
                       </div>
                     );
@@ -1057,6 +1071,30 @@ function CoursePage() {
                                     Delete
                                   </MotionButton>
                                 ) : null}
+                                {canViewUsers ? (
+                                  <MotionButton
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setCourseUsersModal({ courseId: course._id, courseTitle: course.title })}
+                                    style={{
+                                      borderRadius: 12,
+                                      border: `1px solid ${borderColor}`,
+                                      background: surfaceBg,
+                                      color: "#7C3AED",
+                                      padding: "8px 12px",
+                                      fontSize: 12,
+                                      fontWeight: 600,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 6,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    <FiUsers size={12} />
+                                    View Users
+                                  </MotionButton>
+                                ) : null}
+
                               </div>
                             </td>
                           </tr>
@@ -1147,6 +1185,14 @@ function CoursePage() {
           )}
         </div>
       </div>
+      {courseUsersModal && (
+        <CourseUsersModal
+          isOpen={!!courseUsersModal}
+          onClose={() => setCourseUsersModal(null)}
+          courseId={courseUsersModal.courseId}
+          courseTitle={courseUsersModal.courseTitle}
+        />
+      )}
     </PermissionGate>
   );
 }

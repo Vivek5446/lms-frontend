@@ -19,6 +19,7 @@ export const PERMISSION_KEYS = {
   MANAGE_BATCHES: "manage_batches",
   VIEW_LEARNER_PROGRESS_RESULTS: "view_learner_progress_results",
   MANAGE_PERMISSIONS: "manage_permissions",
+  COMPANY_SETTINGS: "company_settings",
   VIEW_PROFILE: "view_profile",
 } as const;
 
