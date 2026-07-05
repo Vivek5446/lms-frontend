@@ -311,7 +311,9 @@ const AssignCourseModal = observer(
     const companyRestrictionMessage = `${selectedCompany?.company_name || "This company"} is inactive. New course assignments are disabled until the company is reactivated.`;
 
     const availableCourses = useMemo(() => {
-      let courses = isSuperadmin ? courseStore.courses || [] : (courseStore.accessibleCourses || []).filter((c) => c.access?.canAssign);
+      let courses = isSuperadmin ? courseStore.courses || [] : [...(courseStore.courses || []), ...(courseStore.accessibleCourses || []).filter((c) => c.access?.canAssign)];
+      // Deduplicate by course._id
+      courses = Array.from(new Map(courses.map(c => [c._id, c])).values());
       if (courseSearch.trim()) {
         const query = courseSearch.toLowerCase();
         courses = courses.filter((c: any) => c.title?.toLowerCase().includes(query) || c.taxonomy?.categories?.some((cat: string) => cat.toLowerCase().includes(query)));
@@ -399,7 +401,7 @@ const AssignCourseModal = observer(
 
         selectedCourses.forEach((course: any) => {
           if (!next[course._id]) {
-            next[course._id] = { passingMarks: "" };
+            next[course._id] = { passingMarks: course?.assessment?.passingMarks != null ? String(course.assessment.passingMarks) : "" };
             changed = true;
           }
         });

@@ -212,29 +212,7 @@ const UsersTable = ({
         ),
       },
     },
-    {
-      headerName: "Company",
-      key: "company",
-      type: "component",
-      width: "180px",
-      metaData: {
-        component: (user: any) => (
-          <HStack spacing={2}>
-            <Box
-              p={1.5}
-              borderRadius="lg"
-              bg={iconBoxBg}
-              _dark={{ bg: "purple.900" }}
-            >
-              <Icon as={FiBriefcase} boxSize={3} color="purple.600" />
-            </Box>
-            <Text fontSize="sm" fontWeight="medium" noOfLines={1} color={useColorModeValue("gray.700", "gray.200")}>
-              {user.company?.name || user.company?.company_name || "Unassigned"}
-            </Text>
-          </HStack>
-        ),
-      },
-    },
+
     {
       headerName: "Role",
       key: "role",
@@ -404,39 +382,7 @@ const UsersTable = ({
         },
       },
     },
-    {
-      headerName: "Access Control",
-      key: "account-access",
-      type: "component",
-      width: "150px",
-      metaData: {
-        component: (user: any) => {
-          const statusMeta = getUserStatusMeta(user);
-          const isEnabled = statusMeta.label !== "Inactive";
 
-          if (!canToggleStatus) {
-            return (
-              <Text fontSize="xs" color={muted}>
-                Superadmin only
-              </Text>
-            );
-          }
-
-          return (
-            <Button
-              size="xs"
-              borderRadius="full"
-              colorScheme={isEnabled ? "red" : "green"}
-              variant={isEnabled ? "outline" : "solid"}
-              onClick={() => onToggleStatus?.(user)}
-              isLoading={statusUpdatingId === user._id}
-            >
-              {isEnabled ? "Deactivate" : "Activate"}
-            </Button>
-          );
-        },
-      },
-    },
     {
       headerName: "Security",
       key: "passwordStatus",

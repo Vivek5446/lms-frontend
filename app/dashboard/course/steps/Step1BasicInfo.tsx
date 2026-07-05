@@ -710,6 +710,9 @@ export default function Step1BasicInfo({
           <label style={{ ...labelStyle, marginBottom: 12 }}>Assessment Setup</label>
           <div
             style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "1.5rem",
               maxWidth: 420,
             }}
           >
@@ -725,9 +728,20 @@ export default function Step1BasicInfo({
                 onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
                 onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
               />
-              <p style={{ margin: "6px 0 0 2px", fontSize: 12, color: "#9CA3AF" }}>
-                Passing marks will be configured later when this course is assigned to a company or learner group.
-              </p>
+            </div>
+            <div>
+              <label style={labelStyle}>Passing Marks {value.visibilityType === "public" && <span style={{ color: "red" }}>*</span>}</label>
+              <input
+                type="number"
+                min="0"
+                max={value.totalMarks || undefined}
+                placeholder="e.g., 40"
+                value={value.passingMarks}
+                onChange={(event) => updateBasicInfo({ passingMarks: event.target.value })}
+                style={inputStyle}
+                onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
+                onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
+              />
             </div>
           </div>
         </div>
