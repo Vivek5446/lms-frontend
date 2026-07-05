@@ -233,6 +233,8 @@ interface CourseDetailsProps {
   onTakeQuiz?: (quiz: CourseQuizForLearner) => void;
   onDownloadCertificate?: (courseId: string) => void;
   isCertificateDownloading?: boolean;
+  onEnrollCourse?: () => void;
+  isEnrolling?: boolean;
 }
 
 export default function CourseDetails({
@@ -247,6 +249,8 @@ export default function CourseDetails({
   onTakeQuiz,
   onDownloadCertificate,
   isCertificateDownloading = false,
+  onEnrollCourse,
+  isEnrolling = false,
 }: CourseDetailsProps) {
   const isAssignedCourseView = Array.isArray(course.sources);
   const firstPlayableLaunchSection = getFirstPlayableLaunchSection(course);
@@ -602,66 +606,91 @@ export default function CourseDetails({
                 </div>
               </div>
 
-              <div className="mt-6 rounded-[1.6rem] border border-border bg-card p-4 shadow-sm sm:p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                      {isAssignedCourseView ? "Your progress" : "Course snapshot"}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      <span className="text-xl font-semibold text-foreground">{heroSnapshotLabel}</span>
-                      <span className="ml-2">
-                        {isAssignedCourseView
-                          ? `- ${sectionSummary.completed}/${sectionSummary.total} lessons`
-                          : `- ${totalMaterialCount} materials`}
-                      </span>
-                    </p>
+              {!isAssignedCourseView ? (
+                <div className="mt-6 rounded-[1.6rem] border border-border bg-card p-4 shadow-sm sm:p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        Enrollment price
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        <span className="text-xl font-semibold text-foreground">{priceLabel}</span>
+                        <span className="ml-2">- {totalMaterialCount} materials</span>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onEnrollCourse}
+                      disabled={isEnrolling}
+                      className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-60"
+                    >
+                      <Rocket className="h-4 w-4" />
+                      {isEnrolling ? "Enrolling..." : "Self Enroll Now"}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onMouseEnter={() => warmLaunchSection(nextLaunchSection)}
-                    onFocus={() => warmLaunchSection(nextLaunchSection)}
-                    onClick={() => {
-                      if (nextLaunchSection) {
-                        onLaunchSection(nextLaunchSection);
-                        return;
-                      }
-
-                      if (course.scormFilePath) {
-                        onLaunchSection({
-                          assetPath: course.scormFilePath,
-                          contentKind: "scorm",
-                          moduleId: "",
-                          moduleTitle: "",
-                          sectionId: "",
-                          sectionTitle: course.title || "Course",
-                        });
-                      }
-                    }}
-                    disabled={!nextLaunchSection && !course.scormFilePath}
-                    className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Rocket className="h-4 w-4" />
-                    {isAssignedCourseView
-                      ? nextLaunchLabel
-                      : getStartLearningLabel(firstPlayableLaunchSection, course.scormFilePath)}
-                  </button>
                 </div>
+              ) : (
+                <div className="mt-6 rounded-[1.6rem] border border-border bg-card p-4 shadow-sm sm:p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        {isAssignedCourseView ? "Your progress" : "Course snapshot"}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        <span className="text-xl font-semibold text-foreground">{heroSnapshotLabel}</span>
+                        <span className="ml-2">
+                          {isAssignedCourseView
+                            ? `- ${sectionSummary.completed}/${sectionSummary.total} lessons`
+                            : `- ${totalMaterialCount} materials`}
+                        </span>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onMouseEnter={() => warmLaunchSection(nextLaunchSection)}
+                      onFocus={() => warmLaunchSection(nextLaunchSection)}
+                      onClick={() => {
+                        if (nextLaunchSection) {
+                          onLaunchSection(nextLaunchSection);
+                          return;
+                        }
 
-                <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-[width] duration-500"
-                    style={{
-                      width: `${isAssignedCourseView ? progressLabel : Math.min(totalModuleCount * 12, 100)}%`,
-                    }}
-                  />
-                </div>
+                        if (course.scormFilePath) {
+                          onLaunchSection({
+                            assetPath: course.scormFilePath,
+                            contentKind: "scorm",
+                            moduleId: "",
+                            moduleTitle: "",
+                            sectionId: "",
+                            sectionTitle: course.title || "Course",
+                          });
+                        }
+                      }}
+                      disabled={!nextLaunchSection && !course.scormFilePath}
+                      className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Rocket className="h-4 w-4" />
+                      {isAssignedCourseView
+                        ? nextLaunchLabel
+                        : getStartLearningLabel(firstPlayableLaunchSection, course.scormFilePath)}
+                    </button>
+                  </div>
 
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span>{nextCardLabel}</span>
-                  <span>{durationLabel}</span>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-500"
+                      style={{
+                        width: `${isAssignedCourseView ? progressLabel : Math.min(totalModuleCount * 12, 100)}%`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>{nextCardLabel}</span>
+                    <span>{durationLabel}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="order-first lg:order-last">
@@ -849,6 +878,12 @@ export default function CourseDetails({
                                   onMouseEnter={() => warmLaunchSection(launchSection)}
                                   onFocus={() => warmLaunchSection(launchSection)}
                                   onClick={() => {
+                                    if (!isAssignedCourseView) {
+                                      if (onEnrollCourse) {
+                                        onEnrollCourse();
+                                      }
+                                      return;
+                                    }
                                     if (launchSection) {
                                       onLaunchSection(launchSection);
                                     }
@@ -1151,47 +1186,59 @@ export default function CourseDetails({
               </div>
             ) : null}
 
-            <button
-              type="button"
-              onMouseEnter={() => {
-                if (nextLaunchSection) {
-                  warmLaunchSection(nextLaunchSection);
-                } else if (course.scormFilePath) {
-                  void preloadCourseAsset(course.scormFilePath).catch(() => undefined);
-                }
-              }}
-              onFocus={() => {
-                if (nextLaunchSection) {
-                  warmLaunchSection(nextLaunchSection);
-                } else if (course.scormFilePath) {
-                  void preloadCourseAsset(course.scormFilePath).catch(() => undefined);
-                }
-              }}
-              onClick={() => {
-                if (nextLaunchSection) {
-                  onLaunchSection(nextLaunchSection);
-                  return;
-                }
+            {!isAssignedCourseView ? (
+              <button
+                type="button"
+                onClick={onEnrollCourse}
+                disabled={isEnrolling}
+                className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md transition hover:opacity-90 disabled:opacity-60"
+              >
+                <Rocket className="h-4 w-4" />
+                {isEnrolling ? "Enrolling..." : "Self Enroll Now"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onMouseEnter={() => {
+                  if (nextLaunchSection) {
+                    warmLaunchSection(nextLaunchSection);
+                  } else if (course.scormFilePath) {
+                    void preloadCourseAsset(course.scormFilePath).catch(() => undefined);
+                  }
+                }}
+                onFocus={() => {
+                  if (nextLaunchSection) {
+                    warmLaunchSection(nextLaunchSection);
+                  } else if (course.scormFilePath) {
+                    void preloadCourseAsset(course.scormFilePath).catch(() => undefined);
+                  }
+                }}
+                onClick={() => {
+                  if (nextLaunchSection) {
+                    onLaunchSection(nextLaunchSection);
+                    return;
+                  }
 
-                if (course.scormFilePath) {
-                  onLaunchSection({
-                    assetPath: course.scormFilePath,
-                    contentKind: "scorm",
-                    moduleId: "",
-                    moduleTitle: "",
-                    sectionId: "",
-                    sectionTitle: course.title || "Course",
-                  });
-                }
-              }}
-              disabled={!nextLaunchSection && !course.scormFilePath}
-              className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Rocket className="h-4 w-4" />
-              {isAssignedCourseView
-                ? nextLaunchLabel
-                : getStartLearningLabel(firstPlayableLaunchSection, course.scormFilePath)}
-            </button>
+                  if (course.scormFilePath) {
+                    onLaunchSection({
+                      assetPath: course.scormFilePath,
+                      contentKind: "scorm",
+                      moduleId: "",
+                      moduleTitle: "",
+                      sectionId: "",
+                      sectionTitle: course.title || "Course",
+                    });
+                  }
+                }}
+                disabled={!nextLaunchSection && !course.scormFilePath}
+                className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Rocket className="h-4 w-4" />
+                {isAssignedCourseView
+                  ? nextLaunchLabel
+                  : getStartLearningLabel(firstPlayableLaunchSection, course.scormFilePath)}
+              </button>
+            )}
 
             {isAssignedCourseView ? (
               <div className="mt-4">
@@ -1364,51 +1411,65 @@ export default function CourseDetails({
         </aside>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.15)] sm:hidden">
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-muted-foreground">Progress</p>
-            <div className="mt-1 flex items-center gap-2">
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-500"
-                  style={{
-                    width: `${isAssignedCourseView ? progressLabel : Math.min(totalModuleCount * 12, 100)}%`,
-                  }}
-                />
-              </div>
-              <span className="text-xs font-medium text-foreground">
-                {isAssignedCourseView ? `${progressLabel}%` : `${totalModuleCount}M`}
-              </span>
-            </div>
-          </div>
+      {!isAssignedCourseView ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.15)] sm:hidden">
           <button
             type="button"
-            onClick={() => {
-              if (nextLaunchSection) {
-                onLaunchSection(nextLaunchSection);
-                return;
-              }
-
-              if (course.scormFilePath) {
-                onLaunchSection({
-                  assetPath: course.scormFilePath,
-                  contentKind: "scorm",
-                  moduleId: "",
-                  moduleTitle: "",
-                  sectionId: "",
-                  sectionTitle: course.title || "Course",
-                });
-              }
-            }}
-            disabled={!nextLaunchSection && !course.scormFilePath}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={onEnrollCourse}
+            disabled={isEnrolling}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md transition hover:opacity-90 disabled:opacity-60"
           >
-            <PlayCircle className="h-4 w-4" />
-            Continue
+            <Rocket className="h-4 w-4" />
+            {isEnrolling ? "Enrolling..." : `Self Enroll - ${priceLabel}`}
           </button>
         </div>
-      </div>
+      ) : (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.15)] sm:hidden">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs text-muted-foreground">Progress</p>
+              <div className="mt-1 flex items-center gap-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-500"
+                    style={{
+                      width: `${isAssignedCourseView ? progressLabel : Math.min(totalModuleCount * 12, 100)}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-xs font-medium text-foreground">
+                  {isAssignedCourseView ? `${progressLabel}%` : `${totalModuleCount}M`}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (nextLaunchSection) {
+                  onLaunchSection(nextLaunchSection);
+                  return;
+                }
+
+                if (course.scormFilePath) {
+                  onLaunchSection({
+                    assetPath: course.scormFilePath,
+                    contentKind: "scorm",
+                    moduleId: "",
+                    moduleTitle: "",
+                    sectionId: "",
+                    sectionTitle: course.title || "Course",
+                  });
+                }
+              }}
+              disabled={!nextLaunchSection && !course.scormFilePath}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <PlayCircle className="h-4 w-4" />
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
