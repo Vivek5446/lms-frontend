@@ -31,6 +31,8 @@ import {
 import { HiOutlineOfficeBuilding } from "react-icons/hi";
 import { MdOutlineVerified } from "react-icons/md";
 import EditProfileModal from "./component/EditProfileModal";
+import { genderOptions } from "@/app/config/constant";
+import { formatDateForInput } from "@/app/component/config/utils/dateUtils";
 
 function s(v: any): string {
   if (v == null || typeof v === "object") return "";
@@ -51,6 +53,48 @@ function fmtDate(iso?: string) {
   });
 }
 
+function genderLabel(value?: number | string) {
+  if (value == null || value === "") return "";
+  const match = genderOptions.find((option: any) => option.value === Number(value));
+  return match?.label || "";
+}
+
+function profileField(user: any, personalInfo: any, key: string) {
+  return s(user?.[key] || personalInfo?.[key]);
+}
+
+const emptyForm = {
+  firstName: "",
+  lastName: "",
+  title: "",
+  address: "",
+  city: "",
+  state: "",
+  country: "",
+  gender: "" as number | "",
+  dateOfBirth: "",
+  bio: "",
+};
+
+function buildFormFromUser(user: any, personalInfo: any) {
+  const { firstName, lastName } = splitName(s(user?.name || personalInfo?.name));
+  const genderValue = user?.gender ?? personalInfo?.gender;
+  const dob = user?.dateOfBirth || personalInfo?.dateOfBirth;
+
+  return {
+    firstName,
+    lastName,
+    title: profileField(user, personalInfo, "title"),
+    address: profileField(user, personalInfo, "address"),
+    city: profileField(user, personalInfo, "city"),
+    state: profileField(user, personalInfo, "state"),
+    country: profileField(user, personalInfo, "country"),
+    gender: typeof genderValue === "number" ? genderValue : ("" as number | ""),
+    dateOfBirth: dob ? formatDateForInput(String(dob)) : "",
+    bio: profileField(user, personalInfo, "bio"),
+  };
+}
+
 
 const ProfilePage: React.FC = observer(() => {
   const toast = useToast();
@@ -59,15 +103,7 @@ const ProfilePage: React.FC = observer(() => {
   const user = stores.auth.user;
   const personalInfo = user?.profile_details?.personalInfo || {};
 
-  // const [form, setForm] = useState({...});        // main state (used in UI)
-const [tempForm, setTempForm] = useState({
-  firstName: "",
-  lastName: "",
-  title: "",
-  city: "",
-  state: "",
-  bio: "",
-}); // modal state
+  const [tempForm, setTempForm] = useState(emptyForm);
 
   const resolvedPhone = s(
     user?.mobileNumber ||
@@ -77,29 +113,12 @@ const [tempForm, setTempForm] = useState({
 
   const role = s(user?.role).toLowerCase().replace(/_/g, " ");
 
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    title: "",
-    city: "",
-    state: "",
-    bio: "",
-  });
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    const { firstName, lastName } = splitName(
-      s(user?.name || personalInfo?.name)
-    );
-    setForm({
-      firstName,
-      lastName,
-      title: s(user?.title || personalInfo?.title),
-      city: s(user?.city || personalInfo?.city),
-      state: s(user?.state || personalInfo?.state),
-      bio: s(user?.bio || personalInfo?.bio),
-    });
+    setForm(buildFormFromUser(user, personalInfo));
   }, [user]);
 
   const fullName = `${form.firstName} ${form.lastName}`.trim() || s(user?.name) || "User";
@@ -120,8 +139,12 @@ const [tempForm, setTempForm] = useState({
         _id: user._id,
         name: s(name || user?.name),
         title: s(tempForm.title),
+        address: s(tempForm.address),
         city: s(tempForm.city),
         state: s(tempForm.state),
+        country: s(tempForm.country),
+        gender: tempForm.gender ? Number(tempForm.gender) : undefined,
+        dateOfBirth: tempForm.dateOfBirth || undefined,
         bio: s(tempForm.bio),
         username: s(user?.username),
         mobileNumber: s(resolvedPhone),
@@ -199,22 +222,14 @@ const [tempForm, setTempForm] = useState({
 
   const handleModalClose = () => {
     if (!user) return onClose();
-    const { firstName, lastName } = splitName(s(user?.name || personalInfo?.name));
-    setForm({
-      firstName,
-      lastName,
-      title: s(user?.title || personalInfo?.title),
-      city: s(user?.city || personalInfo?.city),
-      state: s(user?.state || personalInfo?.state),
-      bio: s(user?.bio || personalInfo?.bio),
-    });
+    setForm(buildFormFromUser(user, personalInfo));
     onClose();
   };
 
   const pageBg = useColorModeValue("gray.50", "gray.950");
   const pageHeadingColor = useColorModeValue("gray.900", "gray.50");
   const pageSubColor = useColorModeValue("gray.500", "gray.500");
-  const location = [form.city, form.state].filter(Boolean).join(", ");
+  const location = [form.city, form.state, form.country].filter(Boolean).join(", ");
   const accentGradient = useColorModeValue(
     "linear(to-br, blue.500, blue.300)",
     "linear(to-br, blue.300, blue.500)"
@@ -344,13 +359,8 @@ const [tempForm, setTempForm] = useState({
 
         <VStack spacing={2} zIndex={1}>
           <Text fontSize="22px" fontWeight="800" letterSpacing="-0.03em" color={useColorModeValue("gray.800", "white")}>
-            {fullName}
+          {form.title ? `${form.title} ${fullName}` : fullName}
           </Text>
-          {form.title && (
-            <Badge px={4} py={1} borderRadius="full" colorScheme="blue" variant="subtle" fontSize="10px">
-              {form.title}
-            </Badge>
-          )}
         </VStack>
 
         <Divider my={6} opacity={0.6} />
@@ -358,7 +368,7 @@ const [tempForm, setTempForm] = useState({
         <VStack spacing={3} w="full" align="center" zIndex={1}>
           <HStack color="gray.500" fontSize="13px">
             <FiMail size={14} />
-            <Text fontWeight="500" fontSize={'sm'}>{s(user?.username)}</Text>
+            <Text fontWeight="600" fontSize={'md'}>{s(user?.username)}</Text>
           </HStack>
           {location && (
             <HStack color="gray.500" fontSize="13px">
@@ -384,19 +394,24 @@ const [tempForm, setTempForm] = useState({
         <Flex justify="space-between" align="center" mb={6}>
           <HStack spacing={3}>
             <Icon as={MdOutlineVerified} color="blue.400" boxSize={6} />
-            <Text fontSize="18px" fontWeight="700">Professional Profile</Text>
+            <Text fontSize="18px" fontWeight="700">My Profile</Text>
           </HStack>
           <Box w="8px" h="8px" borderRadius="full" bg="green.400" />
         </Flex>
 
         <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={5}>
           {[
-            { icon: FiUser, label: "Role", value: role, color: "blue.400" },
+            // { icon: FiUser, label: "Role", value: role, color: "blue.400" },
             { icon: FiBriefcase, label: "Department", value: s(user?.department), color: "purple.400" },
-            { icon: FiUser, label: "Designation", value: s(user?.designation), color: "orange.400" },
+            // { icon: FiUser, label: "Title", value: s(form.title), color: "orange.400" },
             { icon: FiHash, label: "Employee Code", value: s(user?.code), color: "red.400" },
             { icon: FiCalendar, label: "Joined Date", value: fmtDate(user?.joiningDate), color: "teal.400" },
-            { icon: HiOutlineOfficeBuilding, label: "Company", value: s(user?.companyDetails?.company_name), color: "blue.400" },
+            { icon: FiCalendar, label: "Date of Birth", value: fmtDate(form.dateOfBirth || user?.dateOfBirth), color: "pink.400" },
+            { icon: FiUser, label: "Gender", value: genderLabel(form.gender || user?.gender), color: "cyan.400" },
+            { icon: FiMapPin, label: "Address", value: form.address, color: "green.400" },
+            { icon: FiMapPin, label: "City", value: form.city, color: "yellow.500" },
+            { icon: FiMapPin, label: "Country", value: form.country, color: "orange.300" },
+            // { icon: HiOutlineOfficeBuilding, label: "Company", value: s(user?.companyDetails?.company_name), color: "blue.400" },
           ].map((item, idx) => (
             <HStack key={idx} spacing={4} _hover={{ transform: "translateX(5px)" }} transition="0.2s">
               <Flex 
