@@ -1,6 +1,7 @@
 'use client';
 
 import stores from "@/app/store/stores";
+import { CourseCard } from "@/app/(main)/course/component/CourseCard";
 import {
   Badge,
   Box,
@@ -65,6 +66,9 @@ export default observer(function LMSLandingPage() {
 
   const publicCourses = stores.courseStore.publicCourses || [];
   const assignedCourses = stores.courseStore.myCourses || [];
+  const enrolledCourseIds = useMemo(() => {
+    return new Set((stores.courseStore.myCourses || []).map((course) => String(course.courseId || "").trim()));
+  }, [stores.courseStore.myCourses]);
   const featuredPublicCourses = useMemo(() => publicCourses.slice(0, 4), [publicCourses]);
   const featuredAssignedCourses = useMemo(() => assignedCourses.slice(0, 2), [assignedCourses]);
   const avgRating = useMemo(() => {
@@ -802,53 +806,15 @@ export default observer(function LMSLandingPage() {
             </HStack>
           ) : (
             <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={{ base: 4, md: 6 }}>
-              {featuredPublicCourses.map((course, index) => (
-                <MotionBox
+              {featuredPublicCourses.map((course) => (
+                <CourseCard
                   key={course._id}
-                  whileHover={{ y: -8 }}
-                  bg={cardBg}
-                  borderRadius={{ base: "xl", md: "3xl" }}
-                  overflow="hidden"
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                  boxShadow="0 18px 45px rgba(15, 23, 42, 0.07)"
-                >
-                  {course.thumbnailUrl ? (
-                    <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "124px", md: "180px" }} w="full" objectFit="cover" />
-                  ) : (
-                    <Flex h={{ base: "124px", md: "180px" }} bgImage={accentGradients[index % accentGradients.length]} align="center" justify="center" color="white">
-                      <Icon as={FaBolt} boxSize={8} opacity={0.92} />
-                    </Flex>
-                  )}
-                  <Box p={{ base: 4, md: 5 }}>
-                    <HStack spacing={2} flexWrap="wrap" mb={3}>
-                      <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
-                        Public
-                      </Badge>
-                      <Badge bg={brand50} color={brand700} borderRadius="full" px={3} py={1}>
-                        {course.taxonomy?.level || "Beginner"}
-                      </Badge>
-                    </HStack>
-                    <Heading size="sm" minH={{ base: "auto", md: "42px" }} color={textPrimary} noOfLines={2}>
-                      {course.title}
-                    </Heading>
-                    <Text mt={2} fontSize="sm" color={textSecondary} noOfLines={2}>
-                      {course.description?.text || "Open this course to inspect pricing, curriculum, and enrollment options."}
-                    </Text>
-
-                    <Flex justify="space-between" align="center" mt={4} pt={4} borderTopWidth="1px" borderColor={borderColor}>
-                      <Text fontWeight="800" bgGradient={`linear(to-r, ${brand700}, ${brand500})`} bgClip="text">
-                        {formatCurrency(course.commerce?.amountInRupees)}
-                      </Text>
-                      <HStack spacing={1}>
-                        <Icon as={FaUserGraduate} color={brand500} />
-                        <Text fontSize="sm" color={textSecondary}>
-                          {course.metrics?.popularityScore || 0} learners
-                        </Text>
-                      </HStack>
-                    </Flex>
-                  </Box>
-                </MotionBox>
+                  course={course}
+                  enrolled={enrolledCourseIds.has(String(course._id))}
+                  onClick={() => {
+                    router.push(`/course?courseId=${course._id}`);
+                  }}
+                />
               ))}
             </SimpleGrid>
           )}

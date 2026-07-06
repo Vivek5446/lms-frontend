@@ -14,6 +14,7 @@ import {
 import { CourseQuizForLearner, courseStore } from "@/app/store/courseStore/courseStore";
 import { managerStore } from "@/app/store/managerStore/managerStore";
 import stores from "@/app/store/stores";
+import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import {
   Badge,
   Box,
@@ -100,6 +101,7 @@ const MyCoursesBoard = observer(
 
     useEffect(() => {
       courseStore.fetchMyCourses().catch(() => undefined);
+      courseStore.fetchPublicCourses().catch(() => undefined);
     }, []);
 
     useEffect(() => {
@@ -109,64 +111,99 @@ const MyCoursesBoard = observer(
         return;
       }
 
-      courseStore.fetchMyCourseDetail(requestedCourseId).catch((error) => {
-        toast({
-          title: "Unable to open course",
-          description: error?.message || error?.error || "Please try again.",
-          status: "error",
-          duration: 4000,
+      const enrolled = (courseStore.myCourses || []).some(
+        (c) => String(c.courseId || c._id).trim() === String(requestedCourseId).trim()
+      );
+
+      if (enrolled) {
+        courseStore.fetchMyCourseDetail(requestedCourseId).catch((error) => {
+          toast({
+            title: "Unable to open course",
+            description: error?.message || error?.error || "Please try again.",
+            status: "error",
+            duration: 4000,
+          });
+          router.replace(basePath);
         });
-        router.replace(basePath);
-      });
-    }, [basePath, requestedCourseId, router, toast]);
+      }
+    }, [basePath, requestedCourseId, router, toast, courseStore.myCourses]);
 
     const courses = courseStore.myCourses || [];
     const activeCourse = useMemo(() => {
-      if (!requestedCourseId || !courseStore.currentCourse) {
+      if (!requestedCourseId) {
         return null;
       }
 
-      return courseStore.currentCourse;
-    }, [requestedCourseId, courseStore.currentCourse]);
-    const initialScormProgress = useMemo(
-      () => getCourseSectionProgress(activeCourse, playerSection?.sectionId),
-      [activeCourse, playerSection?.sectionId],
-    );
+      const enrolled = courses.some(
+        (c) => String(c.courseId || c._id).trim() === String(requestedCourseId).trim()
+      );
+
+      if (enrolled) {
+        return courseStore.currentCourse;
+      }
+
+      const pubCourse = (courseStore.publicCourses || []).find(
+        (c) => String(c._id).trim() === String(requestedCourseId).trim()
+      );
+      return pubCourse || null;
+    }, [requestedCourseId, courseStore.currentCourse, courseStore.publicCourses, courses]);
+    const isCourseEnrolled = useMemo(() => {
+      if (!requestedCourseId) {
+        return false;
+      }
+
+      return courses.some(
+        (course) =>
+          String(course.courseId || course._id).trim() === String(requestedCourseId).trim()
+      );
+    }, [courses, requestedCourseId]);
+
+    const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
+    const isLearner = isLearnerRole(role);
 
     useEffect(() => {
-      const activeCourseId = activeCourse?._id || activeCourse?.courseId;
+      if (!requestedCourseId || !isCourseEnrolled) {
+        return;
+      }
+
+      const activeCourseId = String(activeCourse?._id || "").trim();
       if (!activeCourseId) {
-        managerStore.clearMyCourseAnswers();
-        courseStore.clearCourseQuizzes();
         return;
       }
 
       managerStore.fetchMyCourseAnswers(activeCourseId).catch(() => undefined);
       courseStore.fetchCourseQuizzes(activeCourseId).catch(() => undefined);
-    }, [activeCourse?._id, activeCourse?.courseId]);
+    }, [activeCourse?._id, isCourseEnrolled, requestedCourseId]);
+
+    const initialScormProgress = useMemo(
+      () => getCourseSectionProgress(activeCourse, playerSection?.sectionId),
+      [activeCourse, playerSection?.sectionId],
+    );
+
+    const initialSectionProgress = useMemo(
+      () => getCourseSectionProgress(activeCourse, playerSection?.sectionId),
+      [activeCourse, playerSection?.sectionId],
+    );
 
     const filteredCourses = useMemo(() => {
       const query = searchQuery.trim().toLowerCase();
 
       return courses.filter((course) => {
-        const matchesSearch =
-          !query ||
-          [
-            course.title,
-            course.description?.text,
-            ...course.sources.map((source) => source.label),
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase()
-            .includes(query);
+        const searchableText = [
+          course.title,
+          course.description?.text,
+          ...(course.taxonomy?.categories || []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
 
-        if (!matchesSearch) {
+        if (query && !searchableText.includes(query)) {
           return false;
         }
 
         if (statusFilter === "active") {
-          return !course.isExpired;
+          return !course.isExpired && course.visibilityStatus !== "expired";
         }
 
         if (statusFilter === "in_progress") {
@@ -182,19 +219,10 @@ const MyCoursesBoard = observer(
     }, [courses, searchQuery, statusFilter]);
 
     const summary = useMemo(() => {
-      const completed = courses.filter(
-        (course) => course.status === "completed",
-      ).length;
-      const inProgress = courses.filter(
-        (course) => course.status === "in_progress",
-      ).length;
-      const active = courses.filter((course) => !course.isExpired).length;
-
       return {
         total: courses.length,
-        completed,
-        inProgress,
-        active,
+        active: courses.filter((course) => !course.isExpired && course.visibilityStatus !== "expired").length,
+        completed: courses.filter((course) => course.status === "completed").length,
       };
     }, [courses]);
 
@@ -212,8 +240,67 @@ const MyCoursesBoard = observer(
         });
       } catch (error: any) {
         toast({
-          title: "Certificate unavailable",
-          description: error?.message || error?.data || "Please try again.",
+          title: "Unable to download certificate",
+          description: error?.message || "Please try again.",
+          status: "error",
+          duration: 4000,
+        });
+      }
+    };
+
+    const handleEnrollCourse = async () => {
+      if (!requestedCourseId) {
+        return;
+      }
+
+      if (!stores.auth.user) {
+        toast({
+          title: "Sign in required",
+          description: "Please sign in or sign up to enroll in this course.",
+          status: "info",
+          duration: 4000,
+        });
+        router.push(`/login?redirect=${encodeURIComponent(`${basePath}?courseId=${requestedCourseId}`)}`);
+        return;
+      }
+
+      if (!isLearner) {
+        toast({
+          title: "Learner account required",
+          description: "Sign in with a learner account to enroll in this course.",
+          status: "error",
+          duration: 4000,
+        });
+        return;
+      }
+
+      const requiresPayment =
+        String(activeCourse?.commerce?.pricingModel || "free").toLowerCase() === "paid";
+
+      if (requiresPayment) {
+        toast({
+          title: "Payment required",
+          description: "Complete payment before enrolling in this course.",
+          status: "error",
+          duration: 4000,
+        });
+        return;
+      }
+
+      try {
+        const response = await courseStore.enrollInPublishedCourse(requestedCourseId);
+        await stores.auth.fetchUser();
+        await courseStore.fetchMyCourseDetail(requestedCourseId);
+        toast({
+          title: response?.data?.alreadyEnrolled ? "Already enrolled" : "Enrollment complete",
+          description: response?.message || "You can now start learning.",
+          status: "success",
+          duration: 4000,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Enrollment failed",
+          description: error?.message || error?.error || "Unable to enroll in this course.",
           status: "error",
           duration: 4000,
         });
@@ -222,67 +309,80 @@ const MyCoursesBoard = observer(
 
     const syncNonScormSectionProgress = async (
       status: "in_progress" | "completed",
-      extra?: {
+      data?: {
         currentTime?: number;
         duration?: number;
         progress?: number;
         startOver?: boolean;
       },
     ) => {
-      const activeCourseId = activeCourse?._id || activeCourse?.courseId;
-      if (
-        !activeCourseId ||
-        !playerSection?.moduleId ||
-        !playerSection?.sectionId
-      ) {
+      if (!activeCourse || !playerSection || !isCourseEnrolled) {
         return;
       }
 
-      await courseStore.updateSectionProgress({
-        courseId: activeCourseId,
-        moduleId: playerSection.moduleId,
-        sectionId: playerSection.sectionId,
-        status,
-        ...extra,
-      });
+      const courseId = String(activeCourse._id || "").trim();
+      if (!courseId) {
+        return;
+      }
 
-      // We don't necessarily need to refetch everything on every throttled update,
-      // but on completion we definitely should.
-      if (status === "completed" || extra?.startOver) {
-        await Promise.all([
-          courseStore.fetchMyCourseDetail(activeCourseId),
-          courseStore.fetchMyCourses(),
-        ]);
+      try {
+        const response = await courseStore.updateSectionProgress({
+          courseId,
+          moduleId: playerSection.moduleId,
+          sectionId: playerSection.sectionId,
+          status,
+          contentType: playerSection.contentKind,
+          currentTime: data?.currentTime,
+          duration: data?.duration,
+          progress: data?.progress,
+          startOver: data?.startOver,
+        });
+
+        if (response) {
+          courseStore.applyRealtimeSectionProgressUpdate({
+            courseId,
+            moduleId: playerSection.moduleId,
+            sectionId: playerSection.sectionId,
+            data: response,
+          });
+        }
+      } catch (error: any) {
+        toast({
+          title: "Unable to save progress",
+          description: error?.message || error?.error || "Please try again.",
+          status: "error",
+          duration: 4000,
+        });
       }
     };
 
-    const [initialSectionProgress, setInitialSectionProgress] =
-      useState<any>(null);
-
-    useEffect(() => {
-      if (playerSection && !isScormLaunchSection(playerSection)) {
-        const activeCourseId = activeCourse?._id || activeCourse?.courseId;
-        if (activeCourseId) {
-          courseStore
-            .fetchSectionProgress({
-              courseId: activeCourseId,
-              moduleId: playerSection.moduleId,
-              sectionId: playerSection.sectionId,
-            })
-            .then(setInitialSectionProgress);
-        }
-      } else {
-        setInitialSectionProgress(null);
-      }
-    }, [playerSection, activeCourse?._id, activeCourse?.courseId]);
-
     if (requestedCourseId) {
+      const isLoadingCourse =
+        (isCourseEnrolled && courseStore.isMyCourseDetailLoading && !activeCourse) ||
+        (!isCourseEnrolled && courseStore.isPublicCoursesLoading && !activeCourse);
+
+      if (isLoadingCourse) {
+        return (
+          <HStack justify="center" minH="60vh">
+            <Spinner />
+            <Text color={subduedText}>Loading course...</Text>
+          </HStack>
+        );
+      }
+
       if (!activeCourse) {
         return (
-          <HStack justify="center" py={20}>
-            <Spinner />
-            <Text color={subduedText}>Loading course details...</Text>
-          </HStack>
+          <Box textAlign="center" py={16} px={4}>
+            <Text fontWeight="semibold" fontSize="lg">
+              Course not found
+            </Text>
+            <Text color={subduedText} mt={2}>
+              This course may have been removed or is no longer available.
+            </Text>
+            <Button mt={6} colorScheme="blue" borderRadius="xl" onClick={() => router.replace(basePath)}>
+              Back to courses
+            </Button>
+          </Box>
         );
       }
 
@@ -290,17 +390,23 @@ const MyCoursesBoard = observer(
         <>
           <CourseDetails
             course={activeCourse}
-            onBack={() => router.push(basePath)}
+            onBack={() => {
+              setPlayerSection(null);
+              setActiveQuiz(null);
+              router.replace(basePath);
+            }}
             onLaunchSection={(launchSection) => setPlayerSection(launchSection)}
-            learnerAnswers={managerStore.myCourseAnswers}
-            isLearnerAnswersLoading={managerStore.isMyCourseAnswersLoading}
-            courseQuizzes={courseStore.courseQuizzes}
-            isCourseQuizzesLoading={courseStore.isCourseQuizzesLoading}
-            onTakeQuiz={(quiz) => setActiveQuiz(quiz)}
-            onDownloadCertificate={handleDownloadCertificate}
+            learnerAnswers={isCourseEnrolled ? managerStore.myCourseAnswers : []}
+            isLearnerAnswersLoading={isCourseEnrolled && managerStore.isMyCourseAnswersLoading}
+            courseQuizzes={isCourseEnrolled ? courseStore.courseQuizzes : []}
+            isCourseQuizzesLoading={isCourseEnrolled && courseStore.isCourseQuizzesLoading}
+            onTakeQuiz={isCourseEnrolled ? setActiveQuiz : undefined}
+            onDownloadCertificate={isCourseEnrolled ? handleDownloadCertificate : undefined}
             isCertificateDownloading={
-              courseStore.certificateDownloadCourseId === (activeCourse._id || activeCourse.courseId)
+              isCourseEnrolled && courseStore.certificateDownloadCourseId === requestedCourseId
             }
+            onEnrollCourse={!isCourseEnrolled ? handleEnrollCourse : undefined}
+            isEnrolling={courseStore.enrollmentCourseId === requestedCourseId}
           />
 
           <AnimatePresence>
@@ -315,7 +421,7 @@ const MyCoursesBoard = observer(
                 <CoursePlayer
                   courseTitle={activeCourse.title}
                   courseUrl={buildCourseAssetUrl(playerSection.assetPath)}
-                  courseId={activeCourse._id || activeCourse.courseId}
+                  courseId={activeCourse._id}
                   moduleId={playerSection.moduleId}
                   sectionId={playerSection.sectionId}
                   initialProgress={initialScormProgress}
@@ -326,23 +432,17 @@ const MyCoursesBoard = observer(
                     stores.auth.user?.email
                   }
                   answerSections={managerStore.myCourseAnswers}
-                  isAnswerSectionsLoading={
-                    managerStore.isMyCourseAnswersLoading
-                  }
+                  isAnswerSectionsLoading={managerStore.isMyCourseAnswersLoading}
                   onRefreshAnswerSections={() => {
-                    const activeCourseId =
-                      activeCourse._id || activeCourse.courseId;
+                    const activeCourseId = activeCourse._id;
                     if (!activeCourseId) {
                       return Promise.resolve();
                     }
 
-                    return managerStore
-                      .fetchMyCourseAnswers(activeCourseId)
-                      .then(() => undefined);
+                    return managerStore.fetchMyCourseAnswers(activeCourseId).then(() => undefined);
                   }}
                   onRefreshProgress={() => {
-                    const activeCourseId =
-                      activeCourse._id || activeCourse.courseId;
+                    const activeCourseId = activeCourse._id;
                     if (!activeCourseId) {
                       return Promise.resolve();
                     }
@@ -367,9 +467,7 @@ const MyCoursesBoard = observer(
                     ? () => syncNonScormSectionProgress("in_progress")
                     : undefined
                 }
-                onProgressUpdate={(data) =>
-                  syncNonScormSectionProgress("in_progress", data)
-                }
+                onProgressUpdate={(data) => syncNonScormSectionProgress("in_progress", data)}
                 onCompleted={() => syncNonScormSectionProgress("completed")}
                 onStartOver={() =>
                   syncNonScormSectionProgress("in_progress", {
@@ -385,14 +483,20 @@ const MyCoursesBoard = observer(
                 isSubmitting={courseStore.isQuizSubmitting}
                 onClose={() => setActiveQuiz(null)}
                 onSubmit={async (answers) => {
-                  const activeCourseId = activeCourse._id || activeCourse.courseId;
-                  const response = await courseStore.submitCourseQuiz(activeCourseId, activeQuiz.quizId, answers);
+                  const activeCourseId = activeCourse._id;
+                  const response = await courseStore.submitCourseQuiz(
+                    activeCourseId,
+                    activeQuiz.quizId,
+                    answers,
+                  );
                   await Promise.all([
                     courseStore.fetchMyCourseDetail(activeCourseId),
                     courseStore.fetchMyCourses(),
                     managerStore.fetchMyCourseAnswers(activeCourseId),
                   ]).catch(() => undefined);
-                  const refreshedQuiz = courseStore.courseQuizzes.find((quiz) => quiz.quizId === activeQuiz.quizId);
+                  const refreshedQuiz = courseStore.courseQuizzes.find(
+                    (quiz) => quiz.quizId === activeQuiz.quizId,
+                  );
                   if (refreshedQuiz) {
                     setActiveQuiz(refreshedQuiz);
                   }

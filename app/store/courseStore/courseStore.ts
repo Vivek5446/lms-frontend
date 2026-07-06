@@ -204,6 +204,7 @@ export interface MyCourseSourceItem {
 }
 
 export interface MyCourseItem {
+  _id?: string;
   courseId: string;
   title: string;
   description?: {

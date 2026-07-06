@@ -74,12 +74,16 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
   const themeConfigSnapshot = isLearnerThemeEnabled
     ? "{}"
     : JSON.stringify(themeConfig || {});
+
+  const isCreatedByAdmin = Boolean(user?.createdBy);
+  const activeLearnerPrimaryColor = isCreatedByAdmin ? user?.companyDetails?.primaryThemeColor : undefined;
+
   const activeTheme = useMemo(
     () =>
       buildAppTheme({
         enableLearnerBranding: isLearnerThemeEnabled,
         enableDashboardBranding: isDashboardThemeEnabled,
-        learnerPrimaryColor: user?.companyDetails?.primaryThemeColor,
+        learnerPrimaryColor: activeLearnerPrimaryColor,
         dashboardPrimaryColor: user?.companyDetails?.primaryThemeColor,
         themeConfig: isLearnerThemeEnabled ? {} : JSON.parse(themeConfigSnapshot),
       }),
@@ -87,6 +91,7 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
       isLearnerThemeEnabled,
       isDashboardThemeEnabled,
       themeConfigSnapshot,
+      activeLearnerPrimaryColor,
       user?.companyDetails?.primaryThemeColor,
     ]
   );

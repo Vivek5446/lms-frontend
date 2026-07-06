@@ -178,8 +178,7 @@ const UserDrawer = ({
   const availableDepartments = isSuperadmin
     ? filteredCompanies.find((company: any) => company?._id === userForm.companyId)?.departments || []
     : currentCompanyDepartments || [];
-  const isDepartmentRequired =
-    userForm.role === "departmenthead" || /^l\d+-manager$/i.test(String(userForm.role || ""));
+  const isDepartmentRequired = userForm.role === "departmenthead";
   const validationErrors = useMemo(
     () =>
       buildUserFormErrors({

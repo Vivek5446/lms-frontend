@@ -350,16 +350,17 @@ class AuthStore {
       );
 
       const responseData = response?.data?.data || {};
-      const identity = responseData?.user || responseData?.identity || responseData;
       const memberships = Array.isArray(responseData?.memberships) ? responseData.memberships : [];
       const activeMembership = responseData?.activeMembership || null;
       const activeCompany = responseData?.activeCompany || activeMembership?.company || null;
       const resolvedUserType =
         responseData?.effectiveRole ||
         activeMembership?.role ||
-        identity?.userType ||
-        identity?.role ||
+        responseData?.userType ||
+        responseData?.role ||
         "user";
+
+      const { memberships: _m, activeMembership: _am, activeCompany: _ac, effectiveRole: _er, ...identity } = responseData;
 
       this.user = {
         ...identity,

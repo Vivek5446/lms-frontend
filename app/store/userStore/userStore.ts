@@ -427,6 +427,29 @@ class UserStore {
     }
   };
 
+  fetchCourseUsers = async (courseId: string, params: any = {}) => {
+    this.loading = true;
+    try {
+      const response = await axios.get(`/admin/users/courses/${courseId}/users`, { params });
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.loading = false;
+    }
+  };
+
+  getAdminCompanySettings = async () => {
+    this.isLoading = true;
+    try {
+      const response = await axios.get("/admin/users/company/settings");
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    } finally {
+      this.isLoading = false;
+    }
+  };
 
   updateUserSettings = async (settings: any) => {
     this.isLoading = true;

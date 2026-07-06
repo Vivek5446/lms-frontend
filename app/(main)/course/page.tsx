@@ -3,6 +3,7 @@
 import MyCoursesBoard from "@/app/(main)/course/component/MyCoursesBoard";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import stores from "@/app/store/stores";
+import { CourseCard } from "@/app/(main)/course/component/CourseCard";
 import {
   Badge,
   Box,
@@ -102,7 +103,6 @@ const CoursesPage = observer(function CoursesPage() {
   const [courseTypeFilter, setCourseTypeFilter] = useState<"all" | "standard" | "scorm">("all");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [sortBy, setSortBy] = useState<CatalogSort>("latest");
-  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
 
   const heroBg = useColorModeValue(
     "linear-gradient(135deg, var(--chakra-colors-brand-50) 0%, #ffffff 48%, var(--chakra-colors-brand-100) 100%)",
@@ -166,77 +166,10 @@ const CoursesPage = observer(function CoursesPage() {
   );
 
   useEffect(() => {
-    if (!requestedEnrollmentCourseId || selectedCourse) {
-      return;
+    if (requestedEnrollmentCourseId) {
+      router.replace(`/course?courseId=${requestedEnrollmentCourseId}`);
     }
-
-    const requestedCourse = publicCourses.find(
-      (course) => String(course._id || "").trim() === requestedEnrollmentCourseId
-    );
-    if (requestedCourse) {
-      setSelectedCourse(requestedCourse);
-    }
-  }, [publicCourses, requestedEnrollmentCourseId, selectedCourse]);
-
-  const selectedCourseId = String(selectedCourse?._id || "").trim();
-  const selectedCourseIsEnrolled = Boolean(selectedCourseId && enrolledCourseIds.has(selectedCourseId));
-  const selectedCourseRequiresPayment =
-    String(selectedCourse?.commerce?.pricingModel || "free").toLowerCase() === "paid";
-  const selectedCourseIsEnrolling = stores.courseStore.enrollmentCourseId === selectedCourseId;
-
-  const handleEnrollmentAction = async () => {
-    if (!selectedCourseId) {
-      return;
-    }
-
-    if (selectedCourseIsEnrolled) {
-      setSelectedCourse(null);
-      router.push(`/course?courseId=${selectedCourseId}`);
-      return;
-    }
-
-    if (!stores.auth.user) {
-      const redirectPath = `/course?enrollCourseId=${selectedCourseId}`;
-      router.push(`/login?redirect=${encodeURIComponent(redirectPath)}`);
-      return;
-    }
-
-    if (!isLearner) {
-      stores.auth.openNotification({
-        title: "Learner account required",
-        message: "Sign in with a learner account to enroll in this course.",
-        type: "error",
-      });
-      return;
-    }
-
-    if (selectedCourseRequiresPayment) {
-      stores.auth.openNotification({
-        title: "Payment required",
-        message: "Complete payment before enrolling in this course.",
-        type: "error",
-      });
-      return;
-    }
-
-    try {
-      const response = await stores.courseStore.enrollInPublishedCourse(selectedCourseId);
-      await stores.auth.fetchUser();
-      stores.auth.openNotification({
-        title: response?.data?.alreadyEnrolled ? "Already enrolled" : "Enrollment complete",
-        message: response?.message || "The course is now available in your learning dashboard.",
-        type: "success",
-      });
-      setSelectedCourse(null);
-      router.push(`/course?courseId=${selectedCourseId}`);
-    } catch (error: any) {
-      stores.auth.openNotification({
-        title: "Enrollment failed",
-        message: error?.message || error?.error || "Unable to enroll in this course.",
-        type: "error",
-      });
-    }
-  };
+  }, [requestedEnrollmentCourseId, router]);
 
   const availableCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -320,7 +253,7 @@ const CoursesPage = observer(function CoursesPage() {
 
   const featuredAssignedCourses = useMemo(() => assignedCourses.slice(0, 3), [assignedCourses]);
 
-  if (isLearner && requestedCourseId) {
+  if (requestedCourseId) {
     return (
       <Box minH="100vh" bg={pageBg} px={{ base: 4, md: 6 }}>
         <MyCoursesBoard basePath="/course" />
@@ -729,6 +662,8 @@ const FilterPanel = (
                   borderRadius="2xl"
                   overflow="hidden"
                   boxShadow="0 18px 45px rgba(15, 23, 42, 0.06)"
+                  cursor="pointer"
+                  onClick={() => router.push(`/course?courseId=${course.courseId}`)}
                 >
                   <Box position="relative">
                     {course.thumbnailUrl ? (
@@ -762,7 +697,19 @@ const FilterPanel = (
                       </Text>
                     </HStack>
 
-                    <Button mt={{ base: 3, md: 4 }} h={{ base: "34px", md: "40px" }} w="full" size={{ base: "sm", md: "md" }} variant={'outline'}  colorScheme="blue" borderRadius="xl" onClick={() => router.push(`/course?courseId=${course.courseId}`)}>
+                    <Button
+                      mt={{ base: 3, md: 4 }}
+                      h={{ base: "34px", md: "40px" }}
+                      w="full"
+                      size={{ base: "sm", md: "md" }}
+                      variant="outline"
+                      colorScheme="blue"
+                      borderRadius="xl"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        router.push(`/course?courseId=${course.courseId}`);
+                      }}
+                    >
                       Continue Course
                     </Button>
                   </Box>
@@ -817,92 +764,14 @@ const FilterPanel = (
         ) : (
           <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={{ base: 4, md: 5 }}>
             {filteredPublicCourses.map((course) => (
-              <MotionBox
+              <CourseCard
                 key={course._id}
-                whileHover={{ y: -6 }}
-                bg={cardBg}
-                borderWidth="1px"
-                borderColor={borderColor}
-                borderRadius="2xl"
-                overflow="hidden"
-                boxShadow="0 18px 45px rgba(15, 23, 42, 0.06)"
-              >
-                <Box position="relative">
-                  {course.thumbnailUrl ? (
-                    <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "112px", sm: "148px", md: "210px" }} w="full" objectFit="cover" />
-                  ) : (
-                    <Box h={{ base: "112px", sm: "148px", md: "210px" }} bgGradient="linear(to-br, brand.600, brand.300)" />
-                  )}
-                  <HStack position="absolute" top={{ base: 3, md: 4 }} left={{ base: 3, md: 4 }} spacing={2} flexWrap="wrap">
-                    <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
-                      Public
-                    </Badge>
-                    <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
-                      {course.courseType === "scorm" ? "SCORM" : "Standard"}
-                    </Badge>
-                    {enrolledCourseIds.has(String(course._id)) ? (
-                      <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
-                        Enrolled
-                      </Badge>
-                    ) : null}
-                  </HStack>
-                </Box>
-
-                <Box p={{ base: 3, md: 5 }}>
-                  <HStack spacing={2} flexWrap="wrap" mb={3}>
-                    {(course.taxonomy?.categories || []).slice(0, 2).map((category) => (
-                      <Badge key={`${course._id}-${category}`} borderRadius="full" px={3} py={1}>
-                        {category}
-                      </Badge>
-                    ))}
-                    <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
-                      {course.taxonomy?.level || "Beginner"}
-                    </Badge>
-                  </HStack>
-
-                  <Heading size={{ base: "sm", md: "md" }} mb={2} noOfLines={2}>{course.title}</Heading>
-                  <Text fontSize="sm" color={mutedText} noOfLines={3} display={{ base: "none", sm: "block" }}>
-                    {course.description?.text || "Explore this course to review the curriculum, pricing, and assessment thresholds."}
-                  </Text>
-
-                  <SimpleGrid columns={2} spacing={3} mt={4} display={{ base: "none", sm: "grid" }}>
-                    <Box>
-                      <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Price</Text>
-                      <HStack spacing={2} mt={1}>
-                        <Icon as={FiDollarSign} color="green.500" />
-                        <Text fontWeight="700">{formatCurrency(course.commerce?.amountInRupees)}</Text>
-                      </HStack>
-                    </Box>
-                    <Box>
-                      <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Popularity</Text>
-                      <HStack spacing={2} mt={1}>
-                        <Icon as={FiTrendingUp} color="purple.500" />
-                        <Text fontWeight="700">{course.metrics?.popularityScore || 0}</Text>
-                      </HStack>
-                    </Box>
-                    <Box>
-                      <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Rating</Text>
-                      <HStack spacing={2} mt={1}>
-                        <Icon as={FiStar} color="orange.400" />
-                        <Text fontWeight="700">
-                          {course.metrics?.averageRating ? course.metrics.averageRating.toFixed(1) : "New"}
-                        </Text>
-                      </HStack>
-                    </Box>
-                    <Box>
-                      <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Language</Text>
-                      <HStack spacing={2} mt={1}>
-                        <Icon as={FiClock} color="blue.500" />
-                        <Text fontWeight="700">{course.taxonomy?.languages?.[0] || "Any"}</Text>
-                      </HStack>
-                    </Box>
-                  </SimpleGrid>
-
-                  <Button mt={{ base: 3, md: 5 }} h={{ base: "36px", md: "40px" }} w="full" size={{ base: "sm", md: "md" }} variant={'ghost'} colorScheme="blue" borderRadius="xl" rightIcon={<FiArrowRight />} onClick={() => setSelectedCourse(course)}>
-                    View Course
-                  </Button>
-                </Box>
-              </MotionBox>
+                course={course}
+                enrolled={enrolledCourseIds.has(String(course._id))}
+                onClick={() => {
+                  router.push(`/course?courseId=${course._id}`);
+                }}
+              />
             ))}
           </SimpleGrid>
         )}
@@ -919,105 +788,7 @@ const FilterPanel = (
         </DrawerContent>
       </Drawer>
 
-      <Drawer isOpen={Boolean(selectedCourse)} placement="right" onClose={() => setSelectedCourse(null)} size="md">
-        <DrawerOverlay backdropFilter="blur(6px)" />
-        <DrawerContent bg={drawerBg}>
-          <DrawerCloseButton mt={2} />
-          <DrawerHeader borderBottomWidth="1px" borderColor={borderColor}>
-            Course Overview
-          </DrawerHeader>
-          <DrawerBody py={6}>
-            {selectedCourse ? (
-              <Stack spacing={5}>
-                {selectedCourse.thumbnailUrl ? (
-                  <Image src={selectedCourse.thumbnailUrl} alt={selectedCourse.title} borderRadius="2xl" h={{ base: "150px", md: "220px" }} objectFit="cover" />
-                ) : null}
 
-                <Box>
-                  <HStack spacing={2} flexWrap="wrap" mb={3}>
-                    <Badge colorScheme="green" borderRadius="full" px={3} py={1}>
-                      Public
-                    </Badge>
-                    <Badge colorScheme="blue" borderRadius="full" px={3} py={1}>
-                      {selectedCourse.courseType === "scorm" ? "SCORM" : "Standard"}
-                    </Badge>
-                    <Badge colorScheme="purple" borderRadius="full" px={3} py={1}>
-                      {selectedCourse.taxonomy?.level || "Beginner"}
-                    </Badge>
-                    {selectedCourseIsEnrolled ? (
-                      <Badge colorScheme="teal" borderRadius="full" px={3} py={1}>
-                        Enrolled
-                      </Badge>
-                    ) : null}
-                  </HStack>
-                  <Heading size={{ base: "md", md: "lg" }}>{selectedCourse.title}</Heading>
-                  <Text mt={3} color={mutedText} lineHeight="1.7" fontSize={{ base: "sm", md: "md" }}>
-                    {selectedCourse.description?.text || "Course description will appear here once content is available."}
-                  </Text>
-                </Box>
-
-                <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={{ base: 3, md: 4 }}>
-                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={priceSummaryBg} borderWidth="1px" borderColor={borderColor}>
-                    <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Price</Text>
-                    <Text mt={2} fontWeight="800" fontSize="lg">{formatCurrency(selectedCourse.commerce?.amountInRupees)}</Text>
-                  </Box>
-                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={moduleSummaryBg} borderWidth="1px" borderColor={borderColor}>
-                    <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Modules</Text>
-                    <Text mt={2} fontWeight="800" fontSize="lg">{selectedCourse.curriculum?.totalModules || 0}</Text>
-                  </Box>
-                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={assessmentSummaryBg} borderWidth="1px" borderColor={borderColor}>
-                    <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Pass Marks</Text>
-                    <Text mt={2} fontWeight="800" fontSize="lg">
-                      {selectedCourse.assessment?.passingMarks && selectedCourse.assessment?.totalMarks
-                        ? `${selectedCourse.assessment.passingMarks}/${selectedCourse.assessment.totalMarks}`
-                        : "Not set"}
-                    </Text>
-                  </Box>
-                  <Box p={{ base: 3, md: 4 }} borderRadius="2xl" bg={ratingSummaryBg} borderWidth="1px" borderColor={borderColor}>
-                    <Text fontSize="xs" color={softText} textTransform="uppercase" letterSpacing="0.08em">Rating</Text>
-                    <Text mt={2} fontWeight="800" fontSize="lg">
-                      {selectedCourse.metrics?.averageRating ? selectedCourse.metrics.averageRating.toFixed(1) : "New"}
-                    </Text>
-                  </Box>
-                </SimpleGrid>
-
-                <Box>
-                  <Text fontSize="sm" fontWeight="700" textTransform="uppercase" letterSpacing="0.08em" color={softText} mb={2}>
-                    Languages
-                  </Text>
-                  <HStack spacing={2} flexWrap="wrap">
-                    {(selectedCourse.taxonomy?.languages || []).map((language: string) => (
-                      <Badge key={`${selectedCourse._id}-${language}`} borderRadius="full" px={3} py={1}>
-                        {language}
-                      </Badge>
-                    ))}
-                  </HStack>
-                </Box>
-
-                <Button
-                  colorScheme="blue"
-                  borderRadius="xl"
-                  h="48px"
-                  isLoading={selectedCourseIsEnrolling}
-                  loadingText="Enrolling"
-                  isDisabled={Boolean(stores.auth.user && !isLearner)}
-                  onClick={handleEnrollmentAction}
-                >
-                  {selectedCourseIsEnrolled
-                    ? "Open course"
-                    : !stores.auth.user
-                      ? "Sign in to enroll"
-                      : !isLearner
-                        ? "Learner account required"
-                        : selectedCourseRequiresPayment
-                          ? "Purchase course"
-                          : "Enroll now"}
-                </Button>
-              </Stack>
-            ) : null}
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
     </Box>
   );
 });

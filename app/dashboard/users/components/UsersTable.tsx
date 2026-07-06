@@ -69,6 +69,11 @@ type Props = {
   canEdit?: boolean;
   canDelete?: boolean;
   canToggleStatus?: boolean;
+  // User source separation (admin self-signup)
+  showUserSourceTabs?: boolean;
+  userSourceTab?: "all" | "manual" | "public_enrolled";
+  setUserSourceTab?: (v: "all" | "manual" | "public_enrolled") => void;
+  isPublicEnrolledUser?: (user: any) => boolean;
 };
 
 const getUserStatusMeta = (user: any) => {
@@ -120,6 +125,10 @@ const UsersTable = ({
   canEdit = true,
   canDelete = false,
   canToggleStatus = false,
+  showUserSourceTabs = false,
+  userSourceTab = "all",
+  setUserSourceTab,
+  isPublicEnrolledUser,
 }: Props) => {
   // Statistics calculations
   const stats = {
@@ -203,29 +212,7 @@ const UsersTable = ({
         ),
       },
     },
-    {
-      headerName: "Company",
-      key: "company",
-      type: "component",
-      width: "180px",
-      metaData: {
-        component: (user: any) => (
-          <HStack spacing={2}>
-            <Box
-              p={1.5}
-              borderRadius="lg"
-              bg={iconBoxBg}
-              _dark={{ bg: "purple.900" }}
-            >
-              <Icon as={FiBriefcase} boxSize={3} color="purple.600" />
-            </Box>
-            <Text fontSize="sm" fontWeight="medium" noOfLines={1} color={useColorModeValue("gray.700", "gray.200")}>
-              {user.company?.name || user.company?.company_name || "Unassigned"}
-            </Text>
-          </HStack>
-        ),
-      },
-    },
+
     {
       headerName: "Role",
       key: "role",
@@ -395,39 +382,7 @@ const UsersTable = ({
         },
       },
     },
-    {
-      headerName: "Access Control",
-      key: "account-access",
-      type: "component",
-      width: "150px",
-      metaData: {
-        component: (user: any) => {
-          const statusMeta = getUserStatusMeta(user);
-          const isEnabled = statusMeta.label !== "Inactive";
 
-          if (!canToggleStatus) {
-            return (
-              <Text fontSize="xs" color={muted}>
-                Superadmin only
-              </Text>
-            );
-          }
-
-          return (
-            <Button
-              size="xs"
-              borderRadius="full"
-              colorScheme={isEnabled ? "red" : "green"}
-              variant={isEnabled ? "outline" : "solid"}
-              onClick={() => onToggleStatus?.(user)}
-              isLoading={statusUpdatingId === user._id}
-            >
-              {isEnabled ? "Deactivate" : "Activate"}
-            </Button>
-          );
-        },
-      },
-    },
     {
       headerName: "Security",
       key: "passwordStatus",
@@ -624,6 +579,51 @@ const UsersTable = ({
           </Box>
         </Flex>
 
+        {/* User Source Sub-filter for Admin (Manually Created vs Public Enrolled) */}
+        {showUserSourceTabs && (
+          <Box mb={4}>
+            <HStack spacing={2} flexWrap="wrap">
+              <Text fontSize="xs" color={muted} fontWeight="medium" mr={1}>
+                Show:
+              </Text>
+              {([
+                { value: "all", label: "All Users" },
+                { value: "manual", label: "Manually Created" },
+                { value: "public_enrolled", label: "Public Course Enrolled" },
+              ] as const).map((opt) => (
+                <Button
+                  key={opt.value}
+                  size="xs"
+                  borderRadius="full"
+                  variant={userSourceTab === opt.value ? "solid" : "outline"}
+                  colorScheme={opt.value === "public_enrolled" ? "purple" : "blue"}
+                  onClick={() => {
+                    setUserSourceTab?.(opt.value);
+                    setPage(1);
+                  }}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </HStack>
+            {userSourceTab === "public_enrolled" && (
+              <Box
+                mt={2}
+                px={3}
+                py={2}
+                bg={useColorModeValue("purple.50", "purple.900")}
+                borderRadius="xl"
+                borderLeft="3px solid"
+                borderColor="purple.400"
+              >
+                <Text fontSize="xs" color={useColorModeValue("purple.700", "purple.200")}>
+                  ⚠️ These users self-enrolled via public course access. You can view their profiles but cannot edit or delete them.
+                </Text>
+              </Box>
+            )}
+          </Box>
+        )}
+
         {!isCompact ? (
           <CustomTable
             title="User Directory"
@@ -638,7 +638,11 @@ const UsersTable = ({
                 editKey: {
                   showEditButton: canEdit,
                   title: "Edit User",
-                  function: (user: any) => onEdit(user),
+                  function: (user: any) => {
+                    // Block edit for public-enrolled users
+                    if (isPublicEnrolledUser?.(user)) return;
+                    onEdit(user);
+                  },
                 },
                 viewKey: {
                   showViewButton: true,
@@ -648,7 +652,11 @@ const UsersTable = ({
                 deleteKey: {
                   showDeleteButton: canDelete,
                   title: "Delete User",
-                  function: (user: any) => onDelete?.(user),
+                  function: (user: any) => {
+                    // Block delete for public-enrolled users
+                    if (isPublicEnrolledUser?.(user)) return;
+                    onDelete?.(user);
+                  },
                 },
               },
               search: {

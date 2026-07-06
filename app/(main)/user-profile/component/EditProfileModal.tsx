@@ -1,5 +1,6 @@
-import { Box, Button, FormControl, FormLabel, Grid, HStack, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, Textarea, useColorModeValue, VStack } from '@chakra-ui/react'
+import { Box, Button, FormControl, FormLabel, Grid, HStack, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Text, Textarea, useColorModeValue, VStack } from '@chakra-ui/react'
 import { FiCheck, FiEdit2 } from 'react-icons/fi'
+import { genderOptions } from '@/app/config/constant'
 
 const EditProfileModal = ({onClose,isOpen,form,handleChange,handleSave,saving}:any) => {
     const modalBg = useColorModeValue("white", "gray.900");
@@ -119,7 +120,18 @@ const EditProfileModal = ({onClose,isOpen,form,handleChange,handleSave,saving}:a
                 />
               </FormControl>
 
-              {/* City / State */}
+              {/* Address */}
+              <FormControl>
+                <FormLabel {...labelStyle}>Address</FormLabel>
+                <Input
+                  {...inputStyles}
+                  value={form.address}
+                  onChange={(e) => handleChange("address", e.target.value)}
+                  placeholder="Street address"
+                />
+              </FormControl>
+
+              {/* City / State / Country */}
               <Grid templateColumns="1fr 1fr" gap={3}>
                 <FormControl>
                   <FormLabel {...labelStyle}>City</FormLabel>
@@ -137,6 +149,46 @@ const EditProfileModal = ({onClose,isOpen,form,handleChange,handleSave,saving}:a
                     value={form.state}
                     onChange={(e) => handleChange("state", e.target.value)}
                     placeholder="Your state"
+                  />
+                </FormControl>
+              </Grid>
+
+              <FormControl>
+                <FormLabel {...labelStyle}>Country</FormLabel>
+                <Input
+                  {...inputStyles}
+                  value={form.country}
+                  onChange={(e) => handleChange("country", e.target.value)}
+                  placeholder="Your country"
+                />
+              </FormControl>
+
+              {/* Gender / DOB */}
+              <Grid templateColumns="1fr 1fr" gap={3}>
+                <FormControl>
+                  <FormLabel {...labelStyle}>Gender</FormLabel>
+                  <Select
+                    {...inputStyles}
+                    value={form.gender || ""}
+                    onChange={(e) =>
+                      handleChange("gender", e.target.value ? Number(e.target.value) : "")
+                    }
+                    placeholder="Select gender"
+                  >
+                    {genderOptions.map((option: any) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl>
+                  <FormLabel {...labelStyle}>Date of Birth</FormLabel>
+                  <Input
+                    {...inputStyles}
+                    type="date"
+                    value={form.dateOfBirth}
+                    onChange={(e) => handleChange("dateOfBirth", e.target.value)}
                   />
                 </FormControl>
               </Grid>
