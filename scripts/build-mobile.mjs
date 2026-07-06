@@ -9,10 +9,6 @@ const disabledRoutes = [
     from: resolve(rootDir, 'app/courses/[...path]/route.ts'),
     to: resolve(rootDir, 'app/courses/[...path]/route.ts.mobile-disabled'),
   },
-  {
-    from: resolve(rootDir, 'app/(authentication)/verify-account/[id]/page.tsx'),
-    to: resolve(rootDir, 'app/(authentication)/verify-account/[id]/page.tsx.mobile-disabled'),
-  },
 ];
 
 function bin(command) {
