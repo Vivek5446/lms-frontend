@@ -166,14 +166,14 @@ const MyCoursesBoard = observer(
         return;
       }
 
-      const activeCourseId = String(activeCourse?._id || activeCourse?.courseId || "").trim();
+      const activeCourseId = String(activeCourse?._id || "").trim();
       if (!activeCourseId) {
         return;
       }
 
       managerStore.fetchMyCourseAnswers(activeCourseId).catch(() => undefined);
       courseStore.fetchCourseQuizzes(activeCourseId).catch(() => undefined);
-    }, [activeCourse?._id, activeCourse?.courseId, isCourseEnrolled, requestedCourseId]);
+    }, [activeCourse?._id, isCourseEnrolled, requestedCourseId]);
 
     const initialScormProgress = useMemo(
       () => getCourseSectionProgress(activeCourse, playerSection?.sectionId),
@@ -320,7 +320,7 @@ const MyCoursesBoard = observer(
         return;
       }
 
-      const courseId = String(activeCourse._id || activeCourse.courseId || "").trim();
+      const courseId = String(activeCourse._id || "").trim();
       if (!courseId) {
         return;
       }
@@ -421,7 +421,7 @@ const MyCoursesBoard = observer(
                 <CoursePlayer
                   courseTitle={activeCourse.title}
                   courseUrl={buildCourseAssetUrl(playerSection.assetPath)}
-                  courseId={activeCourse._id || activeCourse.courseId}
+                  courseId={activeCourse._id}
                   moduleId={playerSection.moduleId}
                   sectionId={playerSection.sectionId}
                   initialProgress={initialScormProgress}
@@ -434,7 +434,7 @@ const MyCoursesBoard = observer(
                   answerSections={managerStore.myCourseAnswers}
                   isAnswerSectionsLoading={managerStore.isMyCourseAnswersLoading}
                   onRefreshAnswerSections={() => {
-                    const activeCourseId = activeCourse._id || activeCourse.courseId;
+                    const activeCourseId = activeCourse._id;
                     if (!activeCourseId) {
                       return Promise.resolve();
                     }
@@ -442,7 +442,7 @@ const MyCoursesBoard = observer(
                     return managerStore.fetchMyCourseAnswers(activeCourseId).then(() => undefined);
                   }}
                   onRefreshProgress={() => {
-                    const activeCourseId = activeCourse._id || activeCourse.courseId;
+                    const activeCourseId = activeCourse._id;
                     if (!activeCourseId) {
                       return Promise.resolve();
                     }
@@ -483,7 +483,7 @@ const MyCoursesBoard = observer(
                 isSubmitting={courseStore.isQuizSubmitting}
                 onClose={() => setActiveQuiz(null)}
                 onSubmit={async (answers) => {
-                  const activeCourseId = activeCourse._id || activeCourse.courseId;
+                  const activeCourseId = activeCourse._id;
                   const response = await courseStore.submitCourseQuiz(
                     activeCourseId,
                     activeQuiz.quizId,
