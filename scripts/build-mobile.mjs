@@ -9,6 +9,10 @@ const disabledRoutes = [
     from: resolve(rootDir, 'app/courses/[...path]/route.ts'),
     to: resolve(rootDir, 'app/courses/[...path]/route.ts.mobile-disabled'),
   },
+  {
+    from: resolve(rootDir, 'app/(main)/course/[id]/page.tsx'),
+    to: resolve(rootDir, 'app/(main)/course/[id]/page.tsx.mobile-disabled'),
+  },
 ];
 
 function bin(command) {
@@ -70,11 +74,8 @@ function getMobileBackendUrl() {
 const mobileBackendUrl = getMobileBackendUrl();
 
 if (process.platform === 'win32') {
-  const jbrPath = 'C:\\Program Files\\Android\\Android Studio\\jbr';
-  if (existsSync(jbrPath)) {
-    process.env.JAVA_HOME = jbrPath;
-    process.env.PATH = `${resolve(jbrPath, 'bin')};${process.env.PATH}`;
-  }
+  process.env.JAVA_HOME = 'd:\\personal\\dental\\jdk21\\jdk-21.0.6+7';
+  process.env.PATH = `d:\\personal\\dental\\jdk21\\jdk-21.0.6+7\\bin;${process.env.PATH}`;
 }
 
 function run(command, args, options = {}) {
@@ -121,7 +122,11 @@ function restoreServerOnlyRoutes() {
 
 try {
   disableServerOnlyRoutes();
-  rmSync(resolve(rootDir, '.next'), { recursive: true, force: true });
+  try {
+    rmSync(resolve(rootDir, '.next'), { recursive: true, force: true });
+  } catch (e) {
+    // Ignore locked files (like when dev server is running)
+  }
   run(bin('npx'), ['next', 'build']);
 } finally {
   restoreServerOnlyRoutes();

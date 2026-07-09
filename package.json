@@ -40,6 +40,7 @@
     "date-fns": "^4.1.0",
     "formik": "^2.4.6",
     "framer-motion": "^11.18.2",
+    "joi": "^18.2.3",
     "lucide-react": "^1.0.1",
     "lz-string": "^1.5.0",
     "mobx": "^6.13.6",
