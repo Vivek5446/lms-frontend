@@ -33,8 +33,10 @@ import { observer } from 'mobx-react-lite';
 import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { FiBookOpen, FiGrid, FiHome, FiMenu, FiUser } from 'react-icons/fi';
+import { FiBookOpen, FiGrid, FiHome, FiMenu, FiUser, FiBell } from 'react-icons/fi';
 import UserProfileDrawer from './UserProfileDrawer';
+import { MobileFooterNav } from './component/MobileFooterNav';
+import { MobileMenuDrawer } from './component/MobileMoreMenu';
 
 interface NavLink {
   href: string;
@@ -43,6 +45,7 @@ interface NavLink {
 
 const Header: React.FC = observer(() => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const pathname = usePathname();
@@ -71,6 +74,7 @@ const Header: React.FC = observer(() => {
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setIsSidebarOpen(false);
   }, [pathname]);
 
   const navLinks: NavLink[] = useMemo(() => ([
@@ -87,14 +91,14 @@ const Header: React.FC = observer(() => {
       { href: '/', label: 'Home', icon: FiHome },
       { href: '/course', label: 'Courses', icon: FiBookOpen },
     ];
-    
+
     // 3. Center Profile/Login Button
-    const profileLink = isLoggedIn 
+    const profileLink = isLoggedIn
       ? { href: appHref, label: isLearner ? 'My' : 'App', icon: FiUser, isCenter: true }
       : { href: '/login', label: 'Login', icon: FiUser, isCenter: true };
-      
+
     links.push(profileLink);
-    
+
     // 4. Fill the 4th spot so we always have exactly 5 tabs (including 'More')
     if (isLearner) {
       links.push({ href: '/batches', label: 'Batches', icon: FiGrid });
@@ -103,7 +107,7 @@ const Header: React.FC = observer(() => {
     } else {
       links.push({ href: '/about-us', label: 'About', icon: FiGrid });
     }
-    
+
     return links;
   }, [appHref, isLearner, isLoggedIn, isManagerUser]);
 
@@ -120,31 +124,45 @@ const Header: React.FC = observer(() => {
     <>
       <Box
         as="header"
-        position="sticky"
+        position={{ base: 'relative', md: 'fixed' }}
+        w="100%"
         top="0"
         zIndex="1000"
-        bg={scrolled ? (colorMode === 'light' ? 'rgba(255, 255, 255, 0.78)' : 'rgba(17, 24, 39, 0.85)') : (colorMode === 'light' ? 'white' : 'gray.900')}
-        backdropFilter={scrolled ? 'blur(16px)' : 'none'}
+        bg={colorMode === 'light' ? 'rgba(255, 255, 255, 0.75)' : 'rgba(10, 15, 30, 0.75)'}
+        backdropFilter="blur(24px) saturate(200%)"
         borderBottom="1px solid"
-        borderColor={scrolled ? (colorMode === 'light' ? 'gray.100' : 'gray.700') : 'transparent'}
-        transition="all 0.35s ease"
-        py={{ base: 2, md: scrolled ? 2 : 4 }}
+        borderColor={colorMode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'}
+        boxShadow={scrolled ? (colorMode === 'light' ? '0 4px 20px -4px rgba(0, 0, 0, 0.06)' : '0 4px 20px -4px rgba(0, 0, 0, 0.5)') : 'none'}
+        transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+        py={2}
       >
+        {/* Premium subtle top gradient line */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          h="1px"
+          bgGradient={colorMode === 'light' ? 'linear(to-r, transparent, brand.400, brand.600, transparent)' : 'linear(to-r, transparent, brand.300, brand.500, transparent)'}
+          opacity={0.6}
+        />
         <Container maxW="1400px" px={{ base: 3, md: 6 }}>
-          <Flex align="center" justify="space-between" gap={4}>
-            <NextLink href="/">
+          <Flex align="center" justify="space-between" gap={4} position="relative" w="100%">
+            {/* Left Section (Logo) */}
+            <Box flex={{ base: "none", md: 1 }} display="flex" alignItems="center">
+              <NextLink href="/">
               <ChakraLink _hover={{ textDecoration: 'none' }} display="flex" alignItems="center" gap={{ base: 1, md: 3 }}>
                 <Box transition="transform 0.4s ease" _hover={{ transform: 'scale(1.06) rotate(-2deg)' }}>
                   <Image
                     src="https://www.lmscert.com/Logo%20LMS%20-1-.svg"
                     alt="CRAFT LMS Logo"
-                    h={{ base: '32px', md: '48px' }}
+                    h={{ base: '28px', md: '36px' }}
                     objectFit="contain"
                   />
                 </Box>
                 <Text
-                  fontWeight="900"
-                  fontSize={{ base: 'md', lg: '2xl' }}
+                  fontWeight="800"
+                  fontSize={{ base: 'md', lg: 'xl' }}
                   letterSpacing="-1px"
                     bgGradient={colorMode === 'light' ? 'linear(to-tr, brand.600, brand.400)' : 'linear(to-tr, brand.400, brand.200)'}
                   bgClip="text"
@@ -153,34 +171,40 @@ const Header: React.FC = observer(() => {
                   CRAFT
                 </Text>
               </ChakraLink>
-            </NextLink>
+              </NextLink>
+            </Box>
 
-            <HStack
-              gap={1}
+            {/* Center Section (Navigation) */}
+            <Flex flex={{ base: "none", md: "auto" }} justify="center">
+              <HStack
+                gap={1}
               display={{ base: 'none', md: 'flex' }}
-              bg={colorMode === 'light' ? 'gray.50' : 'gray.800'}
+              bg={colorMode === 'light' ? 'gray.50' : 'rgba(30, 41, 59, 0.5)'}
               p={1}
               borderRadius="full"
+              border="1px solid"
+              borderColor={colorMode === 'light' ? 'gray.200' : 'gray.700'}
             >
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
                   <NextLink key={link.href} href={link.href} passHref legacyBehavior>
                     <ChakraLink
-                      px={5}
-                      py={2}
+                      px={4}
+                      py={1.5}
                       fontSize="sm"
                       fontWeight="600"
                       borderRadius="full"
-                      color={isActive ? (colorMode === 'light' ? 'brand.700' : 'brand.300') : (colorMode === 'light' ? 'gray.600' : 'gray.300')}
-                      bg={isActive ? (colorMode === 'light' ? 'brand.50' : 'brand.900') : 'transparent'}
-                      boxShadow={isActive ? 'sm' : 'none'}
-                      transition="all 0.25s ease"
+                      color={isActive ? (colorMode === 'light' ? 'brand.700' : 'white') : (colorMode === 'light' ? 'gray.600' : 'gray.400')}
+                      bg={isActive ? (colorMode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.1)') : 'transparent'}
+                      boxShadow={isActive ? (colorMode === 'light' ? '0 2px 10px rgba(0,0,0,0.05)' : 'inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 10px rgba(0,0,0,0.2)') : 'none'}
+                      border={isActive && colorMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid transparent'}
+                      transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                      position="relative"
                       _hover={{
-                        color: colorMode === 'light' ? 'brand.700' : 'brand.300',
-                        bg: colorMode === 'light' ? 'white' : 'gray.700',
+                        color: isActive ? (colorMode === 'light' ? 'brand.700' : 'white') : (colorMode === 'light' ? 'brand.600' : 'white'),
+                        bg: isActive ? (colorMode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.15)') : (colorMode === 'light' ? 'gray.100' : 'rgba(255, 255, 255, 0.05)'),
                         textDecoration: 'none',
-                        transform: 'translateY(-1px)'
                       }}
                     >
                       {link.label}
@@ -188,55 +212,70 @@ const Header: React.FC = observer(() => {
                   </NextLink>
                 );
               })}
-            </HStack>
+              </HStack>
+            </Flex>
 
-            <HStack gap={3}>
+            {/* Right Section (Icons & Profile) */}
+            <Flex flex={{ base: 1, md: 1 }} justify="flex-end">
+              <HStack gap={3}>
               <IconButton
                 aria-label={colorMode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
                 icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
                 onClick={toggleColorMode}
-                variant="outline"
+                variant="ghost"
                 size="md"
-                borderColor={colorMode === 'light' ? 'brand.200' : 'brand.600'}
-                color={colorMode === 'light' ? 'brand.600' : 'brand.400'}
-                bg={colorMode === 'light' ? 'white' : 'gray.800'}
+                color={colorMode === 'light' ? 'gray.700' : 'gray.200'}
+                bg={{ base: 'transparent', md: colorMode === 'light' ? 'gray.50' : 'rgba(255, 255, 255, 0.05)' }}
+                border={{ base: 'none', md: '1px solid' }}
+                borderColor={{ base: 'transparent', md: colorMode === 'light' ? 'gray.200' : 'rgba(255, 255, 255, 0.08)' }}
                 _hover={{
-                  bg: colorMode === 'light' ? 'brand.50' : 'gray.700',
-                  borderColor: 'brand.500',
-                  transform: 'scale(1.05)'
+                  bg: colorMode === 'light' ? 'gray.100' : 'rgba(255, 255, 255, 0.12)',
+                  color: colorMode === 'light' ? 'brand.600' : 'white',
+                  transform: 'translateY(-1px)',
                 }}
                 _active={{ transform: 'scale(0.95)' }}
-                transition="all 0.2s"
+                transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                 display={{ base: 'none', sm: 'flex' }}
                 borderRadius="full"
               />
 
+              {/* Notification Icon */}
+              <IconButton
+                aria-label="Notifications"
+                icon={
+                  <Box position="relative" display="flex" alignItems="center" justifyContent="center">
+                    <Icon as={FiBell} boxSize="20px" />
+                    <Box
+                      position="absolute"
+                      top="0px"
+                      right="2px"
+                      w="7px"
+                      h="7px"
+                      bg="red.500"
+                      borderRadius="full"
+                      boxShadow="0 0 0 1px rgba(0,0,0,0.1)"
+                    />
+                  </Box>
+                }
+                variant="ghost"
+                size="md"
+                color={colorMode === 'light' ? 'gray.700' : 'gray.200'}
+                bg={{ base: 'transparent', md: colorMode === 'light' ? 'gray.50' : 'rgba(255, 255, 255, 0.05)' }}
+                border={{ base: 'none', md: '1px solid' }}
+                borderColor={{ base: 'transparent', md: colorMode === 'light' ? 'gray.200' : 'rgba(255, 255, 255, 0.08)' }}
+                _hover={{
+                  bg: colorMode === 'light' ? 'gray.100' : 'rgba(255, 255, 255, 0.12)',
+                  color: colorMode === 'light' ? 'brand.600' : 'white',
+                  transform: 'translateY(-1px)',
+                }}
+                _active={{ transform: 'scale(0.95)' }}
+                transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                borderRadius="full"
+                display={{ base: 'flex', md: 'flex' }}
+              />
+
               {isLoggedIn ? (
                 <>
-                  <ChakraLink
-                    as={NextLink}
-                    href={appHref}
-                    display={{ base: 'none', md: 'flex' }}
-                    bg={colorMode === 'light' ? 'white' : 'gray.800'}
-                    border="1px solid"
-                    borderColor={colorMode === 'light' ? 'brand.600' : 'brand.400'}
-                    color={colorMode === 'light' ? 'brand.600' : 'brand.400'}
-                    px={6}
-                    py={2}
-                    borderRadius="full"
-                    fontWeight="bold"
-                    fontSize="sm"
-                    _hover={{
-                      bg: colorMode === 'light' ? 'brand.600' : 'brand.500',
-                      color: 'white',
-                      transform: 'translateY(-1px)',
-                      textDecoration: 'none',
-                    }}
-                    transition="all 0.2s"
-                  >
-                    {isLearner ? 'My Learning' : 'Dashboard'}
-                  </ChakraLink>
-
                   <Menu>
                     <MenuButton
                       as={Button}
@@ -255,14 +294,7 @@ const Header: React.FC = observer(() => {
                           bg="brand.600"
                           color="white"
                         />
-                        <Box textAlign="left" display={{ base: 'none', lg: 'block' }}>
-                          <Text fontSize="sm" fontWeight="bold" noOfLines={1}>
-                            {displayName}
-                          </Text>
-                          <Text fontSize="xs" color="gray.500" textTransform="capitalize" noOfLines={1}>
-                            {String(user?.role || '').replace(/_/g, ' ')}
-                          </Text>
-                        </Box>
+
                       </HStack>
                     </MenuButton>
                     <MenuList borderRadius="2xl" p={2}>
@@ -287,22 +319,21 @@ const Header: React.FC = observer(() => {
                   as={NextLink}
                   href="/login"
                   display={{ base: 'none', sm: 'flex' }}
-                  bg={colorMode === 'light' ? 'white' : 'gray.800'}
-                  border="1px solid"
-                  borderColor={colorMode === 'light' ? 'brand.600' : 'brand.400'}
-                  color={colorMode === 'light' ? 'brand.600' : 'brand.400'}
-                  px={7}
+                  bgGradient={colorMode === 'light' ? 'linear(to-r, brand.600, brand.500)' : 'linear(to-r, brand.500, brand.400)'}
+                  color="white"
+                  px={6}
                   py={2}
                   borderRadius="full"
                   fontWeight="bold"
                   fontSize="sm"
+                  boxShadow={colorMode === 'light' ? '0 4px 14px 0 rgba(79, 70, 229, 0.3)' : '0 4px 14px 0 rgba(99, 102, 241, 0.3)'}
                   _hover={{
-                    bg: colorMode === 'light' ? 'brand.600' : 'brand.500',
-                    color: 'white',
+                    bgGradient: colorMode === 'light' ? 'linear(to-r, brand.700, brand.600)' : 'linear(to-r, brand.600, brand.500)',
                     transform: 'translateY(-1px)',
+                    boxShadow: colorMode === 'light' ? '0 6px 20px rgba(79, 70, 229, 0.4)' : '0 6px 20px rgba(99, 102, 241, 0.4)',
                     textDecoration: 'none',
                   }}
-                  transition="all 0.2s"
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                 >
                   Login
                 </ChakraLink>
@@ -311,320 +342,80 @@ const Header: React.FC = observer(() => {
               <Button
                 display={{ base: 'flex', md: 'none' }}
                 variant="ghost"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label="Toggle Menu"
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Toggle Sidebar Menu"
                 rounded="lg"
                 minH="44px"
                 minW="44px"
                 p={0}
                 _hover={{ bg: colorMode === 'light' ? 'brand.50' : 'gray.700' }}
               >
-                <Box w="22px" h="22px" position="relative">
+                {/* Animated Hamburger Icon */}
+                <Box position="relative" w="20px" h="14px">
+                  {/* Top Line */}
                   <Box
                     position="absolute"
                     h="2px"
                     w="100%"
-                    bg="brand.600"
+                    bg={colorMode === 'light' ? 'gray.700' : 'gray.200'}
                     borderRadius="full"
-                    transition="0.3s"
-                    top={mobileMenuOpen ? '50%' : '25%'}
-                    transform={mobileMenuOpen ? 'rotate(45deg)' : 'none'}
+                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                    top={isSidebarOpen ? '6px' : '0'}
+                    transform={isSidebarOpen ? 'rotate(45deg)' : 'none'}
                   />
+                  {/* Middle Line */}
                   <Box
                     position="absolute"
                     h="2px"
                     w="100%"
-                    bg="brand.600"
+                    bg={colorMode === 'light' ? 'gray.700' : 'gray.200'}
                     borderRadius="full"
-                    transition="0.3s"
-                    bottom={mobileMenuOpen ? '50%' : '25%'}
-                    transform={mobileMenuOpen ? 'rotate(-45deg)' : 'none'}
+                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                    top="6px"
+                    opacity={isSidebarOpen ? 0 : 1}
+                    transform={isSidebarOpen ? 'translateX(10px)' : 'none'}
+                  />
+                  {/* Bottom Line */}
+                  <Box
+                    position="absolute"
+                    h="2px"
+                    w={isSidebarOpen ? "100%" : "75%"}
+                    bg={colorMode === 'light' ? 'gray.700' : 'gray.200'}
+                    borderRadius="full"
+                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                    bottom={isSidebarOpen ? '6px' : '0'}
+                    right="0"
+                    transform={isSidebarOpen ? 'rotate(-45deg)' : 'none'}
                   />
                 </Box>
               </Button>
             </HStack>
+            </Flex>
           </Flex>
         </Container>
+      </Box>
 
-        <Drawer
+      {/* Top Hamburger Sidebar */}
+      <MobileMenuDrawer
+          isOpen={isSidebarOpen}
+          placement="right"
+          onClose={() => setIsSidebarOpen(false)}
+          onProfileClick={() => setIsProfileOpen(true)}
+        />
+
+        {/* Bottom More Menu */}
+        <MobileMenuDrawer
           isOpen={mobileMenuOpen}
           placement="bottom"
           onClose={() => setMobileMenuOpen(false)}
-        >
-          <DrawerOverlay display={{ base: 'block', md: 'none' }} />
-          <DrawerContent
-            display={{ base: 'block', md: 'none' }}
-            bg={colorMode === 'light' ? 'white' : 'gray.800'}
-            borderTopRadius="2xl"
-          >
-            <Box w="40px" h="4px" bg={colorMode === 'light' ? 'gray.300' : 'gray.600'} borderRadius="full" mx="auto" mt={3} mb={1} />
-            <DrawerCloseButton top={2} right={3} />
-            <DrawerBody pb="calc(24px + env(safe-area-inset-bottom))" px={4}>
-              <Stack gap={{ base: 2, sm: 3 }} mt={3}>
-                {isLoggedIn ? (
-                  <Box borderWidth="1px" borderColor={colorMode === 'light' ? 'gray.100' : 'gray.700'} borderRadius="xl" p={3}>
-                    <HStack spacing={3}>
-                      <Avatar size="md" name={displayName} src={user?.pic?.url || ''} bg="brand.600" color="white" />
-                      <Box>
-                        <Text fontWeight="bold">{displayName}</Text>
-                        <Text fontSize="sm" color="gray.500">{user?.username || ''}</Text>
-                      </Box>
-                    </HStack>
-                  </Box>
-                ) : null}
+          onProfileClick={() => setIsProfileOpen(true)}
+        />
 
-                {navLinks.map((link) => (
-                  <NextLink key={link.href} href={link.href}>
-                    <ChakraLink
-                      p={{ base: '12px 14px', sm: '14px 16px' }}
-                      borderRadius="lg"
-                      fontWeight="600"
-                      fontSize={{ base: 'sm', sm: 'md' }}
-                      color={pathname === link.href ? (colorMode === 'light' ? 'brand.600' : 'brand.300') : (colorMode === 'light' ? 'gray.700' : 'gray.200')}
-                      bg={pathname === link.href ? (colorMode === 'light' ? 'brand.50' : 'brand.900') : 'transparent'}
-                      _hover={{
-                        bg: colorMode === 'light' ? 'gray.100' : 'gray.700',
-                        textDecoration: 'none',
-                        transform: 'translateX(4px)'
-                      }}
-                      transition="all 0.2s"
-                      minH="44px"
-                      display="flex"
-                      alignItems="center"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {link.label}
-                    </ChakraLink>
-                  </NextLink>
-                ))}
-
-                <Box h="1px" bg={colorMode === 'light' ? 'gray.100' : 'gray.700'} my={2} />
-
-                <Button
-                  onClick={toggleColorMode}
-                  variant="ghost"
-                  leftIcon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-                  justifyContent="flex-start"
-                  p={{ base: '12px 14px', sm: '14px 16px' }}
-                  borderRadius="lg"
-                  fontSize={{ base: 'sm', sm: 'md' }}
-                  fontWeight="600"
-                  color={colorMode === 'light' ? 'gray.700' : 'gray.200'}
-                  minH="44px"
-                  _hover={{ bg: colorMode === 'light' ? 'gray.100' : 'gray.700' }}
-                  w="100%"
-                >
-                  {colorMode === 'light' ? 'Dark Mode' : 'Light Mode'}
-                </Button>
-
-                {isLoggedIn ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      borderRadius="lg"
-                      minH="48px"
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        setIsProfileOpen(true);
-                      }}
-                    >
-                      View profile
-                    </Button>
-                    <Button
-                      as={NextLink}
-                      href={appHref}
-                      colorScheme="blue"
-                      borderRadius="lg"
-                      minH="48px"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {isLearner ? 'My Learning' : 'Dashboard'}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      colorScheme="red"
-                      borderRadius="lg"
-                      minH="48px"
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <NextLink href="/login">
-                    <ChakraLink
-                      p={{ base: '14px', sm: '16px' }}
-                      borderRadius="lg"
-                      fontWeight="bold"
-                      fontSize={{ base: 'sm', sm: 'md' }}
-                      color="white"
-                      bg={colorMode === 'light' ? 'brand.600' : 'brand.500'}
-                      textAlign="center"
-                      minH="48px"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      onClick={() => setMobileMenuOpen(false)}
-                      _hover={{
-                        textDecoration: 'none',
-                        bg: colorMode === 'light' ? 'brand.700' : 'brand.600',
-                        transform: 'translateY(-2px)'
-                      }}
-                      transition="all 0.2s"
-                    >
-                      Login
-                    </ChakraLink>
-                  </NextLink>
-                )}
-              </Stack>
-            </DrawerBody>
-          </DrawerContent>
-        </Drawer>
-      </Box>
-
-      <Box
-        display={{ base: 'block', md: 'none' }}
-        position="fixed"
-        left="0"
-        right="0"
-        bottom="0"
-        zIndex="1000"
-        bg={colorMode === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(5, 5, 5, 0.95)'}
-        borderTop="1px solid"
-        borderColor={colorMode === 'light' ? 'gray.200' : 'gray.800'}
-        backdropFilter="blur(24px)"
-        boxShadow={colorMode === 'light' ? '0 -4px 30px rgba(0, 0, 0, 0.04)' : '0 -4px 30px rgba(0, 0, 0, 0.5)'}
-        pb="env(safe-area-inset-bottom, 0px)"
-      >
-        <Flex
-          h="68px"
-          w="full"
-          maxW="520px"
-          mx="auto"
-          align="center"
-          justify="space-around"
-          px={2}
-          position="relative"
-        >
-          {bottomNavLinks.map((link: any) => {
-            const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
-            const isCenter = link.isCenter;
-            
-            return (
-              <ChakraLink
-                key={link.href}
-                as={NextLink}
-                href={link.href}
-                position="relative"
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
-                h={isCenter ? "64px" : "full"}
-                w={isCenter ? "64px" : "14"}
-                mt={isCenter ? "-36px" : "0"}
-                borderRadius={isCenter ? "full" : "none"}
-                border={isCenter ? "5px solid" : "none"}
-                borderColor={isCenter ? (colorMode === 'light' ? 'white' : 'gray.900') : "transparent"}
-                bgGradient={isCenter ? (colorMode === 'light' ? 'linear(to-br, brand.400, brand.600)' : 'linear(to-br, brand.500, brand.700)') : "none"}
-                color={
-                  isCenter 
-                    ? "white" 
-                    : (isActive ? (colorMode === 'light' ? 'brand.600' : 'brand.400') : (colorMode === 'light' ? 'gray.400' : 'gray.500'))
-                }
-                boxShadow={isCenter ? (colorMode === 'light' ? '0 10px 20px -5px var(--chakra-colors-brand-500)' : '0 10px 20px -5px rgba(0,0,0,0.8)') : "none"}
-                transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                _hover={{ textDecoration: 'none', transform: isCenter ? 'translateY(-2px)' : 'none' }}
-                _active={{ transform: 'scale(0.92)' }}
-                onClick={() => setMobileMenuOpen(false)}
-                zIndex={isCenter ? 10 : 1}
-              >
-                {/* Active Indicator (Line at top) */}
-                {isActive && !isCenter && (
-                  <Box
-                    position="absolute"
-                    top="-1px"
-                    h="3px"
-                    w="28px"
-                    borderBottomRadius="md"
-                    bg={colorMode === 'light' ? 'brand.500' : 'brand.400'}
-                    boxShadow={colorMode === 'light' ? '0 2px 8px var(--chakra-colors-brand-200)' : '0 2px 8px var(--chakra-colors-brand-800)'}
-                  />
-                )}
-
-                {/* Icon */}
-                <Icon
-                  as={link.icon}
-                  boxSize={isCenter ? "26px" : "22px"}
-                  transition="all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
-                  transform={(!isCenter && isActive) ? 'scale(1.15) translateY(-2px)' : 'scale(1) translateY(0)'}
-                  mb={isCenter ? 0 : 1}
-                />
-
-                {/* Label */}
-                {!isCenter && (
-                  <Text
-                    fontSize="10px"
-                    fontWeight={isActive ? "700" : "500"}
-                    transition="all 0.3s"
-                    color={isActive ? (colorMode === 'light' ? 'brand.600' : 'brand.400') : (colorMode === 'light' ? 'gray.500' : 'gray.500')}
-                    lineHeight="1"
-                    noOfLines={1}
-                  >
-                    {link.label}
-                  </Text>
-                )}
-              </ChakraLink>
-            );
-          })}
-          
-          <Button
-            variant="unstyled"
-            position="relative"
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            h="full"
-            w="14"
-            color={mobileMenuOpen ? (colorMode === 'light' ? 'brand.600' : 'brand.400') : (colorMode === 'light' ? 'gray.400' : 'gray.500')}
-            transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-            _active={{ transform: 'scale(0.92)' }}
-            onClick={() => setMobileMenuOpen((open) => !open)}
-          >
-            {/* Active Indicator (Line at top) */}
-            {mobileMenuOpen && (
-              <Box
-                position="absolute"
-                top="-1px"
-                h="3px"
-                w="28px"
-                borderBottomRadius="md"
-                bg={colorMode === 'light' ? 'brand.500' : 'brand.400'}
-                boxShadow={colorMode === 'light' ? '0 2px 8px var(--chakra-colors-brand-200)' : '0 2px 8px var(--chakra-colors-brand-800)'}
-              />
-            )}
-
-            <Icon
-              as={FiMenu}
-              boxSize="22px"
-              transition="all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
-              transform={mobileMenuOpen ? 'scale(1.15) translateY(-2px)' : 'scale(1) translateY(0)'}
-              mb={1}
-            />
-
-            <Text
-              fontSize="10px"
-              fontWeight={mobileMenuOpen ? "700" : "500"}
-              transition="all 0.3s"
-              color={mobileMenuOpen ? (colorMode === 'light' ? 'brand.600' : 'brand.400') : (colorMode === 'light' ? 'gray.500' : 'gray.500')}
-              lineHeight="1"
-            >
-              More
-            </Text>
-          </Button>
-        </Flex>
-      </Box>
+        {/* Bottom Footer Navigation */}
+        <MobileFooterNav
+          mobileMenuOpen={mobileMenuOpen}
+          onToggleMobileMenu={() => setMobileMenuOpen((open) => !open)}
+        />
 
       <UserProfileDrawer isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </>

@@ -41,10 +41,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   }
 
   return (
-    <Box minH="100vh" bg={shellBg} overflowX="hidden">
+    <Box minH="100vh" bg={shellBg} overflowX="hidden" pb={{ base: "92px", md: 0 }}>
       <Header />
 
-      <Box as="main" pb={{ base: "92px", md: 0 }}>
+      <Box as="main" pt={{ base: 0, md: "64px" }}>
         {children}
       </Box>
 
