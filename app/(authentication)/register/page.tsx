@@ -121,8 +121,8 @@ const Register = observer(() => {
 
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [otpValue, setOtpValue] = useState(""); // single string e.g. "123456"
+  const otpInputRef = useRef<HTMLInputElement | null>(null);
   const [otpSessionToken, setOtpSessionToken] = useState("");
   const [verificationToken, setVerificationToken] = useState("");
   const [busy, setBusy] = useState(false);
@@ -147,7 +147,7 @@ const Register = observer(() => {
   }, [resendIn]);
 
   const normalizedPhone = phone.trim();
-  const normalizedOtp = otp.join("").trim();
+  const normalizedOtp = otpValue.trim();
 
   const initialValues = useMemo<SignupValues>(
     () => ({
@@ -206,10 +206,9 @@ const Register = observer(() => {
       if (res?.data?.token) {
         setOtpSessionToken(res.data.token);
       }
-      setOtp(["", "", "", "", "", ""]);
+      setOtpValue("");
       setResendIn(30);
       setStep("otp");
-      setTimeout(() => otpRefs.current[0]?.focus(), 500);
       const hintMessage = res?.data?.otpHint || "Check your phone for the 6-digit code.";
       openNotification({ title: "OTP sent", message: hintMessage, type: "success" });
     } catch (error: any) {
@@ -411,11 +410,11 @@ const Register = observer(() => {
                 <div key="phone" className="space-y-7">
                   <AccountTypePicker value={values.accountType} onChange={(v) => setFieldValue("accountType", v)} />
                   <label className="block">
-                    <span className="text-[9px] font-black uppercase tracking-[0.3em] ml-1 text-left text-black/50 dark:text-white/50 mb-2 block">
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] ml-1 text-left text-black/70 dark:text-white/70 mb-2 block">
                       Phone number<span className="text-red-500 dark:text-red-400 ml-1">*</span>
                     </span>
-                    <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/5 focus-within:border-primary dark:border-white/10 dark:focus-within:border-primary/50">
-                      <span className="text-xl font-semibold mr-3 text-black/40 dark:text-white/20">+91</span>
+                    <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 mt-3 transition-all duration-500 border-black/20 focus-within:border-primary dark:border-white/20 dark:focus-within:border-primary/50">
+                      <span className="text-xl font-semibold mr-3 text-black/60 dark:text-white/40">+91</span>
                       <input
                         autoFocus
                         type="tel"
@@ -433,59 +432,73 @@ const Register = observer(() => {
                             sendOtp();
                           }
                         }}
-                        className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-left text-black/80 placeholder:text-black/20 dark:text-white dark:placeholder:text-white/20"
+                        className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-left text-black placeholder:text-black/30 dark:text-white dark:placeholder:text-white/30"
                       />
                     </div>
                   </label>
-                  <PrimaryButton loading={busy} disabled={!phone} onClick={sendOtp}>
-                    Send OTP <ArrowRight className="h-4 w-4" />
-                  </PrimaryButton>
                 </div>
               );
-            case "otp":
+            case "otp": {
+              const otpDigits = Array.from({ length: 6 }, (_, i) => otpValue[i] ?? "");
               return (
                 <div key="otp" className="space-y-5">
-                  <div className="flex justify-between gap-2 mt-4">
-                    {otp.map((digit, i) => (
-                      <input
-                        key={i}
-                        ref={(el) => { otpRefs.current[i] = el; }}
-                        type="text"
-                        inputMode="numeric"
-                        value={digit}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "").slice(-1);
-                          const newOtp = [...otp];
-                          newOtp[i] = val;
-                          setOtp(newOtp);
-                          if (val && i < 5) otpRefs.current[i + 1]?.focus();
-                          
-                          const currentCode = newOtp.join("");
-                          if (currentCode.length === 6) {
-                            handleVerifyOtp(currentCode);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Backspace" && !otp[i] && i > 0) {
-                            otpRefs.current[i - 1]?.focus();
-                          }
-                          if (e.key === "Enter" && otp.join("").length === 6) {
-                            handleVerifyOtp();
-                          }
-                        }}
-                        maxLength={1}
-                        className={cn(
-                          "w-full aspect-[4/5] rounded-xl text-center font-mono text-xl font-bold outline-none transition-all",
-                          "bg-black/5 border-transparent focus:border-primary text-black",
-                          "dark:bg-black/40 dark:border-white/10 dark:text-white dark:focus:border-primary dark:focus:bg-primary/10"
-                        )}
-                      />
-                    ))}
+                  <div
+                    className="relative flex justify-between gap-2 mt-4 cursor-text"
+                    onClick={() => otpInputRef.current?.focus()}
+                  >
+                    {/* Single real input — transparent but fully interactive */}
+                    <input
+                      ref={otpInputRef}
+                      autoFocus
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={otpValue}
+                      maxLength={6}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        setOtpValue(val);
+                        if (val.length === 6) handleVerifyOtp(val);
+                      }}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        zIndex: 10,
+                        opacity: 1,
+                        color: "transparent",
+                        caretColor: "transparent",
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        fontSize: "16px",
+                        letterSpacing: "0",
+                      }}
+                    />
+                    {/* 6 visual boxes */}
+                    {otpDigits.map((digit, i) => {
+                      const isActive = i === otpValue.length;
+                      return (
+                        <div
+                          key={i}
+                          className={cn(
+                            "flex-1 aspect-[4/5] rounded-xl flex items-center justify-center font-mono text-xl font-bold border-2 transition-all duration-150 pointer-events-none select-none",
+                            digit
+                              ? "border-primary bg-primary/5 text-black dark:bg-primary/10 dark:text-white"
+                              : isActive
+                              ? "border-primary/60 bg-white dark:bg-white/5"
+                              : "border-black/10 bg-black/5 dark:border-white/10 dark:bg-white/5"
+                          )}
+                        >
+                          {digit || (isActive ? (
+                            <span className="w-[2px] h-5 bg-primary rounded-full" style={{ animation: "blink 1s step-end infinite" }} />
+                          ) : null)}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <PrimaryButton loading={busy} disabled={otp.join("").length !== 6} onClick={handleVerifyOtp}>
-                    Verify <CheckCircle2 className="h-4 w-4" />
-                  </PrimaryButton>
-                  <div className="text-center text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                  <div className="text-center text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40 mt-5">
                     {resendIn > 0 ? (
                       <>RESEND IN {resendIn}S</>
                     ) : (
@@ -494,16 +507,15 @@ const Register = observer(() => {
                       </button>
                     )}
                   </div>
+                  <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
                 </div>
               );
+            }
             case "profile":
               return (
                 <div key="profile" className="space-y-5">
                   <Field icon={User} name="name" label="Full name" placeholder="Ada Lovelace" value={values.name} onChange={handleChange} onBlur={handleBlur} error={touched.name ? errors.name : undefined} autoFocus required />
                   <Field icon={Mail} name="email" label="Email" type="email" placeholder="you@example.com" value={values.email} onChange={handleChange} onBlur={handleBlur} error={touched.email ? errors.email : undefined} />
-                  <PrimaryButton loading={busy} onClick={next}>
-                    Continue <ArrowRight className="h-4 w-4" />
-                  </PrimaryButton>
                 </div>
               );
             case "company":
@@ -511,9 +523,6 @@ const Register = observer(() => {
                 <div key="company" className="space-y-5">
                   <Field icon={Building2} name="companyName" label="Company name" placeholder="Acme Inc." value={values.companyName} onChange={handleChange} onBlur={handleBlur} error={touched.companyName ? errors.companyName : undefined} autoFocus required />
                   <Field icon={Mail} name="companyEmail" label="Company email" type="email" placeholder="team@acme.com" value={values.companyEmail} onChange={handleChange} onBlur={handleBlur} error={touched.companyEmail ? errors.companyEmail : undefined} />
-                  <PrimaryButton loading={busy} onClick={next}>
-                    Continue <ArrowRight className="h-4 w-4" />
-                  </PrimaryButton>
                 </div>
               );
 
@@ -580,12 +589,6 @@ const Register = observer(() => {
                     >
                       {locationBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : values.location.city ? "Re-Detect Signal" : "Detect Resonance"}
                     </button>
-
-                    <div className={cn("transition-all duration-700", values.location.city || (!locationBusy && touched.location?.address) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 h-0 overflow-hidden pointer-events-none")}>
-                      <PrimaryButton loading={busy} onClick={next} className="!mt-0">
-                        Proceed to Review <ArrowRight className="h-4 w-4" />
-                      </PrimaryButton>
-                    </div>
                   </div>
                 </div>
               );
@@ -599,15 +602,45 @@ const Register = observer(() => {
                   </label>
                   {touched.termsAccepted && errors.termsAccepted && <div className="text-[9px] font-bold text-red-500 uppercase tracking-widest px-2">{errors.termsAccepted as string}</div>}
 
-                  <PrimaryButton loading={isSubmitting || busy} disabled={isSubmitting || busy} onClick={() => formik.handleSubmit()}>
-                    {isSubmitting || busy ? "Creating account..." : "Complete Registration"}
-                  </PrimaryButton>
                 </div>
               );
             default:
               return null;
           }
         };
+
+        const renderActionButton = () => {
+          switch (step) {
+            case "phone":
+              return <PrimaryButton loading={busy} disabled={!phone} onClick={sendOtp}>Send OTP <ArrowRight className="h-4 w-4" /></PrimaryButton>;
+            case "otp":
+              return <PrimaryButton loading={busy} disabled={otpValue.length !== 6} onClick={() => handleVerifyOtp(otpValue)}>Verify <CheckCircle2 className="h-4 w-4" /></PrimaryButton>;
+            case "profile":
+            case "company":
+              return <PrimaryButton loading={busy} onClick={next}>Continue <ArrowRight className="h-4 w-4" /></PrimaryButton>;
+            case "location":
+              return (
+                <div className={cn("transition-all duration-700", values.location.city || (!locationBusy && touched.location?.address) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 h-0 overflow-hidden pointer-events-none")}>
+                  <PrimaryButton loading={busy} onClick={next} className="!mt-0">Proceed to Review <ArrowRight className="h-4 w-4" /></PrimaryButton>
+                </div>
+              );
+            case "review":
+              return <PrimaryButton loading={isSubmitting || busy} disabled={isSubmitting || busy} onClick={() => formik.handleSubmit()}>{isSubmitting || busy ? "Creating account..." : "Complete Registration"}</PrimaryButton>;
+            default:
+              return null;
+          }
+        };
+
+        const signInLink = (
+          <div className="text-center text-[11px] font-bold text-black/60 dark:text-white/60">
+            <NextLink
+              href={redirectTarget ? `/login?redirect=${encodeURIComponent(redirectTarget)}` : "/login"}
+              className="uppercase tracking-widest hover:text-primary dark:hover:text-white transition-colors"
+            >
+              Already have an account? Sign in
+            </NextLink>
+          </div>
+        );
 
         return (
           <Form noValidate onKeyDown={(e) => {
@@ -616,48 +649,51 @@ const Register = observer(() => {
               e.preventDefault();
             }
           }}>
-            <AuthLayout>
-              <motion.div
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-                className={cn(
-                  "w-full rounded-[40px] px-8 py-8 transition-all duration-1000 flex flex-col justify-center space-y-5",
-                  "bg-white/60 border border-white/80 shadow-[0_30px_80px_rgba(0,0,0,0.08)] backdrop-blur-3xl",
-                  "ring-1 ring-black/5 dark:ring-white/10 inner-border inner-border-white/50",
-                  "dark:bg-[#13072E]/40 dark:border-white/5 dark:backdrop-blur-[40px] dark:shadow-[0_40px_100px_rgba(139,92,246,0.15)] dark:inner-border-white/5"
+            <AuthLayout mobileFooter={signInLink} mobileAction={renderActionButton()}>
+              {/* Nav row: back arrow + step dots */}
+              <div className="flex items-center justify-between mb-5">
+                {currentIdx > 0 ? (
+                  <button type="button" onClick={prev} className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black/60 hover:text-primary dark:text-white/60 dark:hover:text-primary transition-colors">
+                    <ArrowLeft className="h-3.5 w-3.5" /> Back
+                  </button>
+                ) : (
+                  <a href="/" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black/60 hover:text-primary dark:text-white/60 dark:hover:text-primary transition-colors">
+                    <ArrowLeft className="h-3.5 w-3.5" /> Home
+                  </a>
                 )}
+                <StepDots total={stepsForType.length} current={currentIdx} />
+              </div>
+
+              {/* Title */}
+              <motion.div
+                key={step + "-title"}
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
               >
-                <div className="flex items-center justify-between">
-                  {currentIdx > 0 ? (
-                    <button type="button" onClick={prev} className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black/40 hover:text-primary dark:text-white/40 dark:hover:text-primary transition-colors">
-                      <ArrowLeft className="h-3.5 w-3.5" /> Back
-                    </button>
-                  ) : (
-                    <a href="/" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black/40 hover:text-primary dark:text-white/40 dark:hover:text-primary transition-colors">
-                      <ArrowLeft className="h-3.5 w-3.5" /> Home
-                    </a>
-                  )}
-                  <StepDots total={stepsForType.length} current={currentIdx} />
-                </div>
-
-                <div className="text-center">
-                  <p className="text-[15px] font-[900] uppercase tracking-widest text-black dark:text-white">
-                    {title}
-                  </p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] mt-2 text-black/50 dark:text-white/50">
-                    {sub}
-                  </p>
-                </div>
-
-                <div className="transition-all duration-300">
-                  {renderStep()}
-                </div>
-
-                <div className="pt-4 border-t border-black/5 dark:border-white/10 text-center text-[10px] font-bold text-black/50 dark:text-white/50">
-                  <NextLink href={redirectTarget ? `/login?redirect=${encodeURIComponent(redirectTarget)}` : "/login"} className="uppercase tracking-widest hover:text-primary dark:hover:text-white transition-colors">
-                    Already have an account? Sign in
-                  </NextLink>
-                </div>
+                <p className="text-[1.35rem] sm:text-[15px] font-[900] uppercase tracking-widest text-black dark:text-white leading-tight">
+                  {title}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] mt-2 text-black/60 dark:text-white/60">
+                  {sub}
+                </p>
               </motion.div>
+
+              {/* Step content */}
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
+                className="mt-6 transition-all duration-300"
+              >
+                {renderStep()}
+              </motion.div>
+
+              <div className="hidden sm:block mt-8">
+                {renderActionButton()}
+              </div>
+
+              {/* Sign-in link: only visible inside card on desktop */}
+              <div className="hidden sm:block pt-4 border-t border-black/5 dark:border-white/10">
+                {signInLink}
+              </div>
             </AuthLayout>
           </Form>
         );
@@ -813,9 +849,8 @@ function PrimaryButton({
       onClick={onClick}
       disabled={disabled || loading}
       className={cn(
-        "w-full py-4 mt-8 rounded-2xl font-black text-[9px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all",
-        "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)] hover:brightness-110",
-        "dark:bg-primary dark:text-white dark:shadow-[0_10px_30px_rgba(237,56,85,0.3)] dark:hover:brightness-110",
+        "w-full py-4 mt-8 rounded-2xl font-black text-[10px] uppercase tracking-[0.25em] flex items-center justify-center gap-3 transition-all duration-300",
+        "bg-gradient-to-r from-primary to-[#ff4d6d] text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)] hover:shadow-[0_15px_30px_rgba(var(--primary),0.3)] hover:-translate-y-0.5",
         disabled || loading ? "opacity-50 pointer-events-none" : "opacity-100",
         className
       )}

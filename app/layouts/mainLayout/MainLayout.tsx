@@ -27,7 +27,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       if (!user && pathname.startsWith("/dashboard")) {
         router.replace("/login");
       }
-
+      // Force Next.js to re-evaluate the layout tree and CSS chunks smoothly
+      // This prevents the SPA routing from dropping Chakra UI/Tailwind styles
+      router.refresh();
       setIsChecking(false);
     }
   }, [pathname, router, user]);

@@ -1,6 +1,4 @@
 import { motion } from "framer-motion";
-import { Sparkles, Scan, Zap, ChevronLeft } from "lucide-react";
-import Link from "next/link";
 import React from "react";
 import "./auth.css";
 
@@ -23,42 +21,43 @@ const emojis = [
 
 export function AuthLayout({
   children,
-  eyebrow,
-  title,
-  subtitle,
   hideBrand,
+  hideMobileBrand,
+  mobileFooter,
+  mobileAction,
 }: {
   children: React.ReactNode;
-  eyebrow?: string;
-  title?: string;
-  subtitle?: string;
   hideBrand?: boolean;
+  hideMobileBrand?: boolean;
+  /** Content pinned to the bottom on mobile (e.g. sign-in link) */
+  mobileFooter?: React.ReactNode;
+  /** The primary action button, pinned above the link on mobile */
+  mobileAction?: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 overflow-y-auto overflow-x-hidden select-none z-[100] bg-[#FFF5F6] dark:bg-black transition-colors duration-700">
-      {/* Background Layer */}
-      <div className="fixed inset-0 z-0 pointer-events-none bg-white dark:bg-[#090314] transition-colors duration-1000">
+    <div className="fixed inset-0 overflow-y-auto overflow-x-hidden select-none z-[100] bg-[#FFF5F6] dark:bg-[#090314] transition-colors duration-700">
+
+      {/* ── Background ── */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute w-[800px] h-[800px] bg-gradient-to-br from-primary/10 to-transparent dark:from-[#8b5cf6]/20 dark:to-transparent top-[-20%] left-[-20%] rounded-full blur-[120px] dark:blur-[160px] animate-pulse transition-all duration-1000" />
         <div className="absolute w-[600px] h-[600px] bg-[#F7B733]/15 dark:bg-primary/20 bottom-[-10%] right-[-10%] rounded-full blur-[120px] dark:blur-[160px] transition-all duration-1000" />
-
-        <div className="absolute inset-0 overflow-hidden">
-          {emojis.map((emoji, i) => (
-            <div
-              key={i}
-              className="absolute bottom-[-50px] text-3xl opacity-100 dark:opacity-25 drop-shadow-sm transition-opacity duration-700"
-              style={{
-                left: emoji.l,
-                animation: `floatUp ${emoji.d} linear infinite ${emoji.a}`,
-              }}
-            >
-              {emoji.e}
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* Absolute Top Elements - Kept fixed so they don't scroll */}
-      <div className="fixed top-8 left-0 w-full flex justify-between items-center px-8 z-[120] pointer-events-none">
+      {/* ── Floating Emojis (Foreground) ── */}
+      <div className="fixed inset-0 z-[30] pointer-events-none overflow-hidden">
+        {emojis.map((emoji, i) => (
+          <div
+            key={i}
+            className="absolute bottom-[-50px] text-3xl opacity-60 dark:opacity-20 drop-shadow-sm transition-opacity duration-700"
+            style={{ left: emoji.l, animation: `floatUp ${emoji.d} linear infinite ${emoji.a}` }}
+          >
+            {emoji.e}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Fixed top bar ── */}
+      <div className="fixed top-6 left-0 w-full flex justify-between items-center px-6 z-[120] pointer-events-none">
         <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-black/40 dark:text-white/30 transition-colors">ACADEMY</span>
         <div className="flex items-center gap-2">
           <span className="text-[8px] font-bold tracking-[0.3em] uppercase text-black/30 dark:text-white/20 transition-colors">Learner Access</span>
@@ -66,33 +65,74 @@ export function AuthLayout({
         </div>
       </div>
 
-      {/* Main Scrollable Wrapper */}
-      <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center pt-16 pb-4 px-4">
-        {/* Main UI Layer */}
-        <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center justify-center -mt-12 transition-transform duration-[1.5s] ease-[cubic-bezier(0.85,0,0.15,1)]">
-        {/* Brand Header */}
-        {!hideBrand && (
-          <div className="flex flex-col items-center mb-2 w-full animate-in slide-in-from-bottom-4 fade-in duration-1000">
-            <h1 className="text-[2.2rem] sm:text-[2.8rem] font-[900] leading-tight text-transparent bg-clip-text bg-gradient-to-br from-primary via-[#8b5cf6] to-[#F7B733] drop-shadow-[0_10px_20px_rgba(var(--primary),0.2)] tracking-tighter uppercase flex items-center justify-center transition-all duration-1000 pb-1 whitespace-nowrap">
+      {/* ── MOBILE layout (< sm) ── */}
+      {/* Logo top | Content flex-1 | Button pinned bottom */}
+      <div className="sm:hidden relative min-h-[100dvh] w-full flex flex-col z-10">
+
+        {/* Logo — top */}
+        {!hideBrand && !hideMobileBrand && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="pt-20 pb-8 px-7 flex flex-col items-center"
+          >
+            <h1 className="text-[2rem] font-[900] leading-tight text-transparent bg-clip-text bg-gradient-to-br from-primary via-[#8b5cf6] to-[#F7B733] drop-shadow-[0_10px_20px_rgba(var(--primary),0.2)] tracking-tighter uppercase whitespace-nowrap">
               LUMA LMS
             </h1>
-          </div>
+            <p className="text-[9px] font-bold tracking-[0.35em] uppercase text-black/30 dark:text-white/25 mt-1">
+              Your learning journey
+            </p>
+          </motion.div>
         )}
 
-        {/* Auth Interaction Area */}
-        <div className="w-full perspective-[1200px] flex flex-col">
-          <div className="w-full relative transition-transform duration-1000 preserve-3d">
-            {children}
+        {/* Content — grows to fill space */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="flex-1 px-7 pt-2 pb-28"
+        >
+          {children}
+        </motion.div>
+
+        {/* Sticky footer — button + link */}
+        {(mobileAction || mobileFooter) && (
+          <div className="sticky bottom-0 z-20 px-6 pb-8 pt-6 flex flex-col gap-4">
+            {mobileAction}
+            {mobileFooter}
+          </div>
+        )}
+      </div>
+
+      {/* ── DESKTOP layout (sm+) ── */}
+      {/* Centered card, same as before */}
+      <div className="hidden sm:flex relative min-h-[100dvh] w-full flex-col items-center justify-center pt-16 pb-8 px-4 z-10">
+        <div className="relative z-10 w-full max-w-[380px] flex flex-col items-center -mt-12">
+          {!hideBrand && (
+            <div className="flex flex-col items-center mb-4 w-full animate-in slide-in-from-bottom-4 fade-in duration-1000">
+              <h1 className="text-[2.2rem] sm:text-[2.8rem] font-[900] leading-tight text-transparent bg-clip-text bg-gradient-to-br from-primary via-[#8b5cf6] to-[#F7B733] drop-shadow-[0_10px_20px_rgba(var(--primary),0.2)] tracking-tighter uppercase flex items-center justify-center transition-all duration-1000 pb-1 whitespace-nowrap">
+                LUMA LMS
+              </h1>
+            </div>
+          )}
+
+          {/* Glass card */}
+          <div className="w-full perspective-[1200px] flex flex-col">
+            <div
+              className="w-full rounded-[40px] px-8 py-8 flex flex-col justify-center space-y-5 bg-white/60 border border-white/80 shadow-[0_30px_80px_rgba(0,0,0,0.08)] backdrop-blur-3xl ring-1 ring-black/5 dark:ring-white/10 dark:bg-[#13072E]/40 dark:border-white/5 dark:backdrop-blur-[40px] dark:shadow-[0_40px_100px_rgba(139,92,246,0.15)]"
+            >
+              {children}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-      
+
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes floatUp {
           0% { transform: translateY(0); opacity: 0; }
-          10% { opacity: 0.25; }
-          90% { opacity: 0.25; }
+          10% { opacity: 0.2; }
+          90% { opacity: 0.2; }
           100% { transform: translateY(-100vh); opacity: 0; }
         }
       `}} />
