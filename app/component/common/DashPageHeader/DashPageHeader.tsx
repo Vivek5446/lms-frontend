@@ -96,7 +96,7 @@ const DashPageHeader = observer(
                 // <CustomBreadcrumb items={breadcrumb} />
               ) : (
                 <>
-                  <Heading fontSize="lg" color={headingColor} mb={2}>
+                  <Heading size="lg" fontWeight="800" letterSpacing="tight" color={headingColor} mb={1}>
                     {title}
                   </Heading>
                   <Text color={textColor} fontSize="sm">

@@ -95,6 +95,7 @@ interface CustomInputProps {
   colorScheme?: any;
   id?: string;
   onKeyDown?: any;
+  [x: string]: any;
 }
 
 const CustomInput: React.FC<CustomInputProps> = ({
@@ -277,27 +278,31 @@ const CustomInput: React.FC<CustomInputProps> = ({
 
   const inputBg = useColorModeValue("white", "darkBrand.50");
   const subtleBg = useColorModeValue("brand.50", "darkBrand.100");
-  const borderColor = useColorModeValue("blackAlpha.100", "whiteAlpha.200");
+  const borderColor = useColorModeValue("#1A202C", "whiteAlpha.700");
   const focusBorderColor = "brand.500";
   const hoverBorderColor = useColorModeValue("brand.300", "brand.400");
   const placeholderColor = useColorModeValue("gray.400", "whiteAlpha.500");
   const textColor = useColorModeValue("gray.800", "whiteAlpha.900");
-  const mutedTextColor = useColorModeValue("gray.500", "whiteAlpha.700");
+  const mutedTextColor = useColorModeValue("gray.700", "whiteAlpha.800");
   const focusRing = useColorModeValue(
     "0 0 0 4px rgba(98, 105, 255, 0.16)",
     "0 0 0 4px rgba(98, 105, 255, 0.24)"
   );
 
   const fieldStyles = {
-    bg: inputBg,
+    variant: "unstyled",
+    bg: "transparent",
     color: textColor,
-    borderColor,
-    borderRadius: "xl",
+    border: "none",
+    borderBottomWidth: "1px",
+    borderBottomStyle: "solid",
+    borderBottomColor: borderColor,
+    borderRadius: "0px",
     minH: "48px",
-    px: 4,
+    px: 1,
     fontSize: "sm",
     fontWeight: "500",
-    boxShadow: useColorModeValue("sm", "none"),
+    boxShadow: "none",
     transition: "all 0.2s ease",
     _placeholder: {
       color: placeholderColor,
@@ -305,18 +310,17 @@ const CustomInput: React.FC<CustomInputProps> = ({
       fontWeight: "400",
     },
     _hover: {
-      borderColor: hoverBorderColor,
-      boxShadow: useColorModeValue("md", "0 0 0 1px rgba(255,255,255,0.04)"),
+      borderBottomColor: hoverBorderColor,
     },
     _focus: {
-      borderColor: focusBorderColor,
-      boxShadow: focusRing,
-      transform: "translateY(-1px)",
+      borderBottomColor: focusBorderColor,
+      boxShadow: `0px 1px 0px 0px var(--chakra-colors-${focusBorderColor.replace('.', '-')})`,
+      transform: "none",
     },
     _focusVisible: {
-      borderColor: focusBorderColor,
-      boxShadow: focusRing,
-      transform: "translateY(-1px)",
+      borderBottomColor: focusBorderColor,
+      boxShadow: `0px 1px 0px 0px var(--chakra-colors-${focusBorderColor.replace('.', '-')})`,
+      transform: "none",
     },
     _disabled: {
       bg: subtleBg,

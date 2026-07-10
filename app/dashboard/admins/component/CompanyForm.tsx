@@ -33,37 +33,33 @@ import { SITE_URL } from "../../../config/utils/variables";
 import { DEFAULT_LEARNER_PRIMARY_COLOR, normalizeHexColor } from "../../../theme/theme";
 
 /* ================= SECTION CARD ================= */
-const SectionCard = ({ title, icon, children, color }: any) => {
-  const bg = useColorModeValue("white", "gray.800");
-
-  const colorMap: any = {
-    blue: { icon: "blue.500", text: "blue.600", bg: "blue.50" },
-    green: { icon: "green.500", text: "green.600", bg: "green.50" },
-    purple: { icon: "purple.500", text: "purple.600", bg: "purple.50" },
-    orange: { icon: "orange.500", text: "orange.600", bg: "orange.50" },
-    pink: { icon: "pink.500", text: "pink.600", bg: "pink.50" },
-  };
-
-  const theme = colorMap[color] || colorMap.blue;
+const SectionCard = ({ title, icon, children }: any) => {
+  const bg = useColorModeValue("white", "rgba(255, 255, 255, 0.05)");
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200");
+  const headerColor = useColorModeValue("gray.500", "gray.400");
 
   return (
-    <Box
-      p={5}
-      borderRadius="xl"
-      bg={bg}
-      boxShadow="md"
-      border="1px solid"
-      borderColor="gray.200"
-    >
-      <Flex align="center" mb={4} gap={2}>
-        <Box p={2} borderRadius="md" bg={theme.bg}>
-          <Icon as={icon} color={theme.icon} />
-        </Box>
-        <Text fontSize="lg" fontWeight="bold" color={theme.text}>
+    <Box mb={{ base: 4, md: 6 }}>
+      {/* Native App Section Header */}
+      <Box mb={2} px={{ base: 4, md: 5 }}>
+        <Text fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider" color={headerColor}>
           {title}
         </Text>
-      </Flex>
-      {children}
+      </Box>
+
+      {/* Grouped Settings Block */}
+      <Box
+        bg={bg}
+        borderRadius="2xl"
+        border="1px solid"
+        borderColor={borderColor}
+        overflow="hidden"
+        boxShadow="sm"
+      >
+        <Box p={{ base: 4, md: 5 }}>
+          {children}
+        </Box>
+      </Box>
     </Box>
   );
 };
@@ -170,6 +166,21 @@ const createCompanyFormValues = (company?: any) => ({
 const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel = "Create Company", children }: any) => {
   const [preview, setPreview] = useState<string | null>(null);
   const toast = useToast();
+
+  const borderColor = useColorModeValue("#4A5568", "whiteAlpha.700");
+  const inputStyles = {
+    variant: "unstyled",
+    bg: "transparent",
+    border: "none",
+    borderBottomWidth: "1px",
+    borderBottomStyle: "solid",
+    borderBottomColor: borderColor,
+    borderRadius: "0",
+    px: 1,
+    boxShadow: "none",
+    _focus: { bg: "transparent", boxShadow: "none", borderBottomColor: "brand.500" },
+    _hover: { bg: "transparent" }
+  };
 
   /* ✅ SAFE PREVIEW */
   const handlePreview = (file: any) => {
@@ -290,11 +301,11 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
 
         return (
           <FormikForm onSubmit={handleValidatedSubmit}>
-            <Flex direction="column" gap={6}>
+            <Flex direction="column" gap={4}>
 
               {/* TENANT */}
-              <SectionCard title="Tenant Configuration" icon={Globe} color="purple">
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+              <SectionCard title="Tenant Configuration" icon={Globe}>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
                   <CustomInput
                     label="Company Name"
                     name="company_name"
@@ -308,6 +319,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     }}
                     error={fieldError("company_name")}
                     showError={showFieldError("company_name")}
+                    {...inputStyles}
                   />
                   <CustomInput
                     label="Company Code"
@@ -318,6 +330,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("companyCode")}
                     showError={showFieldError("companyCode")}
+                    {...inputStyles}
                   />
                   <CustomInput
                     label="Tenant Slug"
@@ -330,6 +343,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     }
                     error={fieldError("tenantSlug")}
                     showError={showFieldError("tenantSlug")}
+                    {...inputStyles}
                   />
                   <CustomInput
                     label="Custom Domain"
@@ -340,6 +354,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("customDomain")}
                     showError={showFieldError("customDomain")}
+                    {...inputStyles}
                   />
                   <CustomInput
                     label="Manager Levels"
@@ -351,17 +366,18 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("managerLevels")}
                     showError={showFieldError("managerLevels")}
+                    {...inputStyles}
                   />
                 </SimpleGrid>
 
-                <Flex mt={4} gap={3} align="center">
+                <Flex mt={4} gap={3} align="center" wrap="wrap">
                   <Text fontSize="sm">Preview:</Text>
-                  <Badge colorScheme="purple">{previewUrl || "—"}</Badge>
-                  <Badge colorScheme="blue">{values.managerLevels || 3} levels</Badge>
+                  <Badge colorScheme="purple" wordBreak="break-all" whiteSpace="normal">{previewUrl || "—"}</Badge>
+                  <Badge colorScheme="blue" flexShrink={0}>{values.managerLevels || 3} levels</Badge>
                 </Flex>
               </SectionCard>
 
-              <SectionCard title="Learner Branding" icon={Palette} color="blue">
+              <SectionCard title="Learner Branding" icon={Palette}>
                 <BrandColorField
                   value={resolvedThemeColor}
                   onChange={(nextColor) => setFieldValue("primaryThemeColor", nextColor)}
@@ -396,7 +412,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
               </SectionCard>
 
               {/* PROFILE */}
-              <SectionCard title="Company Profile" icon={Building2} color="blue">
+              <SectionCard title="Company Profile" icon={Building2}>
                 {preview ? (
                   <Flex direction="column" gap={3}>
                     <Box
@@ -433,7 +449,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                   />
                 )}
 
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3} mt={4}>
                   <CustomInput
                     label="Company Email"
                     name="companyEmail"
@@ -443,6 +459,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("companyEmail")}
                     showError={showFieldError("companyEmail")}
+                    {...inputStyles}
                   />
                   <CustomInput
                     label="Primary Phone"
@@ -453,6 +470,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("mobileNo")}
                     showError={showFieldError("mobileNo")}
+                    {...inputStyles}
                   />
                   <CustomInput
                     label="Website"
@@ -463,6 +481,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("webLink")}
                     showError={showFieldError("webLink")}
+                    {...inputStyles}
                   />
                 </SimpleGrid>
 
@@ -488,13 +507,15 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("bio")}
                     showError={showFieldError("bio")}
+                    {...inputStyles}
+                    borderBottom="none"
                   />
                 </Box>
               </SectionCard>
 
               {/* ADDRESS */}
-              <SectionCard title="Address" icon={MapPin} color="orange">
-                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
+              <SectionCard title="Address" icon={MapPin}>
+                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3}>
                   <GridItem colSpan={2}>
                     <CustomInput
                       label="Street"
@@ -505,6 +526,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                       onChange={(e: any) =>
                         setFieldValue("addressInfo[0].address", e.target.value)
                       }
+                      {...inputStyles}
                     />
                   </GridItem>
 
@@ -517,6 +539,8 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].city", e.target.value)
                     }
+                    {...inputStyles}
+                    variant="flushed"
                   />
                   <CustomInput
                     label="State"
@@ -527,6 +551,8 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].state", e.target.value)
                     }
+                    {...inputStyles}
+                    variant="flushed"
                   />
                   <CustomInput
                     label="Country"
@@ -537,6 +563,8 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].country", e.target.value)
                     }
+                    {...inputStyles}
+                    variant="flushed"
                   />
                   <CustomInput
                     label="Pin Code"
@@ -547,20 +575,27 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].pinCode", e.target.value)
                     }
+                    {...inputStyles}
+                    variant="flushed"
                   />
                 </Grid>
               </SectionCard>
 
               {children}
 
-              <Divider />
+              <Divider my={2} />
 
               {/* ACTIONS */}
-              <Flex justify="flex-end" gap={4}>
-                <Button type="button" variant="ghost" onClick={onClose}>
+              <Flex
+                justify={{ base: "center", md: "flex-end" }}
+                direction={{ base: "column-reverse", md: "row" }}
+                gap={3}
+                mt={4}
+              >
+                <Button type="button" variant="outline" onClick={onClose} h="50px" borderRadius="xl" w={{ base: "100%", md: "auto" }}>
                   Cancel
                 </Button>
-                <Button type="submit" colorScheme="brand" isLoading={isLoading}>
+                <Button type="submit" colorScheme="brand" isLoading={isLoading} h="50px" borderRadius="xl" w={{ base: "100%", md: "auto" }}>
                   {submitLabel}
                 </Button>
               </Flex>
