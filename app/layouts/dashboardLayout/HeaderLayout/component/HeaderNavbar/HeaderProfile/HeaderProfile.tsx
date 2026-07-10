@@ -14,6 +14,7 @@ import {
   Icon,
   Portal,
   useDisclosure,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import {
@@ -52,12 +53,30 @@ const HeaderProfile = observer(() => {
             <Avatar
               src={user?.pic?.url || undefined}
               size="sm"
-              borderRadius={10}
+              w="32px"
+              h="32px"
+              borderRadius="full"
               name={user?.name}
+              bg="brand.500"
+              color="white"
+              fontWeight="bold"
             />
           }
-          size="sm"
-          variant="ghost"
+          isRound
+          w="40px"
+          h="40px"
+          minW="40px"
+          p={0}
+          bg={useColorModeValue("blackAlpha.50", "whiteAlpha.100")}
+          _hover={{ 
+            bg: useColorModeValue("blackAlpha.100", "whiteAlpha.200"), 
+            transform: "scale(1.05)"
+          }}
+          _active={{ 
+            bg: useColorModeValue("blackAlpha.200", "whiteAlpha.300"), 
+            transform: "scale(0.97)" 
+          }}
+          transition="all 0.2s ease"
         />
         <Portal>
           <MenuList minWidth="220px" boxShadow="md" borderRadius="md" zIndex={9999} p={2}>

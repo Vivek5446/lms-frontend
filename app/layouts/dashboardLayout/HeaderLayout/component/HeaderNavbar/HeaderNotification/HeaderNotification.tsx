@@ -13,6 +13,7 @@ import {
   Badge,
   Image,
   Portal,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { BellIcon, CheckIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { observer } from "mobx-react-lite";
@@ -145,14 +146,21 @@ const NotificationComponent = observer(() => {
           as={IconButton}
           icon={<BellIcon />}
           isRound
-          bg="gray.700"          
+          bg={useColorModeValue("blackAlpha.50", "whiteAlpha.100")}
+          color={useColorModeValue("gray.700", "white")}
           fontSize="xl"           
-          color="white"
           w="40px"                
           h="40px"
           minW="40px"
-          _hover={{ bg: "blue.500", transform: "scale(1.05)" }}
-          _active={{ bg: "blue.600", transform: "scale(0.97)" }}
+          _hover={{ 
+            bg: useColorModeValue("blackAlpha.100", "whiteAlpha.200"), 
+            transform: "scale(1.05)",
+            color: useColorModeValue("brand.600", "brand.300")
+          }}
+          _active={{ 
+            bg: useColorModeValue("blackAlpha.200", "whiteAlpha.300"), 
+            transform: "scale(0.97)" 
+          }}
           transition="all 0.2s ease"
           aria-label="notifications"
           onClick={() => setDropdownOpen(!dropdownOpen)}

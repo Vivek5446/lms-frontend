@@ -152,16 +152,7 @@ const HeaderContainer = styled.div<{
   right: 0;
   left: ${({ $sidebarOffset }) => $sidebarOffset};
   transition: all 0.3s ease-in-out;
-
-  /* White gradient with subtle slide-down animation on mount */
-  background: linear-gradient(
-    135deg,
-    #ffffff 0%,
-    ${({ $backgroundColor }) => `${$backgroundColor}12`} 32%,
-    ${({ $backgroundColor }) => `${$backgroundColor}1F`} 80%
-  );
-  border-bottom: 1px solid ${({ $backgroundColor }) => `${$backgroundColor}26`};
-  box-shadow: 0 1px 3px rgba(30, 40, 100, 0.06), 0 4px 16px ${({ $backgroundColor }) => `${$backgroundColor}1F`};
+  background: transparent;
 
   animation: navbarSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 
