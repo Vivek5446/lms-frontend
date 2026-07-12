@@ -3,12 +3,15 @@
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import {
   Box, Flex, VStack, HStack, Text, Avatar, Input, IconButton, useColorModeValue, Spacer, Spinner,
-  Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton, useDisclosure, Button
+  Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton, useDisclosure, Button, Image,
+  InputGroup, InputLeftElement, InputRightElement,
+  Modal, ModalOverlay, ModalContent, ModalCloseButton, ModalBody, ModalHeader, ModalFooter,
+  Menu, MenuButton, MenuList, MenuItem, MenuDivider, Textarea, useToast
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useParams, useRouter } from "next/navigation";
 import stores from "../../../store/stores";
-import { FiArrowLeft, FiMoreVertical, FiSend, FiX } from "react-icons/fi";
+import { FiArrowLeft, FiMoreVertical, FiSend, FiX, FiPaperclip, FiAlertTriangle, FiTrash2 } from "react-icons/fi";
 
 const ChatWindow = observer(() => {
   const { chatStore } = stores;
@@ -17,16 +20,27 @@ const ChatWindow = observer(() => {
   const communityId = params?.communityId as string;
   const [messageText, setMessageText] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  
+  const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const [reportReason, setReportReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const toast = useToast();
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const previousScrollHeight = useRef<number>(0);
   const drawerBodyRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { isOpen: isMembersOpen, onOpen: onMembersOpen, onClose: onMembersClose } = useDisclosure();
 
   const bgPanel = useColorModeValue("white", "gray.800");
   const bgMain = useColorModeValue("gray.50", "gray.900");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const bgChat = useColorModeValue("linear(to-b, gray.50, blue.50)", "linear(to-b, #111827, #0f172a)");
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200");
 
   useEffect(() => {
     const initChat = async () => {
@@ -96,6 +110,34 @@ const ChatWindow = observer(() => {
     }
   };
 
+  const handleReport = async () => {
+    if (!reportReason.trim() || !chatStore.activeCommunity) return;
+    setIsSubmitting(true);
+    const success = await chatStore.reportCommunity(chatStore.activeCommunity._id, reportReason);
+    setIsSubmitting(false);
+    if (success) {
+      toast({ title: "Community Reported", description: "Your report has been submitted to the admins.", status: "success", duration: 5000 });
+      onReportClose();
+      setReportReason("");
+    } else {
+      toast({ title: "Error", description: "Failed to report community.", status: "error" });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!chatStore.activeCommunity) return;
+    setIsSubmitting(true);
+    const success = await chatStore.deleteCommunity(chatStore.activeCommunity._id);
+    setIsSubmitting(false);
+    if (success) {
+      toast({ title: "Community Deleted", description: "The community has been successfully removed.", status: "success", duration: 5000 });
+      onDeleteClose();
+      router.push("/chat");
+    } else {
+      toast({ title: "Error", description: "Failed to delete community.", status: "error" });
+    }
+  };
+
   const handleSendMessage = () => {
     const roomId = chatStore.activeRoom?._id;
     if (!messageText.trim() || !roomId) return;
@@ -103,10 +145,60 @@ const ChatWindow = observer(() => {
     setMessageText("");
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const roomId = chatStore.activeRoom?._id;
+    if (!file || !roomId) return;
+    
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+      const imageData = {
+        file: {
+          filename: file.name,
+          type: file.type,
+          buffer: base64String,
+        },
+      };
+      try {
+        const dt = await stores.auth.uploadFile(imageData);
+        const imageUrl = dt?.data;
+        if (imageUrl) {
+           chatStore.sendMessage(roomId, "", imageUrl, file.type);
+        }
+      } catch (err) {
+        console.error("Failed to upload file", err);
+      } finally {
+        setIsUploading(false);
+      }
+    };
+  };
+
+  const renderMessageContent = (text: string) => {
+    if (!text) return null;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#60A5FA', textDecoration: 'underline', wordBreak: 'break-all' }}>
+            {part}
+          </a>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   if (isInitializing) {
     return (
       <Flex flex={1} align="center" justify="center" h="full" bg={bgMain}>
-        <Text color="gray.500" fontSize="lg">Loading chat...</Text>
+        <VStack spacing={4}>
+          <Spinner size="xl" thickness="3px" color="blue.500" emptyColor={useColorModeValue("gray.200", "gray.700")} />
+          <Text color="gray.500" fontSize="lg" fontWeight="500">Connecting to chat...</Text>
+        </VStack>
       </Flex>
     );
   }
@@ -114,14 +206,25 @@ const ChatWindow = observer(() => {
   if (!chatStore.activeRoom) {
     return (
       <Flex flex={1} align="center" justify="center" h="full" bg={bgMain}>
-        <Text color="gray.500" fontSize="lg">No chat available for this community</Text>
+        <VStack spacing={3}>
+          <Box p={4} bg={useColorModeValue("gray.100", "gray.800")} borderRadius="full">
+            <FiSend size={32} color={useColorModeValue("#CBD5E0", "#4A5568")} />
+          </Box>
+          <Text color="gray.500" fontSize="lg" fontWeight="500">No chat available for this community</Text>
+        </VStack>
       </Flex>
     );
   }
 
   return (
     <Flex flex={1} direction="column" h="full" bg={bgMain}>
-      <Box h="64px" px={4} display="flex" alignItems="center" bg={bgPanel} borderBottom="1px solid" borderColor={borderColor} shadow="sm">
+      <Box 
+        h="64px" px={4} display="flex" alignItems="center" 
+        bg={useColorModeValue("rgba(255, 255, 255, 0.8)", "rgba(26, 32, 44, 0.8)")} 
+        backdropFilter="blur(16px)"
+        borderBottom="1px solid" borderColor={borderColor} shadow="sm"
+        zIndex={10}
+      >
         <HStack spacing={2} w="full">
           <IconButton
             display={{ base: "flex", md: "none" }}
@@ -170,16 +273,78 @@ const ChatWindow = observer(() => {
             </VStack>
           </HStack>
           <Spacer />
-          <IconButton
-            aria-label="More options"
-            icon={<FiMoreVertical size={20} />}
-            variant="ghost"
-            borderRadius="full"
-          />
+          <Menu placement="bottom-end">
+            <MenuButton 
+              as={IconButton} 
+              aria-label="More options" 
+              icon={<FiMoreVertical size={20} />} 
+              variant="ghost" 
+              borderRadius="full" 
+            />
+            <MenuList 
+              bg={useColorModeValue("white", "gray.800")} 
+              borderColor={useColorModeValue("gray.200", "gray.700")} 
+              shadow="lg" 
+              borderRadius="xl"
+              p={2}
+              minW="220px"
+              zIndex={20}
+            >
+              <MenuItem 
+                bg="transparent"
+                _hover={{ bg: useColorModeValue("blackAlpha.50", "whiteAlpha.100") }} 
+                color={useColorModeValue("gray.700", "gray.200")} 
+                onClick={onReportOpen}
+                borderRadius="lg"
+                px={4} py={3}
+                fontWeight="500"
+                icon={<FiAlertTriangle size={18} opacity={0.8} />}
+                transition="all 0.2s ease"
+              >
+                Report Community
+              </MenuItem>
+              {chatStore.activeCommunity?.created_by === stores.auth.user?._id && (
+                <>
+                  <MenuDivider borderColor={useColorModeValue("blackAlpha.50", "whiteAlpha.50")} mx={2} my={2} />
+                  <MenuItem 
+                    bg="transparent"
+                    _hover={{ bg: useColorModeValue("red.50", "rgba(229, 62, 62, 0.15)") }} 
+                    color={useColorModeValue("red.600", "red.400")} 
+                    fontWeight="600" 
+                    onClick={onDeleteOpen}
+                    borderRadius="lg"
+                    px={4} py={3}
+                    icon={<FiTrash2 size={18} />}
+                    transition="all 0.2s ease"
+                  >
+                    Delete Community
+                  </MenuItem>
+                </>
+              )}
+            </MenuList>
+          </Menu>
         </HStack>
       </Box>
 
-      <Box flex={1} overflowY="auto" p={4} onScroll={handleScroll} ref={scrollContainerRef}>
+      <Box 
+        flex={1} 
+        overflowY="auto" 
+        p={4} 
+        onScroll={handleScroll} 
+        ref={scrollContainerRef} 
+        bgGradient={bgChat}
+        bgImage={useColorModeValue(
+          "radial-gradient(#CBD5E0 1px, transparent 1px)",
+          "radial-gradient(#1A202C 1px, transparent 1px)"
+        )}
+        bgSize="20px 20px"
+        css={{
+          "&::-webkit-scrollbar": { width: "6px" },
+          "&::-webkit-scrollbar-track": { background: "transparent" },
+          "&::-webkit-scrollbar-thumb": { background: "rgba(150, 150, 150, 0.3)", borderRadius: "24px" },
+          "&::-webkit-scrollbar-thumb:hover": { background: "rgba(150, 150, 150, 0.5)" },
+        }}
+      >
         {chatStore.isLoadingMore && (
           <Flex justify="center" my={4}>
             <Spinner size="sm" color="gray.500" />
@@ -189,7 +354,19 @@ const ChatWindow = observer(() => {
           {chatStore.messages.map((msg: any) => {
             const isMe = msg.user_id?._id === stores.auth.user?._id;
             return (
-              <HStack key={msg._id} align="end" spacing={3} justify={isMe ? "flex-end" : "flex-start"}>
+              <HStack 
+                key={msg._id} 
+                align="end" 
+                spacing={3} 
+                justify={isMe ? "flex-end" : "flex-start"}
+                animation="fadeInUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                sx={{
+                  "@keyframes fadeInUp": {
+                    "0%": { opacity: 0, transform: "translateY(10px) scale(0.98)" },
+                    "100%": { opacity: 1, transform: "translateY(0) scale(1)" },
+                  }
+                }}
+              >
                 {!isMe && <Avatar size="sm" name={msg.user_id?.name} src={msg.user_id?.pic?.url} />}
                 
                 <VStack align={isMe ? "end" : "start"} spacing={1} maxW="75%">
@@ -199,16 +376,38 @@ const ChatWindow = observer(() => {
                     </Text>
                   )}
                   <Box
-                    bg={isMe ? "blue.500" : useColorModeValue("white", "gray.800")}
-                    color={isMe ? "white" : "inherit"}
-                    px={5} 
-                    py={3} 
-                    borderRadius="2xl"
-                    borderBottomRightRadius={isMe ? "sm" : "2xl"}
-                    borderBottomLeftRadius={!isMe ? "sm" : "2xl"}
-                    shadow="sm"
+                    bg={!msg.content && msg.file_url ? "transparent" : isMe ? useColorModeValue("blue.500", "blue.600") : useColorModeValue("rgba(255, 255, 255, 0.9)", "rgba(26, 32, 44, 0.8)")}
+                    backdropFilter={!msg.content && msg.file_url ? "none" : isMe ? "none" : "blur(12px)"}
+                    color={isMe ? "white" : useColorModeValue("gray.800", "white")}
+                    p={!msg.content && msg.file_url ? 0 : 3} 
+                    borderRadius={!msg.content && msg.file_url ? "2xl" : "2xl"}
+                    borderBottomRightRadius={isMe && (msg.content || !msg.file_url) ? "md" : !msg.content && msg.file_url ? "2xl" : "2xl"}
+                    borderBottomLeftRadius={!isMe && (msg.content || !msg.file_url) ? "md" : !msg.content && msg.file_url ? "2xl" : "2xl"}
+                    boxShadow={!msg.content && msg.file_url ? "none" : isMe ? "0 4px 14px rgba(59, 130, 246, 0.25)" : "0 4px 14px rgba(0, 0, 0, 0.05)"}
+                    position="relative"
+                    border={!isMe ? "1px solid" : "none"}
+                    borderColor={useColorModeValue("gray.100", "whiteAlpha.100")}
                   >
-                    <Text fontSize="md" lineHeight="tall">{msg.content}</Text>
+                    {msg.file_url && (
+                      <Image 
+                        src={msg.file_url} 
+                        alt="attachment" 
+                        borderRadius="xl" 
+                        maxH="300px" 
+                        objectFit="cover" 
+                        mb={msg.content ? 2 : 0}
+                        border={!msg.content && !isMe ? "1px solid" : "none"}
+                        borderColor={useColorModeValue("gray.200", "gray.700")}
+                        shadow={!msg.content ? "sm" : "none"}
+                        cursor="zoom-in"
+                        onClick={() => setPreviewImage(msg.file_url)}
+                      />
+                    )}
+                    {msg.content && (
+                      <Text fontSize="md" lineHeight="tall">
+                        {renderMessageContent(msg.content)}
+                      </Text>
+                    )}
                   </Box>
                   <Text fontSize="10px" color="gray.400" fontWeight="500" alignSelf={isMe ? "flex-end" : "flex-start"} px={1}>
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -223,34 +422,63 @@ const ChatWindow = observer(() => {
 
       <Box p={4} bg={bgPanel} borderTop="1px solid" borderColor={borderColor}>
         <HStack spacing={3}>
-          <Input
-            placeholder={chatStore.isOnline ? "Type a message..." : "You are offline..."}
-            value={messageText}
-            onChange={(e) => {
-              setMessageText(e.target.value);
-              if (chatStore.activeRoom) chatStore.emitTyping(chatStore.activeRoom._id);
-            }}
-            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-            bg={useColorModeValue("gray.100", "gray.900")}
-            border="1px solid"
-            borderColor="transparent"
-            borderRadius="full" 
-            px={6} 
-            py={6} 
-            fontSize="md"
-            _focus={{ ring: 0, borderColor: "blue.400", bg: useColorModeValue("white", "gray.800") }}
-            _hover={{ bg: useColorModeValue("gray.200", "gray.800") }}
-            transition="all 0.2s"
-          />
-          <IconButton
-            aria-label="Send Message"
-            colorScheme="blue"
-            borderRadius="full"
-            icon={<FiSend size={18} />}
-            onClick={handleSendMessage}
-            isLoading={!chatStore.isOnline}
-            size="lg"
-            px={6}
+          <InputGroup size="lg" alignItems="center" bg={useColorModeValue("white", "whiteAlpha.200")} borderRadius="full" boxShadow="0 2px 10px rgba(0,0,0,0.05)" border="none" _focusWithin={{ ring: 2, ringColor: useColorModeValue("blue.400", "blue.500"), bg: useColorModeValue("white", "whiteAlpha.300") }} transition="all 0.2s">
+            <InputLeftElement h="full" w="3rem">
+              <IconButton
+                aria-label="Attach File"
+                variant="ghost"
+                borderRadius="full"
+                icon={<FiPaperclip size={20} />}
+                isLoading={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                color={useColorModeValue("gray.500", "gray.400")}
+                _hover={{ color: useColorModeValue("blue.500", "blue.300"), bg: "transparent" }}
+                _active={{ bg: "transparent" }}
+              />
+            </InputLeftElement>
+            
+            <Input
+              placeholder={chatStore.isOnline ? "Type a message..." : "You are offline..."}
+              value={messageText}
+              onChange={(e) => {
+                setMessageText(e.target.value);
+                if (chatStore.activeRoom) chatStore.emitTyping(chatStore.activeRoom._id);
+              }}
+              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+              border="none"
+              bg="transparent"
+              pl="3rem"
+              pr="4rem"
+              py={6}
+              fontSize="md"
+              _focus={{ ring: 0 }}
+            />
+            
+            <InputRightElement h="full" w="3.25rem" pr={1} display="flex" alignItems="center" justifyContent="center">
+              <IconButton
+                aria-label="Send Message"
+                bgGradient={useColorModeValue("linear(to-br, blue.400, blue.600)", "linear(to-br, blue.500, blue.700)")}
+                color="white"
+                borderRadius="full"
+                icon={<FiSend size={18} />}
+                onClick={handleSendMessage}
+                isDisabled={!chatStore.isOnline || isUploading}
+                h="40px"
+                w="40px"
+                minW="40px"
+                shadow="md"
+                _hover={{ shadow: "lg", transform: "translateY(-1px)", bgGradient: useColorModeValue("linear(to-br, blue.500, blue.700)", "linear(to-br, blue.400, blue.600)") }}
+                _active={{ transform: "translateY(0)" }}
+              />
+            </InputRightElement>
+          </InputGroup>
+
+          <input 
+            type="file" 
+            accept="image/*" 
+            ref={fileInputRef} 
+            style={{ display: "none" }} 
+            onChange={handleFileUpload} 
           />
         </HStack>
       </Box>
@@ -290,31 +518,31 @@ const ChatWindow = observer(() => {
               onClick={onMembersClose}
             />
           </Flex>
-          <DrawerBody ref={drawerBodyRef} onScroll={handleMembersScroll} p={0}>
-            <VStack align="stretch" spacing={0}>
+          <DrawerBody ref={drawerBodyRef} onScroll={handleMembersScroll} p={4} bg={bgMain}>
+            <VStack align="stretch" spacing={2}>
               {chatStore.communityMembers.map((member: any) => (
                 <HStack 
                   key={member.user._id} 
                   px={4} 
-                  py={2} 
-                  h="64px"
+                  py={3} 
+                  bg={useColorModeValue("white", "whiteAlpha.200")}
+                  borderRadius="xl"
+                  boxShadow="sm"
                   justify="space-between" 
                   w="full" 
-                  borderBottom="1px solid" 
-                  borderColor={borderColor}
-                  _hover={{ bg: useColorModeValue("gray.50", "gray.800") }}
-                  transition="background 0.2s"
+                  _hover={{ transform: "translateY(-1px)", shadow: "md", bg: useColorModeValue("gray.50", "whiteAlpha.300") }}
+                  transition="all 0.2s"
                 >
                   <HStack spacing={3} flex={1} overflow="hidden">
                     <Avatar 
-                      size="sm" 
+                      size="md" 
                       name={member.user.name} 
                       src={member.user.pic} 
                       border="2px solid"
                       borderColor={member.user._id === chatStore.activeCommunity?.created_by ? useColorModeValue("blue.500", "blue.300") : "transparent"}
                     />
                     <VStack align="start" spacing={0} flex={1} minW={0}>
-                      <Text fontWeight="bold" fontSize="md" noOfLines={1} color={useColorModeValue("gray.800", "white")}>
+                      <Text fontWeight="800" fontSize="md" noOfLines={1} color={useColorModeValue("gray.800", "white")}>
                         {member.user.name}
                       </Text>
                       <Text
@@ -333,6 +561,7 @@ const ChatWindow = observer(() => {
                       size="sm"
                       colorScheme="red"
                       variant="ghost"
+                      borderRadius="full"
                       onClick={() => chatStore.removeCommunityMember(communityId as string, member.user._id)}
                       _hover={{ bg: "red.50" }}
                     >
@@ -348,6 +577,119 @@ const ChatWindow = observer(() => {
           </DrawerBody>
         </DrawerContent>
       </Drawer>
+      {/* Image Preview Modal */}
+      <Modal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} size="4xl" isCentered>
+        <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.700" />
+        <ModalContent bg="transparent" boxShadow="none" m={4} p={0} display="flex" justifyContent="center" alignItems="center">
+          <ModalCloseButton color="white" bg="blackAlpha.600" borderRadius="full" top={2} right={2} size="md" _hover={{ bg: "blackAlpha.800" }} zIndex={10} />
+          <ModalBody p={0} display="flex" justifyContent="center" alignItems="center" w="full" h="full">
+            {previewImage && (
+              <Image 
+                src={previewImage} 
+                alt="Fullscreen Preview" 
+                maxH="85vh" 
+                w="auto" 
+                borderRadius="lg" 
+                boxShadow="2xl" 
+              />
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Report Modal */}
+      <Modal isOpen={isReportOpen} onClose={onReportClose} isCentered motionPreset="scale">
+        <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.600" />
+        <ModalContent bg={bgPanel} borderRadius="2xl" shadow="2xl" mx={4}>
+          <ModalHeader pt={6} pb={0} display="flex" flexDir="column" alignItems="center">
+            <Box bg={useColorModeValue("orange.100", "rgba(237, 137, 54, 0.15)")} p={3} borderRadius="full" mb={3}>
+              <FiAlertTriangle size={28} color={useColorModeValue("#DD6B20", "#ED8936")} />
+            </Box>
+            <Text fontSize="2xl" fontWeight="800">Report Community</Text>
+          </ModalHeader>
+          <ModalCloseButton 
+            mt={3} mr={3} 
+            borderRadius="full" 
+            bg={useColorModeValue("red.50", "rgba(229, 62, 62, 0.15)")}
+            color={useColorModeValue("red.500", "red.300")}
+            _hover={{ bg: useColorModeValue("red.100", "rgba(229, 62, 62, 0.25)"), color: useColorModeValue("red.600", "red.400") }}
+            transition="all 0.2s"
+          />
+          <ModalBody textAlign="center" px={6}>
+            <Text mb={4} color="gray.500" fontSize="md">Please provide specific details as to why this community violates our terms of service.</Text>
+            <Textarea 
+              value={reportReason} 
+              onChange={(e) => setReportReason(e.target.value)} 
+              placeholder="Spam, inappropriate content, harassment..." 
+              rows={3} 
+              focusBorderColor="orange.400"
+              borderRadius="xl"
+              bg={useColorModeValue("gray.50", "whiteAlpha.50")}
+            />
+          </ModalBody>
+          <ModalFooter justifyContent="center" gap={3} pb={6} pt={4}>
+            <Button size="md" variant="ghost" borderRadius="xl" onClick={onReportClose}>Cancel</Button>
+            <Button 
+              size="md" 
+              bg="orange.500" 
+              color="white" 
+              _hover={{ bg: "orange.600" }} 
+              _active={{ bg: "orange.700" }} 
+              borderRadius="xl" 
+              onClick={handleReport} 
+              isLoading={isSubmitting} 
+              isDisabled={!reportReason.trim()} 
+              px={6}
+            >
+              Submit Report
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isDeleteOpen} onClose={onDeleteClose} isCentered motionPreset="scale">
+        <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.600" />
+        <ModalContent bg={bgPanel} borderRadius="2xl" shadow="2xl" mx={4}>
+          <ModalHeader pt={6} pb={0} display="flex" flexDir="column" alignItems="center">
+            <Box bg={useColorModeValue("red.100", "rgba(245, 101, 101, 0.15)")} p={3} borderRadius="full" mb={3}>
+              <FiTrash2 size={28} color={useColorModeValue("#E53E3E", "#FC8181")} />
+            </Box>
+            <Text fontSize="2xl" fontWeight="800" color={useColorModeValue("red.600", "red.400")}>Delete Community</Text>
+          </ModalHeader>
+          <ModalCloseButton 
+            mt={3} mr={3} 
+            borderRadius="full" 
+            bg={useColorModeValue("red.50", "rgba(229, 62, 62, 0.15)")}
+            color={useColorModeValue("red.500", "red.300")}
+            _hover={{ bg: useColorModeValue("red.100", "rgba(229, 62, 62, 0.25)"), color: useColorModeValue("red.600", "red.400") }}
+            transition="all 0.2s"
+          />
+          <ModalBody textAlign="center" px={6}>
+            <Text fontWeight="700" fontSize="lg" color={useColorModeValue("gray.700", "gray.200")}>Are you absolutely sure?</Text>
+            <Text mt={2} color="gray.500" fontSize="md">
+              This action cannot be undone. All members will be removed and the chat history will be permanently hidden from everyone.
+            </Text>
+          </ModalBody>
+          <ModalFooter justifyContent="center" gap={3} pb={6} pt={4}>
+            <Button size="md" variant="ghost" borderRadius="xl" onClick={onDeleteClose}>Cancel</Button>
+            <Button 
+              size="md" 
+              bg="red.500" 
+              color="white" 
+              _hover={{ bg: "red.600" }} 
+              _active={{ bg: "red.700" }} 
+              borderRadius="xl" 
+              onClick={handleDelete} 
+              isLoading={isSubmitting} 
+              px={6}
+            >
+              Yes, Delete It
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
     </Flex>
   );
 });

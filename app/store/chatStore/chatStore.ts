@@ -264,6 +264,34 @@ class ChatStore {
     }
   };
 
+  reportCommunity = async (communityId: string, reason: string) => {
+    try {
+      await axios.post(`/community/${communityId}/report`, { reason });
+      return true;
+    } catch (err) {
+      console.error("Failed to report community", err);
+      return false;
+    }
+  };
+
+  deleteCommunity = async (communityId: string) => {
+    try {
+      await axios.delete(`/community/${communityId}`);
+      runInAction(() => {
+        this.communities = this.communities.filter(c => c._id !== communityId);
+        if (this.activeCommunity?._id === communityId) {
+          this.activeCommunity = null;
+          this.activeRoom = null;
+        }
+      });
+      return true;
+    } catch (err) {
+      console.error("Failed to delete community", err);
+      return false;
+    }
+  };
+
+
   fetchCommunityMemberCount = async (communityId: string) => {
     try {
       const response = await axios.get(`/community/${communityId}/member-count`);
@@ -329,7 +357,7 @@ class ChatStore {
     }
   };
 
-  sendMessage = async (roomId: string, content: string) => {
+  sendMessage = async (roomId: string, content: string, file_url?: string, file_type?: string) => {
     try {
       // 1. Optimistic UI Update: Create a temporary message
       const tempId = "temp-" + Date.now();
@@ -338,6 +366,8 @@ class ChatStore {
       const tempMessage = {
         _id: tempId,
         content: content,
+        file_url: file_url,
+        file_type: file_type,
         room_id: roomId,
         user_id: user,
         created_at: new Date().toISOString(),
@@ -363,7 +393,7 @@ class ChatStore {
       }
 
       // 2. Background DB Save
-      axios.post(`/community/rooms/${roomId}/messages`, { content })
+      axios.post(`/community/rooms/${roomId}/messages`, { content, file_url, file_type })
         .then((response) => {
           const realMessage = response.data.data;
           // Replace temporary message with real DB message
