@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import {
   Box, Flex, VStack, HStack, Text, Avatar, Input, IconButton, useColorModeValue, Spacer, Spinner,
-  Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton, useDisclosure, Button, Image,
+  Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton, useDisclosure, Button, Image, Checkbox,
   InputGroup, InputLeftElement, InputRightElement,
   Modal, ModalOverlay, ModalContent, ModalCloseButton, ModalBody, ModalHeader, ModalFooter,
   Menu, MenuButton, MenuList, MenuItem, MenuDivider, Textarea, useToast
@@ -11,7 +11,7 @@ import {
 import { observer } from "mobx-react-lite";
 import { useParams, useRouter } from "next/navigation";
 import stores from "../../../store/stores";
-import { FiArrowLeft, FiMoreVertical, FiSend, FiX, FiPaperclip, FiAlertTriangle, FiTrash2 } from "react-icons/fi";
+import { FiArrowLeft, FiMoreVertical, FiSend, FiX, FiPaperclip, FiAlertTriangle, FiTrash2, FiCheck } from "react-icons/fi";
 
 const ChatWindow = observer(() => {
   const { chatStore } = stores;
@@ -21,7 +21,10 @@ const ChatWindow = observer(() => {
   const [messageText, setMessageText] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [hiddenMessages, setHiddenMessages] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
   
   const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
@@ -35,7 +38,6 @@ const ChatWindow = observer(() => {
   const drawerBodyRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const deleteTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
-  const [isUploading, setIsUploading] = useState(false);
 
   const { isOpen: isMembersOpen, onOpen: onMembersOpen, onClose: onMembersClose } = useDisclosure();
 
@@ -151,7 +153,6 @@ const ChatWindow = observer(() => {
     const idStr = String(msgId);
     setHiddenMessages(prev => [...prev, idStr]);
     
-    // We don't use a toast anymore. The undo will be inline.
     const timeout = setTimeout(() => {
       if (chatStore.activeRoom) {
         chatStore.deleteMessage(chatStore.activeRoom._id, idStr);
@@ -161,6 +162,12 @@ const ChatWindow = observer(() => {
     }, 5000);
 
     deleteTimeoutsRef.current[idStr] = timeout;
+  };
+
+  const handleBulkDelete = () => {
+    selectedMessages.forEach(id => handleDeleteMessage(id));
+    setSelectedMessages([]);
+    setIsSelectionMode(false);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -300,42 +307,62 @@ const ChatWindow = observer(() => {
               borderRadius="full" 
             />
             <MenuList 
-              bg={useColorModeValue("white", "gray.800")} 
-              borderColor={useColorModeValue("gray.200", "gray.700")} 
-              shadow="lg" 
-              borderRadius="xl"
+              bg={useColorModeValue("white", "gray.800")}
+              borderColor={useColorModeValue("gray.100", "gray.700")} 
+              shadow="2xl" 
+              borderRadius="2xl"
               p={2}
-              minW="220px"
+              minW="240px"
               zIndex={20}
             >
               <MenuItem 
                 bg="transparent"
-                _hover={{ bg: useColorModeValue("blackAlpha.50", "whiteAlpha.100") }} 
-                color={useColorModeValue("gray.700", "gray.200")} 
-                onClick={onReportOpen}
-                borderRadius="lg"
-                px={4} py={3}
-                fontWeight="500"
-                icon={<FiAlertTriangle size={18} opacity={0.8} />}
-                transition="all 0.2s ease"
+                _hover={{ bg: useColorModeValue("blue.50", "whiteAlpha.100") }} 
+                onClick={() => setIsSelectionMode(true)}
+                borderRadius="xl"
+                px={3} py={2}
+                mb={1}
+                transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
               >
-                Report Community
+                <HStack spacing={3}>
+                  <Flex w="32px" h="32px" borderRadius="lg" bg={useColorModeValue("blue.50", "rgba(66, 153, 225, 0.15)")} align="center" justify="center">
+                    <FiCheck size={16} color={useColorModeValue("#3182ce", "#90cdf4")} />
+                  </Flex>
+                  <Text fontWeight="600" fontSize="sm" color={useColorModeValue("gray.700", "gray.200")}>Select Messages</Text>
+                </HStack>
+              </MenuItem>
+              <MenuItem 
+                bg="transparent"
+                _hover={{ bg: useColorModeValue("orange.50", "whiteAlpha.100") }} 
+                onClick={onReportOpen}
+                borderRadius="xl"
+                px={3} py={2}
+                transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+              >
+                <HStack spacing={3}>
+                  <Flex w="32px" h="32px" borderRadius="lg" bg={useColorModeValue("orange.50", "rgba(221, 107, 32, 0.15)")} align="center" justify="center">
+                    <FiAlertTriangle size={16} color={useColorModeValue("#dd6b20", "#fbd38d")} />
+                  </Flex>
+                  <Text fontWeight="600" fontSize="sm" color={useColorModeValue("gray.700", "gray.200")}>Report Community</Text>
+                </HStack>
               </MenuItem>
               {chatStore.activeCommunity?.created_by === stores.auth.user?._id && (
                 <>
-                  <MenuDivider borderColor={useColorModeValue("blackAlpha.50", "whiteAlpha.50")} mx={2} my={2} />
+                  <MenuDivider borderColor={useColorModeValue("gray.100", "whiteAlpha.200")} mx={3} my={2} />
                   <MenuItem 
                     bg="transparent"
                     _hover={{ bg: useColorModeValue("red.50", "rgba(229, 62, 62, 0.15)") }} 
-                    color={useColorModeValue("red.600", "red.400")} 
-                    fontWeight="600" 
                     onClick={onDeleteOpen}
-                    borderRadius="lg"
-                    px={4} py={3}
-                    icon={<FiTrash2 size={18} />}
-                    transition="all 0.2s ease"
+                    borderRadius="xl"
+                    px={3} py={2}
+                    transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
                   >
-                    Delete Community
+                    <HStack spacing={3}>
+                      <Flex w="32px" h="32px" borderRadius="lg" bg={useColorModeValue("red.50", "rgba(229, 62, 62, 0.15)")} align="center" justify="center">
+                        <FiTrash2 size={16} color={useColorModeValue("#e53e3e", "#fc8181")} />
+                      </Flex>
+                      <Text fontWeight="700" fontSize="sm" color={useColorModeValue("red.600", "red.400")}>Delete Community</Text>
+                    </HStack>
                   </MenuItem>
                 </>
               )}
@@ -374,6 +401,7 @@ const ChatWindow = observer(() => {
             const isCreator = chatStore.activeCommunity?.created_by === stores.auth.user?._id;
             const canDelete = isMe || isCreator;
             const isPendingDelete = hiddenMessages.includes(String(msg._id));
+            const isSelected = selectedMessages.includes(String(msg._id));
 
             if (isPendingDelete) {
               return (
@@ -396,11 +424,14 @@ const ChatWindow = observer(() => {
             return (
               <HStack 
                 key={msg._id} 
-                align="end" 
-                spacing={3} 
-                justify={isMe ? "flex-end" : "flex-start"}
-                role="group"
                 w="full"
+                align="center"
+                cursor={isSelectionMode && canDelete ? "pointer" : "default"}
+                onClick={() => {
+                  if (isSelectionMode && canDelete) {
+                    setSelectedMessages(prev => isSelected ? prev.filter(id => id !== String(msg._id)) : [...prev, String(msg._id)]);
+                  }
+                }}
                 animation="fadeInUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                 sx={{
                   "@keyframes fadeInUp": {
@@ -409,10 +440,26 @@ const ChatWindow = observer(() => {
                   }
                 }}
               >
-                {!isMe && <Avatar size="sm" name={msg.user_id?.name} src={msg.user_id?.pic?.url} />}
+                {isSelectionMode && canDelete && (
+                  <Checkbox 
+                    size="lg"
+                    colorScheme="blue"
+                    isChecked={isSelected}
+                    onChange={() => {}}
+                    mr={2}
+                    pointerEvents="none"
+                  />
+                )}
                 
-
-
+                <HStack 
+                  flex={1}
+                  align="end" 
+                  spacing={3} 
+                  justify={isMe ? "flex-end" : "flex-start"}
+                  w="full"
+                >
+                  {!isMe && <Avatar size="sm" name={msg.user_id?.name} src={msg.user_id?.pic?.url} />}
+                
                 <VStack align={isMe ? "end" : "start"} spacing={1} maxW="75%">
                   {!isMe && (
                     <Text fontSize="xs" color="gray.500" fontWeight="600" ml={1}>
@@ -447,7 +494,13 @@ const ChatWindow = observer(() => {
                         borderColor={useColorModeValue("gray.200", "gray.700")}
                         shadow={!msg.content ? "sm" : "none"}
                         cursor="zoom-in"
-                        onClick={() => setPreviewImage(msg.file_url)}
+                        onClick={(e) => {
+                          if (isSelectionMode) {
+                            return; // Let the click bubble up to the HStack
+                          }
+                          e.stopPropagation();
+                          setPreviewImage(msg.file_url);
+                        }}
                       />
                     )}
                     {canDelete && (
@@ -484,8 +537,7 @@ const ChatWindow = observer(() => {
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </VStack>
-
-
+              </HStack>
               </HStack>
             );
           })}
@@ -494,10 +546,60 @@ const ChatWindow = observer(() => {
       </Box>
 
       <Box p={4} bg={bgPanel} borderTop="1px solid" borderColor={borderColor}>
-        <HStack spacing={3}>
-          <InputGroup size="lg" alignItems="center" bg={useColorModeValue("white", "whiteAlpha.200")} borderRadius="full" boxShadow="0 2px 10px rgba(0,0,0,0.05)" border="none" _focusWithin={{ ring: 2, ringColor: useColorModeValue("blue.400", "blue.500"), bg: useColorModeValue("white", "whiteAlpha.300") }} transition="all 0.2s">
-            <InputLeftElement h="full" w="3rem">
-              <IconButton
+        {isSelectionMode ? (
+          <Flex
+            w="full"
+            justify="space-between"
+            align="center"
+            bg={useColorModeValue("white", "gray.800")}
+            p={2}
+            px={4}
+            borderRadius="full"
+            boxShadow={useColorModeValue("0 4px 20px rgba(0,0,0,0.08)", "0 4px 20px rgba(0,0,0,0.4)")}
+            border="1px solid"
+            borderColor={useColorModeValue("gray.100", "gray.700")}
+          >
+            <HStack spacing={3}>
+              <Flex w={8} h={8} borderRadius="full" bg={useColorModeValue("blue.50", "rgba(66, 153, 225, 0.15)")} align="center" justify="center">
+                <Text fontWeight="800" fontSize="sm" color={useColorModeValue("blue.600", "blue.300")}>
+                  {selectedMessages.length}
+                </Text>
+              </Flex>
+              <Text fontWeight="600" color={useColorModeValue("gray.700", "gray.200")} fontSize="sm">
+                Selected
+              </Text>
+            </HStack>
+            <HStack spacing={2}>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                borderRadius="full"
+                color={useColorModeValue("gray.500", "gray.400")}
+                _hover={{ bg: useColorModeValue("gray.100", "whiteAlpha.200") }}
+                onClick={() => { setIsSelectionMode(false); setSelectedMessages([]); }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                size="sm" 
+                colorScheme="red" 
+                borderRadius="full"
+                px={5}
+                isDisabled={selectedMessages.length === 0} 
+                onClick={handleBulkDelete}
+                boxShadow={selectedMessages.length > 0 ? "0 4px 14px rgba(229, 62, 62, 0.3)" : "none"}
+                _hover={{ transform: selectedMessages.length > 0 ? "translateY(-1px)" : "none", boxShadow: selectedMessages.length > 0 ? "0 6px 20px rgba(229, 62, 62, 0.4)" : "none" }}
+                transition="all 0.2s"
+              >
+                Delete
+              </Button>
+            </HStack>
+          </Flex>
+        ) : (
+          <HStack spacing={3}>
+            <InputGroup size="lg" alignItems="center" bg={useColorModeValue("white", "whiteAlpha.200")} borderRadius="full" boxShadow="0 2px 10px rgba(0,0,0,0.05)" border="none" _focusWithin={{ ring: 2, ringColor: useColorModeValue("blue.400", "blue.500"), bg: useColorModeValue("white", "whiteAlpha.300") }} transition="all 0.2s">
+              <InputLeftElement h="full" w="3rem">
+                <IconButton
                 aria-label="Attach File"
                 variant="ghost"
                 borderRadius="full"
@@ -554,6 +656,7 @@ const ChatWindow = observer(() => {
             onChange={handleFileUpload} 
           />
         </HStack>
+        )}
       </Box>
 
       <Drawer isOpen={isMembersOpen} placement="right" onClose={onMembersClose} size="sm">
