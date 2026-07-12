@@ -57,6 +57,7 @@ export const MobileSidebar = observer(({ isOpen, onClose, onProfileClick }: Mobi
     { href: '/course', label: 'Courses' },
     ...(isLearner ? [{ href: '/batches', label: 'Batches' }] : []),
     ...(isManagerUser ? [{ href: '/manager', label: 'Learners' }] : []),
+    { href: '/chat', label: 'Community' },
     { href: '/about-us', label: 'About Us' },
     { href: '/contact-us', label: 'Contact Us' },
   ]), [isLearner, isManagerUser]);

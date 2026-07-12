@@ -11,6 +11,7 @@ import { managerStore } from "./managerStore/managerStore";
 import { testimonialStore } from "./testimonialStore/testimonialStore";
 import { themeStore } from "./themeStore/themeStore";
 import { userStore } from "./userStore/userStore";
+import { chatStore } from "./chatStore/chatStore";
 const stores = {
   auth : authStore,
   dashboardStore : dashboardStore,
@@ -24,6 +25,7 @@ const stores = {
   companyStore : CompanyStore,
   testimonialStore : testimonialStore,
   courseStore:courseStore,
+  chatStore: chatStore,
 };
 
 export default stores;

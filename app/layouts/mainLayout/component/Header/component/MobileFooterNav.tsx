@@ -4,7 +4,7 @@ import React from 'react';
 import { Box, Flex, Icon, Link as ChakraLink, Text, useColorMode, Button } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiHome, FiBookOpen, FiUser, FiGrid, FiMenu } from 'react-icons/fi';
+import { FiHome, FiBookOpen, FiUser, FiGrid, FiMenu, FiMessageCircle } from 'react-icons/fi';
 import { observer } from 'mobx-react-lite';
 import stores from '@/app/store/stores';
 import { isLearnerRole, isManagerRole } from '@/app/config/utils/roleAccess';
@@ -43,18 +43,18 @@ export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }:
 
     // 3. Center Profile/Login Button
     const profileLink = isLoggedIn
-      ? { href: appHref, label: isLearner ? 'My' : 'App', icon: FiUser, isCenter: true }
+      ? { href: '/dashboard', label: 'Dashboard', icon: FiUser, isCenter: true }
       : { href: '/login', label: 'Login', icon: FiUser, isCenter: true };
 
     links.push(profileLink);
 
     // 4. Fill the 4th spot so we always have exactly 5 tabs (including 'More')
     if (isLearner) {
-      links.push({ href: '/batches', label: 'Batches', icon: FiGrid });
+      links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
     } else if (isManagerUser) {
-      links.push({ href: '/manager', label: 'Learners', icon: FiUser });
+      links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
     } else {
-      links.push({ href: '/about-us', label: 'About', icon: FiGrid });
+      links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
     }
 
     return links;

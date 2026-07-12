@@ -11,15 +11,7 @@ import stores from "./store/stores";
 const RootPage = observer(() => {
   const router = useRouter();
   const { user, sessionReady } = stores.auth;
-  const destination = user ? getDefaultAuthenticatedRoute(user) : "/";
-
-  useEffect(() => {
-    if (sessionReady && user && destination !== "/") {
-      router.replace(destination);
-    }
-  }, [destination, router, sessionReady, user]);
-
-  if (!sessionReady || (user && destination !== "/")) {
+  if (!sessionReady) {
     return (
       <Center minH="55vh">
         <Spinner size="lg" color="purple.500" />

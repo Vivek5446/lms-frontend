@@ -1,0 +1,430 @@
+import { makeAutoObservable, runInAction } from "mobx";
+import axios from "axios";
+import { io, Socket } from "socket.io-client";
+import { BACKEND_URL } from "../../config/utils/variables";
+import stores from "../stores";
+
+class ChatStore {
+  communities: any[] = [];
+  activeCommunity: any = null;
+  activeCommunityMemberCount: number = 0;
+  rooms: any[] = [];
+  activeRoom: any = null;
+  messages: any[] = [];
+  
+  communityMembers: any[] = [];
+  membersCurrentPage: number = 1;
+  hasMoreMembers: boolean = true;
+  isFetchingMembers: boolean = false;
+
+  isLoading: boolean = false;
+  socket: Socket | null = null;
+  error: string | null = null;
+  
+  // Cache State
+  roomMessagesCache: Record<string, any[]> = {};
+  roomPaginationCache: Record<string, { page: number, hasMore: boolean }> = {};
+  
+  // Pagination State
+  currentPage: number = 1;
+  hasMoreMessages: boolean = true;
+  isLoadingMore: boolean = false;
+
+  // Real-time & Robustness State
+  typingUsers: string[] = [];
+  typingTimeout: any = null;
+  lastTypingEmitTime: number = 0;
+  offlineQueue: any[] = [];
+  isOnline: boolean = typeof window !== 'undefined' ? navigator.onLine : true;
+
+  constructor() {
+    makeAutoObservable(this);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', this.handleOnline);
+      window.addEventListener('offline', this.handleOffline);
+    }
+  }
+
+  handleOnline = () => {
+    runInAction(() => { this.isOnline = true; });
+    this.processOfflineQueue();
+  };
+
+  handleOffline = () => {
+    runInAction(() => { this.isOnline = false; });
+  };
+
+  processOfflineQueue = async () => {
+    if (this.offlineQueue.length === 0) return;
+    const queue = [...this.offlineQueue];
+    this.offlineQueue = [];
+
+    const failedQueue: any[] = [];
+    let hasFailed = false;
+
+    for (const msg of queue) {
+      if (hasFailed) {
+        // Once one message fails, pause queue and preserve exact chronological order
+        failedQueue.push(msg);
+        continue;
+      }
+      try {
+        await axios.post(`/community/rooms/${msg.room_id}/messages`, { content: msg.content });
+      } catch (err) {
+        console.error("Queue message failed, pausing queue.", err);
+        hasFailed = true;
+        failedQueue.push(msg);
+      }
+    }
+    
+    if (failedQueue.length > 0) {
+      runInAction(() => {
+        // Restore failed items safely to the top of the queue
+        this.offlineQueue = [...failedQueue, ...this.offlineQueue];
+      });
+    }
+  };
+
+  // Socket Connection Management
+  connectSocket = () => {
+    if (this.socket) return;
+    
+    // Connect to the backend
+    this.socket = io(BACKEND_URL, {
+      transports: ["websocket"],
+      reconnectionAttempts: 5
+    });
+
+    const user = stores.auth.user;
+    if (user) {
+      this.socket.emit("user_connected", user);
+    }
+
+    this.socket.on("connect", () => {
+      console.log("Chat Socket connected:", this.socket?.id);
+    });
+
+    this.socket.on("new-message", (message: any) => {
+      // Append if it belongs to current active room
+      if (this.activeRoom && message.room_id === this.activeRoom._id) {
+        runInAction(() => {
+          // Check if it's already in the list (from optimistic update)
+          const exists = this.messages.some(m => m.content === message.content && m.user_id?._id === message.user_id?._id);
+          if (!exists) {
+            this.messages.push(message);
+            // Update cache
+            if (this.activeRoom) {
+              this.roomMessagesCache[this.activeRoom._id] = [...this.messages];
+            }
+          }
+        });
+      } else {
+        // If message is for another room, just quietly add it to that room's cache
+        runInAction(() => {
+          if (this.roomMessagesCache[message.room_id]) {
+             this.roomMessagesCache[message.room_id].push(message);
+          }
+        });
+      }
+    });
+
+    this.socket.on("recieved-typing-status", (data: any) => {
+      const { userData } = data;
+      if (this.activeRoom && userData.room_id === this.activeRoom._id) {
+        runInAction(() => {
+          if (!this.typingUsers.includes(userData.name) && userData.name !== stores.auth.user?.name) {
+            this.typingUsers.push(userData.name);
+          }
+        });
+
+        // Clear typing indicator after 5 seconds of inactivity
+        if (this.typingTimeout) clearTimeout(this.typingTimeout);
+        this.typingTimeout = setTimeout(() => {
+          runInAction(() => {
+            this.typingUsers = [];
+          });
+        }, 5000);
+      }
+    });
+  };
+
+  disconnectSocket = () => {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+  };
+
+  joinRoom = (roomId: string) => {
+    if (this.socket) {
+      this.socket.emit("joinRoom", roomId);
+    }
+  };
+
+  // API Calls
+  fetchMyCommunities = async (page: number = 1, limit: number = 20) => {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const response = await axios.get(`/community/my-communities`, { params: { page, limit } });
+      runInAction(() => {
+        this.communities = response.data.data;
+        this.isLoading = false;
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.response?.data?.error || "Failed to fetch communities";
+        this.isLoading = false;
+      });
+    }
+  };
+
+  fetchCommunityRooms = async (communityId: string, page: number = 1, limit: number = 20) => {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const response = await axios.get(`/community/${communityId}/rooms`, { params: { page, limit } });
+      runInAction(() => {
+        this.rooms = response.data.data;
+        this.isLoading = false;
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.response?.data?.error || "Failed to fetch rooms";
+        this.isLoading = false;
+      });
+    }
+  };
+
+  fetchRoomMessages = async (roomId: string, page: number = 1, limit: number = 100) => {
+    // If we already have the first page cached, don't show loading
+    if (!this.roomMessagesCache[roomId]) {
+      this.isLoading = true;
+    }
+    this.error = null;
+    try {
+      const response = await axios.get(`/community/rooms/${roomId}/messages`, { params: { page, limit } });
+      runInAction(() => {
+        const fetchedMessages = response.data.data.reverse();
+        this.messages = fetchedMessages;
+        this.currentPage = page;
+        this.hasMoreMessages = fetchedMessages.length === limit;
+        
+        // Save to cache
+        this.roomMessagesCache[roomId] = fetchedMessages;
+        this.roomPaginationCache[roomId] = { page: this.currentPage, hasMore: this.hasMoreMessages };
+        
+        this.isLoading = false;
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.response?.data?.error || "Failed to fetch messages";
+        this.isLoading = false;
+      });
+    }
+  };
+
+  loadMoreMessages = async () => {
+    if (this.isLoadingMore || !this.hasMoreMessages || !this.activeRoom) return;
+    
+    this.isLoadingMore = true;
+    const nextPage = this.currentPage + 1;
+    const limit = 100;
+
+    try {
+      const response = await axios.get(`/community/rooms/${this.activeRoom._id}/messages`, { params: { page: nextPage, limit } });
+      runInAction(() => {
+        const fetchedMessages = response.data.data.reverse();
+        // Prepend older messages to the top
+        this.messages = [...fetchedMessages, ...this.messages];
+        this.currentPage = nextPage;
+        this.hasMoreMessages = fetchedMessages.length === limit;
+        
+        // Update Cache
+        this.roomMessagesCache[this.activeRoom._id] = this.messages;
+        this.roomPaginationCache[this.activeRoom._id] = { page: this.currentPage, hasMore: this.hasMoreMessages };
+        
+        this.isLoadingMore = false;
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = "Failed to load older messages";
+        this.isLoadingMore = false;
+      });
+    }
+  };
+
+  fetchCommunityDetails = async (communityId: string) => {
+    try {
+      const response = await axios.get(`/community/${communityId}`);
+      return response.data.data;
+    } catch (err) {
+      console.error("Failed to fetch community details", err);
+      return null;
+    }
+  };
+
+  fetchCommunityMemberCount = async (communityId: string) => {
+    try {
+      const response = await axios.get(`/community/${communityId}/member-count`);
+      runInAction(() => {
+        this.activeCommunityMemberCount = response.data.count || 0;
+      });
+    } catch (err) {
+      console.error("Failed to fetch member count", err);
+      runInAction(() => {
+        this.activeCommunityMemberCount = 0;
+      });
+    }
+  };
+
+  fetchCommunityMembers = async (communityId: string, page: number = 1, limit: number = 20) => {
+    this.isFetchingMembers = true;
+    try {
+      const response = await axios.get(`/community/${communityId}/members`, { params: { page, limit } });
+      runInAction(() => {
+        const fetchedMembers = response.data.data;
+        if (page === 1) {
+          this.communityMembers = fetchedMembers;
+        } else {
+          this.communityMembers = [...this.communityMembers, ...fetchedMembers];
+        }
+        this.membersCurrentPage = page;
+        this.hasMoreMembers = fetchedMembers.length === limit;
+        this.isFetchingMembers = false;
+      });
+    } catch (err) {
+      console.error("Failed to fetch members", err);
+      runInAction(() => {
+        this.isFetchingMembers = false;
+      });
+    }
+  };
+
+  removeCommunityMember = async (communityId: string, memberUserId: string) => {
+    try {
+      // Optimistic update
+      runInAction(() => {
+        this.communityMembers = this.communityMembers.filter(m => m.user._id !== memberUserId);
+        this.activeCommunityMemberCount = Math.max(0, this.activeCommunityMemberCount - 1);
+      });
+      await axios.delete(`/community/${communityId}/members/${memberUserId}`);
+    } catch (err) {
+      console.error("Failed to remove member", err);
+      // Revert if we really wanted to, but simple error log is fine
+    }
+  };
+
+  emitTyping = (roomId: string) => {
+    const now = Date.now();
+    // Debounce: Only emit typing status max once every 5 seconds
+    if (now - this.lastTypingEmitTime < 5000) return;
+    this.lastTypingEmitTime = now;
+
+    if (this.socket && stores.auth.user) {
+      this.socket.emit("typing-status", {
+        room_id: roomId,
+        name: stores.auth.user.name
+      });
+    }
+  };
+
+  sendMessage = async (roomId: string, content: string) => {
+    try {
+      // 1. Optimistic UI Update: Create a temporary message
+      const tempId = "temp-" + Date.now();
+      const user = stores.auth.user;
+      
+      const tempMessage = {
+        _id: tempId,
+        content: content,
+        room_id: roomId,
+        user_id: user,
+        created_at: new Date().toISOString(),
+      };
+
+      // Instantly push to local UI and Cache
+      runInAction(() => {
+        this.messages.push(tempMessage);
+        this.roomMessagesCache[roomId] = [...this.messages];
+      });
+
+      // Instantly emit to socket so others see it immediately
+      if (this.socket) {
+        this.socket.emit("send-message", tempMessage);
+      }
+      
+      // If offline, queue it up and return early
+      if (!this.isOnline) {
+        runInAction(() => {
+          this.offlineQueue.push(tempMessage);
+        });
+        return;
+      }
+
+      // 2. Background DB Save
+      axios.post(`/community/rooms/${roomId}/messages`, { content })
+        .then((response) => {
+          const realMessage = response.data.data;
+          // Replace temporary message with real DB message
+          runInAction(() => {
+            const index = this.messages.findIndex(m => m._id === tempId);
+            if (index !== -1) {
+              this.messages[index] = realMessage;
+              this.roomMessagesCache[roomId] = [...this.messages];
+            }
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to save message to DB", err);
+          // Revert optimistic update on failure
+          runInAction(() => {
+            this.messages = this.messages.filter(m => m._id !== tempId);
+            this.roomMessagesCache[roomId] = [...this.messages];
+            this.error = "Failed to send message";
+          });
+        });
+        
+    } catch (err: any) {
+      console.error("Error in optimistic send", err);
+    }
+  };
+
+  // State setters
+  setActiveCommunity = (community: any) => {
+    this.activeCommunity = community;
+    this.activeCommunityMemberCount = 0;
+    this.communityMembers = [];
+    this.membersCurrentPage = 1;
+    this.hasMoreMembers = true;
+    this.activeRoom = null;
+    this.messages = [];
+  };
+
+  setActiveRoom = (room: any) => {
+    this.activeRoom = room;
+    
+    // 1. Immediately load from cache if available for instant tab switching
+    if (this.roomMessagesCache[room._id]) {
+      this.messages = this.roomMessagesCache[room._id];
+      const pagination = this.roomPaginationCache[room._id];
+      if (pagination) {
+        this.currentPage = pagination.page;
+        this.hasMoreMessages = pagination.hasMore;
+      }
+    } else {
+      this.messages = [];
+    }
+
+    // 2. Fetch fresh data only if cache is empty
+    // If cache exists, we rely on background Socket events to have caught new messages
+    if (room) {
+      if (!this.roomMessagesCache[room._id]) {
+        this.fetchRoomMessages(room._id);
+      }
+      this.joinRoom(room._id);
+    }
+  };
+}
+
+export const chatStore = new ChatStore();

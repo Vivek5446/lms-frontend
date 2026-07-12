@@ -33,7 +33,7 @@ import { observer } from 'mobx-react-lite';
 import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { FiBookOpen, FiGrid, FiHome, FiMenu, FiUser, FiBell } from 'react-icons/fi';
+import { FiBookOpen, FiGrid, FiHome, FiMenu, FiUser, FiBell, FiMessageCircle } from 'react-icons/fi';
 import UserProfileDrawer from './UserProfileDrawer';
 import { MobileFooterNav } from './component/MobileFooterNav';
 import { MobileMenuDrawer } from './component/MobileMoreMenu';
@@ -82,6 +82,7 @@ const Header: React.FC = observer(() => {
     { href: '/course', label: 'Courses' },
     ...(isLearner ? [{ href: '/batches', label: 'Batches' }] : []),
     ...(isManagerUser ? [{ href: '/manager', label: 'Learners' }] : []),
+    { href: '/chat', label: 'Community' },
     { href: '/about-us', label: 'About Us' },
     { href: '/contact-us', label: 'Contact Us' },
   ]), [isLearner, isManagerUser]);
@@ -94,18 +95,18 @@ const Header: React.FC = observer(() => {
 
     // 3. Center Profile/Login Button
     const profileLink = isLoggedIn
-      ? { href: appHref, label: isLearner ? 'My' : 'App', icon: FiUser, isCenter: true }
+      ? { href: '/dashboard', label: 'Dashboard', icon: FiUser, isCenter: true }
       : { href: '/login', label: 'Login', icon: FiUser, isCenter: true };
 
     links.push(profileLink);
 
     // 4. Fill the 4th spot so we always have exactly 5 tabs (including 'More')
     if (isLearner) {
-      links.push({ href: '/batches', label: 'Batches', icon: FiGrid });
+      links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
     } else if (isManagerUser) {
-      links.push({ href: '/manager', label: 'Learners', icon: FiUser });
+      links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
     } else {
-      links.push({ href: '/about-us', label: 'About', icon: FiGrid });
+      links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
     }
 
     return links;
@@ -412,10 +413,12 @@ const Header: React.FC = observer(() => {
         />
 
         {/* Bottom Footer Navigation */}
-        <MobileFooterNav
-          mobileMenuOpen={mobileMenuOpen}
-          onToggleMobileMenu={() => setMobileMenuOpen((open) => !open)}
-        />
+        {!pathname.startsWith('/chat') && (
+          <MobileFooterNav
+            mobileMenuOpen={mobileMenuOpen}
+            onToggleMobileMenu={() => setMobileMenuOpen((open) => !open)}
+          />
+        )}
 
       <UserProfileDrawer isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </>

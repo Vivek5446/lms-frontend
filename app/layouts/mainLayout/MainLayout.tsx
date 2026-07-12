@@ -43,14 +43,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   }
 
   return (
-    <Box minH="100vh" bg={shellBg} overflowX="hidden" pb={{ base: "92px", md: 0 }}>
-      <Header />
+    <Box minH="100vh" bg={shellBg} overflowX="hidden" pb={{ base: pathname.startsWith("/chat") ? 0 : "92px", md: 0 }}>
+      <Box display={{ base: pathname.startsWith("/chat") ? "none" : "block", md: "block" }}>
+        <Header />
+      </Box>
 
       <Box as="main" pt={{ base: 0, md: "64px" }}>
         {children}
       </Box>
 
-      <Footer />
+      {!pathname.startsWith("/chat") && <Footer />}
     </Box>
   );
 };
