@@ -230,14 +230,90 @@ const ChatWindow = observer(() => {
   }
 
   if (!chatStore.activeRoom) {
+    const iconColor = useColorModeValue("brand.500", "brand.300");
+    const glowColor = useColorModeValue("rgba(98, 105, 255, 0.15)", "rgba(98, 105, 255, 0.08)");
+    const textColor = useColorModeValue("gray.800", "white");
+    const subTextColor = useColorModeValue("gray.500", "gray.400");
+
     return (
-      <Flex flex={1} align="center" justify="center" h="full" bg={bgMain}>
-        <VStack spacing={3}>
-          <Box p={4} bg={useColorModeValue("gray.100", "gray.800")} borderRadius="full">
-            <FiSend size={32} color={useColorModeValue("#CBD5E0", "#4A5568")} />
+      <Flex 
+        flex={1} direction="column" h="full" 
+        bg={bgMain}
+        bgImage={useColorModeValue(
+          "radial-gradient(#CBD5E0 1px, transparent 1px)",
+          "radial-gradient(#1A202C 1px, transparent 1px)"
+        )}
+        bgSize="20px 20px"
+      >
+        <Flex 
+          flex={1}
+          direction="column" 
+          align="center" 
+          justify="center" 
+          textAlign="center"
+          maxW="md"
+          px={6}
+          mx="auto"
+        >
+          {/* Glowing Icon Container */}
+          <Box position="relative" mb={8}>
+            <Box 
+              position="absolute" 
+              top="50%" left="50%" 
+              transform="translate(-50%, -50%)"
+              w="120px" h="120px" 
+              bg={glowColor} 
+              borderRadius="full" 
+              filter="blur(20px)"
+              animation="pulse 3s infinite alternate"
+            />
+            <Flex 
+              position="relative"
+              w="80px" h="80px" 
+              bg={useColorModeValue("white", "gray.800")}
+              boxShadow={useColorModeValue("0 10px 30px -10px rgba(0,0,0,0.1)", "0 10px 30px -10px rgba(0,0,0,0.5)")}
+              borderRadius="2xl"
+              align="center" justify="center"
+              color={iconColor}
+            >
+              <svg stroke="currentColor" fill="none" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="36px" width="36px" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </Flex>
           </Box>
-          <Text color="gray.500" fontSize="lg" fontWeight="500">No chat available for this community</Text>
-        </VStack>
+
+          {/* Typography */}
+          <Text fontSize="2xl" fontWeight="700" color={textColor} mb={3} letterSpacing="tight">
+            Welcome to {chatStore.activeCommunity?.name || "Community"}
+          </Text>
+          <Text fontSize="md" color={subTextColor} mb={10} lineHeight="relaxed">
+            Select a room from the sidebar to jump into the conversation, or wait for the community owner to create one.
+          </Text>
+          {/* Action Button */}
+          <Button
+            bg={useColorModeValue("gray.900", "white")}
+            color={useColorModeValue("white", "gray.900")}
+            size="lg"
+            h="54px"
+            px={8}
+            borderRadius="xl"
+            fontWeight="600"
+            fontSize="md"
+            onClick={() => chatStore.openCreateDrawer()}
+            _hover={{ 
+              transform: "translateY(-2px)", 
+              bg: useColorModeValue("gray.700", "gray.100"),
+              boxShadow: useColorModeValue("0 10px 20px -10px rgba(0,0,0,0.3)", "0 10px 20px -10px rgba(255,255,255,0.2)")
+            }}
+            _active={{ transform: "scale(0.97)" }}
+            transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+          >
+            Create New Community
+          </Button>
+        </Flex>
       </Flex>
     );
   }
@@ -252,22 +328,23 @@ const ChatWindow = observer(() => {
         zIndex={10}
       >
         <HStack spacing={2} w="full">
-          <Box
-            as="button"
-            display={{ base: "flex", md: "none" }}
+          <IconButton
+            aria-label="Go back"
+            icon={<FiArrowLeft size={18} />}
             onClick={() => router.push("/chat")}
-            w="36px" h="36px"
+            variant="solid"
             borderRadius="full"
-            bg={useColorModeValue("gray.100", "gray.800")}
-            alignItems="center" justifyContent="center"
+            w="36px" h="36px" minW="36px"
+            bg={useColorModeValue("gray.100", "gray.750")}
+            color={useColorModeValue("gray.700", "gray.200")}
+            border="1px solid"
+            borderColor={useColorModeValue("gray.200", "gray.600")}
+            boxShadow="sm"
             _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+            _active={{ transform: "scale(0.95)" }}
             transition="all 0.2s"
-            flexShrink={0}
-            color={useColorModeValue("gray.800", "white")}
             mr={1}
-          >
-            <FiArrowLeft size={16} />
-          </Box>
+          />
           <HStack 
             flex={1} 
             cursor="pointer" 
@@ -329,9 +406,18 @@ const ChatWindow = observer(() => {
             <MenuButton 
               as={IconButton} 
               aria-label="More options" 
-              icon={<FiMoreVertical size={20} />} 
-              variant="ghost" 
-              borderRadius="full" 
+              icon={<FiMoreVertical size={18} />} 
+              variant="solid"
+              borderRadius="full"
+              w="36px" h="36px" minW="36px"
+              bg={useColorModeValue("gray.100", "gray.750")}
+              color={useColorModeValue("gray.700", "gray.200")}
+              border="1px solid"
+              borderColor={useColorModeValue("gray.200", "gray.600")}
+              boxShadow="sm"
+              _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+              _active={{ transform: "scale(0.95)" }}
+              transition="all 0.2s"
             />
             <MenuList 
               bg={useColorModeValue("white", "gray.800")}
@@ -743,20 +829,23 @@ const ChatWindow = observer(() => {
             borderColor={borderColor}
             spacing={3}
           >
-            <Box
-              as="button"
+            <IconButton
+              aria-label="Close"
+              icon={<FiArrowLeft size={18} />}
               onClick={onMembersClose}
-              w="36px" h="36px"
+              variant="solid"
               borderRadius="full"
-              bg={useColorModeValue("gray.100", "gray.800")}
-              display="flex" alignItems="center" justifyContent="center"
+              w="36px" h="36px" minW="36px"
+              bg={useColorModeValue("gray.100", "gray.750")}
+              color={useColorModeValue("gray.700", "gray.200")}
+              border="1px solid"
+              borderColor={useColorModeValue("gray.200", "gray.600")}
+              boxShadow="sm"
               _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+              _active={{ transform: "scale(0.95)" }}
               transition="all 0.2s"
               flexShrink={0}
-              color={useColorModeValue("gray.800", "white")}
-            >
-              <FiArrowLeft size={17} />
-            </Box>
+            />
             <VStack align="start" spacing={0}>
               <Text 
                 fontSize="lg" 

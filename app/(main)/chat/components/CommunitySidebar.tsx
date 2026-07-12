@@ -4,7 +4,7 @@ import {
   Box, VStack, HStack, Text, Avatar, Spinner, useColorModeValue,
   IconButton, Divider, useDisclosure, Drawer, DrawerOverlay,
   DrawerContent, DrawerBody, Button, Input, Textarea, useToast,
-  Image, Flex
+  Image, Flex, Tooltip
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useRouter, useParams } from "next/navigation";
@@ -54,7 +54,6 @@ const CommunitySidebar = observer(() => {
     router.push(`/chat/${community._id}`);
   };
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const [name, setName]             = useState("");
   const [description, setDescription] = useState("");
   const [privacy, setPrivacy]       = useState("public");
@@ -67,7 +66,7 @@ const CommunitySidebar = observer(() => {
   const toast        = useToast();
 
   const handleDrawerClose = () => {
-    onClose();
+    chatStore.closeCreateDrawer();
     chatStore.closeEditDrawer();
     setName("");
     setDescription("");
@@ -142,19 +141,19 @@ const CommunitySidebar = observer(() => {
   };
 
   const emojiList = [
-    { key: "grad",     emoji: "🎓" }, { key: "book",     emoji: "📚" },
-    { key: "FiHeart",  emoji: "❤️" }, { key: "FiStar",   emoji: "⭐" },
-    { key: "FiCoffee", emoji: "☕" }, { key: "party",    emoji: "🎉" },
-    { key: "fire",     emoji: "🔥" }, { key: "rocket",   emoji: "🚀" },
-    { key: "music",    emoji: "🎵" }, { key: "game",     emoji: "🎮" },
-    { key: "art",      emoji: "🎨" }, { key: "sport",    emoji: "⚽" },
-    { key: "food",     emoji: "🍕" }, { key: "travel",   emoji: "✈️" },
-    { key: "code",     emoji: "💻" }, { key: "trophy",   emoji: "🏆" },
-    { key: "idea",     emoji: "💡" }, { key: "globe",    emoji: "🌍" },
+    { key: "grad",       emoji: "🎓" }, { key: "book",       emoji: "📚" },
+    { key: "school",     emoji: "🏫" }, { key: "teacher",    emoji: "👩‍🏫" },
+    { key: "laptop",     emoji: "💻" }, { key: "microscope", emoji: "🔬" },
+    { key: "atom",       emoji: "⚛️" }, { key: "globe",      emoji: "🌍" },
+    { key: "chart",      emoji: "📊" }, { key: "idea",       emoji: "💡" },
+    { key: "pencil",     emoji: "✏️" }, { key: "notebook",   emoji: "📓" },
+    { key: "ruler",      emoji: "📏" }, { key: "brain",      emoji: "🧠" },
+    { key: "palette",    emoji: "🎨" }, { key: "trophy",     emoji: "🏆" },
+    { key: "medal",      emoji: "🏅" }, { key: "rocket",     emoji: "🚀" },
   ];
 
-  const selectedEmoji = icon || "🎉";
-  const categoryList = ["General", "Technology", "Marketing", "Social", "HR", "Design", "Finance"];
+  const selectedEmoji = icon || "🎓";
+  const categoryList = ["General", "Computer Science", "Mathematics", "Science", "Humanities", "Languages", "Arts", "Engineering", "Business"];
 
   // ─────────────────────────────────────────────
   return (
@@ -162,31 +161,45 @@ const CommunitySidebar = observer(() => {
       w={{ base: "full", md: "80px" }}
       h={{ base: "100vh", md: "calc(100vh - 64px)" }}
       bg={bgPanel} borderRight="1px solid" borderColor={borderColor}
+      bgImage={useColorModeValue(
+        "radial-gradient(#CBD5E0 1px, transparent 1px)",
+        "radial-gradient(#1A202C 1px, transparent 1px)"
+      )}
+      bgSize="20px 20px"
     >
+
+
       {/* Mobile header */}
       <Box
         display={{ base: "flex", md: "none" }}
         h="64px" px={4}
+        bg={bgPanel}
         borderBottom="1px solid" borderColor={borderColor}
         alignItems="center" shadow="sm"
         justifyContent="space-between"
+        position="sticky"
+        top={0}
+        zIndex={10}
       >
         {/* Left: Back button + styled title */}
         <HStack spacing={3}>
-          <Box
-            as="button"
+          <IconButton
+            aria-label="Go back"
+            icon={<FiArrowLeft size={16} />}
             onClick={() => router.push("/")}
-            w="36px" h="36px"
+            variant="solid"
             borderRadius="full"
-            bg={useColorModeValue("gray.100", "gray.800")}
-            display="flex" alignItems="center" justifyContent="center"
+            w="36px" h="36px" minW="36px"
+            bg={useColorModeValue("gray.100", "gray.750")}
+            color={useColorModeValue("gray.700", "gray.200")}
+            border="1px solid"
+            borderColor={useColorModeValue("gray.200", "gray.600")}
+            boxShadow="sm"
             _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+            _active={{ transform: "scale(0.95)" }}
             transition="all 0.2s"
             flexShrink={0}
-            color={useColorModeValue("gray.800", "white")}
-          >
-            <FiArrowLeft size={16} />
-          </Box>
+          />
           <Box>
             <Text fontSize="md" fontWeight="900" letterSpacing="tight" lineHeight="1.15">
               <Box as="span" color={useColorModeValue("gray.800", "white")}>COMMUNITY </Box>
@@ -209,7 +222,7 @@ const CommunitySidebar = observer(() => {
         {/* Right: create button */}
         <IconButton
           aria-label="Create Community" icon={<FiPlus size={20} />}
-          onClick={onOpen} colorScheme="brand" borderRadius="full" size="sm"
+          onClick={() => chatStore.openCreateDrawer()} colorScheme="brand" borderRadius="full" size="sm"
           boxShadow="0 4px 14px rgba(98,105,255,0.35)"
           _hover={{ transform: "scale(1.08)" }} transition="all 0.2s"
         />
@@ -226,7 +239,7 @@ const CommunitySidebar = observer(() => {
         <Box px={{ base: 0, md: 0 }} py={{ base: 0, md: 0 }} display={{ base: "none", md: "flex" }} justifyContent="center">
           <IconButton
             aria-label="Create Community" icon={<FiPlus size={24} />}
-            onClick={onOpen} colorScheme="brand" borderRadius="full" size="md"
+            onClick={() => chatStore.openCreateDrawer()} colorScheme="brand" borderRadius="full" size="md"
             boxShadow="0 4px 14px rgba(98,105,255,0.35)"
             _hover={{ transform: "scale(1.05)" }} transition="all 0.2s"
           />
@@ -253,17 +266,29 @@ const CommunitySidebar = observer(() => {
           const isActive = communityId === community._id;
           return (
             <Box key={community._id} borderBottom={{ base: "1px solid", md: "none" }} borderColor={borderColor}>
-              <HStack
-                onClick={() => handleSelectCommunity(community)}
-                cursor="pointer"
-                px={{ base: 4, md: 0 }} py={{ base: 2.5, md: 3 }}
-                bg={isActive
-                  ? useColorModeValue("linear-gradient(135deg,#f0f1ff 0%,#ede9fe 100%)", "linear-gradient(135deg,rgba(98,105,255,0.12) 0%,rgba(167,139,250,0.12) 100%)")
-                  : "transparent"}
-                _hover={{ bg: !isActive ? useColorModeValue("gray.50", "gray.750") : undefined }}
-                justify={{ base: "flex-start", md: "center" }}
-                spacing={{ base: 3, md: 0 }} transition="all 0.2s ease"
+              <Tooltip 
+                label={community.name} 
+                placement="right" 
+                hasArrow 
+                bg={useColorModeValue("gray.800", "gray.600")} 
+                color="white" 
+                borderRadius="md" 
+                px={3} py={1} 
+                fontSize="sm"
+                zIndex={99999}
+                openDelay={50}
               >
+                <HStack
+                  onClick={() => handleSelectCommunity(community)}
+                  cursor="pointer"
+                  px={{ base: 4, md: 0 }} py={{ base: 2.5, md: 3 }}
+                  bg={isActive
+                    ? useColorModeValue("linear-gradient(135deg,#f0f1ff 0%,#ede9fe 100%)", "linear-gradient(135deg,rgba(98,105,255,0.12) 0%,rgba(167,139,250,0.12) 100%)")
+                    : "transparent"}
+                  _hover={{ bg: !isActive ? useColorModeValue("gray.50", "gray.750") : undefined }}
+                  justify={{ base: "flex-start", md: "center" }}
+                  spacing={{ base: 3, md: 0 }} transition="all 0.2s ease"
+                >
                 <Box
                   p="2px"
                   bgGradient={isActive ? "linear(to-tr, brand.400, brand.600)" : "transparent"}
@@ -307,13 +332,14 @@ const CommunitySidebar = observer(() => {
                   </Text>
                 </VStack>
               </HStack>
+              </Tooltip>
             </Box>
           );
         })}
       </VStack>
 
       {/* ══════════ CREATE/EDIT COMMUNITY DRAWER ══════════ */}
-      <Drawer isOpen={isOpen || chatStore.isEditDrawerOpen} placement="bottom" onClose={handleDrawerClose} size="full">
+      <Drawer isOpen={chatStore.isCreateDrawerOpen || chatStore.isEditDrawerOpen} placement="bottom" onClose={handleDrawerClose} size="full">
         <DrawerOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
         <DrawerContent h="100vh" bg={drawerBg} color={inputColor} borderTopRadius="none">
           <DrawerBody
@@ -335,18 +361,23 @@ const CommunitySidebar = observer(() => {
 
               {/* ── Header ── */}
               <HStack mb={{ base: 6, md: 10 }} spacing={4} align="center">
-                <Box
-                  as="button" onClick={handleDrawerClose}
-                  w={{ base: "36px", md: "42px" }} h={{ base: "36px", md: "42px" }}
+                <IconButton
+                  aria-label="Close"
+                  icon={<FiArrowLeft size={17} />}
+                  onClick={handleDrawerClose}
+                  variant="solid"
                   borderRadius="full"
-                  bg={iconBg}
-                  display="flex" alignItems="center" justifyContent="center"
-                  _hover={{ bg: useColorModeValue("gray.200", "gray.600"), transform: "scale(1.05)" }}
-                  transition="all 0.2s" flexShrink={0}
-                  color={headingColor}
-                >
-                  <FiArrowLeft size={17} />
-                </Box>
+                  w={{ base: "36px", md: "42px" }} h={{ base: "36px", md: "42px" }}
+                  bg={useColorModeValue("gray.100", "gray.750")}
+                  color={useColorModeValue("gray.700", "gray.200")}
+                  border="1px solid"
+                  borderColor={useColorModeValue("gray.200", "gray.600")}
+                  boxShadow="sm"
+                  _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+                  _active={{ transform: "scale(0.95)" }}
+                  transition="all 0.2s"
+                  flexShrink={0}
+                />
                 <Box>
                   <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
                     <Box as="span" color={headingColor}>{chatStore.editingCommunity ? "EDIT " : "CREATE "}</Box>

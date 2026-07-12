@@ -24,7 +24,8 @@ class ChatStore {
   socket: Socket | null = null;
   error: string | null = null;
   
-  // Edit Drawer state
+  // Create/Edit Drawer state
+  isCreateDrawerOpen: boolean = false;
   isEditDrawerOpen: boolean = false;
   editingCommunity: any = null;
   
@@ -152,11 +153,11 @@ class ChatStore {
     this.socket.on("message-deleted", (data: any) => {
       const { room_id, message_id } = data;
       runInAction(() => {
-        if (this.activeRoom && this.activeRoom._id === room_id) {
-          this.messages = this.messages.filter(m => m._id !== message_id);
+        if (this.activeRoom && String(this.activeRoom._id) === String(room_id)) {
+          this.messages = this.messages.filter(m => String(m._id) !== String(message_id));
         }
         if (this.roomMessagesCache[room_id]) {
-          this.roomMessagesCache[room_id] = this.roomMessagesCache[room_id].filter(m => m._id !== message_id);
+          this.roomMessagesCache[room_id] = this.roomMessagesCache[room_id].filter(m => String(m._id) !== String(message_id));
         }
       });
     });
@@ -260,27 +261,26 @@ class ChatStore {
 
   deleteMessage = async (roomId: string, messageId: string) => {
     try {
-      // Background DB Save
-      await axios.delete(`/community/rooms/${roomId}/messages/${messageId}`);
-      
-      // Emit to socket so others see it deleted immediately
+      // Emit to socket IMMEDIATELY so other users see the deletion in real time
+      // (don't wait for the DB call to finish)
       if (this.socket) {
         this.socket.emit("delete-message", { room_id: roomId, message_id: messageId });
       }
 
-      // We don't need to manually update local UI here because we optimistically deleted 
-      // it from UI before this function is even called (during the 5 second countdown window)
-      // but just in case, we can ensure it's removed:
+      // Remove from local store right away
       runInAction(() => {
-        this.messages = this.messages.filter(m => m._id !== messageId);
+        this.messages = this.messages.filter(m => String(m._id) !== messageId);
         if (this.roomMessagesCache[roomId]) {
-          this.roomMessagesCache[roomId] = this.roomMessagesCache[roomId].filter(m => m._id !== messageId);
+          this.roomMessagesCache[roomId] = this.roomMessagesCache[roomId].filter(m => String(m._id) !== messageId);
         }
       });
 
+      // Background DB delete (fire and forget)
+      axios.delete(`/community/rooms/${roomId}/messages/${messageId}`).catch(err => {
+        console.error("Failed to delete message from DB", err);
+      });
     } catch (error) {
       console.error("Failed to delete message", error);
-      // If backend fails, we should ideally revert the optimistic delete, but for now we'll just log
     }
   };
 
@@ -566,6 +566,18 @@ class ChatStore {
       }
       this.joinRoom(room._id);
     }
+  };
+
+  openCreateDrawer = () => {
+    runInAction(() => {
+      this.isCreateDrawerOpen = true;
+    });
+  };
+
+  closeCreateDrawer = () => {
+    runInAction(() => {
+      this.isCreateDrawerOpen = false;
+    });
   };
 
   openEditDrawer = (community: any) => {
