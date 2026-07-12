@@ -161,11 +161,14 @@ const CommunitySidebar = observer(() => {
       w={{ base: "full", md: "80px" }}
       h={{ base: "100vh", md: "calc(100vh - 64px)" }}
       bg={bgPanel} borderRight="1px solid" borderColor={borderColor}
-      bgImage={useColorModeValue(
-        "radial-gradient(#CBD5E0 1px, transparent 1px)",
-        "radial-gradient(#1A202C 1px, transparent 1px)"
-      )}
-      bgSize="20px 20px"
+      bgImage={{
+        base: useColorModeValue(
+          "radial-gradient(#CBD5E0 1px, transparent 1px)",
+          "radial-gradient(#1A202C 1px, transparent 1px)"
+        ),
+        md: "none"
+      }}
+      bgSize={{ base: "20px 20px", md: "auto" }}
     >
 
 
@@ -230,7 +233,7 @@ const CommunitySidebar = observer(() => {
 
       {/* Community list */}
       <VStack 
-        spacing={{ base: 0, md: 4 }} 
+        spacing={{ base: 0, md: 2 }} 
         align={{ base: "stretch", md: "center" }} 
         py={{ base: 0, md: 4 }}
         h={{ base: "calc(100vh - 64px)", md: "full" }}
@@ -281,38 +284,41 @@ const CommunitySidebar = observer(() => {
                 <HStack
                   onClick={() => handleSelectCommunity(community)}
                   cursor="pointer"
-                  px={{ base: 4, md: 0 }} py={{ base: 2.5, md: 3 }}
-                  bg={isActive
-                    ? useColorModeValue("linear-gradient(135deg,#f0f1ff 0%,#ede9fe 100%)", "linear-gradient(135deg,rgba(98,105,255,0.12) 0%,rgba(167,139,250,0.12) 100%)")
-                    : "transparent"}
-                  _hover={{ bg: !isActive ? useColorModeValue("gray.50", "gray.750") : undefined }}
-                  justify={{ base: "flex-start", md: "center" }}
-                  spacing={{ base: 3, md: 0 }} transition="all 0.2s ease"
+                  w="full"
+                  position="relative"
+                  px={{ base: 4, md: 0 }} py={{ base: 2.5, md: 1 }}
+                  bg="transparent"
+                  _hover={{ bg: useColorModeValue("gray.50", "gray.750") }}
+                  justify="center"
+                  transition="all 0.2s ease"
                 >
                 <Box
-                  p="2px"
-                  bgGradient={isActive ? "linear(to-tr, brand.400, brand.600)" : "transparent"}
+                  p="3px"
+                  bg="transparent"
                   border="2px solid"
-                  borderColor={isActive ? "transparent" : useColorModeValue("gray.200", "gray.700")}
+                  borderColor={isActive ? "brand.500" : "transparent"}
                   borderRadius="full"
-                  boxShadow={isActive ? "0 4px 10px rgba(98,105,255,0.3)" : "none"}
                   transition="all 0.2s"
                 >
                   {community.logo_url ? (
                     <Avatar
-                      size={{ base: "md", md: "sm" }} name={community.name} src={community.logo_url}
+                      size="md" name={community.name} src={community.logo_url}
                       border="1px solid"
-                      borderColor={useColorModeValue("white", "gray.900")}
+                      borderColor={useColorModeValue("gray.200", "gray.700")}
                     />
                   ) : (
                     <Flex
-                      w={{ base: "44px", md: "28px" }}
-                      h={{ base: "44px", md: "28px" }}
+                      w="48px"
+                      h="48px"
                       borderRadius="full"
-                      bg={useColorModeValue("gray.50", "gray.800")}
+                      bg={isActive ? "brand.50" : useColorModeValue("gray.100", "gray.800")}
+                      color={isActive ? "brand.600" : "inherit"}
+                      border="1px solid"
+                      borderColor={isActive ? "brand.200" : useColorModeValue("gray.200", "gray.700")}
                       align="center"
                       justify="center"
-                      fontSize={{ base: "lg", md: "sm" }}
+                      fontSize="xl"
+                      transition="all 0.2s"
                     >
                       {community.icon || "🎉"}
                     </Flex>
