@@ -4,6 +4,9 @@ import { io, Socket } from "socket.io-client";
 import { BACKEND_URL } from "../../config/utils/variables";
 import stores from "../stores";
 
+// Socket.io must connect to the server root, NOT the /api prefix used by REST calls
+const SOCKET_URL = (BACKEND_URL || "").replace(/\/api\/?$/, "");
+
 class ChatStore {
   communities: any[] = [];
   activeCommunity: any = null;
@@ -20,6 +23,10 @@ class ChatStore {
   isLoading: boolean = false;
   socket: Socket | null = null;
   error: string | null = null;
+  
+  // Edit Drawer state
+  isEditDrawerOpen: boolean = false;
+  editingCommunity: any = null;
   
   // Cache State
   roomMessagesCache: Record<string, any[]> = {};
@@ -87,42 +94,56 @@ class ChatStore {
 
   // Socket Connection Management
   connectSocket = () => {
-    if (this.socket) return;
-    
-    // Connect to the backend
-    this.socket = io(BACKEND_URL, {
-      transports: ["websocket"],
-      reconnectionAttempts: 5
-    });
-
-    const user = stores.auth.user;
-    if (user) {
-      this.socket.emit("user_connected", user);
+    // Only create and bind listeners once
+    if (this.socket) {
+      // Socket already exists — just make sure we're in the right room
+      if (this.socket.connected && this.activeRoom) {
+        this.socket.emit("joinRoom", this.activeRoom._id);
+      }
+      return;
     }
 
+    this.socket = io(SOCKET_URL, {
+      transports: ["websocket", "polling"], // allow polling fallback
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+    });
+    console.log("[Socket] Connecting to:", SOCKET_URL);
+
+    // ─── All listeners registered exactly once ───────────────────────────
+
     this.socket.on("connect", () => {
-      console.log("Chat Socket connected:", this.socket?.id);
+      console.log("Socket connected:", this.socket?.id);
+      const user = stores.auth.user;
+      if (user) this.socket!.emit("user_connected", user);
+      // Re-join active room on every connect / reconnect
+      if (this.activeRoom) this.socket!.emit("joinRoom", this.activeRoom._id);
     });
 
     this.socket.on("new-message", (message: any) => {
-      // Append if it belongs to current active room
       if (this.activeRoom && message.room_id === this.activeRoom._id) {
         runInAction(() => {
-          // Check if it's already in the list (from optimistic update)
-          const exists = this.messages.some(m => m.content === message.content && m.user_id?._id === message.user_id?._id);
-          if (!exists) {
-            this.messages.push(message);
-            // Update cache
+          // Deduplicate only on exact temp-id match, not content
+          const alreadyExists = this.messages.some(m => m._id === message._id);
+          if (!alreadyExists) {
+            // Replace any optimistic temp message that matches content + user
+            const tempIdx = this.messages.findIndex(
+              m => m._id?.startsWith("temp-") && m.content === message.content && m.user_id?._id === message.user_id?._id
+            );
+            if (tempIdx !== -1) {
+              this.messages[tempIdx] = message;
+            } else {
+              this.messages.push(message);
+            }
             if (this.activeRoom) {
               this.roomMessagesCache[this.activeRoom._id] = [...this.messages];
             }
           }
         });
       } else {
-        // If message is for another room, just quietly add it to that room's cache
         runInAction(() => {
           if (this.roomMessagesCache[message.room_id]) {
-             this.roomMessagesCache[message.room_id].push(message);
+            this.roomMessagesCache[message.room_id].push(message);
           }
         });
       }
@@ -130,14 +151,10 @@ class ChatStore {
 
     this.socket.on("message-deleted", (data: any) => {
       const { room_id, message_id } = data;
-      
       runInAction(() => {
-        // If it's the active room, update local messages array
         if (this.activeRoom && this.activeRoom._id === room_id) {
           this.messages = this.messages.filter(m => m._id !== message_id);
         }
-        
-        // Always update the cache
         if (this.roomMessagesCache[room_id]) {
           this.roomMessagesCache[room_id] = this.roomMessagesCache[room_id].filter(m => m._id !== message_id);
         }
@@ -152,13 +169,9 @@ class ChatStore {
             this.typingUsers.push(userData.name);
           }
         });
-
-        // Clear typing indicator after 5 seconds of inactivity
         if (this.typingTimeout) clearTimeout(this.typingTimeout);
         this.typingTimeout = setTimeout(() => {
-          runInAction(() => {
-            this.typingUsers = [];
-          });
+          runInAction(() => { this.typingUsers = []; });
         }, 5000);
       }
     });
@@ -172,8 +185,13 @@ class ChatStore {
   };
 
   joinRoom = (roomId: string) => {
-    if (this.socket) {
+    if (!this.socket) return;
+    if (this.socket.connected) {
       this.socket.emit("joinRoom", roomId);
+    } else {
+      this.socket.once("connect", () => {
+        this.socket?.emit("joinRoom", roomId);
+      });
     }
   };
 
@@ -462,6 +480,58 @@ class ChatStore {
     }
   };
 
+  createCommunity = async (data: { name: string, description: string, privacy: string, category: string, icon: string, logo_url: string }) => {
+    try {
+      const response = await axios.post('/community', data);
+      runInAction(() => {
+        // Add new community to the front of the list
+        this.communities = [response.data.data, ...this.communities];
+        // Set it as active
+        this.setActiveCommunity(response.data.data);
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error creating community", error);
+      throw error;
+    }
+  };
+
+  updateCommunity = async (communityId: string, data: { name: string, description: string, privacy: string, category: string, icon: string, logo_url: string }) => {
+    try {
+      const response = await axios.put(`/community/${communityId}`, data);
+      runInAction(() => {
+        const updatedCommunity = response.data.data;
+        this.communities = this.communities.map(c => c._id === communityId ? updatedCommunity : c);
+        if (this.activeCommunity?._id === communityId) {
+          this.activeCommunity = updatedCommunity;
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error updating community", error);
+      throw error;
+    }
+  };
+
+  joinCommunity = async (communityId: string) => {
+    try {
+      const response = await axios.post(`/community/${communityId}/join`);
+      runInAction(() => {
+        // Immediately flip the is_member flag on the active community so the
+        // message input appears right away without requiring a page refresh.
+        if (this.activeCommunity && this.activeCommunity._id === communityId) {
+          this.activeCommunity = { ...this.activeCommunity, is_member: true };
+        }
+        // Also refresh sidebar list in background
+        this.fetchMyCommunities();
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error joining community", error);
+      throw error;
+    }
+  };
+
   // State setters
   setActiveCommunity = (community: any) => {
     this.activeCommunity = community;
@@ -496,6 +566,20 @@ class ChatStore {
       }
       this.joinRoom(room._id);
     }
+  };
+
+  openEditDrawer = (community: any) => {
+    runInAction(() => {
+      this.editingCommunity = community;
+      this.isEditDrawerOpen = true;
+    });
+  };
+
+  closeEditDrawer = () => {
+    runInAction(() => {
+      this.editingCommunity = null;
+      this.isEditDrawerOpen = false;
+    });
   };
 }
 

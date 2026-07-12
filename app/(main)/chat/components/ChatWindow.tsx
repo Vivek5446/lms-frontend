@@ -11,8 +11,7 @@ import {
 import { observer } from "mobx-react-lite";
 import { useParams, useRouter } from "next/navigation";
 import stores from "../../../store/stores";
-import { FiArrowLeft, FiMoreVertical, FiSend, FiX, FiPaperclip, FiAlertTriangle, FiTrash2, FiCheck } from "react-icons/fi";
-
+import { FiArrowLeft, FiMoreVertical, FiSend, FiX, FiPaperclip, FiAlertTriangle, FiTrash2, FiCheck, FiEdit } from "react-icons/fi";
 const ChatWindow = observer(() => {
   const { chatStore } = stores;
   const router = useRouter();
@@ -41,19 +40,23 @@ const ChatWindow = observer(() => {
 
   const { isOpen: isMembersOpen, onOpen: onMembersOpen, onClose: onMembersClose } = useDisclosure();
 
+  const isMember = chatStore.activeCommunity?.is_member;
+
   const bgPanel = useColorModeValue("white", "gray.800");
   const bgMain = useColorModeValue("gray.50", "gray.900");
   const bgChat = useColorModeValue("linear(to-b, gray.50, blue.50)", "linear(to-b, #111827, #0f172a)");
   const borderColor = useColorModeValue("gray.200", "whiteAlpha.200");
 
   useEffect(() => {
+    // Connect socket FIRST so it starts handshaking while API calls happen in parallel
+    chatStore.connectSocket();
+
     const initChat = async () => {
       if (communityId) {
         setIsInitializing(true);
-        let community = chatStore.communities.find((c: any) => c._id === communityId);
-        if (!community) {
-          community = await chatStore.fetchCommunityDetails(communityId);
-        }
+
+        // Always fetch from server so we get the accurate is_member flag
+        const community = await chatStore.fetchCommunityDetails(communityId);
 
         if (community) {
           chatStore.setActiveCommunity(community);
@@ -69,8 +72,6 @@ const ChatWindow = observer(() => {
       }
     };
     initChat();
-
-    chatStore.connectSocket();
   }, [communityId]);
 
   useEffect(() => {
@@ -251,14 +252,22 @@ const ChatWindow = observer(() => {
         zIndex={10}
       >
         <HStack spacing={2} w="full">
-          <IconButton
+          <Box
+            as="button"
             display={{ base: "flex", md: "none" }}
-            aria-label="Back to communities"
-            icon={<FiArrowLeft size={20} />}
-            variant="ghost"
+            onClick={() => router.push("/chat")}
+            w="36px" h="36px"
             borderRadius="full"
-            onClick={() => router.push(`/chat`)}
-          />
+            bg={useColorModeValue("gray.100", "gray.800")}
+            alignItems="center" justifyContent="center"
+            _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+            transition="all 0.2s"
+            flexShrink={0}
+            color={useColorModeValue("gray.800", "white")}
+            mr={1}
+          >
+            <FiArrowLeft size={16} />
+          </Box>
           <HStack 
             flex={1} 
             cursor="pointer" 
@@ -269,14 +278,32 @@ const ChatWindow = observer(() => {
             borderRadius="lg"
             transition="background 0.2s"
           >
-            <Avatar 
-              size="sm" 
-              name={chatStore.activeCommunity?.name} 
-              src={chatStore.activeCommunity?.logo_url} 
-              border="2px solid"
-              borderColor={useColorModeValue("white", "gray.800")}
-              boxShadow="sm"
-            />
+            {chatStore.activeCommunity?.logo_url ? (
+              <Avatar 
+                size="sm" 
+                name={chatStore.activeCommunity?.name} 
+                src={chatStore.activeCommunity?.logo_url} 
+                border="2px solid"
+                borderColor={useColorModeValue("white", "gray.800")}
+                boxShadow="sm"
+              />
+            ) : (
+              <Flex
+                w="32px"
+                h="32px"
+                borderRadius="full"
+                bg={useColorModeValue("gray.100", "gray.750")}
+                align="center"
+                justify="center"
+                fontSize="md"
+                border="1px solid"
+                borderColor={useColorModeValue("gray.200", "gray.600")}
+                boxShadow="sm"
+                flexShrink={0}
+              >
+                {chatStore.activeCommunity?.icon || "🎉"}
+              </Flex>
+            )}
             <VStack align="start" spacing={0} flex={1} minW={0} ml={2}>
               <Text 
                 fontSize="lg" 
@@ -289,9 +316,9 @@ const ChatWindow = observer(() => {
               >
                 {chatStore.activeCommunity?.name}
               </Text>
-              <HStack spacing={1.5}>
-                <Box w={2} h={2} borderRadius="full" bg="green.400" boxShadow="0 0 6px rgba(72, 187, 120, 0.8)" />
-                <Text fontSize="xs" color={useColorModeValue("blue.600", "blue.300")} fontWeight="700">
+              <HStack spacing={1.5} align="center">
+                <Box w={2} h={2} borderRadius="full" bg="green.400" boxShadow="0 0 6px rgba(72, 187, 120, 0.8)" flexShrink={0} />
+                <Text fontSize="xs" color={useColorModeValue("blue.600", "blue.300")} fontWeight="700" whiteSpace="nowrap">
                   {chatStore.activeCommunityMemberCount} Members
                 </Text>
               </HStack>
@@ -351,19 +378,37 @@ const ChatWindow = observer(() => {
                   <MenuDivider borderColor={useColorModeValue("gray.100", "whiteAlpha.200")} mx={3} my={2} />
                   <MenuItem 
                     bg="transparent"
-                    _hover={{ bg: useColorModeValue("red.50", "rgba(229, 62, 62, 0.15)") }} 
-                    onClick={onDeleteOpen}
+                    _hover={{ bg: useColorModeValue("brand.50", "rgba(98,105,255,0.1)") }} 
+                    onClick={() => chatStore.openEditDrawer(chatStore.activeCommunity)}
                     borderRadius="xl"
                     px={3} py={2}
+                    mb={1}
                     transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
                   >
                     <HStack spacing={3}>
-                      <Flex w="32px" h="32px" borderRadius="lg" bg={useColorModeValue("red.50", "rgba(229, 62, 62, 0.15)")} align="center" justify="center">
-                        <FiTrash2 size={16} color={useColorModeValue("#e53e3e", "#fc8181")} />
+                      <Flex w="32px" h="32px" borderRadius="lg" bg={useColorModeValue("brand.50", "rgba(98,105,255,0.15)")} align="center" justify="center">
+                        <FiEdit size={16} color={useColorModeValue("brand.500", "brand.300")} />
                       </Flex>
-                      <Text fontWeight="700" fontSize="sm" color={useColorModeValue("red.600", "red.400")}>Delete Community</Text>
+                      <Text fontWeight="600" fontSize="sm" color={useColorModeValue("gray.700", "gray.200")}>Edit Community</Text>
                     </HStack>
                   </MenuItem>
+                  {chatStore.activeCommunity?.type !== "organisation" && (
+                    <MenuItem 
+                      bg="transparent"
+                      _hover={{ bg: useColorModeValue("red.50", "rgba(229, 62, 62, 0.15)") }} 
+                      onClick={onDeleteOpen}
+                      borderRadius="xl"
+                      px={3} py={2}
+                      transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+                    >
+                      <HStack spacing={3}>
+                        <Flex w="32px" h="32px" borderRadius="lg" bg={useColorModeValue("red.50", "rgba(229, 62, 62, 0.15)")} align="center" justify="center">
+                          <FiTrash2 size={16} color={useColorModeValue("#e53e3e", "#fc8181")} />
+                        </Flex>
+                        <Text fontWeight="700" fontSize="sm" color={useColorModeValue("red.600", "red.400")}>Delete Community</Text>
+                      </HStack>
+                    </MenuItem>
+                  )}
                 </>
               )}
             </MenuList>
@@ -448,6 +493,7 @@ const ChatWindow = observer(() => {
                     onChange={() => {}}
                     mr={2}
                     pointerEvents="none"
+                    borderColor={useColorModeValue("gray.400", "gray.500")}
                   />
                 )}
                 
@@ -595,6 +641,31 @@ const ChatWindow = observer(() => {
               </Button>
             </HStack>
           </Flex>
+        ) : !isMember ? (
+          <Flex justify="center" align="center" py={2} w="full">
+            <Button
+              colorScheme="brand"
+              w="full"
+              maxW="400px"
+              borderRadius="full"
+              h="48px"
+              fontSize="sm"
+              fontWeight="800"
+              letterSpacing="0.05em"
+              onClick={async () => {
+                try {
+                  await chatStore.joinCommunity(chatStore.activeCommunity?._id);
+                  toast({ title: "Successfully joined!", status: "success", duration: 3000 });
+                } catch {
+                  toast({ title: "Failed to join community", status: "error", duration: 3000 });
+                }
+              }}
+              _hover={{ transform: "translateY(-1px)", boxShadow: "0 4px 15px rgba(98,105,255,0.3)" }}
+              transition="all 0.2s"
+            >
+              JOIN COMMUNITY TO CHAT
+            </Button>
+          </Flex>
         ) : (
           <HStack spacing={3}>
             <InputGroup size="lg" alignItems="center" bg={useColorModeValue("white", "whiteAlpha.200")} borderRadius="full" boxShadow="0 2px 10px rgba(0,0,0,0.05)" border="none" _focusWithin={{ ring: 2, ringColor: useColorModeValue("blue.400", "blue.500"), bg: useColorModeValue("white", "whiteAlpha.300") }} transition="all 0.2s">
@@ -662,16 +733,30 @@ const ChatWindow = observer(() => {
       <Drawer isOpen={isMembersOpen} placement="right" onClose={onMembersClose} size="sm">
         <DrawerOverlay backdropFilter="blur(3px)" bg="blackAlpha.300" />
         <DrawerContent bg={bgPanel} shadow="xl" borderLeftRadius={{ base: 0, md: "2xl" }}>
-          <Flex 
+          <HStack 
             h="64px" 
             minH="64px" 
             w="full"
             align="center" 
-            justify="space-between" 
             px={4} 
             borderBottom="1px solid" 
             borderColor={borderColor}
+            spacing={3}
           >
+            <Box
+              as="button"
+              onClick={onMembersClose}
+              w="36px" h="36px"
+              borderRadius="full"
+              bg={useColorModeValue("gray.100", "gray.800")}
+              display="flex" alignItems="center" justifyContent="center"
+              _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+              transition="all 0.2s"
+              flexShrink={0}
+              color={useColorModeValue("gray.800", "white")}
+            >
+              <FiArrowLeft size={17} />
+            </Box>
             <VStack align="start" spacing={0}>
               <Text 
                 fontSize="lg" 
@@ -686,68 +771,78 @@ const ChatWindow = observer(() => {
                 {chatStore.activeCommunityMemberCount} Participants
               </Text>
             </VStack>
-            <IconButton
-              aria-label="Close"
-              icon={<FiX size={20} />}
-              variant="ghost"
-              borderRadius="full"
-              onClick={onMembersClose}
-            />
-          </Flex>
+          </HStack>
           <DrawerBody ref={drawerBodyRef} onScroll={handleMembersScroll} p={4} bg={bgMain}>
-            <VStack align="stretch" spacing={2}>
-              {chatStore.communityMembers.map((member: any) => (
-                <HStack 
-                  key={member.user._id} 
-                  px={4} 
-                  py={3} 
-                  bg={useColorModeValue("white", "whiteAlpha.200")}
-                  borderRadius="xl"
-                  boxShadow="sm"
-                  justify="space-between" 
-                  w="full" 
-                  _hover={{ transform: "translateY(-1px)", shadow: "md", bg: useColorModeValue("gray.50", "whiteAlpha.300") }}
-                  transition="all 0.2s"
-                >
-                  <HStack spacing={3} flex={1} overflow="hidden">
-                    <Avatar 
-                      size="md" 
-                      name={member.user.name} 
-                      src={member.user.pic} 
-                      border="2px solid"
-                      borderColor={member.user._id === chatStore.activeCommunity?.created_by ? useColorModeValue("blue.500", "blue.300") : "transparent"}
-                    />
-                    <VStack align="start" spacing={0} flex={1} minW={0}>
-                      <Text fontWeight="800" fontSize="md" noOfLines={1} color={useColorModeValue("gray.800", "white")}>
-                        {member.user.name}
-                      </Text>
-                      <Text
-                        fontSize="xs"
-                        fontWeight="bold"
-                        color={member.user._id === chatStore.activeCommunity?.created_by ? useColorModeValue("blue.600", "blue.300") : useColorModeValue("gray.500", "gray.400")}
-                        textTransform="uppercase"
-                        letterSpacing="wide"
+            <VStack align="stretch" spacing={2} h="full">
+              {chatStore.communityMembers.length === 0 && chatStore.isFetchingMembers ? (
+                <Flex direction="column" align="center" justify="center" py={20} gap={3} w="full" flex={1}>
+                  <Spinner
+                    thickness="3px"
+                    speed="0.8s"
+                    emptyColor={useColorModeValue("gray.100", "gray.800")}
+                    color="brand.500"
+                    size="md"
+                  />
+                  <Text fontSize="10px" fontWeight="800" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.15em">
+                    FETCHING PARTICIPANTS
+                  </Text>
+                </Flex>
+              ) : (
+                chatStore.communityMembers.map((member: any) => (
+                  <HStack 
+                    key={member.user._id} 
+                    px={4} 
+                    py={3} 
+                    bg={useColorModeValue("white", "whiteAlpha.200")}
+                    borderRadius="xl"
+                    boxShadow="sm"
+                    justify="space-between" 
+                    w="full" 
+                    _hover={{ transform: "translateY(-1px)", shadow: "md", bg: useColorModeValue("gray.50", "whiteAlpha.300") }}
+                    transition="all 0.2s"
+                  >
+                    <HStack spacing={3} flex={1} overflow="hidden">
+                      <Avatar 
+                        size="md" 
+                        name={member.user.name} 
+                        src={member.user.pic} 
+                        border="2px solid"
+                        borderColor={member.user._id === chatStore.activeCommunity?.created_by ? useColorModeValue("blue.500", "blue.300") : "transparent"}
+                      />
+                      <VStack align="start" spacing={0} flex={1} minW={0}>
+                        <Text fontWeight="800" fontSize="md" noOfLines={1} color={useColorModeValue("gray.800", "white")}>
+                          {member.user.name}
+                        </Text>
+                        <Text
+                          fontSize="xs"
+                          fontWeight="bold"
+                          color={member.user._id === chatStore.activeCommunity?.created_by ? useColorModeValue("blue.600", "blue.300") : useColorModeValue("gray.500", "gray.400")}
+                          textTransform="uppercase"
+                          letterSpacing="wide"
+                        >
+                          {member.user._id === chatStore.activeCommunity?.created_by ? "Creator" : member.role}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    {stores.auth.user?._id === chatStore.activeCommunity?.created_by && member.user._id !== chatStore.activeCommunity?.created_by && (
+                      <Button
+                        size="sm"
+                        colorScheme="red"
+                        variant="ghost"
+                        borderRadius="full"
+                        onClick={() => chatStore.removeCommunityMember(communityId as string, member.user._id)}
+                        _hover={{ bg: "red.50" }}
                       >
-                        {member.user._id === chatStore.activeCommunity?.created_by ? "Creator" : member.role}
-                      </Text>
-                    </VStack>
+                        Remove
+                      </Button>
+                    )}
                   </HStack>
-                  {stores.auth.user?._id === chatStore.activeCommunity?.created_by && member.user._id !== chatStore.activeCommunity?.created_by && (
-                    <Button
-                      size="sm"
-                      colorScheme="red"
-                      variant="ghost"
-                      borderRadius="full"
-                      onClick={() => chatStore.removeCommunityMember(communityId as string, member.user._id)}
-                      _hover={{ bg: "red.50" }}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </HStack>
-              ))}
-              {chatStore.isFetchingMembers && (
-                <Flex justify="center" p={4}><Spinner size="sm" /></Flex>
+                ))
+              )}
+              {chatStore.communityMembers.length > 0 && chatStore.isFetchingMembers && (
+                <Flex justify="center" p={4}>
+                  <Spinner size="sm" color="brand.500" />
+                </Flex>
               )}
             </VStack>
           </DrawerBody>

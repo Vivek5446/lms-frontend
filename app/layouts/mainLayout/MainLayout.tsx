@@ -19,20 +19,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const shellBg = useColorModeValue("#F6F8FB", "gray.950");
 
   const {
-    auth: { user },
+    auth: { user, sessionReady },
   } = stores;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      if (!user && pathname.startsWith("/dashboard")) {
+      // Wait until auth is hydrated from localStorage before deciding to redirect
+      if (sessionReady && !user && (pathname.startsWith("/dashboard") || pathname.startsWith("/chat"))) {
         router.replace("/login");
+        return;
       }
       // Force Next.js to re-evaluate the layout tree and CSS chunks smoothly
       // This prevents the SPA routing from dropping Chakra UI/Tailwind styles
       router.refresh();
       setIsChecking(false);
     }
-  }, [pathname, router, user]);
+  }, [pathname, router, user, sessionReady]);
 
   if (isChecking) {
     return (
