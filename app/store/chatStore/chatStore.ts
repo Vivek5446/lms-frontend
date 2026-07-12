@@ -128,6 +128,22 @@ class ChatStore {
       }
     });
 
+    this.socket.on("message-deleted", (data: any) => {
+      const { room_id, message_id } = data;
+      
+      runInAction(() => {
+        // If it's the active room, update local messages array
+        if (this.activeRoom && this.activeRoom._id === room_id) {
+          this.messages = this.messages.filter(m => m._id !== message_id);
+        }
+        
+        // Always update the cache
+        if (this.roomMessagesCache[room_id]) {
+          this.roomMessagesCache[room_id] = this.roomMessagesCache[room_id].filter(m => m._id !== message_id);
+        }
+      });
+    });
+
     this.socket.on("recieved-typing-status", (data: any) => {
       const { userData } = data;
       if (this.activeRoom && userData.room_id === this.activeRoom._id) {
@@ -221,6 +237,32 @@ class ChatStore {
         this.error = err.response?.data?.error || "Failed to fetch messages";
         this.isLoading = false;
       });
+    }
+  };
+
+  deleteMessage = async (roomId: string, messageId: string) => {
+    try {
+      // Background DB Save
+      await axios.delete(`/community/rooms/${roomId}/messages/${messageId}`);
+      
+      // Emit to socket so others see it deleted immediately
+      if (this.socket) {
+        this.socket.emit("delete-message", { room_id: roomId, message_id: messageId });
+      }
+
+      // We don't need to manually update local UI here because we optimistically deleted 
+      // it from UI before this function is even called (during the 5 second countdown window)
+      // but just in case, we can ensure it's removed:
+      runInAction(() => {
+        this.messages = this.messages.filter(m => m._id !== messageId);
+        if (this.roomMessagesCache[roomId]) {
+          this.roomMessagesCache[roomId] = this.roomMessagesCache[roomId].filter(m => m._id !== messageId);
+        }
+      });
+
+    } catch (error) {
+      console.error("Failed to delete message", error);
+      // If backend fails, we should ideally revert the optimistic delete, but for now we'll just log
     }
   };
 

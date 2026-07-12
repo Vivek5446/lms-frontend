@@ -21,6 +21,7 @@ const ChatWindow = observer(() => {
   const [messageText, setMessageText] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [hiddenMessages, setHiddenMessages] = useState<string[]>([]);
   
   const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
@@ -33,6 +34,7 @@ const ChatWindow = observer(() => {
   const previousScrollHeight = useRef<number>(0);
   const drawerBodyRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const deleteTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
   const [isUploading, setIsUploading] = useState(false);
 
   const { isOpen: isMembersOpen, onOpen: onMembersOpen, onClose: onMembersClose } = useDisclosure();
@@ -143,6 +145,22 @@ const ChatWindow = observer(() => {
     if (!messageText.trim() || !roomId) return;
     chatStore.sendMessage(roomId, messageText);
     setMessageText("");
+  };
+
+  const handleDeleteMessage = (msgId: string) => {
+    const idStr = String(msgId);
+    setHiddenMessages(prev => [...prev, idStr]);
+    
+    // We don't use a toast anymore. The undo will be inline.
+    const timeout = setTimeout(() => {
+      if (chatStore.activeRoom) {
+        chatStore.deleteMessage(chatStore.activeRoom._id, idStr);
+      }
+      setHiddenMessages(prev => prev.filter(id => id !== idStr));
+      delete deleteTimeoutsRef.current[idStr];
+    }, 5000);
+
+    deleteTimeoutsRef.current[idStr] = timeout;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -353,12 +371,36 @@ const ChatWindow = observer(() => {
         <VStack align="stretch" spacing={6}>
           {chatStore.messages.map((msg: any) => {
             const isMe = msg.user_id?._id === stores.auth.user?._id;
+            const isCreator = chatStore.activeCommunity?.created_by === stores.auth.user?._id;
+            const canDelete = isMe || isCreator;
+            const isPendingDelete = hiddenMessages.includes(String(msg._id));
+
+            if (isPendingDelete) {
+              return (
+                <HStack key={msg._id} justify={isMe ? "flex-end" : "flex-start"} w="full" animation="fadeIn 0.3s ease">
+                  <Box bg={useColorModeValue("gray.100", "gray.800")} px={4} py={2} borderRadius="xl" display="flex" alignItems="center" gap={3}>
+                    <FiTrash2 color="gray" />
+                    <Text fontSize="sm" color="gray.500" fontStyle="italic">Message deleted</Text>
+                    <Button size="xs" variant="ghost" colorScheme="blue" onClick={() => {
+                      if (deleteTimeoutsRef.current[String(msg._id)]) {
+                        clearTimeout(deleteTimeoutsRef.current[String(msg._id)]);
+                        delete deleteTimeoutsRef.current[String(msg._id)];
+                      }
+                      setHiddenMessages(prev => prev.filter(id => id !== String(msg._id)));
+                    }}>Undo</Button>
+                  </Box>
+                </HStack>
+              );
+            }
+
             return (
               <HStack 
                 key={msg._id} 
                 align="end" 
                 spacing={3} 
                 justify={isMe ? "flex-end" : "flex-start"}
+                role="group"
+                w="full"
                 animation="fadeInUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                 sx={{
                   "@keyframes fadeInUp": {
@@ -369,6 +411,8 @@ const ChatWindow = observer(() => {
               >
                 {!isMe && <Avatar size="sm" name={msg.user_id?.name} src={msg.user_id?.pic?.url} />}
                 
+
+
                 <VStack align={isMe ? "end" : "start"} spacing={1} maxW="75%">
                   {!isMe && (
                     <Text fontSize="xs" color="gray.500" fontWeight="600" ml={1}>
@@ -387,6 +431,8 @@ const ChatWindow = observer(() => {
                     position="relative"
                     border={!isMe ? "1px solid" : "none"}
                     borderColor={useColorModeValue("gray.100", "whiteAlpha.100")}
+                    maxW="100%"
+                    role="group"
                   >
                     {msg.file_url && (
                       <Image 
@@ -394,6 +440,7 @@ const ChatWindow = observer(() => {
                         alt="attachment" 
                         borderRadius="xl" 
                         maxH="300px" 
+                        maxW="100%"
                         objectFit="cover" 
                         mb={msg.content ? 2 : 0}
                         border={!msg.content && !isMe ? "1px solid" : "none"}
@@ -403,8 +450,32 @@ const ChatWindow = observer(() => {
                         onClick={() => setPreviewImage(msg.file_url)}
                       />
                     )}
+                    {canDelete && (
+                      <IconButton
+                        aria-label="Delete message"
+                        icon={<FiTrash2 size={14} />}
+                        size="xs"
+                        colorScheme="red"
+                        variant="solid"
+                        position="absolute"
+                        top={-2}
+                        right={!isMe ? -2 : "auto"}
+                        left={isMe ? -2 : "auto"}
+                        zIndex={999}
+                        opacity={0}
+                        _groupHover={{ opacity: 1 }}
+                        transition="all 0.2s"
+                        borderRadius="full"
+                        boxShadow="md"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteMessage(String(msg._id));
+                        }}
+                      />
+                    )}
                     {msg.content && (
-                      <Text fontSize="md" lineHeight="tall">
+                      <Text fontSize="md" lineHeight="tall" wordBreak="break-word" whiteSpace="pre-wrap">
                         {renderMessageContent(msg.content)}
                       </Text>
                     )}
@@ -413,6 +484,8 @@ const ChatWindow = observer(() => {
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </VStack>
+
+
               </HStack>
             );
           })}
@@ -579,7 +652,7 @@ const ChatWindow = observer(() => {
       </Drawer>
       {/* Image Preview Modal */}
       <Modal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} size="4xl" isCentered>
-        <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.700" />
+        <ModalOverlay bg="blackAlpha.800" />
         <ModalContent bg="transparent" boxShadow="none" m={4} p={0} display="flex" justifyContent="center" alignItems="center">
           <ModalCloseButton color="white" bg="blackAlpha.600" borderRadius="full" top={2} right={2} size="md" _hover={{ bg: "blackAlpha.800" }} zIndex={10} />
           <ModalBody p={0} display="flex" justifyContent="center" alignItems="center" w="full" h="full">
