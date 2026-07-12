@@ -311,7 +311,7 @@ const ScopedDashboard = observer(() => {
       ];
 
   return (
-    <Box minH="100vh" bg={pageBg} p={{ base: 3, md: 5 }}>
+    <Box minH="100vh" p={{ base: 3, md: 5 }}>
       <Stack spacing={4} maxW="1600px" mx="auto">
         <Box
           bg={heroBg}

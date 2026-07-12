@@ -625,7 +625,7 @@ const CompanyAdminWorkspace = ({
   };
 
   return (
-    <Box minH="100vh" bg={pageBg}>
+    <Box minH="100vh" bg="transparent">
       <Container maxW="1400px" px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
         <VStack spacing={6} align="stretch">
           {isCompanyInactive ? (

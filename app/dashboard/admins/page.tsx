@@ -197,7 +197,7 @@ const DirectoryPage = observer(() => {
 
   if (selectedCompanyId && companies.loading && !selectedCompany) {
     return (
-      <Flex minH="60vh" justify="center" align="center" bg={pageBg}>
+      <Flex minH="60vh" justify="center" align="center" bg="transparent">
         <Spinner size="xl" thickness="4px" speed="0.65s" color="blue.500" />
       </Flex>
     );
@@ -220,7 +220,7 @@ const DirectoryPage = observer(() => {
       description="Only Super Admins can access company management."
       fallbackHref="/dashboard"
     >
-      <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 8 }} transition="all 0.3s ease">
+      <Box minH="100vh" bg="transparent" p={{ base: 4, md: 8 }} transition="all 0.3s ease">
       <Stack spacing={10} maxW="1400px" mx="auto">
         
         {/* Elegant Header Section */}

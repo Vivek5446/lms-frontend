@@ -63,7 +63,7 @@ const LearnerProgressPage = observer(() => {
       description="This account does not currently have permission to view learner progress and results."
       fallbackHref="/dashboard"
     >
-      <Box minH="100vh" bg={pageBg} p={{ base: 3, md: 5 }}>
+      <Box minH="100vh" bg="transparent" p={{ base: 3, md: 5 }}>
         <Stack spacing={4} maxW="1600px" mx="auto">
           <Box
             bgImage={heroBg}

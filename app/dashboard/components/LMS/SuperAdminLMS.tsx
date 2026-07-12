@@ -684,7 +684,7 @@ const SuperAdminLMS = observer(() => {
   }
 
   return (
-    <Box bg={pageBg} minH="100vh" py={{ base: 3, md: 6 }} px={{ base: 3, md: 4 }}>
+    <Box bg="transparent" minH="100vh" py={{ base: 3, md: 6 }} px={{ base: 3, md: 4 }}>
       <VStack spacing={{ base: 4, md: 8 }} align="stretch" maxW="1400px" mx="auto">
         {/* Main Header - Enhanced */}
         <MotionFlex

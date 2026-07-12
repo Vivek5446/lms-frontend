@@ -172,7 +172,7 @@ const CourseAssignmentsAuditPage = observer(() => {
       description="This account does not currently have access to course assignment records."
       fallbackHref="/dashboard/profile"
     >
-      <Box minH="100vh" bg={pageBg} p={{ base: 4, md: 6 }}>
+      <Box minH="100vh" bg="transparent" p={{ base: 4, md: 6 }}>
         <Stack spacing={6}>
           {/* Header Card */}
           <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">

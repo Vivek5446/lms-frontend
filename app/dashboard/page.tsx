@@ -44,7 +44,7 @@ const Page = observer(() => {
       description="This account does not currently have access to the dashboard."
       fallbackHref="/dashboard/profile"
     >
-      <Box minH="100vh" bg={pageBg}>
+      <Box minH="100vh" bg="transparent">
         <ScopedDashboard />
       </Box>
     </PermissionGate>

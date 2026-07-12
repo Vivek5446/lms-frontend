@@ -172,7 +172,7 @@ export function SuperadminDashboard({
 
   if (error && !summary.stats) {
     return (
-      <Box bg={pageBg} minH="100vh" p={{ base: 3, md: 6 }}>
+      <Box  minH="100vh" p={{ base: 3, md: 6 }}>
         <Alert status="error" borderRadius="2xl">
           <AlertIcon />
           <Box>
@@ -193,7 +193,7 @@ export function SuperadminDashboard({
   }
 
   return (
-    <Box bg={pageBg} minH="100vh" p={{ base: 3, md: 5 }}>
+    <Box minH="100vh" p={{ base: 3, md: 5 }}>
       <Stack spacing={4} maxW="1600px" mx="auto">
         <Box
           bgImage={heroBg}

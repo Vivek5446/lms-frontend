@@ -52,7 +52,7 @@ const DashboardBatchesPage = observer(() => {
 
   if (isLearner) {
     return (
-      <Center minH="100dvh" bg={pageBg}>
+      <Center minH="100dvh" bg="transparent">
         <Flex
           align="center"
           gap={3}

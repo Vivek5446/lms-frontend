@@ -1,5 +1,5 @@
 import { PlusSquareIcon } from "@chakra-ui/icons";
-import { FaChartPie, FaCog, FaUserAstronaut, FaUsers, FaUserTie } from "react-icons/fa";
+import { FaChartPie, FaCog, FaUserAstronaut, FaUsers, FaUserTie, FaClipboardList } from "react-icons/fa";
 import { expandRoleAliases } from "@/app/config/utils/roleAccess";
 import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 import { FaPeopleGroup } from "react-icons/fa6";
@@ -131,6 +131,13 @@ const sidebarDatas: SidebarItem[] = [
     url: "/dashboard/learner-progress",
     role: ["superadmin", "admin", "departmenthead"],
     permissionKey: PERMISSION_KEYS.VIEW_LEARNER_PROGRESS_RESULTS,
+  },
+  {
+    id: 20,
+    name: "Quiz Portal",
+    icon: <FaClipboardList />,
+    url: "/dashboard/quiz",
+    role: ["superadmin", "admin", "departmenthead"],
   },
 ];
 

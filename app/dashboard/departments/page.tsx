@@ -137,7 +137,7 @@ const DepartmentsPage = observer(() => {
       description="This account does not currently have access to departments."
       fallbackHref="/dashboard/profile"
     >
-      <Box minH="100dvh" bg={pageBg} px={{ base: 3, md: 6 }} py={{ base: 3, md: 6 }}>
+      <Box minH="100dvh" bg="transparent" px={{ base: 3, md: 6 }} py={{ base: 3, md: 6 }}>
         <Stack spacing={{ base: 4, md: 6 }}>
           <Box
             bg={cardBg}

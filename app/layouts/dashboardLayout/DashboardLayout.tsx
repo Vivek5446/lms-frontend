@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { observer } from 'mobx-react-lite';
-import { Box, Spinner, useBreakpointValue, useTheme } from '@chakra-ui/react';
+import { Box, Spinner, useBreakpointValue, useTheme, useColorModeValue } from '@chakra-ui/react';
 import styled from 'styled-components';
 import stores from '../../store/stores';
 // import { authenticastion } from '../../config/utils/routes';
@@ -33,6 +33,12 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
   const closeDrawerModel = () => {
     setOpenMobileSideDrawer(false);
   };
+
+  const pageBgColor = useColorModeValue("gray.50", "gray.900");
+  const dottedBgImage = useColorModeValue(
+    "radial-gradient(#CBD5E0 1px, transparent 1px)",
+    "radial-gradient(#1A202C 1px, transparent 1px)"
+  );
 
   const handleSidebarItemClick = (item: any) => {
     if (!item.children || item.url) {
@@ -78,7 +84,7 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
   }
 
   return user ? (
-    <Box>
+    <Box bg={pageBgColor} bgImage={dottedBgImage} bgSize="20px 20px" minH="100dvh">
       <MainContainer $isMobile={isMobile}>
         <Box ref={sidebarRef}>
           <SidebarLayout
