@@ -8,6 +8,7 @@ import {
   Select,
   Text,
   useColorModeValue,
+  Icon,
 } from "@chakra-ui/react";
 import {
   ArcElement,
@@ -21,6 +22,12 @@ import {
   PointElement,
   Tooltip,
 } from "chart.js";
+import {
+  BarChart3,
+  PieChart,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import { ChartEntry, SuperadminDashboardSummary } from "./types";
@@ -56,14 +63,19 @@ const palette = [
 function ChartCard({
   title,
   subtitle,
+  icon,
   children,
 }: {
   title: string;
   subtitle: string;
+  icon: React.ElementType;
   children: React.ReactNode;
 }) {
   const bg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
+
+  const [firstWord, ...restWords] = title.split(" ");
+  const restTitle = restWords.join(" ");
 
   return (
     <Box
@@ -71,15 +83,39 @@ function ChartCard({
       borderWidth="1px"
       borderColor={borderColor}
       borderRadius="2xl"
-      p={{ base: 4, md: 5 }}
+      p={{ base: 4, md: 6 }}
       boxShadow="sm"
       minW={0}
+      transition="all 0.2s"
+      _hover={{ boxShadow: "md" }}
     >
-      <Heading size="sm">{title}</Heading>
-      <Text fontSize="xs" color="gray.500" mt={1}>
-        {subtitle}
-      </Text>
-      <Box h={{ base: "230px", md: "270px" }} mt={4} position="relative">
+      <Flex justify="space-between" align="center" gap={3} mb={6}>
+        <Box>
+          <Heading size="sm" fontWeight="900" letterSpacing="tight" textTransform="uppercase">
+            <Box as="span" color={useColorModeValue("gray.900", "white")}>{firstWord} </Box>
+            {restTitle && (
+              <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
+                {restTitle}
+              </Box>
+            )}
+          </Heading>
+          <Text fontSize="10px" fontWeight="700" color="gray.500" mt={0.5} letterSpacing="wider" textTransform="uppercase">
+            {subtitle}
+          </Text>
+        </Box>
+        <Flex
+          align="center"
+          justify="center"
+          boxSize="38px"
+          borderRadius="xl"
+          bg={useColorModeValue("purple.50", "purple.900")}
+          color={useColorModeValue("purple.600", "purple.300")}
+          flexShrink={0}
+        >
+          <Icon as={icon} boxSize={5} />
+        </Flex>
+      </Flex>
+      <Box h={{ base: "230px", md: "270px" }} position="relative">
         {children}
       </Box>
     </Box>
@@ -198,11 +234,11 @@ export function AnalyticsCharts({ charts, availability }: AnalyticsChartsProps) 
 
   return (
     <Grid templateColumns={{ base: "1fr", xl: "repeat(2, minmax(0, 1fr))" }} gap={4}>
-      <ChartCard title="Growth and completion" subtitle="New users and completed enrollments over the last six months">
+      <ChartCard title="Growth and completion" subtitle="New users and completed enrollments over the last six months" icon={TrendingUp}>
         <Line data={trendData} options={axisOptions} />
       </ChartCard>
 
-      <ChartCard title="Company user distribution" subtitle="Largest organizations by filtered user count">
+      <ChartCard title="Company user distribution" subtitle="Largest organizations by filtered user count" icon={BarChart3}>
         {hasData(charts.companyUserDistribution) ? (
           <Bar
             data={companyData}
@@ -217,7 +253,7 @@ export function AnalyticsCharts({ charts, availability }: AnalyticsChartsProps) 
         )}
       </ChartCard>
 
-      <ChartCard title="Platform distribution" subtitle="Switch between role, course, and batch status">
+      <ChartCard title="Platform distribution" subtitle="Switch between role, course, and batch status" icon={PieChart}>
         <Select
           size="xs"
           width="140px"
@@ -259,7 +295,7 @@ export function AnalyticsCharts({ charts, availability }: AnalyticsChartsProps) 
         )}
       </ChartCard>
 
-      <ChartCard title="Assessment performance" subtitle="Quiz attempts grouped by achieved percentage">
+      <ChartCard title="Assessment performance" subtitle="Quiz attempts grouped by achieved percentage" icon={Target}>
         {availability.quizPerformance && hasData(quizEntries) ? (
           <Bar
             data={quizData}
