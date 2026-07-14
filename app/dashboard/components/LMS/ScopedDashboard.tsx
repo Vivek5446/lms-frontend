@@ -259,63 +259,44 @@ const ScopedDashboard = observer(() => {
         },
       ];
 
+  const dashboardTitle = isAdmin ? scope.companyName || "COMPANY DASHBOARD" : scope.departmentName || "DEPARTMENT DASHBOARD";
+  const titleWords = dashboardTitle.split(" ");
+  const titleFirstWord = titleWords[0] || "";
+  const titleRest = titleWords.slice(1).join(" ");
+
   return (
     <Box bg="transparent" p={{ base: 3, md: 0 }}>
       <Stack spacing={4} maxW="1600px" mx="auto">
-        <Box
-          bg={heroBg}
-          borderWidth="1px"
-          borderColor={heroBorder}
-          borderRadius="2xl"
-          p={{ base: 4, md: 5 }}
-          boxShadow="sm"
-          overflow="hidden"
-          position="relative"
-        >
-          <Box
-            position="absolute"
-            insetY={0}
-            right={0}
-            w={{ base: "35%", md: "28%" }}
-            bgGradient={isAdmin ? "linear(to-l, purple.100, transparent)" : "linear(to-l, teal.100, transparent)"}
-            opacity={useColorModeValue(0.8, 0.08)}
-            pointerEvents="none"
-          />
-          <Flex justify="space-between" align="flex-start" gap={4} position="relative">
-            <Box minW={0}>
-              <HStack spacing={2} mb={2}>
-                <Badge
-                  colorScheme={isAdmin ? "purple" : "teal"}
-                  borderRadius="full"
-                  px={2.5}
-                  py={0.5}
-                  fontSize="0.65rem"
-                >
-                  {isAdmin ? "Company scope" : "Department scope"}
-                </Badge>
-                {scopedSummaryLoading ? (
-                  <Badge variant="subtle" borderRadius="full">
-                    Refreshing
-                  </Badge>
-                ) : null}
-              </HStack>
-              <Heading size={{ base: "sm", md: "lg" }} noOfLines={2} lineHeight="1.3">
-                {isAdmin
-                  ? scope.companyName || "Company dashboard"
-                  : scope.departmentName || "Department dashboard"}
-              </Heading>
-              <Text mt={1.5} color="gray.500" fontSize={{ base: "sm", md: "md" }}>
-                {isAdmin
-                  ? "Company learning health, people activity, and course performance."
-                  : `Learning progress and engagement inside ${scope.companyName || "your company"}.`}
-              </Text>
-            </Box>
-            <HStack display={{ base: "none", md: "flex" }} color={isAdmin ? "purple.500" : "teal.500"}>
-              <Icon as={isAdmin ? FiBriefcase : FiLayers} boxSize={5} />
-              <Text fontSize="sm" fontWeight="semibold">
-                Live scoped analytics
-              </Text>
+        <Box bg={useColorModeValue("white", "gray.800")} borderWidth="1px" borderColor={heroBorder} rounded={{ base: "xl", md: "2xl" }} p={{ base: 4, md: 6 }} shadow="sm">
+          <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
+            <HStack spacing={4}>
+              <Box p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" display="flex" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+                <Icon as={isAdmin ? FiBriefcase : FiLayers} boxSize={{ base: 4, md: 5 }} color="white" />
+              </Box>
+              <Box>
+                <Heading size={{ base: "md", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase">
+                  <Box as="span" color={useColorModeValue("gray.900", "white")}>
+                    {titleFirstWord}{titleRest ? " " : ""}
+                  </Box>
+                  {titleRest && (
+                    <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
+                      {titleRest}
+                    </Box>
+                  )}
+                </Heading>
+                <Text mt={1} fontSize={{ base: "10px", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase">
+                  {isAdmin
+                    ? "Company learning health, people activity, and course performance."
+                    : `Learning progress and engagement inside ${scope.companyName || "your company"}.`}
+                </Text>
+              </Box>
             </HStack>
+            <Badge bg={useColorModeValue("blue.50", "rgba(98,105,255,0.15)")} color="#6269FF" borderRadius="full" px={4} py={2} fontSize="xs" fontWeight="800">
+              <Flex align="center" gap={1.5}>
+                <Icon as={FiTarget} boxSize={3.5} />
+                {isAdmin ? "COMPANY SCOPE" : "DEPARTMENT SCOPE"}
+              </Flex>
+            </Badge>
           </Flex>
         </Box>
 
