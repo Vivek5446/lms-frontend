@@ -72,6 +72,7 @@ import UsersView from "../../users/UsersView";
 import UserDrawer from "../../users/components/UserDrawer";
 import CompanyForm from "./CompanyForm";
 import UserTable from "./users/UserTable";
+import StatCard from "../../../component/common/StatCard/StatCard";
 
 const emptyManager = (level: number) => ({ level, selectedManager: null });
 const parseManagerLevel = (role: string) => {
@@ -124,67 +125,7 @@ const createMemberForm = (companyId: string, role = "admin") => ({
 const isRealFile = (value: unknown): value is File => typeof File !== "undefined" && value instanceof File;
 type CompanyStatusScope = "company_admin" | "all_users";
 
-// Modern Stat Card with gradient accent
-const StatCard = ({
-  label,
-  value,
-  subtext,
-  icon: IconEl,
-  trend,
-}: {
-  label: string;
-  value: string | number;
-  subtext?: string;
-  icon: any;
-  trend?: { value: number; isUp: boolean };
-}) => {
-  const bgHover = useColorModeValue("gray.50", "gray.700");
-  const borderColor = useColorModeValue("gray.100", "gray.700");
 
-  return (
-    <Box
-      p={5}
-      bg={useColorModeValue("white", "gray.800")}
-      borderRadius="2xl"
-      border="1px solid"
-      borderColor={borderColor}
-      transition="all 0.2s"
-      _hover={{ transform: "translateY(-2px)", shadow: "md", borderColor: "blue.200" }}
-      position="relative"
-      overflow="hidden"
-    >
-      <Box position="absolute" top={0} left={0} right={0} h="3px" bgGradient="linear(to-r, blue.400, teal.400)" />
-      <HStack justify="space-between" align="flex-start">
-        <Box>
-          <Text fontSize="xs" fontWeight="600" color="gray.500" textTransform="uppercase" letterSpacing="wider">
-            {label}
-          </Text>
-          <Text fontSize="3xl" fontWeight="800" mt={2} letterSpacing="tight">
-            {value}
-          </Text>
-          {trend && (
-            <HStack spacing={1} mt={1}>
-              <StatArrow type={trend.isUp ? "increase" : "decrease"} />
-              <Text fontSize="xs" color={trend.isUp ? "green.500" : "red.500"} fontWeight="500">
-                {Math.abs(trend.value)}%
-              </Text>
-              {subtext && <Text fontSize="xs" color="gray.500">vs last month</Text>}
-            </HStack>
-          )}
-          {subtext && !trend && <Text fontSize="xs" color="gray.500" mt={1}>{subtext}</Text>}
-        </Box>
-        <Flex
-          bg={useColorModeValue("blue.50", "blue.900")}
-          p={3}
-          borderRadius="xl"
-          color="blue.500"
-        >
-          <IconEl size={20} />
-        </Flex>
-      </HStack>
-    </Box>
-  );
-};
 
 // Compact Info Row Component
 const InfoRow = ({
@@ -625,9 +566,8 @@ const CompanyAdminWorkspace = ({
   };
 
   return (
-    <Box minH="100vh" bg="transparent">
-      <Container maxW="1400px" px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
-        <VStack spacing={6} align="stretch">
+    <Box minH="100vh" bg="transparent" p={{ base: 3, md: 0 }}>
+        <VStack spacing={4} maxW="1600px" mx="auto" align="stretch">
           {isCompanyInactive ? (
             <Alert status="warning" borderRadius="2xl" alignItems="start">
               <AlertIcon mt={1} />
@@ -639,8 +579,9 @@ const CompanyAdminWorkspace = ({
           ) : null}
 
           {/* Header Section - Enhanced */}
-          <Flex justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} gap={4}>
-            <HStack spacing={4}>
+          <Box bg={surfaceBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "xl", md: "2xl" }} p={{ base: 3, md: 4 }} shadow="sm">
+          <Flex justify="space-between" align="center" gap={4}>
+            <HStack spacing={3} minW={0} flex={1}>
               <IconButton
                 aria-label="Go back"
                 icon={<FiArrowLeft />}
@@ -648,21 +589,29 @@ const CompanyAdminWorkspace = ({
                 size="sm"
                 onClick={onBack}
                 borderRadius="full"
+                flexShrink={0}
               />
-              <Avatar
-                size="md"
-                name={company?.company_name}
-                src={company?.logo?.url}
-                bgGradient="linear(to-br, blue.500, teal.500)"
-                color="white"
-                fontWeight="bold"
-              />
-              <Box>
-                <Heading as="h1" size="lg" fontWeight="800">
-                  {company?.company_name}
+              <Box p={2.5} bgGradient="linear(to-br, blue.500, teal.500)" rounded="full" display="flex" alignItems="center" justifyContent="center" flexShrink={0}>
+                <Avatar
+                  size="xs"
+                  name={company?.company_name}
+                  src={company?.logo?.url}
+                  bg="transparent"
+                  color="white"
+                  fontWeight="bold"
+                />
+              </Box>
+              <Box minW={0}>
+                <Heading size="sm" fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase" noOfLines={1}>
+                  <Box as="span" color={useColorModeValue("gray.900", "white")}>
+                    {company?.company_name?.split(" ")[0]}{" "}
+                  </Box>
+                  <Box as="span" bgGradient={useColorModeValue("linear(to-r, blue.500, teal.500)", "linear(to-r, blue.300, teal.300)")} bgClip="text">
+                    {company?.company_name?.split(" ").slice(1).join(" ")}
+                  </Box>
                 </Heading>
-                <HStack spacing={2} mt={1}>
-                  <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={2} py={0.5}>
+                <HStack spacing={2} mt={0.5}>
+                  <Badge colorScheme="blue" variant="subtle" borderRadius="full" px={2} py={0.5} fontSize="xs">
                     {company?.companyType || "Company"}
                   </Badge>
                   <Badge
@@ -671,6 +620,7 @@ const CompanyAdminWorkspace = ({
                     borderRadius="full"
                     px={2}
                     py={0.5}
+                    fontSize="xs"
                   >
                     {company?.is_active ? "Active" : "Inactive"}
                   </Badge>
@@ -738,29 +688,34 @@ const CompanyAdminWorkspace = ({
               </Button>
             </HStack>
           </Flex>
+          </Box>
 
           {/* Stats Row - Modern Cards */}
-          <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={5}>
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={4}>
             <StatCard
-              label="Total Users"
+              label="TOTAL USERS"
               value={company?.userCount || 0}
               icon={FiUsers}
-              subtext={`${company?.activeUserCount || 0} active`}
+              helper={`${company?.activeUserCount || 0} active`}
+              colorScheme="blue"
             />
             <StatCard
-              label="Departments"
+              label="DEPARTMENTS"
               value={company?.departments?.length || 0}
               icon={FiBriefcase}
+              colorScheme="purple"
             />
             <StatCard
-              label="Manager Levels"
+              label="MANAGER LEVELS"
               value={company?.managerLevels || 3}
               icon={FiShield}
+              colorScheme="teal"
             />
             <StatCard
-              label="Company Code"
+              label="COMPANY CODE"
               value={company?.companyCode || "—"}
               icon={FiCheckCircle}
+              colorScheme="orange"
             />
           </SimpleGrid>
 
@@ -942,8 +897,6 @@ const CompanyAdminWorkspace = ({
             </CardBody>
           </Card>
         </VStack>
-      </Container>
-
       {/* Drawers and Modals - Unchanged to preserve logic */}
       <UserDrawer
         isOpen={
@@ -1287,7 +1240,6 @@ const CompanyAdminWorkspace = ({
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
-      
     </Box>
   );
 };
