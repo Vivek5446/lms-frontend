@@ -353,8 +353,8 @@ const CustomInput: React.FC<CustomInputProps> = ({
       paddingLeft: "12px",
       paddingRight: "8px",
       borderColor: state.isFocused ? theme.colors.brand[500] : borderColor,
-      backgroundColor: inputBg,
-      color: textColor,
+      backgroundColor: colorMode === "light" ? "white" : "var(--chakra-colors-whiteAlpha-50)",
+      color: colorMode === "light" ? "var(--chakra-colors-gray-800)" : "var(--chakra-colors-whiteAlpha-900)",
       fontSize: "14px",
       fontWeight: 500,
       boxShadow: state.isFocused ? focusRing : colorMode === "light" ? "0 1px 2px rgba(15, 23, 42, 0.06)" : "none",
@@ -369,8 +369,8 @@ const CustomInput: React.FC<CustomInputProps> = ({
     }),
     placeholder: (styles: any) => ({
       ...styles,
-      color: placeholderColor,
-      fontWeight: 500,
+      color: colorMode === "light" ? "var(--chakra-colors-gray-400)" : "var(--chakra-colors-whiteAlpha-500)",
+      fontWeight: 400,
     }),
     option: (styles: any, { isSelected, isFocused }: any) => ({
       ...styles,
@@ -437,14 +437,16 @@ const CustomInput: React.FC<CustomInputProps> = ({
         color: "white",
       },
     }),
-    singleValue: (styles: any) => ({
+    singleValue: (styles: any, { data }: any) => ({
       ...styles,
-      color: colorMode === "light" ? textColor : "white",
-      fontWeight: 500,
+      color: (!data || data.value === "") 
+        ? (colorMode === "light" ? "var(--chakra-colors-gray-400)" : "var(--chakra-colors-whiteAlpha-500)") 
+        : (colorMode === "light" ? "var(--chakra-colors-gray-800)" : "var(--chakra-colors-whiteAlpha-900)"),
+      fontWeight: (!data || data.value === "") ? 400 : 500,
     }),
     input: (styles: any) => ({
       ...styles,
-      color: colorMode === "light" ? textColor : "white",
+      color: colorMode === "light" ? "var(--chakra-colors-gray-800)" : "var(--chakra-colors-whiteAlpha-900)",
     }),
     clearIndicator: (styles: any) => ({
       ...styles,
@@ -596,6 +598,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
             name={name}
             disabled={disabled}
             {...fieldStyles}
+            color={!value ? placeholderColor : textColor}
             {...rest}
           />
         );
@@ -747,6 +750,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
             min={minDate}
             max={maxDate}
             {...fieldStyles}
+            color={!value ? placeholderColor : textColor}
             {...rest}
           />
         );
