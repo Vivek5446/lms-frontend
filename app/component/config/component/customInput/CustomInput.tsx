@@ -61,6 +61,7 @@ interface CustomInputProps {
   | "real-time-user-search"
   | "real-time-search"
   | "timeOnly";
+  inputVariant?: "flushed" | "outline";
   label?: string;
   placeholder?: string;
   required?: boolean;
@@ -128,6 +129,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
   query = {},
   parentStyle = {},
   shouldUpdateSelectWithValue = false,
+  inputVariant = "outline",
   ...rest
 }) => {
   const [inputValue, setInputValue] = useState<string>("");
@@ -276,11 +278,11 @@ const CustomInput: React.FC<CustomInputProps> = ({
     }
   };
 
-  const inputBg = useColorModeValue("white", "darkBrand.50");
-  const subtleBg = useColorModeValue("brand.50", "darkBrand.100");
-  const borderColor = useColorModeValue("#1A202C", "whiteAlpha.700");
+  const inputBg = useColorModeValue("white", "whiteAlpha.50");
+  const subtleBg = useColorModeValue("gray.50", "whiteAlpha.100");
+  const borderColor = useColorModeValue("gray.300", "whiteAlpha.400");
   const focusBorderColor = "brand.500";
-  const hoverBorderColor = useColorModeValue("brand.300", "brand.400");
+  const hoverBorderColor = useColorModeValue("gray.300", "whiteAlpha.400");
   const placeholderColor = useColorModeValue("gray.400", "whiteAlpha.500");
   const textColor = useColorModeValue("gray.800", "whiteAlpha.900");
   const mutedTextColor = useColorModeValue("gray.700", "whiteAlpha.800");
@@ -289,20 +291,23 @@ const CustomInput: React.FC<CustomInputProps> = ({
     "0 0 0 4px rgba(98, 105, 255, 0.24)"
   );
 
+  const isOutline = inputVariant === "outline";
+
   const fieldStyles = {
     variant: "unstyled",
-    bg: "transparent",
+    bg: isOutline ? inputBg : "transparent",
     color: textColor,
-    border: "none",
+    border: isOutline ? "1px solid" : "none",
+    borderColor: isOutline ? borderColor : "transparent",
     borderBottomWidth: "1px",
     borderBottomStyle: "solid",
     borderBottomColor: borderColor,
-    borderRadius: "0px",
+    borderRadius: isOutline ? "16px" : "0px",
     minH: "48px",
-    px: 1,
+    px: isOutline ? 4 : 1,
     fontSize: "sm",
     fontWeight: "500",
-    boxShadow: "none",
+    boxShadow: isOutline ? (colorMode === "light" ? "0 1px 2px rgba(15, 23, 42, 0.06)" : "none") : "none",
     transition: "all 0.2s ease",
     _placeholder: {
       color: placeholderColor,
@@ -310,16 +315,23 @@ const CustomInput: React.FC<CustomInputProps> = ({
       fontWeight: "400",
     },
     _hover: {
+      borderColor: isOutline ? hoverBorderColor : "transparent",
       borderBottomColor: hoverBorderColor,
     },
     _focus: {
+      borderColor: isOutline ? focusBorderColor : "transparent",
       borderBottomColor: focusBorderColor,
-      boxShadow: `0px 1px 0px 0px var(--chakra-colors-${focusBorderColor.replace('.', '-')})`,
+      boxShadow: isOutline 
+        ? focusRing 
+        : `0px 1px 0px 0px var(--chakra-colors-${focusBorderColor.replace('.', '-')})`,
       transform: "none",
     },
     _focusVisible: {
+      borderColor: isOutline ? focusBorderColor : "transparent",
       borderBottomColor: focusBorderColor,
-      boxShadow: `0px 1px 0px 0px var(--chakra-colors-${focusBorderColor.replace('.', '-')})`,
+      boxShadow: isOutline 
+        ? focusRing 
+        : `0px 1px 0px 0px var(--chakra-colors-${focusBorderColor.replace('.', '-')})`,
       transform: "none",
     },
     _disabled: {
@@ -338,8 +350,8 @@ const CustomInput: React.FC<CustomInputProps> = ({
       ...baseStyles,
       minHeight: "48px",
       borderRadius: "16px",
-      paddingLeft: "4px",
-      paddingRight: "4px",
+      paddingLeft: "12px",
+      paddingRight: "8px",
       borderColor: state.isFocused ? theme.colors.brand[500] : borderColor,
       backgroundColor: inputBg,
       color: textColor,
@@ -353,12 +365,12 @@ const CustomInput: React.FC<CustomInputProps> = ({
     }),
     valueContainer: (styles: any) => ({
       ...styles,
-      padding: "2px 8px",
+      padding: "2px 4px",
     }),
     placeholder: (styles: any) => ({
       ...styles,
       color: placeholderColor,
-      fontWeight: 400,
+      fontWeight: 500,
     }),
     option: (styles: any, { isSelected, isFocused }: any) => ({
       ...styles,
@@ -368,25 +380,30 @@ const CustomInput: React.FC<CustomInputProps> = ({
             ? theme.colors.brand[500]
             : isFocused
               ? theme.colors.brand[50]
-              : "white"
+              : "transparent"
           : isSelected
             ? theme.colors.brand[500]
             : isFocused
-              ? theme.colors.darkBrand[100]
-              : theme.colors.darkBrand[50],
+              ? "rgba(255, 255, 255, 0.1)"
+              : "transparent",
       color: isSelected ? "white" : colorMode === "light" ? textColor : "white",
       padding: "10px 12px",
+      borderRadius: "10px",
       cursor: "pointer",
       fontSize: "14px",
+      fontWeight: 500,
       ":hover": {
-        backgroundColor:
-          colorMode === "light" ? theme.colors.brand[50] : theme.colors.darkBrand[100],
+        backgroundColor: isSelected
+          ? theme.colors.brand[600]
+          : colorMode === "light"
+            ? theme.colors.brand[50]
+            : "rgba(255, 255, 255, 0.1)",
       },
     }),
     menu: (baseStyles: any) => ({
       ...baseStyles,
-      backgroundColor: inputBg,
-      border: `1px solid ${borderColor}`,
+      backgroundColor: colorMode === "light" ? theme.colors.gray[50] : theme.colors.gray[900],
+      border: `1px solid ${colorMode === "light" ? theme.colors.gray[300] : theme.colors.gray[700]}`,
       borderRadius: "18px",
       boxShadow: useColorModeValue(
         "0 20px 45px rgba(15, 23, 42, 0.14)",
@@ -402,14 +419,14 @@ const CustomInput: React.FC<CustomInputProps> = ({
     menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
     multiValue: (styles: any) => ({
       ...styles,
-      backgroundColor: colorMode === "light" ? theme.colors.brand[50] : theme.colors.darkBrand[100],
+      backgroundColor: colorMode === "light" ? theme.colors.brand[50] : "rgba(255, 255, 255, 0.1)",
       borderRadius: "999px",
       paddingLeft: "4px",
     }),
     multiValueLabel: (styles: any) => ({
       ...styles,
       color: colorMode === "light" ? theme.colors.brand[700] : "white",
-      fontWeight: 600,
+      fontWeight: 500,
     }),
     multiValueRemove: (styles: any) => ({
       ...styles,

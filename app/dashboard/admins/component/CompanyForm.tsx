@@ -167,20 +167,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
   const [preview, setPreview] = useState<string | null>(null);
   const toast = useToast();
 
-  const borderColor = useColorModeValue("#4A5568", "whiteAlpha.700");
-  const inputStyles = {
-    variant: "unstyled",
-    bg: "transparent",
-    border: "none",
-    borderBottomWidth: "1px",
-    borderBottomStyle: "solid",
-    borderBottomColor: borderColor,
-    borderRadius: "0",
-    px: 1,
-    boxShadow: "none",
-    _focus: { bg: "transparent", boxShadow: "none", borderBottomColor: "brand.500" },
-    _hover: { bg: "transparent" }
-  };
+
 
   /* ✅ SAFE PREVIEW */
   const handlePreview = (file: any) => {
@@ -319,7 +306,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     }}
                     error={fieldError("company_name")}
                     showError={showFieldError("company_name")}
-                    {...inputStyles}
                   />
                   <CustomInput
                     label="Company Code"
@@ -330,7 +316,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("companyCode")}
                     showError={showFieldError("companyCode")}
-                    {...inputStyles}
                   />
                   <CustomInput
                     label="Tenant Slug"
@@ -343,7 +328,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     }
                     error={fieldError("tenantSlug")}
                     showError={showFieldError("tenantSlug")}
-                    {...inputStyles}
                   />
                   <CustomInput
                     label="Custom Domain"
@@ -354,7 +338,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("customDomain")}
                     showError={showFieldError("customDomain")}
-                    {...inputStyles}
                   />
                   <CustomInput
                     label="Manager Levels"
@@ -366,7 +349,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("managerLevels")}
                     showError={showFieldError("managerLevels")}
-                    {...inputStyles}
                   />
                 </SimpleGrid>
 
@@ -459,7 +441,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("companyEmail")}
                     showError={showFieldError("companyEmail")}
-                    {...inputStyles}
                   />
                   <CustomInput
                     label="Primary Phone"
@@ -470,7 +451,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("mobileNo")}
                     showError={showFieldError("mobileNo")}
-                    {...inputStyles}
                   />
                   <CustomInput
                     label="Website"
@@ -481,7 +461,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("webLink")}
                     showError={showFieldError("webLink")}
-                    {...inputStyles}
                   />
                 </SimpleGrid>
 
@@ -507,8 +486,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={handleChange}
                     error={fieldError("bio")}
                     showError={showFieldError("bio")}
-                    {...inputStyles}
-                    borderBottom="none"
                   />
                 </Box>
               </SectionCard>
@@ -526,7 +503,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                       onChange={(e: any) =>
                         setFieldValue("addressInfo[0].address", e.target.value)
                       }
-                      {...inputStyles}
                     />
                   </GridItem>
 
@@ -539,8 +515,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].city", e.target.value)
                     }
-                    {...inputStyles}
-                    variant="flushed"
                   />
                   <CustomInput
                     label="State"
@@ -551,8 +525,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].state", e.target.value)
                     }
-                    {...inputStyles}
-                    variant="flushed"
                   />
                   <CustomInput
                     label="Country"
@@ -563,8 +535,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].country", e.target.value)
                     }
-                    {...inputStyles}
-                    variant="flushed"
                   />
                   <CustomInput
                     label="Pin Code"
@@ -575,8 +545,6 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     onChange={(e: any) =>
                       setFieldValue("addressInfo[0].pinCode", e.target.value)
                     }
-                    {...inputStyles}
-                    variant="flushed"
                   />
                 </Grid>
               </SectionCard>

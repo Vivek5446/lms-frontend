@@ -12,6 +12,8 @@ import {
   Icon,
   SimpleGrid,
   Stack,
+  HStack,
+  Badge,
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
@@ -137,73 +139,32 @@ const DepartmentsPage = observer(() => {
       description="This account does not currently have access to departments."
       fallbackHref="/dashboard/profile"
     >
-      <Box minH="100dvh" bg="transparent" px={{ base: 3, md: 6 }} py={{ base: 3, md: 6 }}>
+      <Box bg="transparent" p={{ base: 3, md: 0 }}>
         <Stack spacing={{ base: 4, md: 6 }}>
-          <Box
-            bg={cardBg}
-            borderWidth="1px"
-            borderColor={borderColor}
-            rounded={{ base: "2xl", md: "3xl" }}
-            p={{ base: 4, md: 6 }}
-            shadow="sm"
-            overflow="hidden"
-            position="relative"
-          >
-            <Box
-              position="absolute"
-              insetX={0}
-              top={0}
-              h="1"
-              bgGradient="linear(to-r, blue.400, purple.500, pink.400)"
-            />
-
-            <Flex
-              direction={{ base: "column", lg: "row" }}
-              justify="space-between"
-              align={{ base: "stretch", lg: "center" }}
-              gap={{ base: 4, md: 6 }}
-            >
-              <Box minW={0}>
-                <Heading
-                  size={{ base: "md", md: "lg" }}
-                  color={headingColor}
-                  letterSpacing="-0.04em"
-                >
-                  Departments
-                </Heading>
-
-                <Text
-                  mt={1}
-                  fontSize={{ base: "xs", md: "sm" }}
-                  color={secondaryTextColor}
-                  noOfLines={{ base: 2, md: 1 }}
-                >
-                  Structure and management for{" "}
-                  <Text as="span" fontWeight="700" color={headingColor}>
-                    {activeCompany?.company_name || "selected company"}
+          <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "xl", md: "2xl" }} p={{ base: 4, md: 6 }} shadow="sm">
+            <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
+              <HStack spacing={4}>
+                <Box p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" display="flex" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+                  <Icon as={FiBriefcase} boxSize={{ base: 4, md: 5 }} color="white" />
+                </Box>
+                <Box>
+                  <Heading size={{ base: "md", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                    <Box as="span" color={useColorModeValue("gray.900", "white")}>DEPARTMENT </Box>
+                    <Box as="span" bgGradient="linear(to-r, #6269FF, #8A2BE2)" bgClip="text">
+                      MANAGEMENT
+                    </Box>
+                  </Heading>
+                  <Text mt={1} fontSize={{ base: "10px", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase">
+                    Structure and management for <Text as="span" color={useColorModeValue("gray.900", "white")}>{activeCompany?.company_name || "selected company"}</Text>
                   </Text>
-                </Text>
-              </Box>
-
-              <SimpleGrid
-                columns={{ base: 1, sm: 2 }}
-                spacing={{ base: 3, md: 4 }}
-                minW={{ base: "100%", lg: "420px" }}
-              >
-                <StatCard
-                  icon={FiGrid}
-                  label="Total departments"
-                  value={totalDepartments}
-                  colorScheme="blue"
-                />
-
-                <StatCard
-                  icon={FiBriefcase}
-                  label="Company"
-                  value={activeCompany?.company_name || "ABC"}
-                  colorScheme="purple"
-                />
-              </SimpleGrid>
+                </Box>
+              </HStack>
+              <Badge bg={useColorModeValue("blue.50", "rgba(98,105,255,0.15)")} color="#6269FF" borderRadius="full" px={4} py={2} fontSize="xs" fontWeight="800">
+                <Flex align="center" gap={1.5}>
+                  <Icon as={FiGrid} boxSize={3.5} />
+                  {totalDepartments} DEPARTMENTS
+                </Flex>
+              </Badge>
             </Flex>
           </Box>
 

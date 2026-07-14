@@ -13,6 +13,7 @@ import {
   Icon,
   Spinner,
   Stack,
+  HStack,
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
@@ -63,32 +64,33 @@ const LearnerProgressPage = observer(() => {
       description="This account does not currently have permission to view learner progress and results."
       fallbackHref="/dashboard"
     >
-      <Box minH="100vh" bg="transparent" p={{ base: 3, md: 5 }}>
+      <Box bg="transparent" p={{ base: 3, md: 0 }}>
         <Stack spacing={4} maxW="1600px" mx="auto">
-          <Box
-            bgImage={heroBg}
-            color="white"
-            borderRadius={{ base: "2xl", md: "3xl" }}
-            p={{ base: 4, md: 6 }}
-            boxShadow="lg"
-          >
-            <Badge bg="whiteAlpha.200" color="white" borderRadius="full" px={3} py={1}>
-              <Flex align="center" gap={1.5}>
-                <Icon as={ShieldCheck} boxSize={3.5} />
-                {role === "superadmin"
-                  ? "Platform scope"
-                  : role === "admin"
-                    ? "Company scope"
-                    : "Department scope"}
-              </Flex>
-            </Badge>
-            <Flex align="center" gap={2.5} mt={3}>
-              <Icon as={ClipboardCheck} boxSize={6} />
-              <Heading size={{ base: "md", md: "lg" }}>Learner Progress</Heading>
+          <Box bg={useColorModeValue("white", "gray.800")} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} p={{ base: 4, md: 6 }} shadow="sm">
+            <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
+              <HStack spacing={4}>
+                <Box p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" display="flex" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+                  <Icon as={ClipboardCheck} boxSize={{ base: 4, md: 5 }} color="white" />
+                </Box>
+                <Box>
+                  <Heading size={{ base: "md", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                    <Box as="span" color={useColorModeValue("gray.900", "white")}>LEARNER </Box>
+                    <Box as="span" bgGradient="linear(to-r, #6269FF, #8A2BE2)" bgClip="text">
+                      PROGRESS
+                    </Box>
+                  </Heading>
+                  <Text mt={1} fontSize={{ base: "10px", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase">
+                    Review course completion and assessment results
+                  </Text>
+                </Box>
+              </HStack>
+              <Badge bg={useColorModeValue("blue.50", "rgba(98,105,255,0.15)")} color="#6269FF" borderRadius="full" px={4} py={2} fontSize="xs" fontWeight="800">
+                <Flex align="center" gap={1.5}>
+                  <Icon as={ShieldCheck} boxSize={3.5} />
+                  {role === "superadmin" ? "PLATFORM SCOPE" : role === "admin" ? "COMPANY SCOPE" : "DEPARTMENT SCOPE"}
+                </Flex>
+              </Badge>
             </Flex>
-            <Text mt={2} color="whiteAlpha.800" fontSize={{ base: "sm", md: "md" }}>
-              Review course completion, assessment results, submitted answers, and learner activity.
-            </Text>
           </Box>
 
           <LearnerResultsWorkspace

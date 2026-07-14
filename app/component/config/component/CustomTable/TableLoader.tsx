@@ -1,4 +1,5 @@
-import { Flex, Heading, Tbody, Td, Tr } from "@chakra-ui/react";
+import { Flex, Heading, Tbody, Td, Tr, VStack, Icon, Text } from "@chakra-ui/react";
+import { FiInbox } from "react-icons/fi";
 import SpinnerLoader from "../../../common/Loader/SpinnerLoader";
 
 interface TableLoaderProps {
@@ -31,10 +32,13 @@ const TableLoader: React.FC<TableLoaderProps> = ({
       <Tbody>
         <Tr>
           <Td colSpan={10} p={5}>
-            <Flex justifyContent="center">
-              <Heading fontSize="sm" color="red.400" cursor="pointer">
-                No Related Data are Found
-              </Heading>
+            <Flex justifyContent="center" py={8}>
+              <VStack spacing={3}>
+                <Icon as={FiInbox} w={10} h={10} color="gray.300" />
+                <Text fontSize="sm" color="gray.500" fontWeight="medium">
+                  No data found
+                </Text>
+              </VStack>
             </Flex>
           </Td>
         </Tr>

@@ -96,16 +96,15 @@ export default function QuizDashboardPage() {
       {/* Header Area */}
       <Box 
         bg={cardBg} 
-        borderBottom="1px solid" 
+        borderWidth="1px" 
         borderColor={borderColor} 
-        px={0} 
-        py={3}
+        rounded="2xl"
+        px={{ base: 4, md: 6 }} 
+        py={{ base: 4, md: 5 }}
         shadow="sm"
-        position="sticky"
-        top={0}
-        zIndex={10}
+        mb={6}
       >
-        <Flex w="full" justify="space-between" align="center" direction={{ base: "column", md: "row" }} gap={4}>
+        <Flex w="full" justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} gap={{ base: 5, md: 4 }}>
           <HStack spacing={4}>
             <Box p={3} bg={useColorModeValue("blue.50", "rgba(98,105,255,0.15)")} rounded="2xl">
               <Icon as={FaClipboardList} boxSize={6} color="blue.500" />
@@ -124,17 +123,19 @@ export default function QuizDashboardPage() {
           </HStack>
 
           <Button 
-            colorScheme="blue" 
-            size="lg"
+            bgGradient="linear(to-r, blue.500, blue.600)"
+            color="white"
+            size={{ base: "md", md: "lg" }}
             rounded="xl"
-            px={8}
-            h="52px"
+            px={{ base: 6, md: 8 }}
+            h={{ base: "48px", md: "52px" }}
             fontWeight="800"
             letterSpacing="0.05em"
             leftIcon={<FaPlus />}
             onClick={() => router.push("/dashboard/quiz/create")}
-            shadow="0 4px 14px rgba(98,105,255,0.35)"
-            _hover={{ transform: "scale(1.03)" }}
+            shadow="0 4px 14px rgba(49,130,206,0.35)"
+            _hover={{ bgGradient: "linear(to-r, blue.600, blue.700)", transform: "translateY(-2px)", shadow: "0 8px 25px rgba(49,130,206,0.5)" }}
+            _active={{ transform: "translateY(0)" }}
             transition="all 0.2s"
           >
             CREATE QUIZ

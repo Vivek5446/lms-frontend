@@ -12,45 +12,30 @@ import {
   DrawerHeader,
   DrawerOverlay,
   Flex,
+  HStack,
+  IconButton,
   Icon,
   SimpleGrid,
   Text,
   VStack,
   useColorModeValue,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Image as ImageIcon, Layers, Lock, User } from "lucide-react";
+import { Building2, Image as ImageIcon, Layers, Lock, User, ArrowLeft } from "lucide-react";
 import CustomInput from "../../../component/config/component/customInput/CustomInput";
 import { genderOptions } from "../../../config/constant";
 import ManagerHierarchy from "./ManagerHierarchy";
 
 /* ================= SECTION CARD ================= */
 const SectionCard = ({ title, icon, children, color }: any) => {
-  const bg = useColorModeValue("white", "gray.800");
-
-  const colorMap: any = {
-    blue: { icon: "blue.500", text: "blue.600", bg: "blue.50" },
-    green: { icon: "green.500", text: "green.600", bg: "green.50" },
-    purple: { icon: "purple.500", text: "purple.600", bg: "purple.50" },
-    orange: { icon: "orange.500", text: "orange.600", bg: "orange.50" },
-  };
-
-  const theme = colorMap[color] || colorMap.blue;
+  const labelColor = useColorModeValue("gray.500", "gray.400");
 
   return (
-    <Box
-      p={5}
-      borderRadius="xl"
-      bg={bg}
-      boxShadow="base"
-      border="1px solid"
-      borderColor="gray.200"
-    >
+    <Box mb={{ base: 2, md: 4 }}>
       <Flex align="center" mb={4} gap={2}>
-        <Box p={2} borderRadius="md" bg={theme.bg}>
-          <Icon as={icon} color={theme.icon} />
-        </Box>
-        <Text fontSize="lg" fontWeight="bold" color={theme.text}>
+        <Icon as={icon} color={labelColor} boxSize={4} />
+        <Text fontSize="11px" fontWeight="800" color={labelColor} letterSpacing="0.15em" textTransform="uppercase">
           {title}
         </Text>
       </Flex>
@@ -223,28 +208,63 @@ const UserDrawer = ({
     await onSubmit();
   };
 
+  const placement = useBreakpointValue({ base: "bottom", md: "right" }) as "bottom" | "right";
+
   return (
-    <Drawer isOpen={isOpen} placement="right" size="xl" onClose={onClose}>
-      <DrawerOverlay />
-      <DrawerContent bg={useColorModeValue("gray.50", "gray.900")}>
-        <DrawerCloseButton />
-
-        {/* HEADER */}
-        <DrawerHeader borderBottom="1px solid" borderColor="gray.200">
-          <Flex align="center" justify="space-between">
-            <Text fontWeight="bold">
-              {userForm.id ? "Edit User" : "Add User"}
-            </Text>
-
-            <Badge colorScheme="blue" px={3} py={1} borderRadius="full">
-              {userForm.role}
-            </Badge>
-          </Flex>
-        </DrawerHeader>
+    <Drawer isOpen={isOpen} placement={placement} size={{ base: "full", md: "xl" }} onClose={onClose} blockScrollOnMount={false}>
+      <DrawerOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+      <DrawerContent h="100vh" overflow="hidden" bg={useColorModeValue("white", "gray.900")} borderTopRadius={{ base: "2xl", md: "none" }}>
 
         {/* BODY */}
-        <DrawerBody>
-          <VStack align="stretch" spacing={6}>
+        <DrawerBody 
+          p={0} 
+          overflowY="auto"
+          sx={{
+            "&::-webkit-scrollbar": { width: "4px" },
+            "&::-webkit-scrollbar-track": { background: "transparent" },
+            "&::-webkit-scrollbar-thumb": { background: "#cbd5e1", borderRadius: "4px" },
+          }}
+        >
+          <Box w="100%" px={{ base: 5, md: 8 }} pt={{ base: 4, md: 5 }} pb="130px">
+            
+            {/* HEADER */}
+            <HStack mb={{ base: 4, md: 5 }} spacing={4} align="center" justify="space-between">
+              <HStack spacing={4}>
+                <IconButton
+                  aria-label="Close"
+                  icon={<ArrowLeft size={17} />}
+                  onClick={onClose}
+                  variant="solid"
+                  borderRadius="full"
+                  w={{ base: "36px", md: "42px" }} h={{ base: "36px", md: "42px" }}
+                  bg={useColorModeValue("gray.100", "gray.800")}
+                  color={useColorModeValue("gray.700", "gray.200")}
+                  border="1px solid"
+                  borderColor={useColorModeValue("gray.200", "gray.700")}
+                  boxShadow="sm"
+                  _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+                  _active={{ transform: "scale(0.95)" }}
+                  transition="all 0.2s"
+                  flexShrink={0}
+                />
+                <Box>
+                  <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                    <Box as="span" color={useColorModeValue("gray.800", "white")}>{userForm.id ? "EDIT " : "ADD "}</Box>
+                    <Box as="span" bgGradient="linear(to-r, #6269FF, #8A2BE2)" bgClip="text">
+                      USER
+                    </Box>
+                  </Text>
+                  <Text fontSize="10px" color={useColorModeValue("gray.500", "gray.400")} fontWeight="700" letterSpacing="0.2em" mt={0.5}>
+                    {userForm.id ? "UPDATE USER DETAILS" : "CREATE A NEW USER"}
+                  </Text>
+                </Box>
+              </HStack>
+              <Badge colorScheme="blue" px={3} py={1} borderRadius="full" fontSize="xs" fontWeight="bold">
+                {userForm.role}
+              </Badge>
+            </HStack>
+
+            <VStack align="stretch" spacing={6}>
             <SectionCard title="Profile Image" icon={ImageIcon} color="purple">
               {preview ? (
                 <Flex direction="column" gap={4}>
@@ -527,18 +547,36 @@ const UserDrawer = ({
               />
             </SectionCard>
 
-          </VStack>
+            </VStack>
+          </Box>
         </DrawerBody>
 
         {/* FOOTER */}
-        <DrawerFooter borderTop="1px solid" borderColor="gray.200">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button colorScheme="blue" onClick={handleValidatedSubmit} isLoading={loading}>
-            {userForm.id ? "Update User" : "Create User"}
-          </Button>
-        </DrawerFooter>
+        <Box
+          position="absolute" bottom={0} left={0} right={0}
+          bg={useColorModeValue("linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 30%)", "linear-gradient(180deg, rgba(23,25,35,0) 0%, rgba(23,25,35,1) 30%)")}
+          px={{ base: 5, md: 8 }} pb={{ base: 6, md: 8 }} pt={8}
+          zIndex={10}
+        >
+          <Box w="100%">
+            <Button
+              w="full" h={{ base: "52px", md: "56px" }}
+              borderRadius="xl"
+              bgGradient="linear(to-r, #6269FF, #4F46E5)"
+              color="white"
+              fontSize={{ base: "sm", md: "md" }} fontWeight="900" letterSpacing="0.1em"
+              _hover={{ transform: "translateY(-2px)", boxShadow: "0 10px 30px rgba(98,105,255,0.5)", bgGradient: "linear(to-r, #4F46E5, #6269FF)" }}
+              _active={{ transform: "translateY(0)" }}
+              transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+              onClick={handleValidatedSubmit} 
+              isLoading={loading}
+              border="1px solid"
+              borderColor="rgba(255,255,255,0.1)"
+            >
+              {userForm.id ? "UPDATE USER" : "CREATE USER"}
+            </Button>
+          </Box>
+        </Box>
       </DrawerContent>
     </Drawer>
   );

@@ -54,9 +54,11 @@ import {
   Target,
   Users,
   XCircle,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
+import CustomInput from "@/app/component/config/component/customInput/CustomInput";
 import stores from "@/app/store/stores";
 import ScormQuizReviewContent from "@/app/dashboard/course/scorm/ScormQuizReviewContent";
 import {
@@ -118,20 +120,16 @@ function FilterSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <Select
-      size="sm"
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      borderRadius="lg"
-      bg={useColorModeValue("white", "gray.800")}
-    >
-      <option value="">{placeholder}</option>
-      {(options || []).map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </Select>
+    <CustomInput
+      type="select"
+      name={placeholder}
+      label={placeholder}
+      value={value ? options?.find((o) => o.value === value) || null : null}
+      onChange={(selected: any) => onChange(selected ? selected.value : "")}
+      options={options || []}
+      placeholder={placeholder}
+      isClear={true}
+    />
   );
 }
 
@@ -511,15 +509,15 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
       </Flex>
 
       <Collapse in={!isMobile || filtersOpen} animateOpacity>
-        <Box bg={mutedBg} borderRadius="xl" p={3} mb={4}>
-          <SimpleGrid columns={{ base: 1, sm: 2, lg: 4, xl: 6 }} spacing={2}>
-            <Input
-              size="sm"
-              borderRadius="lg"
-              placeholder="Search learner, course, batch..."
+        <Box bg={mutedBg} borderRadius="2xl" p={4} mb={6}>
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing={4}>
+            <CustomInput
+              type="text"
+              name="search"
+              label="Search learner, course, batch..."
+              placeholder="Search..."
               value={filters.search}
-              onChange={(event) => updateFilter("search", event.target.value)}
-              bg={panelBg}
+              onChange={(event: any) => updateFilter("search", event.target.value)}
             />
             {role === "superadmin" ? (
               <FilterSelect
@@ -593,43 +591,35 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
               ]}
               onChange={(value) => updateFilter("activityStatus", value)}
             />
-            <Input
-              size="sm"
+            <CustomInput
               type="number"
-              min={0}
-              max={100}
-              borderRadius="lg"
+              name="scoreMin"
+              label="Min score"
               placeholder="Min score"
               value={filters.scoreMin}
-              onChange={(event) => updateFilter("scoreMin", event.target.value)}
-              bg={panelBg}
+              onChange={(event: any) => updateFilter("scoreMin", event.target.value)}
             />
-            <Input
-              size="sm"
+            <CustomInput
               type="number"
-              min={0}
-              max={100}
-              borderRadius="lg"
+              name="scoreMax"
+              label="Max score"
               placeholder="Max score"
               value={filters.scoreMax}
-              onChange={(event) => updateFilter("scoreMax", event.target.value)}
-              bg={panelBg}
+              onChange={(event: any) => updateFilter("scoreMax", event.target.value)}
             />
-            <Input
-              size="sm"
+            <CustomInput
               type="date"
-              borderRadius="lg"
+              name="from"
+              label="From date"
               value={filters.from}
-              onChange={(event) => updateFilter("from", event.target.value)}
-              bg={panelBg}
+              onChange={(event: any) => updateFilter("from", event.target.value)}
             />
-            <Input
-              size="sm"
+            <CustomInput
               type="date"
-              borderRadius="lg"
+              name="to"
+              label="To date"
               value={filters.to}
-              onChange={(event) => updateFilter("to", event.target.value)}
-              bg={panelBg}
+              onChange={(event: any) => updateFilter("to", event.target.value)}
             />
           </SimpleGrid>
           <Flex justify="space-between" align="center" mt={3} gap={2} wrap="wrap">

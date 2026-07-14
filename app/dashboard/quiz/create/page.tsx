@@ -9,7 +9,8 @@ import {
   Text,
   useColorModeValue,
   HStack,
-  useToast
+  useToast,
+  Icon
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { FaClipboardList } from "react-icons/fa";
@@ -33,30 +34,86 @@ export default function CreateQuizPage() {
   };
 
   return (
-    <Box minH="100dvh" bg="transparent" px={{ base: 3, md: 6 }} py={{ base: 3, md: 6 }}>
-      <Stack spacing={{ base: 4, md: 6 }}>
-        <Button variant="ghost" leftIcon={<FiArrowLeft />} alignSelf="flex-start" onClick={() => router.push("/dashboard/quiz")}>
-          Back to Dashboard
-        </Button>
-        <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "2xl", md: "3xl" }} p={{ base: 4, md: 6 }} shadow="sm" overflow="hidden" position="relative">
-          <Box position="absolute" insetX={0} top={0} h="1" bgGradient="linear(to-r, blue.400, purple.500, pink.400)" />
-          <Flex direction={{ base: "column", lg: "row" }} justify="space-between" align={{ base: "stretch", lg: "center" }} gap={{ base: 4, md: 6 }}>
-            <Box minW={0}>
-              <Heading size={{ base: "md", md: "lg" }} color={headingColor} letterSpacing="-0.04em">
-                Create New Quiz
-              </Heading>
-              <Text mt={1} fontSize={{ base: "xs", md: "sm" }} color={secondaryTextColor}>Build your assessment questions and settings</Text>
-            </Box>
-            <HStack spacing={4}>
-              <Button variant="solid" colorScheme="blue" leftIcon={<FiSettings />}>
-                Quiz Settings
+    <Box bg="transparent">
+      
+      <Stack spacing={4}>
+        <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm" mb={2}>
+          <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
+            
+            <HStack spacing={2} align="center">
+              <Box 
+                as="button"
+                onClick={() => router.push("/dashboard/quiz")}
+                color={secondaryTextColor}
+                bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+                w="36px" h="36px"
+                rounded="full"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: "#6269FF", transform: "translateX(-3px)" }}
+                transition="all 0.2s"
+              >
+                <FiArrowLeft size={18} />
+              </Box>
+              <Box 
+                p={{ base: 2.5, md: 3 }} 
+                bgGradient="linear(to-br, #6269FF, #8A2BE2)" 
+                rounded="full" 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="center"
+                boxShadow="0 4px 15px rgba(98,105,255,0.4)"
+                border="1px solid"
+                borderColor="rgba(255,255,255,0.2)"
+                ml={1}
+                mr={2}
+              >
+                <Icon as={FaClipboardList} boxSize={{ base: 4, md: 5 }} color="white" />
+              </Box>
+              <Box>
+                <Heading size={{ base: "md", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" whiteSpace="nowrap">
+                  <Box as="span" color={headingColor}>CREATE </Box>
+                  <Box as="span" bgGradient="linear(to-r, #6269FF, #8A2BE2)" bgClip="text">
+                    NEW QUIZ
+                  </Box>
+                </Heading>
+                <Text mt={1} fontSize={{ base: "10px", md: "xs" }} fontWeight="700" color={secondaryTextColor} letterSpacing="0.1em" textTransform="uppercase">
+                  Build your assessment questions and settings
+                </Text>
+              </Box>
+            </HStack>
+
+            <HStack spacing={3} w={{ base: "full", md: "auto" }}>
+              <Button 
+                variant="solid" 
+                bgGradient="linear(to-r, #6269FF, #4F46E5)"
+                color="white"
+                leftIcon={<FiSettings />}
+                rounded="lg"
+                size={{ base: "sm", md: "md" }}
+                flex={{ base: 1, md: "none" }}
+                px={{ base: 4, md: 6 }}
+                fontWeight="800"
+                _hover={{ transform: "translateY(-2px)", boxShadow: "0 8px 25px rgba(98,105,255,0.4)" }}
+                transition="all 0.2s"
+              >
+                Settings
               </Button>
               <Button 
                 variant="outline" 
-                colorScheme="blue" leftIcon={<FaClipboardList />} 
+                color={secondaryTextColor}
+                borderColor={borderColor}
+                leftIcon={<FaClipboardList />} 
+                rounded="lg"
+                size={{ base: "sm", md: "md" }}
+                flex={{ base: 1, md: "none" }}
+                px={{ base: 4, md: 6 }}
+                fontWeight="800"
                 onClick={() => {
                   toast({ title: "Save quiz settings first", status: "info", duration: 3000 });
                 }}
+                _hover={{ bg: useColorModeValue("gray.50", "whiteAlpha.100") }}
               >
                 Questions
               </Button>

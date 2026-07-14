@@ -27,20 +27,23 @@ import {
   useBreakpointValue,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { 
-  FiBriefcase, 
-  FiMapPin, 
-  FiUser, 
-  FiUsers, 
-  FiMail, 
+import {
+  FiBriefcase,
+  FiMapPin,
+  FiUser,
+  FiUsers,
+  FiMail,
   FiShield,
   FiTrendingUp,
   FiCheckCircle,
   FiClock,
   FiAward,
-  FiSearch
+  FiSearch,
+  FiUpload,
+  FiUserPlus
 } from "react-icons/fi";
 import CustomTable from "../../../component/config/component/CustomTable/CustomTable";
+import StatCard from "@/app/component/common/StatCard/StatCard";
 
 const COLORS = ["blue", "purple", "orange", "green", "pink", "cyan", "teal", "red"];
 
@@ -74,6 +77,10 @@ type Props = {
   userSourceTab?: "all" | "manual" | "public_enrolled";
   setUserSourceTab?: (v: "all" | "manual" | "public_enrolled") => void;
   isPublicEnrolledUser?: (user: any) => boolean;
+  onOpenBulk?: () => void;
+  onOpenCreate?: () => void;
+  canOpenBulk?: boolean;
+  canOpenCreate?: boolean;
 };
 
 const getUserStatusMeta = (user: any) => {
@@ -129,6 +136,10 @@ const UsersTable = ({
   userSourceTab = "all",
   setUserSourceTab,
   isPublicEnrolledUser,
+  onOpenBulk,
+  onOpenCreate,
+  canOpenBulk = false,
+  canOpenCreate = false,
 }: Props) => {
   // Statistics calculations
   const stats = {
@@ -153,6 +164,12 @@ const UsersTable = ({
   const tooltipBg = useColorModeValue("gray.900", "gray.700");
   const tooltipColor = useColorModeValue("white", "white");
   const isCompact = useBreakpointValue({ base: true, lg: false }) ?? false;
+
+  const outlineButtonBorder = useColorModeValue("purple.400", "purple.500");
+  const outlineButtonColor = useColorModeValue("purple.600", "purple.300");
+  const outlineButtonHoverBg = useColorModeValue("purple.50", "gray.700");
+  const gradientFrom = useColorModeValue("blue.600", "blue.400");
+  const gradientTo = useColorModeValue("purple.600", "purple.400");
 
   const columns = [
     {
@@ -427,109 +444,49 @@ const UsersTable = ({
     <VStack spacing={{ base: 4, md: 6 }} align="stretch">
       {/* Statistics Cards */}
       <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
-        <Box
-          bg={cardBg}
-          p={4}
-          borderRadius="2xl"
-          borderWidth="1px"
-          borderColor={borderColorLight}
-          boxShadow="sm"
-          transition="all 0.2s"
-          _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
-        >
-          <Stat>
-            <StatLabel color={muted} fontSize="sm">
-              Total Users
-            </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold" color={statNumberColor}>
-              {stats.total}
-            </StatNumber>
-            <StatHelpText fontSize="xs" color={muted}>
-              <Icon as={FiTrendingUp} mr={1} />
-              Across all roles
-            </StatHelpText>
-          </Stat>
-        </Box>
-
-        <Box
-          bg={cardBg}
-          p={4}
-          borderRadius="2xl"
-          borderWidth="1px"
-          borderColor={borderColorLight}
-          boxShadow="sm"
-          transition="all 0.2s"
-          _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
-        >
-          <Stat>
-            <StatLabel color={muted} fontSize="sm">
-              Active Users
-            </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold" color={activeNumberColor}>
-              {stats.active}
-            </StatNumber>
-            <StatHelpText fontSize="xs" color={muted}>
-              <Icon as={FiCheckCircle} mr={1} />
-              {stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : "0"}% active rate
-            </StatHelpText>
-          </Stat>
-        </Box>
-
-        <Box
-          bg={cardBg}
-          p={4}
-          borderRadius="2xl"
-          borderWidth="1px"
-          borderColor={borderColorLight}
-          boxShadow="sm"
-          transition="all 0.2s"
-          _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
-        >
-          <Stat>
-            <StatLabel color={muted} fontSize="sm">
-              Pending / Inactive
-            </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold" color={pendingNumberColor}>
-              {stats.pending + stats.inactive}
-            </StatNumber>
-            <StatHelpText fontSize="xs" color={muted}>
-              <Icon as={FiClock} mr={1} />
-              {stats.inactive > 0 ? `${stats.inactive} deactivated, ${stats.pending} pending` : "Awaiting activation"}
-            </StatHelpText>
-          </Stat>
-        </Box>
-
-        <Box
-          bg={cardBg}
-          p={4}
-          borderRadius="2xl"
-          borderWidth="1px"
-          borderColor={borderColorLight}
-          boxShadow="sm"
-          transition="all 0.2s"
-          _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
-        >
-          <Stat>
-            <StatLabel color={muted} fontSize="sm">
-              Phone OTP Ready
-            </StatLabel>
-            <StatNumber fontSize="2xl" fontWeight="bold" color={secureNumberColor}>
-              {stats.otpEnabled}
-            </StatNumber>
-            <StatHelpText fontSize="xs" color={muted}>
-              <Icon as={FiShield} mr={1} />
-              {stats.total > 0 ? ((stats.otpEnabled / stats.total) * 100).toFixed(1) : "0"}% using OTP
-            </StatHelpText>
-          </Stat>
-        </Box>
+        <StatCard
+          label="Total Users"
+          value={stats.total}
+          helper="Across all roles"
+          icon={FiTrendingUp}
+          colorScheme="blue"
+        />
+        <StatCard
+          label="Active Users"
+          value={stats.active}
+          helper={`${stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : "0"}% active rate`}
+          icon={FiCheckCircle}
+          colorScheme="green"
+        />
+        <StatCard
+          label="Pending / Inactive"
+          value={stats.pending + stats.inactive}
+          helper={stats.inactive > 0 ? `${stats.inactive} deactivated, ${stats.pending} pending` : "Awaiting activation"}
+          icon={FiClock}
+          colorScheme="orange"
+        />
+        <StatCard
+          label="Phone OTP Ready"
+          value={stats.otpEnabled}
+          helper={`${stats.total > 0 ? ((stats.otpEnabled / stats.total) * 100).toFixed(1) : "0"}% using OTP`}
+          icon={FiShield}
+          colorScheme="purple"
+        />
       </SimpleGrid>
 
       {/* Tabs Section */}
-      <Box>
+      <Box
+        bg={cardBg}
+        borderWidth="1px"
+        borderColor={borderColorLight}
+        borderRadius="xl"
+        p={4}
+        mb={4}
+        boxShadow="sm"
+      >
         <Flex
           justify="space-between"
           align="center"
-          mb={{ base: 4, md: 6 }}
           flexWrap="wrap"
           gap={4}
         >
@@ -566,18 +523,69 @@ const UsersTable = ({
             </TabList>
           </Tabs>
 
-          <Box
-            bg={statsBg}
-            px={4}
-            py={2}
-            borderRadius="full"
-          >
-            <Text fontSize="sm" fontWeight="semibold" color={statsTextColor}>
-              {pagination.total} total {activeTabLabel.toLowerCase()}
-              {pagination.total !== 1 ? "s" : ""}
-            </Text>
-          </Box>
-        </Flex>
+          <HStack spacing={3} flexWrap="wrap" justify={{ base: "flex-start", md: "flex-end" }}>
+            <Box
+              bg={statsBg}
+              px={4}
+              py={2}
+              borderRadius="full"
+              display={{ base: "none", md: "block" }}
+            >
+              <Text fontSize="sm" fontWeight="semibold" color={statsTextColor}>
+                {pagination.total} total {activeTabLabel.toLowerCase().replace(/s$/, pagination.total === 1 ? '' : 's')}
+              </Text>
+            </Box>
+
+            {canOpenBulk && (
+              <Button
+                leftIcon={<Icon as={FiUpload} />}
+                variant="outline"
+                onClick={onOpenBulk}
+                size="md"
+                px={5}
+                borderRadius="full"
+                borderWidth="1px"
+                borderColor={outlineButtonBorder}
+                color={outlineButtonColor}
+                fontWeight="600"
+                _hover={{
+                  bg: outlineButtonHoverBg,
+                  borderColor: useColorModeValue("purple.500", "purple.400"),
+                  transform: "translateY(-1px)",
+                  boxShadow: "sm",
+                }}
+                _active={{ transform: "translateY(0)" }}
+                transition="all 0.2s"
+              >
+                Excel Upload
+              </Button>
+            )}
+
+            {canOpenCreate && (
+              <Button
+                leftIcon={<Icon as={FiUserPlus} />}
+                onClick={onOpenCreate}
+                size="md"
+                px={6}
+                borderRadius="full"
+                bgGradient={`linear(to-r, ${gradientFrom}, ${gradientTo})`}
+                color="white"
+                fontWeight="600"
+                _hover={{
+                  bgGradient: `linear(to-r, ${useColorModeValue("blue.600", "blue.500")}, ${useColorModeValue("purple.700", "purple.600")})`,
+                  transform: "translateY(-1px)",
+                  boxShadow: "md",
+                }}
+                _active={{ transform: "translateY(0)" }}
+                transition="all 0.2s"
+                boxShadow="sm"
+              >
+                Add User
+              </Button>
+            )}
+          </HStack>
+          </Flex>
+        </Box>
 
         {/* User Source Sub-filter for Admin (Manually Created vs Public Enrolled) */}
         {showUserSourceTabs && (
@@ -803,7 +811,6 @@ const UsersTable = ({
             </HStack>
           </Stack>
         )}
-      </Box>
     </VStack>
   );
 };

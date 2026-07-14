@@ -28,8 +28,9 @@ import {
 import { useState } from "react";
 import axios from "axios";
 import { FaShieldAlt, FaClock, FaLock, FaCertificate, FaCog } from "react-icons/fa";
+import CustomInput from "../../../component/config/component/customInput/CustomInput";
 
-export default function QuizSettingsForm({ initialData = {}, onSaved }: { initialData?: any, onSaved?: () => void }) {
+export default function QuizSettingsForm({ initialData = {}, onSaved }: { initialData?: any, onSaved?: (id?: string) => void }) {
   const toast = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -123,7 +124,10 @@ export default function QuizSettingsForm({ initialData = {}, onSaved }: { initia
         toast({ title: "Quiz created successfully", status: "success" });
       }
       
-      if (onSaved) onSaved();
+      if (onSaved) {
+        const newId = initialData?._id || res?.data?._id || res?.data?.id || res?.data?.data?._id || "";
+        onSaved(newId);
+      }
 
     } catch (error: any) {
       toast({ title: "Error saving quiz", status: "error" });
@@ -133,41 +137,59 @@ export default function QuizSettingsForm({ initialData = {}, onSaved }: { initia
   };
 
   return (
-    <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded="2xl" p={8} shadow="sm">
-      <VStack spacing={8} align="stretch">
+    <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded="2xl" p={{ base: 4, md: 8 }} shadow="sm">
+      <VStack spacing={6} align="stretch">
         
         {/* Basic Info */}
         <Box>
           <HStack mb={4}>
-            <Icon as={FaCog} color="blue.500" boxSize={5} />
+            <Icon as={FaCog} color="#6269FF" boxSize={5} />
             <Heading size="md" color={headingColor}>Basic Information</Heading>
           </HStack>
           <VStack spacing={4}>
-            <FormControl isRequired>
-              <FormLabel color={secondaryTextColor}>Quiz Title</FormLabel>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} size="lg" focusBorderColor="blue.400" />
-            </FormControl>
-            <FormControl>
-              <FormLabel color={secondaryTextColor}>Description</FormLabel>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} focusBorderColor="blue.400" />
-            </FormControl>
+            <CustomInput
+              type="text"
+              name="title"
+              label="Quiz Title"
+              placeholder="Enter quiz title"
+              value={title}
+              onChange={(e: any) => setTitle(e.target.value)}
+              required
+            />
+            <CustomInput
+              type="textarea"
+              name="description"
+              label="Description"
+              placeholder="Enter quiz description"
+              value={description}
+              onChange={(e: any) => setDescription(e.target.value)}
+              rows={3}
+            />
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="100%">
-              <FormControl>
-                <FormLabel color={secondaryTextColor}>Visibility</FormLabel>
-                <Select value={visibility} onChange={(e) => setVisibility(e.target.value)} focusBorderColor="blue.400">
-                  <option value="PUBLIC">Public</option>
-                  <option value="PRIVATE">Private</option>
-                  <option value="RESTRICTED">Restricted</option>
-                </Select>
-              </FormControl>
-              <FormControl>
-                <FormLabel color={secondaryTextColor}>Status</FormLabel>
-                <Select value={status} onChange={(e) => setStatus(e.target.value)} focusBorderColor="blue.400">
-                  <option value="DRAFT">Draft</option>
-                  <option value="PUBLISHED">Published</option>
-                  <option value="ARCHIVED">Archived</option>
-                </Select>
-              </FormControl>
+              <CustomInput
+                type="select"
+                name="visibility"
+                label="Visibility"
+                options={[
+                  { label: "Public", value: "PUBLIC" },
+                  { label: "Private", value: "PRIVATE" },
+                  { label: "Restricted", value: "RESTRICTED" }
+                ]}
+                value={[{ label: "Public", value: "PUBLIC" }, { label: "Private", value: "PRIVATE" }, { label: "Restricted", value: "RESTRICTED" }].find(o => o.value === visibility)}
+                onChange={(option: any) => setVisibility(option?.value || "PRIVATE")}
+              />
+              <CustomInput
+                type="select"
+                name="status"
+                label="Status"
+                options={[
+                  { label: "Draft", value: "DRAFT" },
+                  { label: "Published", value: "PUBLISHED" },
+                  { label: "Archived", value: "ARCHIVED" }
+                ]}
+                value={[{ label: "Draft", value: "DRAFT" }, { label: "Published", value: "PUBLISHED" }, { label: "Archived", value: "ARCHIVED" }].find(o => o.value === status)}
+                onChange={(option: any) => setStatus(option?.value || "DRAFT")}
+              />
             </SimpleGrid>
             <FormControl display="flex" alignItems="center" bg={useColorModeValue("gray.50", "gray.900")} p={4} rounded="xl" borderWidth="1px" borderColor={borderColor}>
               <FormLabel htmlFor="is-active" mb="0" color={secondaryTextColor} flex="1" fontWeight="bold">
@@ -192,27 +214,46 @@ export default function QuizSettingsForm({ initialData = {}, onSaved }: { initia
             </h2>
             <AccordionPanel pb={6} px={6}>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                <FormControl>
-                  <FormLabel color={secondaryTextColor}>Start Date & Time</FormLabel>
-                  <Input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} bg={cardBg} />
-                </FormControl>
-                <FormControl>
-                  <FormLabel color={secondaryTextColor}>End Date & Time</FormLabel>
-                  <Input type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)} bg={cardBg} />
-                </FormControl>
-                <FormControl>
-                  <FormLabel color={secondaryTextColor}>Max Attempts Allowed</FormLabel>
-                  <Input type="number" min={1} value={maxAttempts} onChange={(e) => setMaxAttempts(Number(e.target.value))} bg={cardBg} />
-                </FormControl>
-                <FormControl>
-                  <FormLabel color={secondaryTextColor}>Password Protection</FormLabel>
-                  <Input type="text" placeholder="Leave blank for no password" value={password} onChange={(e) => setPassword(e.target.value)} bg={cardBg} />
-                </FormControl>
-                <FormControl gridColumn={{ md: "span 2" }}>
-                  <FormLabel color={secondaryTextColor}>Allowed Domains (e.g., @company.com)</FormLabel>
-                  <Input type="text" placeholder="Separate multiple domains with commas" value={allowedDomains} onChange={(e) => setAllowedDomains(e.target.value)} bg={cardBg} />
+                <CustomInput
+                  type="dateAndTime"
+                  name="startDate"
+                  label="Start Date & Time"
+                  value={startDate}
+                  onChange={(e: any) => setStartDate(e.target.value)}
+                />
+                <CustomInput
+                  type="dateAndTime"
+                  name="endDate"
+                  label="End Date & Time"
+                  value={endDate}
+                  onChange={(e: any) => setEndDate(e.target.value)}
+                />
+                <CustomInput
+                  type="number"
+                  name="maxAttempts"
+                  label="Max Attempts Allowed"
+                  value={maxAttempts}
+                  onChange={(e: any) => setMaxAttempts(Number(e.target.value))}
+                />
+                <CustomInput
+                  type="text"
+                  name="password"
+                  label="Password Protection"
+                  placeholder="Leave blank for no password"
+                  value={password}
+                  onChange={(e: any) => setPassword(e.target.value)}
+                />
+                <Box gridColumn={{ md: "span 2" }}>
+                  <CustomInput
+                    type="text"
+                    name="allowedDomains"
+                    label="Allowed Domains (e.g., @company.com)"
+                    placeholder="Separate multiple domains with commas"
+                    value={allowedDomains}
+                    onChange={(e: any) => setAllowedDomains(e.target.value)}
+                  />
                   <Text fontSize="xs" color="gray.500" mt={1}>Only users with these email domains can take the quiz.</Text>
-                </FormControl>
+                </Box>
               </SimpleGrid>
             </AccordionPanel>
           </AccordionItem>
@@ -229,26 +270,34 @@ export default function QuizSettingsForm({ initialData = {}, onSaved }: { initia
             </h2>
             <AccordionPanel pb={6} px={6}>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} mb={6}>
-                <FormControl>
-                  <FormLabel color={secondaryTextColor}>Timer Mode</FormLabel>
-                  <Select value={timerType} onChange={(e) => setTimerType(e.target.value)} bg={cardBg}>
-                    <option value="NONE">No Timer</option>
-                    <option value="OVERALL">Overall Quiz Timer</option>
-                    <option value="PER_QUESTION">Per-Question Timer</option>
-                  </Select>
-                </FormControl>
+                <CustomInput
+                  type="select"
+                  name="timerType"
+                  label="Timer Mode"
+                  options={[
+                    { label: "No Timer", value: "NONE" },
+                    { label: "Overall Quiz Timer", value: "OVERALL" },
+                    { label: "Per-Question Timer", value: "PER_QUESTION" }
+                  ]}
+                  value={[{ label: "No Timer", value: "NONE" }, { label: "Overall Quiz Timer", value: "OVERALL" }, { label: "Per-Question Timer", value: "PER_QUESTION" }].find(o => o.value === timerType)}
+                  onChange={(option: any) => setTimerType(option?.value || "NONE")}
+                />
                 {timerType !== "NONE" && (
-                  <FormControl>
-                    <FormLabel color={secondaryTextColor}>
-                      {timerType === "OVERALL" ? "Time Limit (Minutes)" : "Time Limit (Seconds per Question)"}
-                    </FormLabel>
-                    <Input type="number" value={timeLimit} onChange={(e) => setTimeLimit(Number(e.target.value))} bg={cardBg} />
-                  </FormControl>
+                  <CustomInput
+                    type="number"
+                    name="timeLimit"
+                    label={timerType === "OVERALL" ? "Time Limit (Minutes)" : "Time Limit (Seconds per Question)"}
+                    value={timeLimit}
+                    onChange={(e: any) => setTimeLimit(Number(e.target.value))}
+                  />
                 )}
-                <FormControl>
-                  <FormLabel color={secondaryTextColor}>Passing Percentage (%)</FormLabel>
-                  <Input type="number" min={0} max={100} value={passingPercentage} onChange={(e) => setPassingPercentage(Number(e.target.value))} bg={cardBg} />
-                </FormControl>
+                <CustomInput
+                  type="number"
+                  name="passingPercentage"
+                  label="Passing Percentage (%)"
+                  value={passingPercentage}
+                  onChange={(e: any) => setPassingPercentage(Number(e.target.value))}
+                />
               </SimpleGrid>
               
               <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
@@ -280,19 +329,28 @@ export default function QuizSettingsForm({ initialData = {}, onSaved }: { initia
             </h2>
             <AccordionPanel pb={6} px={6}>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} mb={6}>
-                <FormControl>
-                  <FormLabel color={secondaryTextColor}>Proctoring Level</FormLabel>
-                  <Select value={proctoringLevel} onChange={(e) => setProctoringLevel(e.target.value)} bg={cardBg}>
-                    <option value="NONE">None</option>
-                    <option value="BASIC">Basic (Browser Lock)</option>
-                    <option value="STRICT">Strict (Webcam Monitoring)</option>
-                  </Select>
-                </FormControl>
-                <FormControl>
-                  <FormLabel color={secondaryTextColor}>Max Tab Switches Allowed</FormLabel>
-                  <Input type="number" min={0} value={maxTabSwitchesAllowed} onChange={(e) => setMaxTabSwitchesAllowed(Number(e.target.value))} bg={cardBg} />
+                <CustomInput
+                  type="select"
+                  name="proctoringLevel"
+                  label="Proctoring Level"
+                  options={[
+                    { label: "None", value: "NONE" },
+                    { label: "Basic (Browser Lock)", value: "BASIC" },
+                    { label: "Strict (Webcam Monitoring)", value: "STRICT" }
+                  ]}
+                  value={[{ label: "None", value: "NONE" }, { label: "Basic (Browser Lock)", value: "BASIC" }, { label: "Strict (Webcam Monitoring)", value: "STRICT" }].find(o => o.value === proctoringLevel)}
+                  onChange={(option: any) => setProctoringLevel(option?.value || "NONE")}
+                />
+                <Box>
+                  <CustomInput
+                    type="number"
+                    name="maxTabSwitchesAllowed"
+                    label="Max Tab Switches Allowed"
+                    value={maxTabSwitchesAllowed}
+                    onChange={(e: any) => setMaxTabSwitchesAllowed(Number(e.target.value))}
+                  />
                   <Text fontSize="xs" color="gray.500" mt={1}>Quiz Auto-Submits if user leaves tab too many times.</Text>
-                </FormControl>
+                </Box>
               </SimpleGrid>
               
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
@@ -329,14 +387,21 @@ export default function QuizSettingsForm({ initialData = {}, onSaved }: { initia
         </Accordion>
 
         <Button 
-          colorScheme="blue" 
-          size="lg" 
+          w="full" h={{ base: "52px", md: "56px" }}
+          borderRadius="xl"
+          bgGradient="linear(to-r, #6269FF, #4F46E5)"
+          color="white"
+          fontSize={{ base: "sm", md: "md" }} fontWeight="900" letterSpacing="0.1em"
+          _hover={{ transform: "translateY(-2px)", boxShadow: "0 10px 30px rgba(98,105,255,0.5)", bgGradient: "linear(to-r, #4F46E5, #6269FF)" }}
+          _active={{ transform: "translateY(0)" }}
+          transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
           onClick={handleSave} 
           isLoading={isSaving}
+          border="1px solid"
+          borderColor="rgba(255,255,255,0.1)"
           mt={4}
-          shadow="md"
         >
-          Save All Quiz Settings
+          SAVE QUIZ SETTINGS
         </Button>
       </VStack>
     </Box>

@@ -530,59 +530,8 @@ const DepartmentTable = ({ companyId, companyName }: DepartmentTableProps) => {
         shadow="sm"
         position="relative"
       >
-        <Box
-          h="1"
-          bgGradient="linear(to-r, blue.400, purple.500, pink.400)"
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-        />
-
         <Box p={{ base: 4, md: 6 }}>
-          <Flex
-            direction={{ base: "column", md: "row" }}
-            align={{ base: "stretch", md: "center" }}
-            justify="space-between"
-            gap={{ base: 3, md: 4 }}
-            mb={{ base: 4, md: 6 }}
-          >
-            <HStack spacing={3} align="flex-start">
-              <Box
-                p={{ base: 2, md: 2.5 }}
-                rounded="xl"
-                bgGradient="linear(to-br, blue.500, purple.600)"
-                color="white"
-                flexShrink={0}
-              >
-                <Icon as={FiHash} boxSize={{ base: 4, md: 5 }} />
-              </Box>
-
-              <Box minW={0}>
-                <Text
-                  fontSize={{ base: "lg", md: "2xl" }}
-                  fontWeight="800"
-                  color={headingColor}
-                  lineHeight="1.2"
-                >
-                  Departments
-                </Text>
-
-                <Text
-                  fontSize={{ base: "xs", md: "sm" }}
-                  color={mutedTextColor}
-                  mt={1}
-                  noOfLines={{ base: 2, md: 1 }}
-                >
-                  {companyName
-                    ? `${canManageDepartments ? "Manage" : "View"} departments for ${companyName}`
-                    : `Select a company to ${
-                        canManageDepartments ? "view and manage" : "view"
-                      } departments`}
-                </Text>
-              </Box>
-            </HStack>
-
+          <Flex justify="flex-end" mb={{ base: 4, md: 6 }}>
             <Tooltip
               label={
                 !companyId

@@ -65,34 +65,20 @@ const ManagerHierarchy = ({
           !String(manager.selectedManager?.value || "").startsWith("pending:");
 
         return (
-          <Box
-            key={manager.level}
-            borderWidth="1px"
-            borderColor={borderColor}
-            borderRadius="xl"
-            p={4}
-          >
-            <Flex justify="space-between" align="center" mb={3}>
-              <HStack>
-                <Badge colorScheme={COLORS[index % COLORS.length]}>
+          <Box key={manager.level} mb={6}>
+            <Flex justify="space-between" align="center" mb={2}>
+              <HStack spacing={2}>
+                <Badge colorScheme={COLORS[index % COLORS.length]} fontSize="9px" borderRadius="sm" px={1.5}>
                   L{manager.level}
                 </Badge>
-                <Text fontWeight="semibold">
-                  L{manager.level} Manager
+                <Text fontSize="11px" fontWeight="800" color={muted} letterSpacing="0.1em" textTransform="uppercase">
+                  Manager
                 </Text>
               </HStack>
 
-              <Badge
-                colorScheme={
-                  isAssigned ? "green" : email ? "orange" : "gray"
-                }
-              >
-                {isAssigned
-                  ? "Assigned"
-                  : email
-                  ? "Pending"
-                  : "Optional"}
-              </Badge>
+              <Text fontSize="10px" fontWeight="700" color={isAssigned ? "green.500" : email ? "orange.500" : "gray.400"} letterSpacing="0.1em" textTransform="uppercase">
+                {isAssigned ? "Assigned" : email ? "Pending" : "Optional"}
+              </Text>
             </Flex>
 
             <CustomInput

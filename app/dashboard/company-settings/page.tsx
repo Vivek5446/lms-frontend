@@ -31,6 +31,7 @@ import { readFileAsBase64 } from "../../config/utils/utils";
 import stores from "../../store/stores";
 import CompanyForm from "../admins/component/CompanyForm";
 import PageTitle from "../../component/common/PageTitle/PageTitle";
+import CustomInput from "../../component/config/component/customInput/CustomInput";
 
 const isRealFile = (value: unknown): value is File => typeof File !== "undefined" && value instanceof File;
 
@@ -248,30 +249,27 @@ const CompanySettingsPage = observer(() => {
                     <VStack align="stretch" spacing={4}>
                       {canEdit && (
                         <HStack>
-                          <Input
-                            value={newDept}
-                            onChange={(e) => setNewDept(e.target.value)}
-                            placeholder="Add a department (e.g. Engineering)"
-                            variant="unstyled"
-                            border="none"
-                            borderBottomWidth="1px"
-                            borderBottomStyle="solid"
-                            borderBottomColor={inputBorderColor}
-                            borderRadius="0"
-                            px={1}
-                            _focus={{ borderBottomColor: "blue.500" }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                addDepartment();
-                              }
-                            }}
-                          />
+                          <Box flex="1">
+                            <CustomInput
+                              name="newDept"
+                              value={newDept}
+                              onChange={(e: any) => setNewDept(e.target.value)}
+                              placeholder="Add a department (e.g. Engineering)"
+                              onKeyDown={(e: any) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  addDepartment();
+                                }
+                              }}
+                            />
+                          </Box>
                           <Button
                             onClick={addDepartment}
                             colorScheme="blue"
                             borderRadius="xl"
                             isDisabled={!newDept.trim()}
+                            h="48px"
+                            px={6}
                           >
                             Add
                           </Button>
@@ -288,14 +286,25 @@ const CompanySettingsPage = observer(() => {
                             {departments.map((dept) => (
                               <Tag
                                 key={dept}
-                                size="md"
-                                colorScheme="blue"
-                                borderRadius="full"
-                                variant="subtle"
+                                size="lg"
+                                bg={cardBg}
+                                border="1px solid"
+                                borderColor={borderColor}
+                                color={useColorModeValue("gray.700", "white")}
+                                borderRadius="xl"
+                                px={4}
+                                py={2}
+                                boxShadow="sm"
                               >
-                                <TagLabel>{dept}</TagLabel>
+                                <TagLabel fontWeight="500">{dept}</TagLabel>
                                 {canEdit && (
-                                  <TagCloseButton onClick={() => removeDepartment(dept)} />
+                                  <TagCloseButton 
+                                    onClick={() => removeDepartment(dept)} 
+                                    color="gray.400"
+                                    _hover={{ color: "red.500", bg: "red.50" }}
+                                    borderRadius="full"
+                                    ml={2}
+                                  />
                                 )}
                               </Tag>
                             ))}

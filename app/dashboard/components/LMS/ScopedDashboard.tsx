@@ -42,68 +42,17 @@ import { SuperadminDashboard } from "./components/superadmin-dashboard/Superadmi
 import { SuperadminDashboardSummary } from "./components/superadmin-dashboard/types";
 import { DashboardCharts } from "./components/scoped-dashboard/DashboardCharts";
 import { DashboardFilters } from "./components/scoped-dashboard/DashboardFilters";
+import StatCard, { StatCardProps } from "@/app/component/common/StatCard/StatCard";
 import {
   EMPTY_SCOPED_FILTERS,
   ScopedDashboardFilters,
   ScopedDashboardSummary,
 } from "./components/scoped-dashboard/types";
 
-type StatCardProps = {
-  label: string;
-  value: number | string;
-  helper: string;
-  icon: any;
-  colorScheme: string;
-};
-
-function StatCard({ label, value, helper, icon, colorScheme }: StatCardProps) {
-  const bg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-
-  return (
-    <Box
-      bg={bg}
-      borderWidth="1px"
-      borderColor={borderColor}
-      borderRadius="xl"
-      p={{ base: 3.5, md: 4 }}
-      boxShadow="sm"
-      transition="transform .18s ease, box-shadow .18s ease"
-      _hover={{ transform: "translateY(-2px)", boxShadow: "md" }}
-      minW={0}
-    >
-      <Flex justify="space-between" gap={3}>
-        <Stat minW={0}>
-          <StatLabel color="gray.500" fontSize="xs" noOfLines={1}>
-            {label}
-          </StatLabel>
-          <StatNumber mt={1} fontSize={{ base: "xl", md: "2xl" }} lineHeight="1.15">
-            {typeof value === "number" ? value.toLocaleString() : value}
-          </StatNumber>
-          <Text mt={1.5} fontSize="xs" color="gray.500" noOfLines={1}>
-            {helper}
-          </Text>
-        </Stat>
-        <Flex
-          align="center"
-          justify="center"
-          w="36px"
-          h="36px"
-          flexShrink={0}
-          borderRadius="lg"
-          bg={`${colorScheme}.50`}
-          color={`${colorScheme}.600`}
-        >
-          <Icon as={icon} boxSize={4.5} />
-        </Flex>
-      </Flex>
-    </Box>
-  );
-}
 
 function DashboardSkeleton() {
   return (
-    <Stack spacing={4} p={{ base: 3, md: 5 }}>
+    <Stack spacing={4}>
       <Skeleton h="132px" borderRadius="2xl" />
       <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3}>
         {Array.from({ length: 8 }).map((_, index) => (
@@ -311,7 +260,7 @@ const ScopedDashboard = observer(() => {
       ];
 
   return (
-    <Box minH="100vh" p={{ base: 3, md: 5 }}>
+    <Box bg="transparent" p={{ base: 3, md: 0 }}>
       <Stack spacing={4} maxW="1600px" mx="auto">
         <Box
           bg={heroBg}
@@ -350,7 +299,7 @@ const ScopedDashboard = observer(() => {
                   </Badge>
                 ) : null}
               </HStack>
-              <Heading size={{ base: "md", md: "lg" }} noOfLines={1}>
+              <Heading size={{ base: "sm", md: "lg" }} noOfLines={2} lineHeight="1.3">
                 {isAdmin
                   ? scope.companyName || "Company dashboard"
                   : scope.departmentName || "Department dashboard"}
@@ -392,7 +341,7 @@ const ScopedDashboard = observer(() => {
           </Alert>
         ) : null}
 
-        <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3}>
+        <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={4}>
           {statCards.map((card) => (
             <StatCard key={card.label} {...card} />
           ))}

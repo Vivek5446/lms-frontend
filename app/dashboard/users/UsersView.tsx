@@ -1132,7 +1132,7 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       description="This account does not currently have access to the users workspace."
       fallbackHref="/dashboard/profile"
     >
-    <Box minH={embedded ? "auto" : "100vh"} p={embedded ? 0 : { base: 4, md: 6 }}>
+    <Box bg="transparent" p={{ base: 3, md: 0 }}>
       <VStack align="stretch" spacing={6}>
 
         {isManagementBlocked ? (
@@ -1179,6 +1179,10 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   canEdit={canEditUsers}
   canDelete={canDeleteUsers}
   canToggleStatus={isSuperadmin}
+  onOpenBulk={openBulkUpload}
+  onOpenCreate={openCreate}
+  canOpenBulk={canOpenBulk}
+  canOpenCreate={canOpenCreate}
 />
       
       </VStack>
