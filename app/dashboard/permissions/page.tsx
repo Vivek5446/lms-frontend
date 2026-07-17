@@ -35,6 +35,7 @@ import {
   FiGrid,
   FiShield,
   FiUsers,
+  FiArrowLeft
 } from "react-icons/fi";
 
 function buildPermissionDraft(
@@ -567,34 +568,49 @@ const PermissionsPage = observer(() => {
       description="Only Super Admins can edit role defaults and user permission overrides."
       fallbackHref="/dashboard/profile"
     >
-      <Box minH="100dvh" bg={bgColor} py={{ base: 2, md: 0 }}>
-        <Box px={{ base: 1, md: 2 }}>
+      <Box minH="100dvh" bg={bgColor} p={{ base: 3, md: 0 }}>
+        <Box>
           <Stack spacing={{ base: 4, md: 6 }}>
             <Box
-              rounded={{ base: "2xl", md: "3xl" }}
+              rounded={{ base: "xl", md: "2xl" }}
               bgGradient={headerBgGradient}
               borderWidth="1px"
               borderColor={headerBorderColor}
-              p={{ base: 4, md: 6 }}
+              px={{ base: 4, md: 6 }}
+              py={{ base: 4, md: 5 }}
+              shadow="sm"
             >
               <HStack align="center" justify="space-between" spacing={3}>
-                <Box minW={0}>
-                  <Heading
-                    size={{ base: "md", md: "xl" }}
-                    letterSpacing="-0.04em"
-                    color={textColor}
-                  >
-                    Permissions
-                  </Heading>
-
-                  <Text
-                    mt={{ base: 0.5, md: 1 }}
-                    fontSize={{ base: "xs", md: "base" }}
+                <HStack spacing={2} align="center">
+                  <Box 
+                    as="button"
+                    onClick={() => window.history.back()}
                     color={textSecondaryColor}
+                    bg={useColorModeValue("blackAlpha.50", "whiteAlpha.100")}
+                    w="36px" h="36px"
+                    rounded="full"
+                    flexShrink={0}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    _hover={{ bg: useColorModeValue("blackAlpha.100", "whiteAlpha.200"), color: "teal.500", transform: "translateX(-3px)" }}
+                    transition="all 0.2s"
                   >
-                    Role defaults and user overrides
-                  </Text>
-                </Box>
+                    <FiArrowLeft size={18} />
+                  </Box>
+                  <Box minW={0}>
+                    <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                      <Box as="span" color={useColorModeValue("gray.900", "white")}>ACCESS </Box>
+                      <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
+                        PERMISSIONS
+                      </Box>
+                    </Heading>
+
+                    <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} fontWeight="700" color={textSecondaryColor} letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
+                      Role defaults and user overrides
+                    </Text>
+                  </Box>
+                </HStack>
 
                 <HStack
                   display={{ base: "none", md: "flex" }}
@@ -813,13 +829,13 @@ const PermissionsPage = observer(() => {
                     flexDirection="column"
                     alignItems="center"
                     justifyContent="center"
-                    rounded="2xl"
+                    rounded="xl"
                     borderWidth="1px"
                     borderStyle="dashed"
                     borderColor={dashedBorderColor}
                     bg={emptyStateBgColor}
                     textAlign="center"
-                    px={4}
+                    p={8}
                   >
                     <Text
                       color={emptyStateTextColor}

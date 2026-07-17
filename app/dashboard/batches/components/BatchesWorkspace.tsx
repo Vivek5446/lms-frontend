@@ -55,7 +55,8 @@ import {
   FiTrash2,
   FiTrendingUp,
   FiUserPlus,
-  FiUsers
+  FiUsers,
+  FiArrowLeft
 } from "react-icons/fi";
 import BatchCard from "./BatchCard";
 import BatchCreationModal from "./BatchCreationModal";
@@ -413,7 +414,7 @@ return (
             "linear-gradient(135deg, #020617 0%, #111827 48%, #172554 100%)"
           )
     }
-    p={isLearner ? { base: 3, md: 6 } : { base: 0, md: 2 }}
+    p={isLearner ? { base: 3, md: 6 } : { base: 3, md: 2 }}
     overflowX="hidden"
   >
     <Stack
@@ -425,8 +426,8 @@ return (
 
 <Box
   borderRadius={{ base: "xl", md: "2xl" }}
-  px={{ base: 4, md: 8 }}
-  py={{ base: 4, md: 6 }} // Reduced mobile padding
+  px={{ base: 4, md: 6 }}
+  py={{ base: 4, md: 5 }} // Adjusted for consistency across pages
   bg={
     isLearner
       ? learnerHeroBg
@@ -483,8 +484,26 @@ return (
       gap={{ base: 3, md: 6 }}
       w="100%"
     >
-      <VStack align="start" spacing={{ base: 1, md: 3 }} flex={1} minW={0}>
-        {isLearner ? (
+      <HStack align="flex-start" spacing={{ base: 3, md: 4 }} flex={1} minW={0}>
+        <Box 
+          as="button"
+          onClick={() => window.history.back()}
+          color={isLearner ? learnerHeroText : useColorModeValue("gray.500", "gray.400")}
+          bg={isLearner ? learnerHeroPanelBg : useColorModeValue("gray.100", "whiteAlpha.100")}
+          w={{ base: "32px", md: "42px" }} h={{ base: "32px", md: "42px" }}
+          rounded="full"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: isLearner ? brand700 : "blue.500", transform: "translateX(-3px)" }}
+          transition="all 0.2s"
+          flexShrink={0}
+          mt={{ base: 0, md: 1 }}
+        >
+          <FiArrowLeft size={18} />
+        </Box>
+        <VStack align="start" spacing={{ base: 1, md: 3 }} flex={1} minW={0}>
+          {isLearner ? (
           <>
             <HStack spacing={{ base: 2, md: 3 }} align="center">
               <Box
@@ -577,6 +596,7 @@ return (
               } with intuitive controls and real-time insights.`}
         </Text>
       </VStack>
+      </HStack>
 
       {/* VECTOR ILLUSTRATION - Visible only on desktop to make it look better without breaking mobile */}
       {/* <Box display={{ base: "none", lg: "block" }} flexShrink={0}>

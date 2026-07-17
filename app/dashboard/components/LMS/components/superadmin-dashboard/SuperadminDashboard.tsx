@@ -134,14 +134,14 @@ export function SuperadminDashboard({
   return (
     <Box minH="100vh" p={{ base: 3, md: 0 }} bg="transparent">
       <Stack spacing={4} maxW="1600px" mx="auto">
-        <Box bg={panelBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "xl", md: "2xl" }} p={{ base: 4, md: 6 }} shadow="sm">
+        <Box bg={panelBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">
           <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
-            <HStack spacing={4}>
-              <Box p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" display="flex" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+            <HStack spacing={{ base: 3, md: 4 }} align="flex-start">
+              <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
                 <Icon as={Sparkles} boxSize={{ base: 4, md: 5 }} color="white" />
               </Box>
               <Box>
-                <Heading size={{ base: "md", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase">
+                <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase">
                   <Box as="span" color={useColorModeValue("gray.900", "white")}>
                     LMS{" "}
                   </Box>
@@ -149,7 +149,7 @@ export function SuperadminDashboard({
                     INTELLIGENCE CENTER
                   </Box>
                 </Heading>
-                <Text mt={1} fontSize={{ base: "10px", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase">
+                <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
                   Portal health, learning performance, engagement risks, and operational work.
                 </Text>
               </Box>

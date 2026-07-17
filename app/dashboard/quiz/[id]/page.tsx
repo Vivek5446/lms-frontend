@@ -72,28 +72,73 @@ export default function EditQuizPage() {
   }
 
   return (
-    <Box minH="100dvh" bg="transparent" px={{ base: 3, md: 6 }} py={{ base: 3, md: 6 }}>
-      <Stack spacing={{ base: 4, md: 6 }}>
-        <Button variant="ghost" leftIcon={<FiArrowLeft />} alignSelf="flex-start" onClick={() => router.push("/dashboard/quiz")}>
-          Back to Dashboard
-        </Button>
-        <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "2xl", md: "3xl" }} p={{ base: 4, md: 6 }} shadow="sm" overflow="hidden" position="relative">
-          <Box position="absolute" insetX={0} top={0} h="1" bgGradient="linear(to-r, blue.400, purple.500, pink.400)" />
-          <Flex direction={{ base: "column", lg: "row" }} justify="space-between" align={{ base: "stretch", lg: "center" }} gap={{ base: 4, md: 6 }}>
-            <Box minW={0}>
-              <Heading size={{ base: "md", md: "lg" }} color={headingColor} letterSpacing="-0.04em">
-                Edit Quiz: {quizData.title}
-              </Heading>
-              <Text mt={1} fontSize={{ base: "xs", md: "sm" }} color={secondaryTextColor}>Manage your assessment</Text>
-            </Box>
-            <HStack spacing={4}>
-              <Button variant={activeTab === "settings" ? "solid" : "outline"} colorScheme="blue" leftIcon={<FiSettings />} onClick={() => setActiveTab("settings")}>
-                Quiz Settings
+    <Box bg="transparent" p={{ base: 3, md: 0 }}>
+      <Stack spacing={4}>
+        <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">
+          <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
+            
+            <HStack spacing={2} align="center">
+              <Box 
+                as="button"
+                onClick={() => router.push("/dashboard/quiz")}
+                color={secondaryTextColor}
+                bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+                w="36px" h="36px"
+                rounded="full"
+                flexShrink={0}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: "#6269FF", transform: "translateX(-3px)" }}
+                transition="all 0.2s"
+              >
+                <FiArrowLeft size={18} />
+              </Box>
+              <Box maxW="full" overflow="hidden">
+                <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase" isTruncated>
+                  <Box as="span" color={headingColor}>EDIT </Box>
+                  <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
+                    {quizData.title}
+                  </Box>
+                </Heading>
+                <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} fontWeight="700" color={secondaryTextColor} letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
+                  Manage your assessment
+                </Text>
+              </Box>
+            </HStack>
+
+            <HStack spacing={3} w={{ base: "full", md: "auto" }}>
+              <Button 
+                variant={activeTab === "settings" ? "solid" : "outline"} 
+                bgGradient={activeTab === "settings" ? "linear(to-r, #6269FF, #4F46E5)" : undefined}
+                color={activeTab === "settings" ? "white" : secondaryTextColor}
+                borderColor={activeTab === "settings" ? "transparent" : borderColor}
+                leftIcon={<FiSettings />} 
+                rounded="lg"
+                size={{ base: "sm", md: "md" }}
+                flex={{ base: 1, md: "none" }}
+                px={{ base: 4, md: 6 }}
+                fontWeight="800"
+                onClick={() => setActiveTab("settings")}
+                _hover={activeTab === "settings" ? { transform: "translateY(-2px)", boxShadow: "0 8px 25px rgba(98,105,255,0.4)" } : { bg: useColorModeValue("gray.50", "whiteAlpha.100") }}
+                transition="all 0.2s"
+              >
+                Settings
               </Button>
               <Button 
                 variant={activeTab === "questions" ? "solid" : "outline"} 
-                colorScheme="blue" leftIcon={<FaClipboardList />} 
+                bgGradient={activeTab === "questions" ? "linear(to-r, #6269FF, #4F46E5)" : undefined}
+                color={activeTab === "questions" ? "white" : secondaryTextColor}
+                borderColor={activeTab === "questions" ? "transparent" : borderColor}
+                leftIcon={<FaClipboardList />} 
+                rounded="lg"
+                size={{ base: "sm", md: "md" }}
+                flex={{ base: 1, md: "none" }}
+                px={{ base: 4, md: 6 }}
+                fontWeight="800"
                 onClick={() => setActiveTab("questions")}
+                _hover={activeTab === "questions" ? { transform: "translateY(-2px)", boxShadow: "0 8px 25px rgba(98,105,255,0.4)" } : { bg: useColorModeValue("gray.50", "whiteAlpha.100") }}
+                transition="all 0.2s"
               >
                 Questions
               </Button>

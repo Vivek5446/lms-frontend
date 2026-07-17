@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Box, Input, Select, HStack, Button, useColorModeValue } from "@chakra-ui/react";
 import { batchStore } from "@/app/store/batchStore/batchStore";
 import CustomTable from "../../../component/config/component/CustomTable/CustomTable"; // adjust path
+import PageTitle from "@/app/component/common/PageTitle/PageTitle";
 
 const formatTime = (minutes?: number | null) => {
   if (!minutes) return "-";
@@ -121,7 +122,8 @@ const Page = observer(() => {
   const buttonHoverBg = useColorModeValue("blue.600", "blue.500");
 
   return (
-    <Box p={6} bg={bgColor} minH="100vh">
+    <Box bg="transparent" minH="100vh">
+      <PageTitle title="Batch Report" subtitle="View and filter batch completion reports" />
       {/* --- Filters UI --- */}
       <Box mb={4} p={4} bg={filterBg} borderRadius="md" shadow="sm">
         <HStack spacing={3} flexWrap="wrap">
@@ -221,7 +223,6 @@ const Page = observer(() => {
       </Box>
 
       <CustomTable
-        title="Batch Report"
         columns={columns}
         data={tableData}
         loading={batchStore.isLoading}

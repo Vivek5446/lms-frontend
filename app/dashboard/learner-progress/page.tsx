@@ -21,6 +21,7 @@ import { observer } from "mobx-react-lite";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { ClipboardCheck, ShieldCheck } from "lucide-react";
+import { FiArrowLeft } from "react-icons/fi";
 
 const LearnerProgressPage = observer(() => {
   const router = useRouter();
@@ -66,20 +67,36 @@ const LearnerProgressPage = observer(() => {
     >
       <Box bg="transparent" p={{ base: 3, md: 0 }}>
         <Stack spacing={4} maxW="1600px" mx="auto">
-          <Box bg={useColorModeValue("white", "gray.800")} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} p={{ base: 4, md: 6 }} shadow="sm">
+          <Box bg={useColorModeValue("white", "gray.800")} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">
             <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
-              <HStack spacing={4}>
-                <Box p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" display="flex" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+              <HStack spacing={{ base: 3, md: 4 }} align="center">
+                <Box 
+                  as="button"
+                  onClick={() => window.history.back()}
+                  color={useColorModeValue("gray.500", "gray.400")}
+                  bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+                  w={{ base: "36px", md: "40px" }} h={{ base: "36px", md: "40px" }}
+                  rounded="full"
+                  flexShrink={0}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: "#6269FF", transform: "translateX(-3px)" }}
+                  transition="all 0.2s"
+                >
+                  <FiArrowLeft size={18} />
+                </Box>
+                <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
                   <Icon as={ClipboardCheck} boxSize={{ base: 4, md: 5 }} color="white" />
                 </Box>
                 <Box>
-                  <Heading size={{ base: "md", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                  <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
                     <Box as="span" color={useColorModeValue("gray.900", "white")}>LEARNER </Box>
-                    <Box as="span" bgGradient="linear(to-r, #6269FF, #8A2BE2)" bgClip="text">
+                    <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
                       PROGRESS
                     </Box>
                   </Heading>
-                  <Text mt={1} fontSize={{ base: "10px", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase">
+                  <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
                     Review course completion and assessment results
                   </Text>
                 </Box>

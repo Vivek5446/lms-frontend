@@ -48,6 +48,7 @@ import {
   FiGrid,
   FiDownload,
   FiAlertCircle,
+  FiArrowLeft,
 } from "react-icons/fi";
 import stores from "@/app/store/stores";
 import { courseStore } from "@/app/store/courseStore/courseStore";
@@ -221,23 +222,48 @@ const AssignedCoursesPage = observer(() => {
       description="This account does not currently have access to assigned course visibility."
       fallbackHref="/dashboard/profile"
     >
-      <Box minH="100vh" bg="transparent" p={{ base: 4, md: 6 }}>
-        <Stack spacing={6}>
+      <Box minH="100vh" bg="transparent" p={{ base: 3, md: 0 }} transition="all 0.3s ease">
+        <Stack spacing={4} maxW="1600px" mx="auto">
           {/* Header Card */}
-          <Box bg={cardBg} borderWidth="1px" borderRadius="2xl" p={{ base: 5, md: 6 }} boxShadow="sm">
-            <Flex justify="space-between" align={{ base: "start", md: "center" }} gap={4} wrap="wrap">
-              <Box>
-                <HStack spacing={3} mb={2}>
-                  <Icon as={FiBookOpen} boxSize={6} color="blue.500" />
-                  <Heading size="md">Assigned Courses</Heading>
-                </HStack>
-                <Text mt={2} color={textColor}>
-                  Review what is already assigned to {activeCompany?.company_name || "the selected company"} and assign new courses from the scoped library without leaving this workspace.
-                </Text>
-              </Box>
+          <Box bg={useColorModeValue("white", "gray.800")} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">
+            <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
+              <HStack spacing={{ base: 3, md: 4 }} align="center">
+                <Box 
+                  as="button"
+                  onClick={() => window.history.back()}
+                  color={useColorModeValue("gray.500", "gray.400")}
+                  bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+                  w={{ base: "36px", md: "40px" }} h={{ base: "36px", md: "40px" }}
+                  rounded="full"
+                  flexShrink={0}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: useColorModeValue("#6269FF", "#9F7AEA"), transform: "translateX(-3px)" }}
+                  transition="all 0.2s"
+                >
+                  <FiArrowLeft size={18} />
+                </Box>
+                <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient={useColorModeValue("linear(to-br, #6269FF, #8A2BE2)", "linear(to-br, #805AD5, #D53F8C)")} rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+                  <Icon as={FiBookOpen} boxSize={{ base: 4, md: 5 }} color="white" />
+                </Box>
+                <Box>
+                  <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase">
+                    <Box as="span" color={useColorModeValue("gray.900", "white")}>ASSIGNED </Box>
+                    <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
+                      COURSES
+                    </Box>
+                  </Heading>
+                  <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
+                    Review what is already assigned to {activeCompany?.company_name || "the selected company"} and assign new courses from the scoped library without leaving this workspace.
+                  </Text>
+                </Box>
+              </HStack>
               <Button
                 leftIcon={<Icon as={FiPlus} />}
                 colorScheme="blue"
+                size={{ base: "sm", md: "md" }}
+                borderRadius="full"
                 onClick={() => openAssignModal()}
                 isDisabled={!canAssignCourses || (!companyId && isSuperadmin)}
               >

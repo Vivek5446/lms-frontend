@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useBreakpointValue, useColorModeValue } from "@chakra-ui/react";
+import { useBreakpointValue, useColorModeValue, Box, Flex, HStack, Heading, Text, Icon, Button } from "@chakra-ui/react";
 import {
   FiBookOpen,
   FiChevronLeft,
   FiChevronRight,
+  FiArrowLeft,
   FiDollarSign,
   FiEdit3,
   FiEye,
@@ -389,104 +390,71 @@ function CoursePage() {
       description="This account does not currently have access to the course workspace."
       fallbackHref="/dashboard/profile"
     >
-      <div style={{ minHeight: "100vh", background: pageBg, padding: isCompact ? "0" : "24px" }}>
-        <div style={{ maxWidth: 1480, margin: "0 auto" }}>
-          <div
-            style={{
-              borderRadius: isCompact ? 22 : 30,
-              padding: isCompact ? "18px 16px 16px" : "30px 30px 26px",
-              background: "linear-gradient(135deg, #0F172A 0%, #1E3A8A 55%, #0EA5E9 100%)",
-              color: "#FFFFFF",
-              boxShadow: "0 30px 80px rgba(15, 23, 42, 0.28)",
-              marginBottom: isCompact ? 16 : 26,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: isCompact ? 14 : 18, flexWrap: "wrap", alignItems: "flex-start" }}>
-              <div style={{ maxWidth: 760 }}>
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: isCompact ? "7px 12px" : "8px 14px",
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.14)",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                  }}
+      <Box minH="100vh" bg="transparent" p={{ base: 3, md: 0 }} transition="all 0.3s ease">
+        <div style={{ maxWidth: 1600, margin: "0 auto" }}>
+          <Box bg={useColorModeValue("white", "gray.800")} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm" mb={{ base: 4, md: 6 }}>
+            <Flex direction={{ base: "column", xl: "row" }} justify="space-between" align={{ base: "stretch", xl: "center" }} gap={4}>
+              <HStack spacing={{ base: 3, md: 4 }} align="center">
+                <Box 
+                  as="button"
+                  onClick={() => window.history.back()}
+                  color={useColorModeValue("gray.500", "gray.400")}
+                  bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+                  w={{ base: "36px", md: "40px" }} h={{ base: "36px", md: "40px" }}
+                  rounded="full"
+                  flexShrink={0}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: useColorModeValue("#6269FF", "#9F7AEA"), transform: "translateX(-3px)" }}
+                  transition="all 0.2s"
                 >
-                  <FiFilter />
-                  {scopeBadgeLabel}
-                </div>
-                <h1 style={{ margin: isCompact ? "12px 0 6px" : "16px 0 10px", fontSize: isCompact ? 24 : 34, lineHeight: 1.08, fontWeight: 800 }}>
-                  Search, filter, and manage courses within your scope
-                </h1>
-                <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.84)", display: isCompact ? "none" : "block" }}>
-                  {scopeDescription} Use the filters below to isolate visibility, pricing, delivery type, language,
-                  category, and publishing status in seconds.
-                </p>
-              </div>
+                  <FiArrowLeft size={18} />
+                </Box>
+                <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient={useColorModeValue("linear(to-br, #6269FF, #8A2BE2)", "linear(to-br, #805AD5, #D53F8C)")} rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+                  <Icon as={FiBookOpen} boxSize={{ base: 4, md: 5 }} color="white" />
+                </Box>
+                <Box>
+                  <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase">
+                    <Box as="span" color={useColorModeValue("gray.900", "white")}>COURSE </Box>
+                    <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
+                      LIBRARY
+                    </Box>
+                  </Heading>
+                  <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
+                    Search, filter, and manage courses within your scope. {scopeBadgeLabel}
+                  </Text>
+                </Box>
+              </HStack>
 
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", width: isCompact ? "100%" : "auto" }}>
-                <MotionButton
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() =>
-                    router.push(
-                      role === "superadmin" ? "/dashboard/course/assigned" : "/dashboard/course/access-management"
-                    )
-                  }
-                  style={{
-                    borderRadius: 16,
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "#FFFFFF",
-                    padding: isCompact ? "10px 14px" : "12px 18px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    cursor: "pointer",
-                    width: compactActionWidth,
-                    justifyContent: "center",
-                  }}
+              <Flex gap={3} flexWrap="wrap" width={{ base: "100%", xl: "auto" }}>
+                <Button
+                  leftIcon={<Icon as={FiUsers} />}
+                  colorScheme="blue"
+                  variant="outline"
+                  size={{ base: "sm", md: "md" }}
+                  borderRadius="full"
+                  width={isCompact ? (canCreateCourses ? "calc(50% - 6px)" : "100%") : "auto"}
+                  onClick={() => router.push(role === "superadmin" ? "/dashboard/course/assigned" : "/dashboard/course/access-management")}
                 >
-                  <FiUsers size={16} />
                   {role === "superadmin" ? "Assigned Courses" : "Assign Courses"}
-                </MotionButton>
+                </Button>
 
                 {canCreateCourses ? (
-                  <MotionButton
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                  <Button
+                    leftIcon={<Icon as={FiPlus} />}
+                    colorScheme="blue"
+                    size={{ base: "sm", md: "md" }}
+                    borderRadius="full"
+                    width={isCompact ? "calc(50% - 6px)" : "auto"}
                     onClick={() => setView("create")}
-                    style={{
-                      borderRadius: 16,
-                      border: "none",
-                      background: "#FFFFFF",
-                      color: "#0F172A",
-                      padding: isCompact ? "10px 14px" : "12px 18px",
-                      fontSize: 14,
-                      fontWeight: 700,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                      cursor: "pointer",
-                      boxShadow: "0 14px 35px rgba(15, 23, 42, 0.18)",
-                      width: compactActionWidth,
-                      justifyContent: "center",
-                    }}
                   >
-                    <FiPlus size={16} />
                     Add New Course
-                  </MotionButton>
+                  </Button>
                 ) : null}
-              </div>
-            </div>
-          </div>
+              </Flex>
+            </Flex>
+          </Box>
 
           <div
             style={{
@@ -1184,7 +1152,7 @@ function CoursePage() {
             </>
           )}
         </div>
-      </div>
+      </Box>
       {courseUsersModal && (
         <CourseUsersModal
           isOpen={!!courseUsersModal}

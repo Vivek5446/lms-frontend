@@ -43,6 +43,7 @@ import {
   FiSearch,
   FiShield,
   FiUsers,
+  FiArrowLeft,
 } from "react-icons/fi";
 import { readFileAsBase64 } from "../../config/utils/utils";
 import PermissionGate from "@/app/component/common/PermissionGate";
@@ -227,20 +228,36 @@ const DirectoryPage = observer(() => {
       <Stack spacing={4} maxW="1600px" mx="auto">
         
         {/* Elegant Header Section */}
-        <Box bg={surfaceBg} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} p={{ base: 4, md: 6 }} shadow="sm">
+        <Box bg={surfaceBg} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">
           <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
-            <HStack spacing={4}>
-              <Box p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" display="flex" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+            <HStack spacing={{ base: 3, md: 4 }} align="center">
+              <Box 
+                as="button"
+                onClick={() => window.history.back()}
+                color={useColorModeValue("gray.500", "gray.400")}
+                bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+                w={{ base: "36px", md: "40px" }} h={{ base: "36px", md: "40px" }}
+                rounded="full"
+                flexShrink={0}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: useColorModeValue("#6269FF", "#9F7AEA"), transform: "translateX(-3px)" }}
+                transition="all 0.2s"
+              >
+                <FiArrowLeft size={18} />
+              </Box>
+              <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient={useColorModeValue("linear(to-br, #6269FF, #8A2BE2)", "linear(to-br, #805AD5, #D53F8C)")} rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
                 <Icon as={FiBriefcase} boxSize={{ base: 4, md: 5 }} color="white" />
               </Box>
               <Box>
-                <Heading size={{ base: "md", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase">
+                <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase">
                   <Box as="span" color={useColorModeValue("gray.900", "white")}>COMPANY </Box>
                   <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
                     DIRECTORY
                   </Box>
                 </Heading>
-                <Text fontSize="10px" color="gray.500" fontWeight="700" letterSpacing="0.2em" mt={1} textTransform="uppercase">
+                <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} color="gray.500" fontWeight="700" letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
                   Manage and oversee all organizations in your ecosystem
                 </Text>
               </Box>

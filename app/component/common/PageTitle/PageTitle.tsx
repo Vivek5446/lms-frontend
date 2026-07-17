@@ -2,7 +2,7 @@
 
 import { Box, Flex, Heading, Icon, Text, useColorModeValue } from "@chakra-ui/react";
 import React from "react";
-import { FiSettings } from "react-icons/fi";
+import { FiSettings, FiArrowLeft } from "react-icons/fi";
 
 interface PageTitleProps {
   title: string;
@@ -21,7 +21,7 @@ const PageTitle: React.FC<PageTitleProps> = ({ title, subtitle }) => {
     <Flex 
       direction="column" 
       bg={bg} 
-      p={{ base: 4, md: 8 }} 
+      px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} 
       borderRadius={{ base: "xl", md: "3xl" }} 
       boxShadow="sm"
       borderWidth="1px"
@@ -37,8 +37,26 @@ const PageTitle: React.FC<PageTitleProps> = ({ title, subtitle }) => {
       {/* Subtle Dot Pattern Overlay */}
       <Box position="absolute" inset={0} opacity={useColorModeValue(0.4, 0.15)} backgroundImage={`radial-gradient(${dotColor} 1px, transparent 1px)`} backgroundSize="20px 20px" />
 
-      <Flex align="center" gap={{ base: 3, md: 6 }} position="relative" zIndex={1}>
+      <Flex align="flex-start" gap={{ base: 3, md: 6 }} position="relative" zIndex={1}>
+        <Box 
+          as="button"
+          onClick={() => window.history.back()}
+          color={textColor}
+          bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+          w={{ base: "36px", md: "48px" }} h={{ base: "36px", md: "48px" }}
+          borderRadius="full"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: "blue.500", transform: "translateX(-3px)" }}
+          transition="all 0.2s"
+          flexShrink={0}
+          mt={{ base: 0.5, md: 0 }}
+        >
+          <FiArrowLeft size={18} />
+        </Box>
         <Flex
+          display={{ base: "none", md: "flex" }}
           align="center"
           justify="center"
           w={{ base: "40px", md: "64px" }}
@@ -52,11 +70,16 @@ const PageTitle: React.FC<PageTitleProps> = ({ title, subtitle }) => {
           <Icon as={FiSettings} boxSize={{ base: 5, md: 8 }} />
         </Flex>
         <Box>
-          <Heading size={{ base: "md", md: "lg" }} fontWeight="900" letterSpacing="tight" mb={{ base: 0, md: 1 }}>
-            {title}
+          <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" mb={{ base: 0, md: 1 }} textTransform="uppercase">
+            <Box as="span" color={useColorModeValue("gray.900", "white")}>
+              {title.includes(" ") ? title.substring(0, title.lastIndexOf(" ")) + " " : ""}
+            </Box>
+            <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
+              {title.includes(" ") ? title.substring(title.lastIndexOf(" ") + 1) : title}
+            </Box>
           </Heading>
           {subtitle && (
-            <Text fontSize={{ base: "xs", md: "md" }} color={textColor} lineHeight="short" maxW="2xl">
+            <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} fontWeight="700" color={textColor} letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
               {subtitle}
             </Text>
           )}

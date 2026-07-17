@@ -34,20 +34,21 @@ export default function CreateQuizPage() {
   };
 
   return (
-    <Box bg="transparent">
+    <Box bg="transparent" p={{ base: 3, md: 0 }}>
       
       <Stack spacing={4}>
-        <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm" mb={2}>
-          <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
+        <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">
+          <Flex direction={{ base: "column", md: "row" }} justify="space-between" align="center" gap={4}>
             
-            <HStack spacing={2} align="center">
+            <HStack spacing={{ base: 3, md: 4 }} align="center">
               <Box 
                 as="button"
                 onClick={() => router.push("/dashboard/quiz")}
                 color={secondaryTextColor}
                 bg={useColorModeValue("gray.100", "whiteAlpha.100")}
-                w="36px" h="36px"
+                w={{ base: "36px", md: "40px" }} h={{ base: "36px", md: "40px" }}
                 rounded="full"
+                flexShrink={0}
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -72,13 +73,13 @@ export default function CreateQuizPage() {
                 <Icon as={FaClipboardList} boxSize={{ base: 4, md: 5 }} color="white" />
               </Box>
               <Box>
-                <Heading size={{ base: "md", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" whiteSpace="nowrap">
+                <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" whiteSpace="nowrap">
                   <Box as="span" color={headingColor}>CREATE </Box>
-                  <Box as="span" bgGradient="linear(to-r, #6269FF, #8A2BE2)" bgClip="text">
+                  <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
                     NEW QUIZ
                   </Box>
                 </Heading>
-                <Text mt={1} fontSize={{ base: "10px", md: "xs" }} fontWeight="700" color={secondaryTextColor} letterSpacing="0.1em" textTransform="uppercase">
+                <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} fontWeight="700" color={secondaryTextColor} letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
                   Build your assessment questions and settings
                 </Text>
               </Box>

@@ -52,7 +52,8 @@ import {
   FiSearch,
   FiSend,
   FiShield,
-  FiZap
+  FiZap,
+  FiArrowLeft
 } from "react-icons/fi";
 import { getApiErrorMessage } from "../../config/utils/apiError";
 import stores from "../../store/stores";
@@ -453,8 +454,8 @@ const NotificationWorkspace = observer(({
   return (
     <VStack spacing={5} align="stretch">
       <Box
-        borderRadius="3xl"
-        p={{ base: 3, md: 6 }}
+        borderRadius={{ base: "xl", md: "3xl" }}
+        px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}
         color={cardTextColor}
         shadow="base"
         overflow="hidden"
@@ -473,9 +474,26 @@ const NotificationWorkspace = observer(({
           bg={heroOrbBg}
           filter="blur(8px)"
         /> */}
-        <HStack spacing={4} align="center" justify="space-between" flexWrap="wrap">
-          <HStack spacing={4}>
+        <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
+          <HStack spacing={{ base: 3, md: 4 }} align="center">
+            <Box 
+              as="button"
+              onClick={() => window.history.back()}
+              color={mutedText}
+              bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+              w="36px" h="36px"
+              borderRadius="full"
+              flexShrink={0}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: "blue.500", transform: "translateX(-3px)" }}
+              transition="all 0.2s"
+            >
+              <FiArrowLeft size={18} />
+            </Box>
             <Flex
+              display={{ base: "none", md: "flex" }}
               w="50px"
               h="50px"
               borderRadius="2xl"
@@ -488,11 +506,14 @@ const NotificationWorkspace = observer(({
               <FiMail size={20} />
             </Flex>
             <Box>
-              <Heading fontSize="2xl" fontWeight="bold">
-                Notifications
+              <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase">
+                <Box as="span" color={useColorModeValue("gray.900", "white")}>COMPANY </Box>
+                <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
+                  NOTIFICATIONS
+                </Box>
               </Heading>
-              <Text color={mutedText} fontSize="sm" mt={1}>
-                Send polished, targeted updates with sharper filtering and live preview.
+              <Text color={mutedText} fontSize={{ base: "2xs", md: "sm" }} mt={1} noOfLines={1} textTransform="uppercase" letterSpacing="0.1em" fontWeight="700">
+                Send polished, targeted updates with sharper filtering
               </Text>
             </Box>
           </HStack>
@@ -507,7 +528,7 @@ const NotificationWorkspace = observer(({
               {selectedCompany?.company_name || "No company selected"}
             </Badge>
           </HStack>
-        </HStack>
+        </Flex>
       </Box>
 
       {/* <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>

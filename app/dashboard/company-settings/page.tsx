@@ -211,7 +211,7 @@ const CompanySettingsPage = observer(() => {
       description="Only company administrators can view and edit company settings."
       fallbackHref="/dashboard/profile"
     >
-      <Box minH="100vh" p={{ base: 2, md: 4 }}>
+      <Box minH="100vh" bg="transparent">
         <Box mx="auto" w="full">
           <VStack align="stretch" spacing={6}>
             {/* Header */}

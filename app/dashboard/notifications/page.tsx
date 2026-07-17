@@ -18,7 +18,7 @@ const NotificationsPage = observer(() => {
       description="Only Super Admins can send company email notifications."
       fallbackHref="/dashboard"
     >
-      <Box minH="100vh" bg="transparent" px={{ base: 4, lg: 2 }} py={{ base: 4, md: 6 }}>
+      <Box minH="100vh" bg="transparent" p={{ base: 3, md: 0 }}>
         <NotificationWorkspace currentUser={auth.user} />
       </Box>
     </PermissionGate>
