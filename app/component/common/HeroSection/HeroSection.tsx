@@ -365,7 +365,7 @@ export default observer(function LMSLandingPage() {
         />
 
         <Box
-          maxW="8xl"
+          maxW="full"
           mx="auto"
           px={{ base: 4, md: 8 }}
           py={{ base: 4, md: 8 }}
@@ -869,8 +869,8 @@ export default observer(function LMSLandingPage() {
       </Box>
 
       <Box as="section" py={{ base: 8, md: 20 }}>
-        <Box maxW="8xl" mx="auto" px={{ base: 4, md: 8 }}>
-          <Box maxW="7xl" mx="auto">
+        <Box maxW="full" mx="auto" px={{ base: 4, md: 8 }}>
+          <Box maxW="full" mx="auto">
             {/* Header */}
             <MotionFlex
               variants={fadeUp}

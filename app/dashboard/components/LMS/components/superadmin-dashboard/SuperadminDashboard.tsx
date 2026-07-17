@@ -133,7 +133,7 @@ export function SuperadminDashboard({
 
   return (
     <Box minH="100vh" p={{ base: 3, md: 0 }} bg="transparent">
-      <Stack spacing={4} maxW="1600px" mx="auto">
+      <Stack spacing={4}>
         <Box bg={panelBg} borderWidth="1px" borderColor={borderColor} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">
           <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
             <HStack spacing={{ base: 3, md: 4 }} align="flex-start">

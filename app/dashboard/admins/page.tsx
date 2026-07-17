@@ -225,7 +225,7 @@ const DirectoryPage = observer(() => {
       fallbackHref="/dashboard"
     >
       <Box minH="100vh" bg="transparent" p={{ base: 3, md: 0 }} transition="all 0.3s ease">
-      <Stack spacing={4} maxW="1600px" mx="auto">
+      <Stack spacing={4}>
         
         {/* Elegant Header Section */}
         <Box bg={surfaceBg} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">

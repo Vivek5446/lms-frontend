@@ -147,7 +147,7 @@ const Header: React.FC = observer(() => {
           bgGradient={colorMode === 'light' ? 'linear(to-r, transparent, brand.400, brand.600, transparent)' : 'linear(to-r, transparent, brand.300, brand.500, transparent)'}
           opacity={0.6}
         />
-        <Container maxW="1400px" px={{ base: 3, md: 6 }}>
+        <Container maxW="full" px={{ base: 3, md: 6 }}>
           <Flex align="center" justify="space-between" gap={4} position="relative" w="100%">
             {/* Left Section (Logo) */}
             <Box flex={{ base: "none", md: 1 }} display="flex" alignItems="center">

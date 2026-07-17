@@ -215,7 +215,7 @@ export default function CourseAssetModal({
         exit={{ opacity: 0, scale: 0.97, y: 8 }}
         transition={{ duration: 0.2 }}
         onClick={(event) => event.stopPropagation()}
-        className="flex h-[100dvh] w-screen max-w-[1600px] flex-col overflow-hidden rounded-none bg-white shadow-[0_24px_80px_rgba(0,0,0,0.5)] sm:h-[92dvh] sm:w-[96vw] sm:rounded-2xl lg:h-[88dvh] lg:w-[88vw] xl:w-[78vw]"
+        className="flex h-[100dvh] w-screen flex-col overflow-hidden rounded-none bg-white shadow-[0_24px_80px_rgba(0,0,0,0.5)] sm:h-[92dvh] sm:w-[96vw] sm:rounded-2xl lg:h-[88dvh] lg:w-[88vw] xl:w-[78vw]"
       >
         <div className="flex min-h-12 items-center justify-between gap-2 border-b border-slate-200 bg-slate-950 px-2 py-2 sm:gap-3 sm:px-3">
           <div className="flex min-w-0 items-center gap-2 text-slate-200">

@@ -598,7 +598,7 @@ export default function CoursePlayer({
           className={`
             flex flex-col overflow-hidden bg-white dark:bg-[#0F0F0F]
             shadow-[0_24px_80px_rgba(0,0,0,0.5)]
-            ${isFullscreen ? "w-screen h-screen rounded-none" : "h-[100dvh] w-screen rounded-none sm:h-[92dvh] sm:w-[96vw] sm:rounded-2xl lg:h-[88dvh] lg:w-[88vw] xl:w-[78vw] max-w-[1600px]"}
+            ${isFullscreen ? "w-screen h-screen rounded-none" : "h-[100dvh] w-screen rounded-none sm:h-[92dvh] sm:w-[96vw] sm:rounded-2xl lg:h-[88dvh] lg:w-[88vw] xl:w-[78vw]"}
           `}
         >
           <div

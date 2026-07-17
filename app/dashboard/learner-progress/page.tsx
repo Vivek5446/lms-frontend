@@ -66,7 +66,7 @@ const LearnerProgressPage = observer(() => {
       fallbackHref="/dashboard"
     >
       <Box bg="transparent" p={{ base: 3, md: 0 }}>
-        <Stack spacing={4} maxW="1600px" mx="auto">
+        <Stack spacing={4}>
           <Box bg={useColorModeValue("white", "gray.800")} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">
             <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
               <HStack spacing={{ base: 3, md: 4 }} align="center">

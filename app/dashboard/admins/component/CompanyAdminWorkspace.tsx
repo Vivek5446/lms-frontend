@@ -567,7 +567,7 @@ const CompanyAdminWorkspace = ({
 
   return (
     <Box minH="100vh" bg="transparent" p={{ base: 3, md: 0 }}>
-        <VStack spacing={4} maxW="1600px" mx="auto" align="stretch">
+        <VStack spacing={4} align="stretch">
           {isCompanyInactive ? (
             <Alert status="warning" borderRadius="2xl" alignItems="start">
               <AlertIcon mt={1} />
