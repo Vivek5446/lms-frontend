@@ -26,6 +26,7 @@ import { Building2, Image as ImageIcon, Layers, Lock, User, ArrowLeft } from "lu
 import CustomInput from "../../../component/config/component/customInput/CustomInput";
 import { genderOptions } from "../../../config/constant";
 import ManagerHierarchy from "./ManagerHierarchy";
+import { Country, State, City } from "country-state-city";
 
 /* ================= SECTION CARD ================= */
 const SectionCard = ({ title, icon, children, color }: any) => {
@@ -113,7 +114,7 @@ const buildUserFormErrors = ({
     errors.role = "Role is required.";
   }
 
-  if (isSuperadmin && !String(userForm.companyId || "").trim()) {
+  if (userForm.id && isSuperadmin && !String(userForm.companyId || "").trim()) {
     errors.companyId = "Company selection is required.";
   }
 
@@ -160,6 +161,16 @@ const UserDrawer = ({
 }: any) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+
+  const allCountries = Country.getAllCountries();
+  const selectedCountry = allCountries.find((c: any) => c.name === userForm.country);
+  const countryCode = selectedCountry?.isoCode || "";
+
+  const availableStates = countryCode ? State.getStatesOfCountry(countryCode) : [];
+  const selectedState = availableStates.find((s: any) => s.name === userForm.state);
+  const stateCode = selectedState?.isoCode || "";
+
+  const availableCities = (countryCode && stateCode) ? City.getCitiesOfState(countryCode, stateCode) : [];
   const availableDepartments = isSuperadmin
     ? filteredCompanies.find((company: any) => company?._id === userForm.companyId)?.departments || []
     : currentCompanyDepartments || [];
@@ -211,9 +222,9 @@ const UserDrawer = ({
   const placement = useBreakpointValue({ base: "bottom", md: "right" }) as "bottom" | "right";
 
   return (
-    <Drawer isOpen={isOpen} placement={placement} size={{ base: "full", md: "xl" }} onClose={onClose} blockScrollOnMount={false}>
+    <Drawer isOpen={isOpen} placement={placement} size="full" onClose={onClose} blockScrollOnMount={false}>
       <DrawerOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-      <DrawerContent h="100vh" overflow="hidden" bg={useColorModeValue("white", "gray.900")} borderTopRadius={{ base: "2xl", md: "none" }}>
+      <DrawerContent maxW={{ base: "100%", md: "85%" }} w={{ base: "100%", md: "85%" }} h="100vh" overflow="hidden" bg={useColorModeValue("white", "gray.900")} borderTopRadius={{ base: "2xl", md: "none" }}>
 
         {/* BODY */}
         <DrawerBody 
@@ -464,87 +475,63 @@ const UserDrawer = ({
                   }))}
                 />
                 <CustomInput
-                  label="City"
-                  name="city"
-                  placeholder="Enter city"
-                  value={userForm.city}
+                  label="Bio"
+                  name="bio"
+                  placeholder="Enter bio"
+                  value={userForm.bio}
                   onChange={(e: any) =>
-                    setUserForm((p: any) => ({ ...p, city: e.target.value }))
+                    setUserForm((p: any) => ({ ...p, bio: e.target.value }))
                   }
                 />
                 <CustomInput
+                  type="select"
+                  label="Country"
+                  name="country"
+                  placeholder="Select country"
+                  value={userForm.country ? { label: userForm.country, value: userForm.country } : null}
+                  onChange={(option: any) =>
+                    setUserForm((p: any) => ({ ...p, country: option?.value || "", state: "", city: "" }))
+                  }
+                  options={allCountries.map((c: any) => ({ label: c.name, value: c.name }))}
+                  isSearchable
+                />
+                <CustomInput
+                  type="select"
                   label="State"
                   name="state"
-                  placeholder="Enter state"
-                  value={userForm.state}
+                  placeholder="Select state"
+                  value={userForm.state ? { label: userForm.state, value: userForm.state } : null}
+                  onChange={(option: any) =>
+                    setUserForm((p: any) => ({ ...p, state: option?.value || "", city: "" }))
+                  }
+                  options={availableStates.map((s: any) => ({ label: s.name, value: s.name }))}
+                  isSearchable
+                  disabled={!userForm.country}
+                />
+                <CustomInput
+                  type="select"
+                  label="City"
+                  name="city"
+                  placeholder="Select city"
+                  value={userForm.city ? { label: userForm.city, value: userForm.city } : null}
+                  onChange={(option: any) =>
+                    setUserForm((p: any) => ({ ...p, city: option?.value || "" }))
+                  }
+                  options={availableCities.map((c: any) => ({ label: c.name, value: c.name }))}
+                  isSearchable
+                  disabled={!userForm.state}
+                />
+                <CustomInput
+                  label="Location"
+                  name="location"
+                  placeholder="Enter location"
+                  value={userForm.address}
                   onChange={(e: any) =>
-                    setUserForm((p: any) => ({ ...p, state: e.target.value }))
+                    setUserForm((p: any) => ({ ...p, address: e.target.value }))
                   }
                 />
               </SimpleGrid>
 
-            </SectionCard>
-
-            <SectionCard title="Authentication" icon={Lock} color="green">
-              <Text fontSize="sm" color={muted}>
-                All managed accounts now sign in with their phone number and OTP. No password setup or account emails are sent from this flow.
-              </Text>
-            </SectionCard>
-
-            {/* COMPANY */}
-            <SectionCard title="Company" icon={Building2} color="purple">
-              {isSuperadmin ? (
-                <VStack align="stretch" spacing={4}>
-                  <CustomInput
-                    type="select"
-                    label="Select company"
-                    name="companyId"
-                    placeholder="Select company"
-                    value={
-                      filteredCompanies
-                        .map((c: any) => ({ label: c.company_name, value: c._id }))
-                        .find((option: any) => option.value === userForm.companyId) || null
-                    }
-                    error={validationErrors.companyId}
-                    showError={submitAttempted}
-                    onChange={(option: any) =>
-                      setUserForm((p: any) => ({
-                        ...p,
-                        companyId: option?.value || "",
-                        department: "",
-                      }))
-                    }
-                    options={filteredCompanies.map((c: any) => ({
-                      label: c.company_name,
-                      value: c._id,
-                    }))}
-                    isSearchable
-                  />
-                </VStack>
-              ) : (
-                <Box p={3} borderRadius="md" bg="gray.100">
-                  {currentCompanyName}
-                </Box>
-              )}
-            </SectionCard>
-
-            {/* HIERARCHY */}
-            <SectionCard title="Manager Hierarchy" icon={Layers} color="orange">
-              {!canAssignManagers ? (
-                <Text fontSize="sm" color={muted}>
-                  Manager assignment is disabled for this account.
-                </Text>
-              ) : null}
-              <ManagerHierarchy
-                managers={userForm.managers}
-                role={userForm.role}
-                managerCompanyId={managerCompanyId}
-                createCompany={userForm.createCompany}
-                muted={muted}
-                borderColor={borderColor}
-                onChange={setManagerSelection}
-                isDisabled={!canAssignManagers}
-              />
             </SectionCard>
 
             </VStack>

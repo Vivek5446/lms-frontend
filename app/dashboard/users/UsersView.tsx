@@ -57,6 +57,9 @@ type UserFormState = {
   department: string;
   city: string;
   state: string;
+  country: string;
+  address: string;
+  bio: string;
   designation: string;
   joiningDate: string;
   dateOfBirth: string;
@@ -210,6 +213,9 @@ const initialForm = (): UserFormState => ({
   department: "",
   city: "",
   state: "",
+  country: "India",
+  address: "",
+  bio: "",
   designation: "",
   joiningDate: "",
   dateOfBirth: "",
@@ -562,14 +568,17 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       code: user.code || "",
       profileId: user.profileId || "",
       name: user.name || "",
-      email: user.email || user.username || "",
+      email: user.email || (user.username && user.username.includes('@') ? user.username : ""),
       password: "",
       confirmPassword: "",
       pic: user.pic ? { ...user.pic, file: null, isAdd: 0, isDeleted: 0, url: user.pic.url || "" } : { file: null, isAdd: 0, isDeleted: 0, url: "" },
       mobileNumber: user.mobileNumber || "",
       department: user.department || "",
-      city: user.city || "",
-      state: user.state || "",
+      city: user.city || user.profileDetails?.personalInfo?.city || "",
+      state: user.state || user.profileDetails?.personalInfo?.state || "",
+      country: user.country || user.profileDetails?.personalInfo?.country || "India",
+      address: user.address || user.profileDetails?.personalInfo?.address || user.profileDetails?.personalInfo?.location || "",
+      bio: user.bio || user.profileDetails?.personalInfo?.bio || "",
       designation: user.designation || "",
       joiningDate: user.joiningDate ? String(user.joiningDate).slice(0, 10) : "",
       dateOfBirth: user.dateOfBirth ? String(user.dateOfBirth).slice(0, 10) : "",
@@ -748,6 +757,9 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       department,
       city,
       state,
+      country: userForm.country,
+      address: userForm.address,
+      bio: userForm.bio,
       designation,
       joiningDate,
       dateOfBirth,
