@@ -52,6 +52,14 @@ export interface CourseHighlights {
   learningOutcomes?: string[];
 }
 
+export interface CourseCategoryItem {
+  _id?: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  courseCount: number;
+}
+
 export interface CourseListItem {
   _id: string;
   courseCode?: string;
@@ -583,6 +591,8 @@ function createClientUploadId() {
 
 class CourseStoreClass {
   courses: CourseListItem[] = [];
+  categories: CourseCategoryItem[] = [];
+  isCategoriesLoading: boolean = false;
   publicCourses: PublicCourseItem[] = [];
   accessibleCourses: AccessibleCourseItem[] = [];
   assignedCourseAccesses: AssignedCourseAccessItem[] = [];
@@ -631,6 +641,48 @@ class CourseStoreClass {
       runInAction(() => {
         this.isLoading = false;
       });
+    }
+  };
+
+  fetchCategories = async () => {
+    this.isCategoriesLoading = true;
+    try {
+      const { data } = await axios.get("/course/categories");
+      runInAction(() => {
+        this.categories = data.data || [];
+      });
+      return data.data || [];
+    } catch (err: any) {
+      console.error("Failed to fetch categories", err);
+      return [];
+    } finally {
+      runInAction(() => {
+        this.isCategoriesLoading = false;
+      });
+    }
+  };
+
+  createCategory = async (name: string, description?: string) => {
+    try {
+      const { data } = await axios.post("/course/categories", { name, description });
+      const newCat = data.data;
+      runInAction(() => {
+        if (newCat) {
+          const index = this.categories.findIndex(
+            (c) => c.name.toLowerCase() === newCat.name.toLowerCase()
+          );
+          if (index >= 0) {
+            this.categories[index] = newCat;
+          } else {
+            this.categories.push(newCat);
+          }
+          this.categories.sort((a, b) => a.name.localeCompare(b.name));
+        }
+      });
+      return newCat;
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || "Failed to create category";
+      throw new Error(msg);
     }
   };
 

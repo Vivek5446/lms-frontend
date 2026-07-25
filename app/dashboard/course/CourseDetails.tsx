@@ -22,6 +22,13 @@ import {
   preloadCourseAsset,
 } from "@/app/dashboard/course/scorm/sectionTracking";
 import { CourseQuizForLearner } from "@/app/store/courseStore/courseStore";
+import stores from "@/app/store/stores";
+import {
+  DEFAULT_LEARNER_PRIMARY_COLOR,
+  mixHexColors,
+  normalizeHexColor,
+} from "@/app/theme/theme";
+import { useColorMode, useTheme } from "@chakra-ui/react";
 import {
   Award,
   BookOpen,
@@ -45,6 +52,52 @@ import {
   Video,
 } from "lucide-react";
 import { useMemo } from "react";
+
+function hexToHslTriplet(hexColor: string) {
+  const normalizedHex = String(hexColor || "")
+    .trim()
+    .replace("#", "");
+  const expandedHex =
+    normalizedHex.length === 3
+      ? normalizedHex
+          .split("")
+          .map((char) => `${char}${char}`)
+          .join("")
+      : normalizedHex;
+
+  const safeHex = /^[0-9a-fA-F]{6}$/.test(expandedHex) ? expandedHex : "2563EB";
+  const red = Number.parseInt(safeHex.slice(0, 2), 16) / 255;
+  const green = Number.parseInt(safeHex.slice(2, 4), 16) / 255;
+  const blue = Number.parseInt(safeHex.slice(4, 6), 16) / 255;
+
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  let hue = 0;
+  let saturation = 0;
+  const lightness = (max + min) / 2;
+  const delta = max - min;
+
+  if (delta !== 0) {
+    saturation =
+      lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+
+    switch (max) {
+      case red:
+        hue = (green - blue) / delta + (green < blue ? 6 : 0);
+        break;
+      case green:
+        hue = (blue - red) / delta + 2;
+        break;
+      default:
+        hue = (red - green) / delta + 4;
+        break;
+    }
+
+    hue /= 6;
+  }
+
+  return `${Math.round(hue * 360)} ${Math.round(saturation * 100)}% ${Math.round(lightness * 100)}%`;
+}
 
 function normalizeMaterials(materials: any) {
   return Array.isArray(materials) ? materials.filter(Boolean) : [];
@@ -225,6 +278,7 @@ interface CourseDetailsProps {
   course: any;
   onBack: () => void;
   onLaunchSection: (launchSection: CourseLaunchSection) => void;
+  onEditCourse?: (course: any) => void;
   onAssignCourse?: (course: any) => void;
   learnerAnswers?: ScormAnswerSectionRecord[];
   isLearnerAnswersLoading?: boolean;
@@ -241,6 +295,7 @@ export default function CourseDetails({
   course,
   onBack,
   onLaunchSection,
+  onEditCourse,
   onAssignCourse,
   learnerAnswers = [],
   isLearnerAnswersLoading = false,
@@ -252,6 +307,12 @@ export default function CourseDetails({
   onEnrollCourse,
   isEnrolling = false,
 }: CourseDetailsProps) {
+  const { colorMode } = useColorMode();
+  const theme = useTheme();
+  const {
+    auth: { user },
+    themeStore: { themeConfig },
+  } = stores;
   const isAssignedCourseView = Array.isArray(course.sources);
   const firstPlayableLaunchSection = getFirstPlayableLaunchSection(course);
   const answerSummary = summarizeAnswerSections(learnerAnswers);
@@ -395,6 +456,53 @@ export default function CourseDetails({
   const finalQuizzes = courseQuizzes.filter((quiz) => quiz.scope === "final");
   const showQuizReview = isAssignedCourseView || learnerAnswers.length > 0 || courseQuizzes.length > 0;
   const previewLaunchSection = firstPlayableLaunchSection || nextLaunchSection;
+  const courseThemeStyle = useMemo(() => {
+    const brandScale = (theme.colors?.brand || {}) as Record<number, string>;
+    const accentScale = (theme.colors?.purple || {}) as Record<number, string>;
+    const isDark = colorMode === "dark";
+    const companyPrimaryColor = normalizeHexColor(
+      user?.companyDetails?.primaryThemeColor ||
+        themeConfig?.colors?.custom?.light?.primary,
+      DEFAULT_LEARNER_PRIMARY_COLOR
+    );
+    const primary = companyPrimaryColor || brandScale[isDark ? 400 : 500] || DEFAULT_LEARNER_PRIMARY_COLOR;
+    const primaryForeground = "#FFFFFF";
+    const accent =
+      mixHexColors(primary, isDark ? "#A855F7" : "#312E81", isDark ? 0.22 : 0.18) ||
+      accentScale[isDark ? 300 : 500] ||
+      brandScale[isDark ? 300 : 400] ||
+      primary;
+    const accentForeground = "#FFFFFF";
+    const background = isDark ? "#0F172A" : "#FFFFFA";
+    const foreground = isDark ? "#F8FAFC" : "#0F172A";
+    const card = isDark ? "#111827" : "#FFFFFF";
+    const cardForeground = foreground;
+    const secondary = isDark ? "#172033" : "#F8FAFC";
+    const secondaryForeground = foreground;
+    const muted = isDark ? "#1E293B" : "#F1F5F9";
+    const mutedForeground = isDark ? "#CBD5E1" : "#475569";
+    const border = isDark ? "#334155" : "#E2E8F0";
+    const input = border;
+    const ring = primary;
+
+    return {
+      "--background": hexToHslTriplet(background),
+      "--foreground": hexToHslTriplet(foreground),
+      "--card": hexToHslTriplet(card),
+      "--card-foreground": hexToHslTriplet(cardForeground),
+      "--primary": hexToHslTriplet(primary),
+      "--primary-foreground": hexToHslTriplet(primaryForeground),
+      "--secondary": hexToHslTriplet(secondary),
+      "--secondary-foreground": hexToHslTriplet(secondaryForeground),
+      "--muted": hexToHslTriplet(muted),
+      "--muted-foreground": hexToHslTriplet(mutedForeground),
+      "--accent": hexToHslTriplet(accent),
+      "--accent-foreground": hexToHslTriplet(accentForeground),
+      "--border": hexToHslTriplet(border),
+      "--input": hexToHslTriplet(input),
+      "--ring": hexToHslTriplet(ring),
+    } as React.CSSProperties;
+  }, [colorMode, theme, themeConfig?.colors?.custom?.light?.primary, user?.companyDetails?.primaryThemeColor]);
 
   const renderQuizCard = (quiz: CourseQuizForLearner) => {
     const completed = Boolean(quiz.attempt);
@@ -502,7 +610,7 @@ export default function CourseDetails({
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground" data-theme={colorMode} style={courseThemeStyle}>
       <section className="relative overflow-hidden">
         <div
           aria-hidden
@@ -525,15 +633,26 @@ export default function CourseDetails({
                   <ChevronLeft className="h-4 w-4" />
                   Back
                 </button>
-                {onAssignCourse ? (
-                  <button
-                    type="button"
-                    onClick={() => onAssignCourse(course)}
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-primary/20 bg-primary/5 px-4 text-sm font-medium text-primary transition hover:bg-primary/10"
-                  >
-                    Assign Course
-                  </button>
-                ) : null}
+                <div className="flex flex-wrap items-center gap-3">
+                  {onEditCourse ? (
+                    <button
+                      type="button"
+                      onClick={() => onEditCourse(course)}
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-4 text-sm font-medium text-primary transition hover:bg-primary/15"
+                    >
+                      Edit Course
+                    </button>
+                  ) : null}
+                  {onAssignCourse ? (
+                    <button
+                      type="button"
+                      onClick={() => onAssignCourse(course)}
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-primary/20 bg-primary/5 px-4 text-sm font-medium text-primary transition hover:bg-primary/10"
+                    >
+                      Assign Course
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -560,7 +679,7 @@ export default function CourseDetails({
               </h1>
 
               <div
-                className="prose prose-sm mt-4 max-w-none text-muted-foreground prose-headings:text-foreground prose-p:leading-7 prose-strong:text-foreground"
+                className="prose prose-sm mt-4 max-w-none text-muted-foreground prose-headings:text-foreground prose-p:leading-7 prose-strong:text-foreground prose-a:text-primary dark:prose-invert dark:prose-headings:text-foreground dark:prose-p:text-muted-foreground dark:prose-strong:text-foreground dark:prose-li:text-muted-foreground dark:prose-a:text-primary"
                 dangerouslySetInnerHTML={{
                   __html: course.description?.html || course.description?.text || "<p>No description provided.</p>",
                 }}
@@ -694,7 +813,7 @@ export default function CourseDetails({
             </div>
 
             <div className="order-first lg:order-last">
-              <div className="group relative overflow-hidden rounded-[1.8rem] border border-border bg-muted shadow-xl shadow-black/5">
+              <div className="group relative overflow-hidden rounded-[1.8rem] border border-border bg-muted shadow-xl shadow-black/5 dark:shadow-black/30">
                 <div className="aspect-video w-full">
                   {course.thumbnailUrl ? (
                     <img
@@ -1403,7 +1522,7 @@ export default function CourseDetails({
             <p className="mt-3 text-sm leading-6 text-primary-foreground/90">
               Finish all lessons to unlock your verified certificate of completion.
             </p>
-            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur">
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur dark:bg-white/10">
               <Building2 className="h-4 w-4" />
               Instructor company is auto-linked from the course owner profile
             </div>
@@ -1412,7 +1531,7 @@ export default function CourseDetails({
       </main>
 
       {!isAssignedCourseView ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.15)] sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.15)] dark:shadow-[0_-10px_30px_-14px_rgba(0,0,0,0.65)] sm:hidden">
           <button
             type="button"
             onClick={onEnrollCourse}
@@ -1424,7 +1543,7 @@ export default function CourseDetails({
           </button>
         </div>
       ) : (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.15)] sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-xl shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.15)] dark:shadow-[0_-10px_30px_-14px_rgba(0,0,0,0.65)] sm:hidden">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs text-muted-foreground">Progress</p>

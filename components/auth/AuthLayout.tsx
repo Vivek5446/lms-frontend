@@ -108,7 +108,7 @@ export function AuthLayout({
       {/* ── DESKTOP layout (sm+) ── */}
       {/* Centered card, same as before */}
       <div className="hidden sm:flex relative min-h-[100dvh] w-full flex-col items-center justify-center pt-16 pb-8 px-4 z-10">
-        <div className="relative z-10 w-full max-w-[380px] flex flex-col items-center -mt-12">
+        <div className="relative z-10 w-full max-w-[400px] flex flex-col items-center -mt-12">
           {!hideBrand && (
             <div className="flex flex-col items-center mb-4 w-full animate-in slide-in-from-bottom-4 fade-in duration-1000">
               <h1 className="text-[2.2rem] sm:text-[2.8rem] font-[900] leading-tight text-transparent bg-clip-text bg-gradient-to-br from-primary via-[#8b5cf6] to-[#F7B733] drop-shadow-[0_10px_20px_rgba(var(--primary),0.2)] tracking-tighter uppercase flex items-center justify-center transition-all duration-1000 pb-1 whitespace-nowrap">

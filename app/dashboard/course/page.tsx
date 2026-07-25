@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,7 @@ import AssignCourseModal from "./components/AssignCourseModal";
 import CourseUsersModal from "./components/CourseUsersModal";
 import CoursePlayer from "./scorm/CoursePlayer";
 import CourseAssetModal from "./scorm/CourseAssetModal";
+import FolderExplorer from "./components/FolderExplorer";
 import {
   buildCourseAssetUrl,
   CourseLaunchSection,
@@ -127,9 +128,10 @@ function CoursePage() {
   const router = useRouter();
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
   const isLearner = isLearnerRole(role);
+  const isFolderExplorerUser = role === "superadmin" || role === "admin";
   const canViewCourses = hasAnyCourseViewPermission(stores.auth.user);
   const canCreateCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.CREATE_COURSES);
-  const canEditCourses = role === "superadmin" && hasPermission(stores.auth.user, PERMISSION_KEYS.EDIT_COURSES);
+  const canEditCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.EDIT_COURSES);
   const canDeleteCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.DELETE_COURSES);
   const canAssignCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.ASSIGN_COURSES);
   const canViewUsers = hasPermission(stores.auth.user, PERMISSION_KEYS.VIEW_USERS) && (role === "admin" || role === "superadmin");
@@ -149,6 +151,8 @@ function CoursePage() {
         ? "Review and manage the course catalog available to your company, including assigned and company-created courses."
         : "Review the courses available to your department and manage the items your role is allowed to maintain.";
 
+  const [selectedCategoryForCreation, setSelectedCategoryForCreation] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     if (isLearner) {
       router.replace("/course");
@@ -157,6 +161,7 @@ function CoursePage() {
 
     if (canViewCourses) {
       courseStore.fetchCourses().catch(() => undefined);
+      courseStore.fetchCategories().catch(() => undefined);
     }
   }, [canViewCourses, isLearner, router]);
 
@@ -313,7 +318,19 @@ function CoursePage() {
   }
 
   if (view === "create") {
-    return <CourseList onSuccess={handleCreateSuccess} onCancel={() => setView("gallery")} />;
+    return (
+      <CourseList
+        initialCategory={selectedCategoryForCreation}
+        onSuccess={() => {
+          setSelectedCategoryForCreation(undefined);
+          handleCreateSuccess();
+        }}
+        onCancel={() => {
+          setSelectedCategoryForCreation(undefined);
+          setView("gallery");
+        }}
+      />
+    );
   }
 
   if (view === "edit" && activeCourse) {
@@ -335,6 +352,7 @@ function CoursePage() {
           course={activeCourse}
           onBack={() => setView("gallery")}
           onLaunchSection={(launchSection) => setPlayerSection(launchSection)}
+          onEditCourse={canEditCourses ? () => handleOpenEdit(activeCourse) : undefined}
           onAssignCourse={canAssignCourses ? () => setIsAssignModalOpen(true) : undefined}
         />
 
@@ -383,6 +401,559 @@ function CoursePage() {
     );
   }
 
+  const renderLegacyCatalog = () => (
+    <React.Fragment>
+      <div
+        style={{
+          borderRadius: isCompact ? 18 : 24,
+          border: `1px solid ${borderColor}`,
+          background: filterSurface,
+          backdropFilter: "blur(14px)",
+          padding: isCompact ? 12 : 18,
+          boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+          marginBottom: 18,
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(240px, 2fr) repeat(6, minmax(140px, 1fr))",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              borderRadius: 14,
+              border: `1px solid ${borderColor}`,
+              background: surfaceBg,
+              padding: "0 14px",
+              height: isCompact ? 42 : 46,
+            }}
+          >
+            <FiSearch style={{ color: mutedTextColor }} />
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by title, slug, category, level, language, or visibility"
+              style={{
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                width: "100%",
+                color: titleColor,
+                fontSize: 14,
+              }}
+            />
+          </div>
+
+          {[
+            {
+              value: visibilityFilter,
+              onChange: setVisibilityFilter,
+              options: [
+                ["all", "All visibility"],
+                ["private", "Private"],
+                ["public", "Public"],
+              ],
+            },
+            {
+              value: pricingFilter,
+              onChange: setPricingFilter,
+              options: [
+                ["all", "All pricing"],
+                ["free", "Free"],
+                ["paid", "Paid"],
+              ],
+            },
+            {
+              value: courseTypeFilter,
+              onChange: setCourseTypeFilter,
+              options: [
+                ["all", "All types"],
+                ["standard", "Standard"],
+                ["scorm", "SCORM"],
+              ],
+            },
+            {
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                ["all", "All status"],
+                ["published", "Published"],
+                ["draft", "Draft"],
+              ],
+            },
+            {
+              value: categoryFilter,
+              onChange: setCategoryFilter,
+              options: availableCategories.map((category) => [category, category === "all" ? "All categories" : category]),
+            },
+            {
+              value: languageFilter,
+              onChange: setLanguageFilter,
+              options: availableLanguages.map((language) => [language, language === "all" ? "All languages" : language]),
+            },
+          ].map((config, index) => (
+            <select
+              key={`${index}-${config.value}`}
+              value={config.value}
+              onChange={(event) => config.onChange(event.target.value as never)}
+              style={{
+                height: isCompact ? 42 : 46,
+                borderRadius: isCompact ? 12 : 14,
+                border: `1px solid ${borderColor}`,
+                background: surfaceBg,
+                color: titleColor,
+                fontSize: 13,
+                padding: "0 12px",
+                outline: "none",
+              }}
+            >
+              {config.options.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {[
+              ["latest", "Latest"],
+              ["popularity", "Popularity"],
+              ["price_asc", "Price low-high"],
+              ["price_desc", "Price high-low"],
+              ["title_az", "Title A-Z"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setSortBy(value as CatalogSort)}
+                style={{
+                  padding: isCompact ? "8px 12px" : "10px 14px",
+                  borderRadius: 12,
+                  border: sortBy === value ? "none" : `1px solid ${borderColor}`,
+                  background: sortBy === value ? "#2563EB" : surfaceBg,
+                  color: sortBy === value ? "#FFFFFF" : titleColor,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, width: isCompact ? "100%" : "auto", justifyContent: isCompact ? "space-between" : "flex-start" }}>
+            <span style={{ fontSize: 13, color: textColor }}>Show</span>
+            <select
+              value={itemsPerPage}
+              onChange={(event) => setItemsPerPage(Number(event.target.value))}
+              style={{
+                height: 38,
+                borderRadius: 12,
+                border: `1px solid ${borderColor}`,
+                background: surfaceBg,
+                color: titleColor,
+                fontSize: 13,
+                padding: "0 12px",
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {courseStore.error && !courseStore.isLoading ? (
+        <div
+          style={{
+            marginBottom: 18,
+            padding: "14px 16px",
+            borderRadius: 16,
+            border: "1px solid #FECACA",
+            background: "#FEF2F2",
+            color: "#991B1B",
+            fontSize: 14,
+            lineHeight: 1.5,
+          }}
+        >
+          {courseStore.error}
+        </div>
+      ) : null}
+
+      {courseStore.isLoading ? (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 90, gap: 14 }}>
+          <FiLoader size={42} style={{ color: "#2563EB", animation: "spin 0.8s linear infinite" }} />
+          <p style={{ margin: 0, color: textColor }}>Loading courses...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      ) : filteredCourses.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "90px 24px",
+            background: surfaceBg,
+            borderRadius: 24,
+            border: `1px solid ${borderColor}`,
+            boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+          }}
+        >
+          <FiBookOpen size={44} style={{ color: mutedTextColor, margin: "0 auto 14px" }} />
+          <p style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: titleColor }}>No courses match these filters</p>
+          <p style={{ margin: 0, fontSize: 14, color: textColor }}>
+            Try clearing one or two filters, or create a new course to expand the catalog.
+          </p>
+        </div>
+      ) : (
+        <div
+          style={{
+            borderRadius: 24,
+            border: `1px solid ${borderColor}`,
+            background: surfaceBg,
+            overflow: "hidden",
+            boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+          }}
+        >
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1160 }}>
+              <thead>
+                <tr style={{ background: tableHeaderBg, borderBottom: `1px solid ${borderColor}` }}>
+                  {["Course","ID", "Visibility", "Type", "Status", "Assessment", "Price", "Popularity", "Actions"].map((label) => (
+                    <th
+                      key={label}
+                      style={{
+                        textAlign: label === "Actions" ? "center" : "left",
+                        padding: "16px 18px",
+                        fontSize: 12,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: mutedTextColor,
+                      }}
+                    >
+                      {label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {currentCourses.map((course, index) => {
+                  const visibilityType = course.visibility?.type || "private";
+                  const courseType = course.courseType || (course.scormFilePath ? "scorm" : "standard");
+                  const assessment = course.assessment;
+
+                  return (
+                    <tr
+                      key={course._id}
+                      style={{
+                        borderBottom: `1px solid ${borderColor}`,
+                        transition: "background 0.2s ease",
+                      }}
+                      onMouseEnter={(event) => {
+                        event.currentTarget.style.background = rowHoverBg;
+                      }}
+                      onMouseLeave={(event) => {
+                        event.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      <td style={{ padding: "16px 18px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          <div
+                            style={{
+                              width: 54,
+                              height: 54,
+                              borderRadius: 16,
+                              background: "linear-gradient(135deg, #DBEAFE 0%, #ECFEFF 100%)",
+                              overflow: "hidden",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {course.thumbnailUrl ? (
+                              <img src={course.thumbnailUrl} alt={course.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              <FiBookOpen size={24} style={{ color: "#2563EB" }} />
+                            )}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: titleColor }}>{course.title}</div>
+                            <div style={{ marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap", fontSize: 12, color: mutedTextColor }}>
+                              <span>{course.taxonomy?.level || "Beginner"}</span>
+                              {(course.taxonomy?.categories || []).slice(0, 2).map((category) => (
+                                <span key={`${course._id}-${category}`}>{category}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px 18px" }}>
+                        <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
+                          {course.courseCode || (course.taxonomy?.languages || []).slice(0, 2).join(", ") || "No language tags"}
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px 18px" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "7px 12px",
+                            borderRadius: 999,
+                            background: visibilityType === "public" ? "#ECFDF5" : "#EFF6FF",
+                            color: visibilityType === "public" ? "#047857" : "#1D4ED8",
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {visibilityType === "public" ? <FiGlobe size={12} /> : <FiLock size={12} />}
+                          {visibilityType === "public" ? "Public" : "Private"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px 18px" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: titleColor, fontSize: 13, fontWeight: 600 }}>
+                          {courseType === "scorm" ? <FiSettings size={14} color="#2563EB" /> : <FiGrid size={14} color="#059669" />}
+                          {courseType === "scorm" ? "SCORM" : "Standard"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px 18px" }}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "7px 12px",
+                            borderRadius: 999,
+                            background: course.status === "published" ? "#DCFCE7" : "#FEF3C7",
+                            color: course.status === "published" ? "#166534" : "#92400E",
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {course.status === "published" ? "Published" : "Draft"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px 18px" }}>
+                        <div style={{ fontSize: 13, color: titleColor, fontWeight: 600 }}>
+                          {assessment?.totalMarks
+                            ? `${assessment.totalMarks} total marks`
+                            : "Not configured"}
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px 18px" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: titleColor }}>
+                          <FiDollarSign size={14} color="#0F766E" />
+                          {formatCurrency(course.commerce?.amountInRupees)}
+                        </div>
+                        <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
+                          {course.commerce?.pricingModel === "paid" ? "Paid course" : "Free course"}
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px 18px" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: titleColor }}>
+                          <FiTrendingUp size={14} color="#7C3AED" />
+                          {course.metrics?.popularityScore || course.enrollmentCount || 0}
+                        </div>
+                        <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
+                          {course.metrics?.averageRating ? `${course.metrics.averageRating.toFixed(1)} rated` : "Awaiting ratings"}
+                        </div>
+                      </td>
+                      <td style={{ padding: "14px 18px", textAlign: "center" }}>
+                        <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+                          <MotionButton
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleOpenDetails(course)}
+                            style={{
+                              borderRadius: 12,
+                              border: `1px solid ${borderColor}`,
+                              background: surfaceBg,
+                              color: titleColor,
+                              padding: "8px 12px",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              cursor: "pointer",
+                            }}
+                          >
+                            <FiEye size={12} />
+                            View
+                          </MotionButton>
+
+                          {canEditCourses ? (
+                            <MotionButton
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleOpenEdit(course)}
+                              style={{
+                                borderRadius: 12,
+                                border: `1px solid ${borderColor}`,
+                                background: surfaceBg,
+                                color: "#1D4ED8",
+                                padding: "8px 12px",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <FiEdit3 size={12} />
+                              Edit
+                            </MotionButton>
+                          ) : null}
+
+                          {canDeleteCourses ? (
+                            <MotionButton
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={async () => {
+                                if (confirm("Delete this course?")) {
+                                  await courseStore.deleteCourse(course._id);
+                                }
+                              }}
+                              style={{
+                                borderRadius: 12,
+                                border: `1px solid ${borderColor}`,
+                                background: surfaceBg,
+                                color: "#DC2626",
+                                padding: "8px 12px",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <FiTrash2 size={12} />
+                              Delete
+                            </MotionButton>
+                          ) : null}
+                          {canViewUsers ? (
+                            <MotionButton
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => setCourseUsersModal({ courseId: course._id, courseTitle: course.title })}
+                              style={{
+                                borderRadius: 12,
+                                border: `1px solid ${borderColor}`,
+                                background: surfaceBg,
+                                color: "#7C3AED",
+                                padding: "8px 12px",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <FiUsers size={12} />
+                              View Users
+                            </MotionButton>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap", alignItems: "center", marginTop: 18 }}>
+        <p style={{ margin: 0, color: textColor, fontSize: 13 }}>
+          Showing <strong style={{ color: titleColor }}>{totalCourses === 0 ? 0 : startIndex + 1}</strong> to{" "}
+          <strong style={{ color: titleColor }}>{Math.min(endIndex, totalCourses)}</strong> of{" "}
+          <strong style={{ color: titleColor }}>{totalCourses}</strong> filtered courses
+        </p>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center", width: isCompact ? "100%" : "auto", justifyContent: isCompact ? "space-between" : "flex-start" }}>
+          <button
+            type="button"
+            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            disabled={currentPage === 1}
+            style={{
+              borderRadius: 12,
+              border: `1px solid ${borderColor}`,
+              background: surfaceBg,
+              color: currentPage === 1 ? mutedTextColor : titleColor,
+              padding: isCompact ? "9px 10px" : "9px 12px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: currentPage === 1 ? "not-allowed" : "pointer",
+              opacity: currentPage === 1 ? 0.55 : 1,
+            }}
+          >
+            <FiChevronLeft size={14} />
+            Prev
+          </button>
+
+          <div style={{ display: "flex", gap: 6 }}>
+            {Array.from({ length: totalPages }, (_, index) => index + 1)
+              .slice(Math.max(0, currentPage - 3), Math.max(0, currentPage - 3) + 5)
+              .map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNumber)}
+                  style={{
+                    minWidth: 36,
+                    padding: isCompact ? "8px 10px" : "9px 12px",
+                    borderRadius: 12,
+                    border: currentPage === pageNumber ? "none" : `1px solid ${borderColor}`,
+                    background: currentPage === pageNumber ? "#2563EB" : surfaceBg,
+                    color: currentPage === pageNumber ? "#FFFFFF" : titleColor,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            disabled={currentPage === totalPages}
+            style={{
+              borderRadius: 12,
+              border: `1px solid ${borderColor}`,
+              background: surfaceBg,
+              color: currentPage === totalPages ? mutedTextColor : titleColor,
+              padding: isCompact ? "9px 10px" : "9px 12px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+              opacity: currentPage === totalPages ? 0.55 : 1,
+            }}
+          >
+            Next
+            <FiChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+    </React.Fragment>
+  );
+
   return (
     <PermissionGate
       allowed={canViewCourses}
@@ -395,23 +966,8 @@ function CoursePage() {
           <Box bg={useColorModeValue("white", "gray.800")} borderWidth="1px" borderColor={useColorModeValue("gray.200", "gray.700")} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm" mb={{ base: 4, md: 6 }}>
             <Flex direction={{ base: "column", xl: "row" }} justify="space-between" align={{ base: "stretch", xl: "center" }} gap={4}>
               <HStack spacing={{ base: 3, md: 4 }} align="center">
-                <Box 
-                  as="button"
-                  onClick={() => window.history.back()}
-                  color={useColorModeValue("gray.500", "gray.400")}
-                  bg={useColorModeValue("gray.100", "whiteAlpha.100")}
-                  w={{ base: "36px", md: "40px" }} h={{ base: "36px", md: "40px" }}
-                  rounded="full"
-                  flexShrink={0}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: useColorModeValue("#6269FF", "#9F7AEA"), transform: "translateX(-3px)" }}
-                  transition="all 0.2s"
-                >
-                  <FiArrowLeft size={18} />
-                </Box>
-                <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient={useColorModeValue("linear(to-br, #6269FF, #8A2BE2)", "linear(to-br, #805AD5, #D53F8C)")} rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+              
+                <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient={useColorModeValue("linear(to-br,  purple.700,  purple.400)", "linear(to-br,  purple.600,  purple.500)")} rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
                   <Icon as={FiBookOpen} boxSize={{ base: 4, md: 5 }} color="white" />
                 </Box>
                 <Box>
@@ -440,7 +996,7 @@ function CoursePage() {
                   {role === "superadmin" ? "Assigned Courses" : "Assign Courses"}
                 </Button>
 
-                {canCreateCourses ? (
+                {canCreateCourses && !isFolderExplorerUser ? (
                   <Button
                     leftIcon={<Icon as={FiPlus} />}
                     colorScheme="blue"
@@ -471,685 +1027,41 @@ function CoursePage() {
             <StatCard label="Paid" value={summary.paidCount} helper="Commercial catalog with direct pricing enabled." accent="#C2410C" />
           </div>
 
-          <div
-            style={{
-              borderRadius: isCompact ? 18 : 24,
-              border: `1px solid ${borderColor}`,
-              background: filterSurface,
-              backdropFilter: "blur(14px)",
-              padding: isCompact ? 12 : 18,
-              boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
-              marginBottom: 18,
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "minmax(240px, 2fr) repeat(6, minmax(140px, 1fr))",
-                gap: 12,
-                alignItems: "center",
+          {isFolderExplorerUser ? (
+            <FolderExplorer
+              categories={courseStore.categories}
+              courses={courseStore.courses}
+              canCreateCourses={canCreateCourses}
+              canEditCourses={canEditCourses}
+              canDeleteCourses={canDeleteCourses}
+              canAssignCourses={canAssignCourses}
+              canViewUsers={canViewUsers}
+              onOpenDetails={handleOpenDetails}
+              onOpenEdit={handleOpenEdit}
+              onCreateCourseInCategory={(categoryName) => {
+                setSelectedCategoryForCreation(categoryName);
+                setView("create");
               }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  borderRadius: 14,
-                  border: `1px solid ${borderColor}`,
-                  background: surfaceBg,
-                  padding: "0 14px",
-                  height: isCompact ? 42 : 46,
-                }}
-              >
-                <FiSearch style={{ color: mutedTextColor }} />
-                <input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search by title, slug, category, level, language, or visibility"
-                  style={{
-                    border: "none",
-                    outline: "none",
-                    background: "transparent",
-                    width: "100%",
-                    color: titleColor,
-                    fontSize: 14,
-                  }}
-                />
-              </div>
-
-              {[
-                {
-                  value: visibilityFilter,
-                  onChange: setVisibilityFilter,
-                  options: [
-                    ["all", "All visibility"],
-                    ["private", "Private"],
-                    ["public", "Public"],
-                  ],
-                },
-                {
-                  value: pricingFilter,
-                  onChange: setPricingFilter,
-                  options: [
-                    ["all", "All pricing"],
-                    ["free", "Free"],
-                    ["paid", "Paid"],
-                  ],
-                },
-                {
-                  value: courseTypeFilter,
-                  onChange: setCourseTypeFilter,
-                  options: [
-                    ["all", "All types"],
-                    ["standard", "Standard"],
-                    ["scorm", "SCORM"],
-                  ],
-                },
-                {
-                  value: statusFilter,
-                  onChange: setStatusFilter,
-                  options: [
-                    ["all", "All status"],
-                    ["published", "Published"],
-                    ["draft", "Draft"],
-                  ],
-                },
-                {
-                  value: categoryFilter,
-                  onChange: setCategoryFilter,
-                  options: availableCategories.map((category) => [category, category === "all" ? "All categories" : category]),
-                },
-                {
-                  value: languageFilter,
-                  onChange: setLanguageFilter,
-                  options: availableLanguages.map((language) => [language, language === "all" ? "All languages" : language]),
-                },
-              ].map((config, index) => (
-                <select
-                  key={`${index}-${config.value}`}
-                  value={config.value}
-                  onChange={(event) => config.onChange(event.target.value as never)}
-                  style={{
-                    height: isCompact ? 42 : 46,
-                    borderRadius: isCompact ? 12 : 14,
-                    border: `1px solid ${borderColor}`,
-                    background: surfaceBg,
-                    color: titleColor,
-                    fontSize: 13,
-                    padding: "0 12px",
-                    outline: "none",
-                  }}
-                >
-                  {config.options.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginTop: 14 }}>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {[
-                  ["latest", "Latest"],
-                  ["popularity", "Popularity"],
-                  ["price_asc", "Price low-high"],
-                  ["price_desc", "Price high-low"],
-                  ["title_az", "Title A-Z"],
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setSortBy(value as CatalogSort)}
-                    style={{
-                      padding: isCompact ? "8px 12px" : "10px 14px",
-                      borderRadius: 12,
-                      border: sortBy === value ? "none" : `1px solid ${borderColor}`,
-                      background: sortBy === value ? "#2563EB" : surfaceBg,
-                      color: sortBy === value ? "#FFFFFF" : titleColor,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 10, width: isCompact ? "100%" : "auto", justifyContent: isCompact ? "space-between" : "flex-start" }}>
-                <span style={{ fontSize: 13, color: textColor }}>Show</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(event) => setItemsPerPage(Number(event.target.value))}
-                  style={{
-                    height: 38,
-                    borderRadius: 12,
-                    border: `1px solid ${borderColor}`,
-                    background: surfaceBg,
-                    color: titleColor,
-                    fontSize: 13,
-                    padding: "0 12px",
-                  }}
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {courseStore.error && !courseStore.isLoading ? (
-            <div
-              style={{
-                marginBottom: 18,
-                padding: "14px 16px",
-                borderRadius: 16,
-                border: "1px solid #FECACA",
-                background: "#FEF2F2",
-                color: "#991B1B",
-                fontSize: 14,
-                lineHeight: 1.5,
+              onDeleteCourse={async (courseId) => {
+                if (window.confirm("Are you sure you want to delete this course?")) {
+                  try {
+                    await courseStore.deleteCourse(courseId);
+                    courseStore.fetchCourses();
+                  } catch (err: any) {
+                    alert(err.message || "Failed to delete course");
+                  }
+                }
               }}
-            >
-              {courseStore.error}
-            </div>
-          ) : null}
-
-          {courseStore.isLoading ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 90, gap: 14 }}>
-              <FiLoader size={42} style={{ color: "#2563EB", animation: "spin 0.8s linear infinite" }} />
-              <p style={{ margin: 0, color: textColor }}>Loading courses...</p>
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            </div>
-          ) : filteredCourses.length === 0 ? (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "90px 24px",
-                background: surfaceBg,
-                borderRadius: 24,
-                border: `1px solid ${borderColor}`,
-                boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
+              onAssignCourse={(course) => {
+                setActiveCourse(course);
+                setIsAssignModalOpen(true);
               }}
-            >
-              <FiBookOpen size={44} style={{ color: mutedTextColor, margin: "0 auto 14px" }} />
-              <p style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: titleColor }}>No courses match these filters</p>
-              <p style={{ margin: 0, fontSize: 14, color: textColor }}>
-                Try clearing one or two filters, or create a new course to expand the catalog.
-              </p>
-            </div>
+              onViewCourseUsers={(course) => {
+                setCourseUsersModal({ courseId: course._id, courseTitle: course.title });
+              }}
+            />
           ) : (
-            <>
-              {isCompact ? (
-                <div style={{ display: "grid", gap: 12 }}>
-                  {currentCourses.map((course) => {
-                    const visibilityType = course.visibility?.type || "private";
-                    const courseType = course.courseType || (course.scormFilePath ? "scorm" : "standard");
-                    const assessment = course.assessment;
-
-                    return (
-                      <div
-                        key={course._id}
-                        style={{
-                          borderRadius: 18,
-                          border: `1px solid ${borderColor}`,
-                          background: surfaceBg,
-                          padding: 14,
-                          boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
-                        }}
-                      >
-                        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                          <div
-                            style={{
-                              width: 52,
-                              height: 52,
-                              borderRadius: 14,
-                              background: "linear-gradient(135deg, #DBEAFE 0%, #ECFEFF 100%)",
-                              overflow: "hidden",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
-                          >
-                            {course.thumbnailUrl ? (
-                              <img src={course.thumbnailUrl} alt={course.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            ) : (
-                              <FiBookOpen size={22} style={{ color: "#2563EB" }} />
-                            )}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: titleColor }}>{course.title}</div>
-                            <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
-                              {course.courseCode || "No course code"}
-                            </div>
-                            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999, background: visibilityType === "public" ? "#ECFDF5" : "#EFF6FF", color: visibilityType === "public" ? "#047857" : "#1D4ED8", fontSize: 11, fontWeight: 700 }}>
-                                {visibilityType === "public" ? <FiGlobe size={11} /> : <FiLock size={11} />}
-                                {visibilityType === "public" ? "Public" : "Private"}
-                              </span>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999, background: course.status === "published" ? "#DCFCE7" : "#FEF3C7", color: course.status === "published" ? "#166534" : "#92400E", fontSize: 11, fontWeight: 700 }}>
-                                {course.status === "published" ? "Published" : "Draft"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 12 }}>
-                          <div>
-                            <div style={{ fontSize: 10, textTransform: "uppercase", color: mutedTextColor }}>Type</div>
-                            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: titleColor }}>{courseType === "scorm" ? "SCORM" : "Standard"}</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 10, textTransform: "uppercase", color: mutedTextColor }}>Price</div>
-                            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: titleColor }}>{formatCurrency(course.commerce?.amountInRupees)}</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 10, textTransform: "uppercase", color: mutedTextColor }}>Assessment</div>
-                            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: titleColor }}>{assessment?.totalMarks ? `${assessment.totalMarks} marks` : "Not set"}</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 10, textTransform: "uppercase", color: mutedTextColor }}>Popularity</div>
-                            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 600, color: titleColor }}>{course.metrics?.popularityScore || course.enrollmentCount || 0}</div>
-                          </div>
-                        </div>
-
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-                          <MotionButton
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleOpenDetails(course)}
-                            style={{ borderRadius: 12, border: `1px solid ${borderColor}`, background: surfaceBg, color: titleColor, padding: "8px 12px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
-                          >
-                            <FiEye size={12} />
-                            View
-                          </MotionButton>
-                          {canEditCourses ? (
-                            <MotionButton
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => handleOpenEdit(course)}
-                              style={{ borderRadius: 12, border: `1px solid ${borderColor}`, background: surfaceBg, color: "#1D4ED8", padding: "8px 12px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
-                            >
-                              <FiEdit3 size={12} />
-                              Edit
-                            </MotionButton>
-                          ) : null}
-                          {canDeleteCourses ? (
-                            <MotionButton
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={async () => {
-                                if (confirm("Delete this course?")) {
-                                  await courseStore.deleteCourse(course._id);
-                                }
-                              }}
-                              style={{ borderRadius: 12, border: `1px solid ${borderColor}`, background: surfaceBg, color: "#DC2626", padding: "8px 12px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
-                            >
-                              <FiTrash2 size={12} />
-                              Delete
-                            </MotionButton>
-                          ) : null}
-                          {canViewUsers ? (
-                            <MotionButton
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => setCourseUsersModal({ courseId: course._id, courseTitle: course.title })}
-                              style={{ borderRadius: 12, border: `1px solid ${borderColor}`, background: surfaceBg, color: "#7C3AED", padding: "8px 12px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}
-                            >
-                              <FiUsers size={12} />
-                              View Users
-                            </MotionButton>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    borderRadius: 24,
-                    border: `1px solid ${borderColor}`,
-                    background: surfaceBg,
-                    overflow: "hidden",
-                    boxShadow: "0 18px 45px rgba(15, 23, 42, 0.06)",
-                  }}
-                >
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1160 }}>
-                    <thead>
-                      <tr style={{ background: tableHeaderBg, borderBottom: `1px solid ${borderColor}` }}>
-                        {["Course","ID", "Visibility", "Type", "Status", "Assessment", "Price", "Popularity", "Actions"].map((label) => (
-                          <th
-                            key={label}
-                            style={{
-                              textAlign: label === "Actions" ? "center" : "left",
-                              padding: "16px 18px",
-                              fontSize: 12,
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                              color: mutedTextColor,
-                            }}
-                          >
-                            {label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentCourses.map((course, index) => {
-                        const visibilityType = course.visibility?.type || "private";
-                        const courseType = course.courseType || (course.scormFilePath ? "scorm" : "standard");
-                        const assessment = course.assessment;
-
-                        return (
-                          <tr
-                            key={course._id}
-                            style={{
-                              borderBottom: `1px solid ${borderColor}`,
-                              transition: "background 0.2s ease",
-                            }}
-                            onMouseEnter={(event) => {
-                              event.currentTarget.style.background = rowHoverBg;
-                            }}
-                            onMouseLeave={(event) => {
-                              event.currentTarget.style.background = "transparent";
-                            }}
-                          >
-                            <td style={{ padding: "16px 18px" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                                <div
-                                  style={{
-                                    width: 54,
-                                    height: 54,
-                                    borderRadius: 16,
-                                    background: "linear-gradient(135deg, #DBEAFE 0%, #ECFEFF 100%)",
-                                    overflow: "hidden",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    flexShrink: 0,
-                                  }}
-                                >
-                                  {course.thumbnailUrl ? (
-                                    <img src={course.thumbnailUrl} alt={course.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                  ) : (
-                                    <FiBookOpen size={24} style={{ color: "#2563EB" }} />
-                                  )}
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: 15, fontWeight: 700, color: titleColor }}>{course.title}</div>
-                                  <div style={{ marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap", fontSize: 12, color: mutedTextColor }}>
-                                    <span>{course.taxonomy?.level || "Beginner"}</span>
-                                    {(course.taxonomy?.categories || []).slice(0, 2).map((category) => (
-                                      <span key={`${course._id}-${category}`}>{category}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td>
-                                 <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
-                                {course.courseCode || (course.taxonomy?.languages || []).slice(0, 2).join(", ") || "No language tags"}
-                              </div>
-                            </td>
-                            <td style={{ padding: "16px 18px" }}>
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                  padding: "7px 12px",
-                                  borderRadius: 999,
-                                  background: visibilityType === "public" ? "#ECFDF5" : "#EFF6FF",
-                                  color: visibilityType === "public" ? "#047857" : "#1D4ED8",
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {visibilityType === "public" ? <FiGlobe size={12} /> : <FiLock size={12} />}
-                                {visibilityType === "public" ? "Public" : "Private"}
-                              </span>
-                            </td>
-                            <td style={{ padding: "16px 18px" }}>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: titleColor, fontSize: 13, fontWeight: 600 }}>
-                                {courseType === "scorm" ? <FiSettings size={14} color="#2563EB" /> : <FiGrid size={14} color="#059669" />}
-                                {courseType === "scorm" ? "SCORM" : "Standard"}
-                              </span>
-                            </td>
-                            <td style={{ padding: "16px 18px" }}>
-                              <span
-                                style={{
-                                  display: "inline-block",
-                                  padding: "7px 12px",
-                                  borderRadius: 999,
-                                  background: course.status === "published" ? "#DCFCE7" : "#FEF3C7",
-                                  color: course.status === "published" ? "#166534" : "#92400E",
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {course.status === "published" ? "Published" : "Draft"}
-                              </span>
-                            </td>
-                            <td style={{ padding: "16px 18px" }}>
-                              <div style={{ fontSize: 13, color: titleColor, fontWeight: 600 }}>
-                                {assessment?.totalMarks
-                                  ? `${assessment.totalMarks} total marks`
-                                  : "Not configured"}
-                              </div>
-                           
-                            </td>
-                            <td style={{ padding: "16px 18px" }}>
-                              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: titleColor }}>
-                                <FiDollarSign size={14} color="#0F766E" />
-                                {formatCurrency(course.commerce?.amountInRupees)}
-                              </div>
-                              <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
-                                {course.commerce?.pricingModel === "paid" ? "Paid course" : "Free course"}
-                              </div>
-                            </td>
-                            <td style={{ padding: "16px 18px" }}>
-                              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: titleColor }}>
-                                <FiTrendingUp size={14} color="#7C3AED" />
-                                {course.metrics?.popularityScore || course.enrollmentCount || 0}
-                              </div>
-                              <div style={{ marginTop: 4, fontSize: 12, color: mutedTextColor }}>
-                                {course.metrics?.averageRating ? `${course.metrics.averageRating.toFixed(1)} rated` : "Awaiting ratings"}
-                              </div>
-                            </td>
-                            <td style={{ padding: "14px 18px", textAlign: "center" }}>
-                              <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
-                                <MotionButton
-                                  whileHover={{ scale: 1.03 }}
-                                  whileTap={{ scale: 0.98 }}
-                                  onClick={() => handleOpenDetails(course)}
-                                  style={{
-                                    borderRadius: 12,
-                                    border: `1px solid ${borderColor}`,
-                                    background: surfaceBg,
-                                    color: titleColor,
-                                    padding: "8px 12px",
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 6,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  <FiEye size={12} />
-                                  View
-                                </MotionButton>
-
-                                {canEditCourses ? (
-                                  <MotionButton
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleOpenEdit(course)}
-                                    style={{
-                                      borderRadius: 12,
-                                      border: `1px solid ${borderColor}`,
-                                      background: surfaceBg,
-                                      color: "#1D4ED8",
-                                      padding: "8px 12px",
-                                      fontSize: 12,
-                                      fontWeight: 600,
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: 6,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <FiEdit3 size={12} />
-                                    Edit
-                                  </MotionButton>
-                                ) : null}
-
-                                {canDeleteCourses ? (
-                                  <MotionButton
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={async () => {
-                                      if (confirm("Delete this course?")) {
-                                        await courseStore.deleteCourse(course._id);
-                                      }
-                                    }}
-                                    style={{
-                                      borderRadius: 12,
-                                      border: `1px solid ${borderColor}`,
-                                      background: surfaceBg,
-                                      color: "#DC2626",
-                                      padding: "8px 12px",
-                                      fontSize: 12,
-                                      fontWeight: 600,
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: 6,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <FiTrash2 size={12} />
-                                    Delete
-                                  </MotionButton>
-                                ) : null}
-                                {canViewUsers ? (
-                                  <MotionButton
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => setCourseUsersModal({ courseId: course._id, courseTitle: course.title })}
-                                    style={{
-                                      borderRadius: 12,
-                                      border: `1px solid ${borderColor}`,
-                                      background: surfaceBg,
-                                      color: "#7C3AED",
-                                      padding: "8px 12px",
-                                      fontSize: 12,
-                                      fontWeight: 600,
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: 6,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <FiUsers size={12} />
-                                    View Users
-                                  </MotionButton>
-                                ) : null}
-
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap", alignItems: "center", marginTop: 18 }}>
-                <p style={{ margin: 0, color: textColor, fontSize: 13 }}>
-                  Showing <strong style={{ color: titleColor }}>{totalCourses === 0 ? 0 : startIndex + 1}</strong> to{" "}
-                  <strong style={{ color: titleColor }}>{Math.min(endIndex, totalCourses)}</strong> of{" "}
-                  <strong style={{ color: titleColor }}>{totalCourses}</strong> filtered courses
-                </p>
-
-                <div style={{ display: "flex", gap: 8, alignItems: "center", width: isCompact ? "100%" : "auto", justifyContent: isCompact ? "space-between" : "flex-start" }}>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    disabled={currentPage === 1}
-                    style={{
-                      borderRadius: 12,
-                      border: `1px solid ${borderColor}`,
-                      background: surfaceBg,
-                      color: currentPage === 1 ? mutedTextColor : titleColor,
-                      padding: isCompact ? "9px 10px" : "9px 12px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                      opacity: currentPage === 1 ? 0.55 : 1,
-                    }}
-                  >
-                    <FiChevronLeft size={14} />
-                    Prev
-                  </button>
-
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {Array.from({ length: totalPages }, (_, index) => index + 1)
-                      .slice(Math.max(0, currentPage - 3), Math.max(0, currentPage - 3) + 5)
-                      .map((pageNumber) => (
-                        <button
-                          key={pageNumber}
-                          type="button"
-                          onClick={() => setCurrentPage(pageNumber)}
-                          style={{
-                            minWidth: 36,
-                            padding: isCompact ? "8px 10px" : "9px 12px",
-                            borderRadius: 12,
-                            border: currentPage === pageNumber ? "none" : `1px solid ${borderColor}`,
-                            background: currentPage === pageNumber ? "#2563EB" : surfaceBg,
-                            color: currentPage === pageNumber ? "#FFFFFF" : titleColor,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
-                        >
-                          {pageNumber}
-                        </button>
-                      ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                    disabled={currentPage === totalPages}
-                    style={{
-                      borderRadius: 12,
-                      border: `1px solid ${borderColor}`,
-                      background: surfaceBg,
-                      color: currentPage === totalPages ? mutedTextColor : titleColor,
-                      padding: isCompact ? "9px 10px" : "9px 12px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-                      opacity: currentPage === totalPages ? 0.55 : 1,
-                    }}
-                  >
-                    Next
-                    <FiChevronRight size={14} />
-                  </button>
-                </div>
-              </div>
-            </>
+            renderLegacyCatalog()
           )}
         </div>
       </Box>
