@@ -77,7 +77,6 @@ export interface CourseListItem {
   };
   progression?: {
     completionWindowDays?: number | null;
-    dripEnabled?: boolean;
     certificateEnabled?: boolean;
     certificateTemplateId?: string | null;
     mandatoryModules?: boolean;
@@ -243,7 +242,6 @@ export interface MyCourseItem {
   instructor?: CourseInstructor;
   progression?: {
     completionWindowDays?: number | null;
-    dripEnabled?: boolean;
     certificateEnabled?: boolean;
     certificateTemplateId?: string | null;
     mandatoryModules?: boolean;
@@ -296,7 +294,6 @@ export interface MyCourseDetailItem extends CourseListItem {
   };
   progression?: {
     completionWindowDays?: number | null;
-    dripEnabled?: boolean;
     certificateEnabled?: boolean;
     certificateTemplateId?: string | null;
     mandatoryModules?: boolean;
@@ -404,6 +401,10 @@ export interface CourseQuizForLearner {
   moduleTitle: string;
   questionCount: number;
   totalMarks: number;
+  isUnlocked?: boolean;
+  unlockReason?: string;
+  unlockThreshold?: number;
+  unlockProgress?: number;
   questions: CourseQuizQuestion[];
   attempt?: CourseQuizAttempt | null;
 }

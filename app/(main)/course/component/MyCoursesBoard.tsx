@@ -34,7 +34,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FiBookOpen, FiCheckCircle, FiClock, FiPlayCircle } from "react-icons/fi";
 import MYCourseBoardCard from "./MyCourseBoardCard";
 
@@ -77,6 +77,16 @@ type MyCoursesBoardProps = {
 };
 
 const MotionBox = motion(Box);
+const VIDEO_PROGRESS_MIN_SECONDS_DELTA = 15;
+const VIDEO_PROGRESS_MIN_PERCENT_DELTA = 2;
+
+type VideoProgressPayload = {
+  currentTime?: number;
+  duration?: number;
+  progress?: number;
+  startOver?: boolean;
+  reason?: "interval" | "pause" | "exit";
+};
 
 const MyCoursesBoard = observer(
   ({ basePath = "/dashboard/course/my-courses" }: MyCoursesBoardProps) => {
@@ -87,6 +97,13 @@ const MyCoursesBoard = observer(
     const [playerSection, setPlayerSection] =
       useState<CourseLaunchSection | null>(null);
     const [activeQuiz, setActiveQuiz] = useState<CourseQuizForLearner | null>(null);
+    const lastPersistedVideoProgressRef = useRef<Record<string, { currentTime: number; progress: number }>>({});
+    const videoProgressInFlightRef = useRef(false);
+    const queuedVideoProgressRef = useRef<{
+      status: "in_progress" | "completed";
+      data?: VideoProgressPayload;
+    } | null>(null);
+    const fetchedCourseDetailIdRef = useRef("");
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<
       "all" | "active" | "in_progress" | "completed"
@@ -104,19 +121,30 @@ const MyCoursesBoard = observer(
       courseStore.fetchPublicCourses().catch(() => undefined);
     }, []);
 
+    const courses = courseStore.myCourses || [];
+    const isCourseEnrolled = useMemo(() => {
+      if (!requestedCourseId) {
+        return false;
+      }
+
+      return courses.some(
+        (course) =>
+          String(course.courseId || course._id).trim() === String(requestedCourseId).trim()
+      );
+    }, [courses, requestedCourseId]);
+
     useEffect(() => {
       if (!requestedCourseId) {
+        fetchedCourseDetailIdRef.current = "";
         courseStore.clearCurrentCourse();
         managerStore.clearMyCourseAnswers();
         return;
       }
 
-      const enrolled = (courseStore.myCourses || []).some(
-        (c) => String(c.courseId || c._id).trim() === String(requestedCourseId).trim()
-      );
-
-      if (enrolled) {
+      if (isCourseEnrolled && fetchedCourseDetailIdRef.current !== requestedCourseId) {
+        fetchedCourseDetailIdRef.current = requestedCourseId;
         courseStore.fetchMyCourseDetail(requestedCourseId).catch((error) => {
+          fetchedCourseDetailIdRef.current = "";
           toast({
             title: "Unable to open course",
             description: error?.message || error?.error || "Please try again.",
@@ -126,9 +154,8 @@ const MyCoursesBoard = observer(
           router.replace(basePath);
         });
       }
-    }, [basePath, requestedCourseId, router, toast, courseStore.myCourses]);
+    }, [basePath, isCourseEnrolled, requestedCourseId, router, toast]);
 
-    const courses = courseStore.myCourses || [];
     const activeCourse = useMemo(() => {
       if (!requestedCourseId) {
         return null;
@@ -147,17 +174,6 @@ const MyCoursesBoard = observer(
       );
       return pubCourse || null;
     }, [requestedCourseId, courseStore.currentCourse, courseStore.publicCourses, courses]);
-    const isCourseEnrolled = useMemo(() => {
-      if (!requestedCourseId) {
-        return false;
-      }
-
-      return courses.some(
-        (course) =>
-          String(course.courseId || course._id).trim() === String(requestedCourseId).trim()
-      );
-    }, [courses, requestedCourseId]);
-
     const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
     const isLearner = isLearnerRole(role);
 
@@ -307,14 +323,32 @@ const MyCoursesBoard = observer(
       }
     };
 
-    const syncNonScormSectionProgress = async (
+    const shouldPersistVideoProgress = useCallback((
+      sectionKey: string,
       status: "in_progress" | "completed",
-      data?: {
-        currentTime?: number;
-        duration?: number;
-        progress?: number;
-        startOver?: boolean;
-      },
+      data?: VideoProgressPayload,
+    ) => {
+      if (status === "completed" || data?.startOver || data?.reason === "pause" || data?.reason === "exit") {
+        return true;
+      }
+
+      const currentTime = Number(data?.currentTime || 0);
+      const progress = Number(data?.progress || 0);
+      const previous = lastPersistedVideoProgressRef.current[sectionKey];
+
+      if (!previous) {
+        return progress > 0 || currentTime > 0;
+      }
+
+      return (
+        Math.abs(currentTime - previous.currentTime) >= VIDEO_PROGRESS_MIN_SECONDS_DELTA ||
+        Math.abs(progress - previous.progress) >= VIDEO_PROGRESS_MIN_PERCENT_DELTA
+      );
+    }, []);
+
+    const syncNonScormSectionProgress = useCallback(async (
+      status: "in_progress" | "completed",
+      data?: VideoProgressPayload,
     ) => {
       if (!activeCourse || !playerSection || !isCourseEnrolled) {
         return;
@@ -324,6 +358,18 @@ const MyCoursesBoard = observer(
       if (!courseId) {
         return;
       }
+      const sectionKey = `${courseId}:${playerSection.sectionId}`;
+
+      if (!shouldPersistVideoProgress(sectionKey, status, data)) {
+        return;
+      }
+
+      if (videoProgressInFlightRef.current && status !== "completed" && !data?.startOver) {
+        queuedVideoProgressRef.current = { status, data };
+        return;
+      }
+
+      videoProgressInFlightRef.current = true;
 
       try {
         const response = await courseStore.updateSectionProgress({
@@ -339,6 +385,11 @@ const MyCoursesBoard = observer(
         });
 
         if (response) {
+          const sectionProgress = response?.sectionProgress || response;
+          lastPersistedVideoProgressRef.current[sectionKey] = {
+            currentTime: Number(sectionProgress?.currentTime ?? data?.currentTime ?? 0),
+            progress: Number(sectionProgress?.progress ?? data?.progress ?? 0),
+          };
           courseStore.applyRealtimeSectionProgressUpdate({
             courseId,
             moduleId: playerSection.moduleId,
@@ -353,8 +404,15 @@ const MyCoursesBoard = observer(
           status: "error",
           duration: 4000,
         });
+      } finally {
+        videoProgressInFlightRef.current = false;
+        const queuedProgress = queuedVideoProgressRef.current;
+        queuedVideoProgressRef.current = null;
+        if (queuedProgress) {
+          void syncNonScormSectionProgress(queuedProgress.status, queuedProgress.data);
+        }
       }
-    };
+    }, [activeCourse, isCourseEnrolled, playerSection, shouldPersistVideoProgress]);
 
     if (requestedCourseId) {
       const isLoadingCourse =

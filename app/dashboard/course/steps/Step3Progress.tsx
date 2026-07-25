@@ -11,11 +11,10 @@ import { CourseProgressState } from "../courseForm";
 interface Step3ProgressProps {
   value: CourseProgressState;
   onChange: (value: CourseProgressState) => void;
-  moduleNames: string[];
   onProgressChange?: (progress: number) => void;
 }
 
-export default function Step3Progress({ value, onChange, moduleNames, onProgressChange }: Step3ProgressProps) {
+export default function Step3Progress({ value, onChange, onProgressChange }: Step3ProgressProps) {
   useEffect(() => {
     let filled = 3;
 
@@ -26,15 +25,10 @@ export default function Step3Progress({ value, onChange, moduleNames, onProgress
     onProgressChange?.(Math.round((filled / 4) * 100));
   }, [value, onProgressChange]);
 
-  const dripSchedule = moduleNames.map((name, index) => ({
-    dayLabel: `Day ${index * 7 + 1}`,
-    moduleLabel: name || `Module ${index + 1}`,
-  }));
-
   return (
     <StepWrapper
       stepKey={2}
-      title="Progress & Drip Settings"
+      title="Progress Settings"
       subtitle={
         <span className="inline-flex items-center gap-1.5">
           Control how learners progress
@@ -66,41 +60,6 @@ export default function Step3Progress({ value, onChange, moduleNames, onProgress
               <span className="text-sm text-muted-foreground">days</span>
             </div>
           </FormField>
-        </div>
-
-        <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-step-3/15 flex items-center justify-center">
-                <Lock className="w-5 h-5 text-step-3" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground">Drip Content</h3>
-                <p className="text-sm text-muted-foreground">Release modules on a schedule</p>
-              </div>
-            </div>
-            <Switch checked={value.dripEnabled} onCheckedChange={(dripEnabled) => onChange({ ...value, dripEnabled })} />
-          </div>
-          {value.dripEnabled && (
-            <div className="bg-background rounded-xl p-4 space-y-3">
-              <p className="text-sm text-muted-foreground flex items-center gap-2">
-                <Clock className="w-4 h-4 text-step-3" />
-                Configure release schedule for each module in the Structure tab
-              </p>
-              {dripSchedule.length > 0 ? (
-                <div className="flex gap-3">
-                  {dripSchedule.map((item) => (
-                    <div key={`${item.dayLabel}-${item.moduleLabel}`} className="flex-1 bg-card rounded-lg border border-border p-3 text-center">
-                      <div className="text-xs font-medium text-step-3">{item.dayLabel}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{item.moduleLabel}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Add modules in the Structure step to preview a drip schedule.</p>
-              )}
-            </div>
-          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">

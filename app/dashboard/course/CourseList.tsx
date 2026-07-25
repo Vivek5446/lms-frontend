@@ -246,7 +246,6 @@ function CourseList({ mode = "create", courseId, initialCourse, initialCategory,
           <Step3Progress
             value={courseForm.progress}
             onChange={(progress) => setCourseForm((prev) => ({ ...prev, progress }))}
-            moduleNames={courseForm.structure.modules.map((module) => module.name)}
             onProgressChange={(progressValue) => updateStepProgress(2, progressValue)}
           />
         );

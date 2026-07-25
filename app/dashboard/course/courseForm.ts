@@ -86,7 +86,6 @@ export interface CourseStructureState {
 
 export interface CourseProgressState {
   completionDays: string;
-  dripEnabled: boolean;
   certificateEnabled: boolean;
   mandatoryModules: boolean;
 }
@@ -301,7 +300,6 @@ export const initialCourseFormState: CourseFormState = {
   },
   progress: {
     completionDays: "",
-    dripEnabled: false,
     certificateEnabled: true,
     mandatoryModules: true,
   },
@@ -579,7 +577,6 @@ export function courseToFormState(course: any): CourseFormState {
     },
     progress: {
       completionDays: course?.progression?.completionWindowDays == null ? "" : String(course.progression.completionWindowDays),
-      dripEnabled: Boolean(course?.progression?.dripEnabled),
       certificateEnabled: course?.progression?.certificateEnabled !== false,
       mandatoryModules: course?.progression?.mandatoryModules !== false,
     },
@@ -671,7 +668,6 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
     },
     progression: {
       completionWindowDays: completionDays,
-      dripEnabled: courseForm.progress.dripEnabled,
       certificateEnabled: courseForm.progress.certificateEnabled,
       mandatoryModules: courseForm.progress.mandatoryModules,
     },
