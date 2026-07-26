@@ -621,7 +621,7 @@ export default function CourseDetails({
       brandScale[isDark ? 300 : 400] ||
       primary;
     const accentForeground = "#FFFFFF";
-    const background = isDark ? "#0F172A" : "#FFFFFA";
+    const background = isDark ? "#0F172A" : "#FFFFFF";
     const foreground = isDark ? "#F8FAFC" : "#0F172A";
     const card = isDark ? "#111827" : "#FFFFFF";
     const cardForeground = foreground;

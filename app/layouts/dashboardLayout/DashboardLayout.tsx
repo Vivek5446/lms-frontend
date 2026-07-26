@@ -34,10 +34,9 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
     setOpenMobileSideDrawer(false);
   };
 
-  const pageBgColor = useColorModeValue("gray.50", "gray.900");
-  const dottedBgImage = useColorModeValue(
-    "radial-gradient(#CBD5E0 1px, transparent 1px)",
-    "radial-gradient(#1A202C 1px, transparent 1px)"
+  const pageBgColor = useColorModeValue(
+    "#FFFFFF",
+    themeConfig.colors.custom.dark.primary || "gray.900"
   );
 
   const handleSidebarItemClick = (item: any) => {
@@ -84,7 +83,7 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
   }
 
   return user ? (
-    <Box bg={pageBgColor} bgImage={dottedBgImage} bgSize="20px 20px" minH="100dvh">
+    <Box bg={pageBgColor} minH="100dvh">
       <MainContainer $isMobile={isMobile}>
         <Box ref={sidebarRef}>
           <SidebarLayout

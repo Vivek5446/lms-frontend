@@ -343,7 +343,7 @@ const MotionFlex = motion(Flex);
   }}
   _hover={{
     boxShadow: "md",
-    borderColor: "#4F8EF7",
+    borderColor: "purple.200",
   }}
 >
 
