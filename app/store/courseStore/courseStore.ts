@@ -409,6 +409,33 @@ export interface CourseQuizForLearner {
   attempt?: CourseQuizAttempt | null;
 }
 
+export interface CourseModuleListItem {
+  _id: string;
+  moduleId?: string;
+  title: string;
+  summary?: string;
+  order: number;
+  sectionCount: number;
+  studyMaterial?: any[];
+  assessments?: {
+    quizEnabled?: boolean;
+    testEnabled?: boolean;
+    quiz?: any;
+  };
+  sections?: CourseSectionItem[];
+}
+
+export interface CourseSectionItem {
+  _id: string;
+  sectionId?: string;
+  moduleId: string;
+  order: number;
+  title: string;
+  description?: string;
+  content?: any;
+  studyMaterial?: any[];
+}
+
 interface CreateCourseInput {
   payload: Record<string, unknown>;
   thumbnailFile?: File | null;
@@ -600,6 +627,14 @@ class CourseStoreClass {
   myCourses: MyCourseItem[] = [];
   courseAssignmentAudit: CourseAssignmentAuditItem[] = [];
   currentCourse: MyCourseDetailItem | null = null;
+  modules: CourseModuleListItem[] = [];
+  nextModuleCursor: string | null = null;
+  hasMoreModules: boolean = false;
+  loadingModules: boolean = false;
+  sectionsByModule: Record<string, CourseSectionItem[]> = {};
+  sectionLoadingByModule: Record<string, boolean> = {};
+  sectionLoadedByModule: Record<string, boolean> = {};
+  sectionErrorByModule: Record<string, string | null> = {};
   courseQuizzes: CourseQuizForLearner[] = [];
   isLoading: boolean = false;
   isPublicCoursesLoading: boolean = false;
@@ -687,13 +722,22 @@ class CourseStoreClass {
     }
   };
 
-  fetchCourse = async (id: string) => {
+  fetchCourse = async (id: string, options: { includeCurriculum?: boolean } = {}) => {
     this.isLoading = true;
     this.error = null;
     try {
-      const { data } = await axios.get(`/course/${id}`);
+      const { data } = await axios.get(`/course/${id}`, {
+        params: options.includeCurriculum ? { includeCurriculum: true } : undefined,
+      });
       runInAction(() => {
         this.currentCourse = data.data;
+        this.modules = Array.isArray(data.data?.curriculum?.modules) ? data.data.curriculum.modules : [];
+        this.nextModuleCursor = null;
+        this.hasMoreModules = false;
+        this.sectionsByModule = {};
+        this.sectionLoadingByModule = {};
+        this.sectionLoadedByModule = {};
+        this.sectionErrorByModule = {};
       });
       return data.data;
     } catch (err: any) {
@@ -704,6 +748,137 @@ class CourseStoreClass {
     } finally {
       runInAction(() => {
         this.isLoading = false;
+      });
+    }
+  };
+
+  fetchCourseModules = async (courseId: string, options: { reset?: boolean; limit?: number } = {}) => {
+    if (this.loadingModules) {
+      return this.modules;
+    }
+
+    const shouldReset = options.reset === true;
+    this.loadingModules = true;
+    try {
+      const { data } = await axios.get(`/course/${courseId}/modules`, {
+        params: {
+          limit: options.limit || 5,
+          cursor: shouldReset ? undefined : this.nextModuleCursor || undefined,
+        },
+      });
+      const items: CourseModuleListItem[] = data?.data?.items || [];
+      runInAction(() => {
+        const existingById = new Map(
+          (shouldReset ? [] : this.modules).map((moduleRecord) => [
+            String(moduleRecord.moduleId || moduleRecord._id),
+            moduleRecord,
+          ])
+        );
+        items.forEach((moduleRecord) => {
+          existingById.set(String(moduleRecord.moduleId || moduleRecord._id), {
+            ...moduleRecord,
+            sections: this.sectionsByModule[String(moduleRecord.moduleId || moduleRecord._id)] || moduleRecord.sections || [],
+          });
+        });
+        this.modules = Array.from(existingById.values()).sort((left, right) => {
+          const orderDelta = Number(left.order || 0) - Number(right.order || 0);
+          return orderDelta || String(left._id).localeCompare(String(right._id));
+        });
+        this.nextModuleCursor = data?.data?.pagination?.nextCursor || null;
+        this.hasMoreModules = Boolean(data?.data?.pagination?.hasMore);
+        if (this.currentCourse) {
+          this.currentCourse = {
+            ...this.currentCourse,
+            curriculum: {
+              ...(this.currentCourse.curriculum || {}),
+              modules: this.modules,
+            } as any,
+          };
+        }
+      });
+      return this.modules;
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err?.response?.data?.error || "Failed to fetch course modules";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.loadingModules = false;
+      });
+    }
+  };
+
+  fetchCourseModule = async (courseId: string, moduleId: string) => {
+    const { data } = await axios.get(`/course/${courseId}/modules/${moduleId}`);
+    const moduleRecord: CourseModuleListItem | null = data?.data || null;
+    if (moduleRecord) {
+      runInAction(() => {
+        const key = String(moduleRecord.moduleId || moduleRecord._id);
+        const nextModules = this.modules.filter((entry) => String(entry.moduleId || entry._id) !== key);
+        nextModules.push({
+          ...moduleRecord,
+          sections: this.sectionsByModule[key] || moduleRecord.sections || [],
+        });
+        this.modules = nextModules.sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
+        if (this.currentCourse) {
+          this.currentCourse = {
+            ...this.currentCourse,
+            curriculum: {
+              ...(this.currentCourse.curriculum || {}),
+              modules: this.modules,
+            } as any,
+          };
+        }
+      });
+    }
+    return moduleRecord;
+  };
+
+  fetchCourseSections = async (courseId: string, moduleId: string, options: { force?: boolean } = {}) => {
+    if (!options.force && this.sectionLoadedByModule[moduleId]) {
+      return this.sectionsByModule[moduleId] || [];
+    }
+    if (this.sectionLoadingByModule[moduleId]) {
+      return this.sectionsByModule[moduleId] || [];
+    }
+
+    runInAction(() => {
+      this.sectionLoadingByModule = { ...this.sectionLoadingByModule, [moduleId]: true };
+      this.sectionErrorByModule = { ...this.sectionErrorByModule, [moduleId]: null };
+    });
+
+    try {
+      const { data } = await axios.get(`/course/${courseId}/modules/${moduleId}/sections`);
+      const sections: CourseSectionItem[] = data?.data || [];
+      runInAction(() => {
+        this.sectionsByModule = { ...this.sectionsByModule, [moduleId]: sections };
+        this.sectionLoadedByModule = { ...this.sectionLoadedByModule, [moduleId]: true };
+        this.modules = this.modules.map((moduleRecord) =>
+          String(moduleRecord.moduleId || moduleRecord._id) === moduleId
+            ? { ...moduleRecord, sections }
+            : moduleRecord
+        );
+        if (this.currentCourse) {
+          this.currentCourse = {
+            ...this.currentCourse,
+            curriculum: {
+              ...(this.currentCourse.curriculum || {}),
+              modules: this.modules,
+            } as any,
+          };
+        }
+      });
+      return sections;
+    } catch (err: any) {
+      const message = err?.response?.data?.error || "Failed to fetch module sections";
+      runInAction(() => {
+        this.sectionErrorByModule = { ...this.sectionErrorByModule, [moduleId]: message };
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.sectionLoadingByModule = { ...this.sectionLoadingByModule, [moduleId]: false };
       });
     }
   };
@@ -1097,41 +1272,86 @@ class CourseStoreClass {
         : "not_started";
 
       const currentCourseId = String(this.currentCourse?._id || this.currentCourse?.courseId || "").trim();
-      if (this.currentCourse && currentCourseId === normalizedCourseId && Array.isArray(this.currentCourse.progressModules)) {
-        const nextModules = this.currentCourse.progressModules.map((moduleRecord) => {
-          if (moduleRecord.moduleId !== options.moduleId) {
+      if (this.currentCourse && currentCourseId === normalizedCourseId) {
+        const normalizedModuleId = String(options.moduleId || "").trim();
+        const normalizedSectionId = String(options.sectionId || "").trim();
+        const visibleModule = this.modules.find((moduleRecord) =>
+          String(moduleRecord.moduleId || moduleRecord._id || "").trim() === normalizedModuleId
+        );
+        const visibleSection = (this.sectionsByModule[normalizedModuleId] || []).find((sectionRecord) =>
+          String(sectionRecord.sectionId || sectionRecord._id || "").trim() === normalizedSectionId
+        );
+        const existingProgressModules = Array.isArray(this.currentCourse.progressModules)
+          ? this.currentCourse.progressModules
+          : [];
+        let didPatchSection = false;
+
+        const buildSectionProgress = (
+          sectionRecord?: Partial<MyCourseSectionProgressItem> | null
+        ): MyCourseSectionProgressItem => ({
+          sectionId: normalizedSectionId,
+          title: String(sectionRecord?.title || visibleSection?.title || sectionProgress?.sectionTitle || "Section"),
+          progress: clampProgressValue(sectionProgress?.progress ?? sectionRecord?.progress),
+          score: sectionProgress?.score ?? sectionRecord?.score ?? null,
+          attempts: Number(sectionProgress?.attempts ?? sectionRecord?.attempts ?? 0),
+          lessonStatus: String(sectionProgress?.lessonStatus || sectionRecord?.lessonStatus || "not_attempted"),
+          totalTime: String(sectionProgress?.totalTime || sectionRecord?.totalTime || "00:00:00"),
+          lastAccessed: Object.prototype.hasOwnProperty.call(sectionProgress || {}, "lastAccessed")
+            ? normalizeDateValue(sectionProgress?.lastAccessed)
+            : sectionRecord?.lastAccessed ?? null,
+          contentType: sectionProgress?.contentType || sectionRecord?.contentType || "other",
+          completedAt: Object.prototype.hasOwnProperty.call(sectionProgress || {}, "completedAt")
+            ? normalizeDateValue(sectionProgress?.completedAt)
+            : sectionRecord?.completedAt ?? null,
+          currentTime: Number(sectionProgress?.currentTime ?? sectionRecord?.currentTime ?? 0),
+          duration: Number(sectionProgress?.duration ?? sectionRecord?.duration ?? 0),
+        });
+
+        let nextModules = existingProgressModules.map((moduleRecord) => {
+          if (String(moduleRecord.moduleId || "").trim() !== normalizedModuleId) {
             return moduleRecord;
           }
 
+          let hasSection = false;
           const nextSections = (moduleRecord.sections || []).map((sectionRecord) => {
-            if (sectionRecord.sectionId !== options.sectionId) {
+            if (String(sectionRecord.sectionId || "").trim() !== normalizedSectionId) {
               return sectionRecord;
             }
 
-            return {
-              ...sectionRecord,
-              progress: clampProgressValue(sectionProgress?.progress ?? sectionRecord.progress),
-              score: sectionProgress?.score ?? sectionRecord.score ?? null,
-              attempts: Number(sectionProgress?.attempts ?? sectionRecord.attempts ?? 0),
-              lessonStatus: String(sectionProgress?.lessonStatus || sectionRecord.lessonStatus || "not_attempted"),
-              totalTime: String(sectionProgress?.totalTime || sectionRecord.totalTime || "00:00:00"),
-              lastAccessed: Object.prototype.hasOwnProperty.call(sectionProgress || {}, "lastAccessed")
-                ? normalizeDateValue(sectionProgress?.lastAccessed)
-                : sectionRecord.lastAccessed ?? null,
-              contentType: sectionProgress?.contentType || sectionRecord.contentType || "other",
-              completedAt: Object.prototype.hasOwnProperty.call(sectionProgress || {}, "completedAt")
-                ? normalizeDateValue(sectionProgress?.completedAt)
-                : sectionRecord.completedAt ?? null,
-              currentTime: Number(sectionProgress?.currentTime ?? sectionRecord.currentTime ?? 0),
-              duration: Number(sectionProgress?.duration ?? sectionRecord.duration ?? 0),
-            };
+            hasSection = true;
+            didPatchSection = true;
+            return buildSectionProgress(sectionRecord);
           });
+
+          if (!hasSection) {
+            didPatchSection = true;
+          }
 
           return recalculateModuleProgress({
             ...moduleRecord,
-            sections: nextSections,
+            sections: hasSection ? nextSections : [...nextSections, buildSectionProgress()],
           });
         });
+
+        if (!nextModules.some((moduleRecord) => String(moduleRecord.moduleId || "").trim() === normalizedModuleId)) {
+          nextModules = [
+            ...nextModules,
+            recalculateModuleProgress({
+              moduleId: normalizedModuleId,
+              title: String(visibleModule?.title || sectionProgress?.moduleTitle || "Module"),
+              progress: 0,
+              score: null,
+              attempts: 0,
+              lessonStatus: "not_attempted",
+              totalTime: "00:00:00",
+              lastAccessed: null,
+              sectionsCompleted: 0,
+              sectionCount: 1,
+              sections: [buildSectionProgress()],
+            }),
+          ];
+          didPatchSection = true;
+        }
 
         const allSections = nextModules.flatMap((moduleRecord) => moduleRecord.sections || []);
 
@@ -1153,6 +1373,10 @@ class CourseStoreClass {
           progressModules: nextModules,
           progress: courseProgress ? clampProgressValue(courseProgress.progress) : derivedCourseProgress,
         };
+
+        if (!didPatchSection && courseProgress) {
+          this.currentCourse.progress = clampProgressValue(courseProgress.progress);
+        }
       }
 
       this.myCourses = this.myCourses.map((courseRecord) => {

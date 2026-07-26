@@ -762,7 +762,7 @@ const FilterPanel = (
             <Text mt={2} color={mutedText}>Try changing your search or filters to broaden the results.</Text>
           </Box>
         ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={{ base: 4, md: 5 }}>
+          <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={{ base: 4, md: 5 }}>
             {filteredPublicCourses.map((course) => (
               <CourseCard
                 key={course._id}

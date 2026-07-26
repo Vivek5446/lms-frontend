@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Download, ExternalLink, FileText, RotateCcw, Video, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LaunchContentKind } from "./sectionTracking";
 
 const VIDEO_PROGRESS_SYNC_INTERVAL_MS = 30000;
@@ -85,16 +85,42 @@ export default function CourseAssetModal({
     };
   }, [assetKind]);
 
+  const seekToInitialTime = useCallback(() => {
+    if (assetKind !== "video" || !videoRef.current || initialTime <= 0) {
+      return false;
+    }
+
+    const video = videoRef.current;
+    if (Number.isFinite(video.duration) && initialTime < video.duration) {
+      if (Math.abs(video.currentTime - initialTime) > 0.5) {
+        video.currentTime = initialTime;
+      }
+      hasAppliedInitialTimeRef.current = true;
+      return true;
+    }
+
+    return false;
+  }, [assetKind, initialTime]);
+
   const applyInitialTime = () => {
-    if (assetKind !== "video" || hasAppliedInitialTimeRef.current || !videoRef.current || initialTime <= 0) {
+    if (hasAppliedInitialTimeRef.current) {
       return;
     }
 
-    hasAppliedInitialTimeRef.current = true;
-    const video = videoRef.current;
-    if (Number.isFinite(video.duration) && initialTime < video.duration) {
-      video.currentTime = initialTime;
+    seekToInitialTime();
+  };
+
+  useEffect(() => {
+    if (assetKind !== "video") {
+      return;
     }
+
+    hasAppliedInitialTimeRef.current = false;
+    seekToInitialTime();
+  }, [assetKind, assetUrl, initialTime, seekToInitialTime]);
+
+  const handleLoadedMetadata = () => {
+    applyInitialTime();
   };
 
   const handleTimeUpdate = () => {
@@ -157,7 +183,7 @@ export default function CourseAssetModal({
             controls
             autoPlay
             className="h-full w-full"
-            onLoadedMetadata={applyInitialTime}
+            onLoadedMetadata={handleLoadedMetadata}
             onTimeUpdate={handleTimeUpdate}
             onPause={handlePause}
             onEnded={handleCompleted}

@@ -1,7 +1,24 @@
+function normalizeBackendUrl(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("/")) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+}
+
 export const AUTH_TOKEN = process.env.NEXT_PUBLIC_TOKEN_VAR
 export const WEBSITE_TITLE = process.env.NEXT_PUBLIC_WEBSITE_TITLE
 export const WEBSITE_DESCRIPTION = process.env.NEXT_PUBLIC_WEBSITE_DESCRIPTION
-export const BACKEND_URL=process.env.NEXT_PUBLIC_BACKEND_URL
+export const BACKEND_URL = normalizeBackendUrl(process.env.NEXT_PUBLIC_BACKEND_URL)
 export const USER_SESSION_DATA = process.env.NEXT_PUBLIC_USER_SESSION_DATA
 export const ENCRYPT_SECRET_KEY = process.env.NEXT_PUBLIC_ENCRYPT_SECRET_KEY
 export const SITE_URL =  process.env.NEXT_PUBLIC_SITE_URL

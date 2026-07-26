@@ -52,7 +52,7 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function hexToHslTriplet(hexColor: string) {
   const normalizedHex = String(hexColor || "")
@@ -314,14 +314,34 @@ export default function CourseDetails({
   const {
     auth: { user },
     themeStore: { themeConfig },
+    courseStore,
   } = stores;
   const isAssignedCourseView = Array.isArray(course.sources);
   const canSelfEnroll = Boolean(!isAssignedCourseView && onEnrollCourse);
-  const firstPlayableLaunchSection = getFirstPlayableLaunchSection(course);
   const answerSummary = summarizeAnswerSections(learnerAnswers);
   const totalSections = Number(course.curriculum?.totalSections || 0);
   const progressModules = Array.isArray(course.progressModules) ? course.progressModules : [];
   const courseId = String(course._id || course.courseId || "").trim();
+  const [moduleRecords, setModuleRecords] = useState<any[]>(
+    Array.isArray(course.curriculum?.modules) ? course.curriculum.modules : []
+  );
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMoreModules, setHasMoreModules] = useState(false);
+  const [isLoadingModules, setIsLoadingModules] = useState(false);
+  const [sectionLoadingByModule, setSectionLoadingByModule] = useState<Record<string, boolean>>({});
+  const [sectionLoadedByModule, setSectionLoadedByModule] = useState<Record<string, boolean>>({});
+  const [sectionErrorByModule, setSectionErrorByModule] = useState<Record<string, string | null>>({});
+  const courseWithLoadedModules = useMemo(
+    () => ({
+      ...course,
+      curriculum: {
+        ...(course.curriculum || {}),
+        modules: moduleRecords,
+      },
+    }),
+    [course, moduleRecords]
+  );
+  const firstPlayableLaunchSection = getFirstPlayableLaunchSection(courseWithLoadedModules);
   const certificateReason =
     course.certificate?.reason || "Certificate will be available after eligibility is confirmed.";
   const certificateStatus = String(course.certificate?.status || "").trim().toLowerCase();
@@ -332,8 +352,96 @@ export default function CourseDetails({
     course.certificate &&
     (certificateStatus === "issued" || course.certificate.canIssue)
   );
-  const modules = Array.isArray(course.curriculum?.modules) ? course.curriculum.modules : [];
+  const modules = moduleRecords;
   const enforceSequentialProgress = Boolean(isAssignedCourseView && course.progression?.mandatoryModules !== false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const initialModules = Array.isArray(course.curriculum?.modules) ? course.curriculum.modules : [];
+    setModuleRecords(initialModules);
+    setNextCursor(null);
+    setHasMoreModules(false);
+    setSectionLoadingByModule({});
+    setSectionLoadedByModule({});
+    setSectionErrorByModule({});
+
+    if (!courseId) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setIsLoadingModules(true);
+    courseStore
+      .fetchCourseModules(courseId, { reset: true, limit: 5 })
+      .then((loadedModules) => {
+        if (!isMounted) return;
+        setModuleRecords(loadedModules);
+        setNextCursor(courseStore.nextModuleCursor);
+        setHasMoreModules(courseStore.hasMoreModules);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingModules(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [course._id, course.courseId]);
+
+  const loadMoreModules = async () => {
+    if (!courseId || isLoadingModules || !hasMoreModules) {
+      return;
+    }
+
+    setIsLoadingModules(true);
+    try {
+      const loadedModules = await courseStore.fetchCourseModules(courseId, { limit: 5 });
+      setModuleRecords(loadedModules);
+      setNextCursor(courseStore.nextModuleCursor);
+      setHasMoreModules(courseStore.hasMoreModules);
+    } finally {
+      setIsLoadingModules(false);
+    }
+  };
+
+  const loadSectionsForModule = async (moduleId: string, force = false) => {
+    if (!courseId || (!force && sectionLoadedByModule[moduleId]) || sectionLoadingByModule[moduleId]) {
+      return;
+    }
+
+    setSectionLoadingByModule((current) => ({ ...current, [moduleId]: true }));
+    setSectionErrorByModule((current) => ({ ...current, [moduleId]: null }));
+
+    try {
+      const sections = await courseStore.fetchCourseSections(courseId, moduleId, { force });
+      setModuleRecords((currentModules) =>
+        currentModules.map((moduleRecord) =>
+          deriveModuleId(moduleRecord) === moduleId ? { ...moduleRecord, sections } : moduleRecord
+        )
+      );
+      setSectionLoadedByModule((current) => ({ ...current, [moduleId]: true }));
+    } catch (error: any) {
+      setSectionErrorByModule((current) => ({
+        ...current,
+        [moduleId]: error?.message || error?.error || "Failed to load sections",
+      }));
+    } finally {
+      setSectionLoadingByModule((current) => ({ ...current, [moduleId]: false }));
+    }
+  };
+
+  useEffect(() => {
+    modules.slice(0, 2).forEach((moduleRecord: any) => {
+      const moduleId = deriveModuleId(moduleRecord);
+      if (moduleId && !sectionLoadedByModule[moduleId] && !sectionLoadingByModule[moduleId]) {
+        void loadSectionsForModule(moduleId);
+      }
+    });
+  }, [modules]);
 
   const warmLaunchSection = (launchSection?: CourseLaunchSection | null) => {
     if (launchSection && isScormLaunchSection(launchSection)) {
@@ -925,12 +1033,15 @@ export default function CourseDetails({
             {modules.length > 0 ? (
               <div className="divide-y divide-border/70">
                 {modules.map((mod: any, moduleIndex: number) => {
-                  const moduleTracking = moduleProgressMap.get(deriveModuleId(mod));
+                  const moduleId = deriveModuleId(mod);
+                  const moduleTracking = moduleProgressMap.get(moduleId);
                   const moduleProgressMeta = getLearningStatusMeta(
                     moduleTracking?.lessonStatus,
                     moduleTracking?.progress
                   );
                   const moduleSections = Array.isArray(mod.sections) ? mod.sections : [];
+                  const isSectionLoading = Boolean(sectionLoadingByModule[moduleId]);
+                  const sectionLoadError = sectionErrorByModule[moduleId];
                   const moduleCompletedCount = moduleSections.filter((sec: any) => {
                     const trackingRecord = sectionProgressMap.get(deriveSectionId(mod, sec));
                     return getLearningProgressState(trackingRecord?.lessonStatus, trackingRecord?.progress) === "completed";
@@ -939,13 +1050,18 @@ export default function CourseDetails({
                     ? Math.round((moduleCompletedCount / moduleSections.length) * 100)
                     : 0;
                   const moduleQuizzes = courseQuizzes.filter(
-                    (quiz) => quiz.scope === "module" && quiz.moduleId === deriveModuleId(mod)
+                    (quiz) => quiz.scope === "module" && quiz.moduleId === moduleId
                   );
 
                   return (
                     <details
-                      key={deriveModuleId(mod)}
+                      key={moduleId}
                       open={moduleIndex < 2}
+                      onToggle={(event) => {
+                        if ((event.currentTarget as HTMLDetailsElement).open) {
+                          void loadSectionsForModule(moduleId);
+                        }
+                      }}
                       className="min-w-0 max-w-full [&_summary::-webkit-details-marker]:hidden"
                     >
                       <summary className="cursor-pointer list-none px-2.5 py-3 sm:px-5 sm:py-4">
@@ -1022,6 +1138,25 @@ export default function CourseDetails({
                         ) : null}
 
                         <ul className="relative max-w-full space-y-2 border-l border-dashed border-border pl-2.5 sm:pl-5">
+                          {isSectionLoading && !moduleSections.length ? (
+                            <li className="rounded-xl border border-border bg-background px-3 py-4 text-xs text-muted-foreground">
+                              Loading sections...
+                            </li>
+                          ) : null}
+                          {sectionLoadError ? (
+                            <li className="rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span>{sectionLoadError}</span>
+                                <button
+                                  type="button"
+                                  className="rounded-lg border border-red-200 px-2.5 py-1 font-medium dark:border-red-800"
+                                  onClick={() => void loadSectionsForModule(moduleId, true)}
+                                >
+                                  Retry
+                                </button>
+                              </div>
+                            </li>
+                          ) : null}
                           {moduleSections.map((sec: any, index: number) => {
                             const sectionId = deriveSectionId(mod, sec);
                             const launchSection = buildLaunchSection(mod, sec);
@@ -1158,6 +1293,19 @@ export default function CourseDetails({
                     </details>
                   );
                 })}
+
+                {hasMoreModules ? (
+                  <div className="px-3.5 py-3.5 sm:px-5 sm:py-4">
+                    <button
+                      type="button"
+                      disabled={isLoadingModules}
+                      onClick={() => void loadMoreModules()}
+                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isLoadingModules ? "Loading modules..." : "Show more"}
+                    </button>
+                  </div>
+                ) : null}
 
                 {finalQuizzes.length > 0 ? (
                   <div className="px-3.5 py-3.5 sm:px-5 sm:py-4">

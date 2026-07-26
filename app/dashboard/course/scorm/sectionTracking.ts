@@ -23,11 +23,21 @@ function normalizeKeySegment(value: unknown) {
 }
 
 export function deriveModuleId(moduleRecord: any) {
+  const explicitId = String(moduleRecord?.moduleId || moduleRecord?._id || moduleRecord?.id || "").trim();
+  if (explicitId) {
+    return explicitId;
+  }
+
   const moduleOrder = Number(moduleRecord?.order || 0);
   return `module-${moduleOrder}`;
 }
 
 export function deriveSectionId(moduleRecord: any, sectionRecord: any) {
+  const explicitId = String(sectionRecord?.sectionId || sectionRecord?._id || sectionRecord?.id || "").trim();
+  if (explicitId) {
+    return explicitId;
+  }
+
   const moduleId = deriveModuleId(moduleRecord);
   const sectionOrder = Number(sectionRecord?.order || 0);
   const previewToken = normalizeKeySegment(sectionRecord?.content?.previewUrl);

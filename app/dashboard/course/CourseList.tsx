@@ -132,7 +132,7 @@ function CourseList({ mode = "create", courseId, initialCourse, initialCategory,
 
     let isMounted = true;
     courseStore
-      .fetchCourse(courseId)
+      .fetchCourse(courseId, { includeCurriculum: true })
       .then((course) => {
         if (course && isMounted) {
           setCourseForm(courseToFormState(course));

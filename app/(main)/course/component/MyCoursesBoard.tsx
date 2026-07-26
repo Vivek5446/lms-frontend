@@ -11,7 +11,7 @@ import {
   getCourseSectionProgress,
   isScormLaunchSection,
 } from "@/app/dashboard/course/scorm/sectionTracking";
-import { CourseQuizForLearner, courseStore } from "@/app/store/courseStore/courseStore";
+import { CourseQuizForLearner, MyCourseSectionProgressItem, courseStore } from "@/app/store/courseStore/courseStore";
 import { managerStore } from "@/app/store/managerStore/managerStore";
 import stores from "@/app/store/stores";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
@@ -88,6 +88,22 @@ type VideoProgressPayload = {
   reason?: "interval" | "pause" | "exit";
 };
 
+function resolveSectionResumeTime(progressRecord?: Partial<MyCourseSectionProgressItem> | null) {
+  const currentTime = Number(progressRecord?.currentTime || 0);
+  const duration = Number(progressRecord?.duration || 0);
+  const progress = Number(progressRecord?.progress || 0);
+  const inferredTime = duration > 0 && progress > 0 && progress < 100
+    ? (duration * progress) / 100
+    : 0;
+  const resumeTime = Math.max(currentTime, inferredTime);
+
+  if (duration > 0) {
+    return Math.min(resumeTime, Math.max(duration - 1, 0));
+  }
+
+  return resumeTime;
+}
+
 const MyCoursesBoard = observer(
   ({ basePath = "/dashboard/course/my-courses" }: MyCoursesBoardProps) => {
     const toast = useToast();
@@ -96,6 +112,8 @@ const MyCoursesBoard = observer(
     const requestedCourseId = searchParams.get("courseId") || "";
     const [playerSection, setPlayerSection] =
       useState<CourseLaunchSection | null>(null);
+    const [latestSectionProgress, setLatestSectionProgress] =
+      useState<Partial<MyCourseSectionProgressItem> | null>(null);
     const [activeQuiz, setActiveQuiz] = useState<CourseQuizForLearner | null>(null);
     const lastPersistedVideoProgressRef = useRef<Record<string, { currentTime: number; progress: number }>>({});
     const videoProgressInFlightRef = useRef(false);
@@ -196,9 +214,48 @@ const MyCoursesBoard = observer(
       [activeCourse, playerSection?.sectionId],
     );
 
+    useEffect(() => {
+      setLatestSectionProgress(null);
+
+      const courseId = String(activeCourse?._id || "").trim();
+      if (!courseId || !playerSection || !isCourseEnrolled || isScormLaunchSection(playerSection)) {
+        return;
+      }
+
+      let isCancelled = false;
+
+      courseStore.fetchSectionProgress({
+        courseId,
+        moduleId: playerSection.moduleId,
+        sectionId: playerSection.sectionId,
+      }).then((progress) => {
+        if (isCancelled || !progress) {
+          return;
+        }
+
+        const sectionProgress = progress?.sectionProgress || progress;
+        const sectionKey = `${courseId}:${playerSection.sectionId}`;
+        lastPersistedVideoProgressRef.current[sectionKey] = {
+          currentTime: Number(sectionProgress?.currentTime || 0),
+          progress: Number(sectionProgress?.progress || 0),
+        };
+        setLatestSectionProgress(sectionProgress);
+      });
+
+      return () => {
+        isCancelled = true;
+      };
+    }, [
+      activeCourse?._id,
+      isCourseEnrolled,
+      playerSection?.contentKind,
+      playerSection?.moduleId,
+      playerSection?.sectionId,
+    ]);
+
     const initialSectionProgress = useMemo(
-      () => getCourseSectionProgress(activeCourse, playerSection?.sectionId),
-      [activeCourse, playerSection?.sectionId],
+      () => latestSectionProgress || getCourseSectionProgress(activeCourse, playerSection?.sectionId),
+      [activeCourse, latestSectionProgress, playerSection?.sectionId],
     );
 
     const filteredCourses = useMemo(() => {
@@ -245,6 +302,11 @@ const MyCoursesBoard = observer(
     const handleOpenCourse = (courseId: string) => {
       router.push(`${basePath}?courseId=${courseId}`);
     };
+
+    const handleLaunchSection = useCallback((launchSection: CourseLaunchSection) => {
+      setLatestSectionProgress(null);
+      setPlayerSection(launchSection);
+    }, []);
 
     const handleDownloadCertificate = async (courseId: string) => {
       try {
@@ -340,6 +402,10 @@ const MyCoursesBoard = observer(
         return progress > 0 || currentTime > 0;
       }
 
+      if (!data?.startOver && currentTime > 0 && currentTime + 1 < previous.currentTime && progress <= previous.progress) {
+        return false;
+      }
+
       return (
         Math.abs(currentTime - previous.currentTime) >= VIDEO_PROGRESS_MIN_SECONDS_DELTA ||
         Math.abs(progress - previous.progress) >= VIDEO_PROGRESS_MIN_PERCENT_DELTA
@@ -390,6 +456,9 @@ const MyCoursesBoard = observer(
             currentTime: Number(sectionProgress?.currentTime ?? data?.currentTime ?? 0),
             progress: Number(sectionProgress?.progress ?? data?.progress ?? 0),
           };
+          if (sectionProgress?.sectionId === playerSection.sectionId) {
+            setLatestSectionProgress(sectionProgress);
+          }
           courseStore.applyRealtimeSectionProgressUpdate({
             courseId,
             moduleId: playerSection.moduleId,
@@ -450,10 +519,11 @@ const MyCoursesBoard = observer(
             course={activeCourse}
             onBack={() => {
               setPlayerSection(null);
+              setLatestSectionProgress(null);
               setActiveQuiz(null);
               router.replace(basePath);
             }}
-            onLaunchSection={(launchSection) => setPlayerSection(launchSection)}
+            onLaunchSection={handleLaunchSection}
             learnerAnswers={isCourseEnrolled ? managerStore.myCourseAnswers : []}
             isLearnerAnswersLoading={isCourseEnrolled && managerStore.isMyCourseAnswersLoading}
             courseQuizzes={isCourseEnrolled ? courseStore.courseQuizzes : []}
@@ -510,7 +580,10 @@ const MyCoursesBoard = observer(
                       courseStore.fetchMyCourses(),
                     ]).then(() => undefined);
                   }}
-                  onBack={() => setPlayerSection(null)}
+                  onBack={() => {
+                    setPlayerSection(null);
+                    setLatestSectionProgress(null);
+                  }}
                 />
               </motion.div>
             ) : playerSection ? (
@@ -518,7 +591,7 @@ const MyCoursesBoard = observer(
                 assetKind={playerSection.contentKind}
                 assetUrl={buildCourseAssetUrl(playerSection.assetPath)}
                 title={playerSection.sectionTitle || activeCourse.title}
-                initialTime={initialSectionProgress?.currentTime || 0}
+                initialTime={resolveSectionResumeTime(initialSectionProgress)}
                 initialProgress={initialSectionProgress?.progress || 0}
                 onOpened={
                   playerSection.contentKind === "video"
@@ -532,7 +605,10 @@ const MyCoursesBoard = observer(
                     startOver: true,
                   })
                 }
-                onBack={() => setPlayerSection(null)}
+                onBack={() => {
+                  setPlayerSection(null);
+                  setLatestSectionProgress(null);
+                }}
               />
             ) : null}
             {activeQuiz ? (
