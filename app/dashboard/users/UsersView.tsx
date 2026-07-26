@@ -352,23 +352,12 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   const listTabs = useMemo(() => {
     const tabs = [{ label: "Users", value: "user" }];
 
-    visibleManagerLevels.forEach((level) => {
-      tabs.push({
-        label: `L${level} Managers`,
-        value: `l${level}-manager`,
-      });
-    });
-
     if (isSuperadmin) {
       tabs.push({ label: "Admins", value: "admin" });
     }
 
-    if (isSuperadmin || role === "admin") {
-      tabs.push({ label: "Department Heads", value: "departmenthead" });
-    }
-
     return tabs;
-  }, [isSuperadmin, role, visibleManagerLevels]);
+  }, [isSuperadmin]);
 
   const activeTabIndex = Math.max(0, listTabs.findIndex((item) => item.value === listTab));
 

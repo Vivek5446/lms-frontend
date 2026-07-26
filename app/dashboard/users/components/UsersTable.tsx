@@ -18,6 +18,7 @@ import {
   VStack,
   Avatar,
   Icon,
+  IconButton,
   Stat,
   StatLabel,
   StatNumber,
@@ -26,6 +27,7 @@ import {
   Stack,
   useBreakpointValue,
   useColorModeValue,
+  StackDivider,
 } from "@chakra-ui/react";
 import {
   FiBriefcase,
@@ -40,7 +42,11 @@ import {
   FiAward,
   FiSearch,
   FiUpload,
-  FiUserPlus
+  FiUserPlus,
+  FiEye,
+  FiTrash2,
+  FiEdit2,
+  FiLayers
 } from "react-icons/fi";
 import CustomTable from "../../../component/config/component/CustomTable/CustomTable";
 import StatCard from "@/app/component/common/StatCard/StatCard";
@@ -183,13 +189,12 @@ const UsersTable = ({
             <Avatar
               size="sm"
               name={user.name || "User"}
+              src={user.pic?.url}
               bgGradient="linear(to-br, blue.400, purple.500)"
               color="white"
               fontWeight="bold"
               fontSize="sm"
-            >
-              {user.name?.charAt(0) || "U"}
-            </Avatar>
+            />
             <VStack align="start" spacing={0}>
               <Text fontWeight="semibold" fontSize="sm" color={useColorModeValue("gray.800", "white")}>
                 {user.name || "--"}
@@ -479,51 +484,78 @@ const UsersTable = ({
         bg={cardBg}
         borderWidth="1px"
         borderColor={borderColorLight}
-        borderRadius="xl"
-        p={4}
-        mb={4}
+        borderRadius="2xl"
+        p={{ base: 5, md: 6 }}
+        mb={6}
         boxShadow="sm"
       >
         <Flex
           justify="space-between"
-          align="center"
-          flexWrap="wrap"
-          gap={4}
+          align={{ base: "stretch", sm: "center" }}
+          w="100%"
+          direction={{ base: "column", sm: "row" }}
+          gap={{ base: 5, sm: 4 }}
         >
-          <Tabs
-            variant="soft-rounded"
-            colorScheme="blue"
-            size="sm"
-            index={activeTabIndex}
-            onChange={(index) => {
-              setListTab(listTabs[index]?.value || "user");
-              setPage(1);
-            }}
-          >
-            <TabList gap={2} flexWrap="nowrap" overflowX="auto" bg={tabListBg} p={1} borderRadius="full">
-              {listTabs.map((tab, idx) => (
-                <Tab
-                  key={tab.value}
-                  _selected={{
-                    bgGradient: "linear(to-r, blue.500, purple.600)",
-                    color: "white",
-                    boxShadow: "md",
-                  }}
-                  borderRadius="full"
-                  px={{ base: 4, md: 6 }}
-                  fontSize="sm"
-                  fontWeight="medium"
-                  transition="all 0.2s"
-                  color={useColorModeValue("gray.600", "gray.300")}
-                  whiteSpace="nowrap"
-                >
-                  {tab.label}
-                </Tab>
-              ))}
-            </TabList>
-          </Tabs>
+          {listTabs.length > 1 ? (
+            <Tabs
+              variant="soft-rounded"
+              colorScheme="blue"
+              size="sm"
+              index={activeTabIndex}
+              onChange={(index) => {
+                setListTab(listTabs[index]?.value || "user");
+                setPage(1);
+              }}
+            >
+              <TabList gap={2} flexWrap="nowrap" overflowX="auto" bg={tabListBg} p={1} borderRadius="full">
+                {listTabs.map((tab, idx) => (
+                  <Tab
+                    key={tab.value}
+                    _selected={{
+                      bgGradient: "linear(to-r, blue.500, purple.600)",
+                      color: "white",
+                      boxShadow: "md",
+                    }}
+                    borderRadius="full"
+                    px={{ base: 4, md: 6 }}
+                    fontSize="sm"
+                    fontWeight="medium"
+                    transition="all 0.2s"
+                    color={useColorModeValue("gray.600", "gray.300")}
+                    whiteSpace="nowrap"
+                  >
+                    {tab.label}
+                  </Tab>
+                ))}
+              </TabList>
+            </Tabs>
+          ) : (
+            <HStack spacing={3} align="center" alignSelf={{ base: "flex-start", sm: "center" }} mb={{ base: 5, sm: 0 }}>
+              <Flex 
+                w="40px" 
+                h="40px" 
+                borderRadius="full" 
+                bgGradient="linear(to-br, #6269FF, #8A2BE2)" 
+                align="center" 
+                justify="center" 
+                boxShadow="0 4px 10px rgba(98,105,255,0.3)"
+                flexShrink={0}
+              >
+                <Icon as={FiUsers} boxSize="20px" color="white" />
+              </Flex>
+              <Box>
+                <Text fontSize="sm" fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                  <Box as="span" color={useColorModeValue("gray.900", "white")}>USER </Box>
+                  <Box as="span" bgGradient="linear(to-r, #6269FF, #8A2BE2)" bgClip="text">DIRECTORY</Box>
+                </Text>
+                <Text fontSize="9px" color={useColorModeValue("gray.500", "gray.400")} fontWeight="700" letterSpacing="0.05em" mt={0.5} textTransform="uppercase">
+                  ACTIVE DIRECTORY ROLL
+                </Text>
+              </Box>
+            </HStack>
+          )}
 
-          <HStack spacing={3} flexWrap="wrap" justify={{ base: "flex-start", md: "flex-end" }}>
+          <HStack spacing={3} w={{ base: "100%", sm: "auto" }} justify={{ base: "stretch", sm: "flex-end" }}>
             <Box
               bg={statsBg}
               px={4}
@@ -543,6 +575,7 @@ const UsersTable = ({
                 onClick={onOpenBulk}
                 size="md"
                 px={5}
+                flex={{ base: 1, sm: "initial" }}
                 borderRadius="full"
                 borderWidth="1px"
                 borderColor={outlineButtonBorder}
@@ -567,6 +600,7 @@ const UsersTable = ({
                 onClick={onOpenCreate}
                 size="md"
                 px={6}
+                flex={{ base: 1, sm: "initial" }}
                 borderRadius="full"
                 bgGradient={`linear(to-r, ${gradientFrom}, ${gradientTo})`}
                 color="white"
@@ -634,7 +668,7 @@ const UsersTable = ({
 
         {!isCompact ? (
           <CustomTable
-            title="User Directory"
+            title=""
             data={users}
             columns={columns}
             loading={loading}
@@ -719,79 +753,135 @@ const UsersTable = ({
               <Box bg={cardBg} borderWidth="1px" borderColor={borderColorLight} borderRadius="xl" p={5}>
                 <Text fontSize="sm" color={muted}>No users found for this filter.</Text>
               </Box>
-            ) : (
-              users.map((user: any) => {
-                const statusMeta = getUserStatusMeta(user);
-                const managers = user.managers || [];
-                return (
-                  <Box key={user._id} bg={cardBg} borderWidth="1px" borderColor={borderColorLight} borderRadius="xl" p={4} boxShadow="sm">
-                    <HStack align="start" spacing={3} mb={3}>
-                      <Avatar
-                        size="sm"
-                        name={user.name || "User"}
-                        bgGradient="linear(to-br, blue.400, purple.500)"
-                        color="white"
-                      />
-                      <Box flex="1" minW={0}>
-                        <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>{user.name || "--"}</Text>
-                        <Text fontSize="xs" color={muted} noOfLines={1}>{user.email || "No email"}</Text>
-                      </Box>
-                      <Badge colorScheme={statusMeta.colorScheme} variant="subtle" borderRadius="full">
-                        {statusMeta.label}
-                      </Badge>
-                    </HStack>
-
-                    <SimpleGrid columns={2} spacing={3} mb={3}>
-                      <Box>
-                        <Text fontSize="10px" textTransform="uppercase" color={muted}>Role</Text>
-                        <Text fontSize="xs" fontWeight="medium">{formatRoleLabel(user.role)}</Text>
-                      </Box>
-                      <Box>
-                        <Text fontSize="10px" textTransform="uppercase" color={muted}>Company</Text>
-                        <Text fontSize="xs" fontWeight="medium" noOfLines={1}>{user.company?.name || user.company?.company_name || "Unassigned"}</Text>
-                      </Box>
-                      <Box>
-                        <Text fontSize="10px" textTransform="uppercase" color={muted}>Department</Text>
-                        <Text fontSize="xs" fontWeight="medium" noOfLines={1}>{user.department || "--"}</Text>
-                      </Box>
-                      <Box>
-                        <Text fontSize="10px" textTransform="uppercase" color={muted}>Security</Text>
-                        <Text fontSize="xs" fontWeight="medium">Phone OTP</Text>
-                      </Box>
-                    </SimpleGrid>
-
-                    {managers.length > 0 ? (
-                      <HStack spacing={1.5} flexWrap="wrap" mb={3}>
-                        {managers.slice(0, 3).map((manager: any, index: number) => (
-                          <Badge key={`${user._id}-${manager.level}`} colorScheme={COLORS[index % COLORS.length]} variant="subtle" borderRadius="full">
-                            L{manager.level}
-                          </Badge>
-                        ))}
-                        {managers.length > 3 ? <Badge borderRadius="full">+{managers.length - 3}</Badge> : null}
-                      </HStack>
-                    ) : null}
-
-                    <HStack spacing={2} flexWrap="wrap">
-                      <Button size="sm" variant="outline" onClick={() => onView(user)}>View</Button>
-                      {canEdit ? <Button size="sm" variant="outline" colorScheme="blue" onClick={() => onEdit(user)}>Edit</Button> : null}
-                      {canToggleStatus ? (
-                        <Button
+            ) : <VStack spacing={3} align="stretch" w="100%">
+                {users.map((user: any) => {
+                  const statusMeta = getUserStatusMeta(user);
+                  const statusColor = statusMeta.colorScheme === "green" ? "green.400" : statusMeta.colorScheme === "red" ? "red.400" : "orange.400";
+                  return (
+                    <Box 
+                      key={user._id} 
+                      bg={cardBg} 
+                      borderWidth="1px" 
+                      borderColor={borderColorLight} 
+                      borderBottom="4px solid"
+                      borderBottomColor={statusColor}
+                      borderRadius="2xl" 
+                      p={3.5} 
+                      boxShadow="sm"
+                      transition="transform 0.15s ease"
+                      _active={{ transform: "scale(0.98)" }}
+                    >
+                      {/* Card Header */}
+                      <HStack align="center" spacing={3} mb={2.5}>
+                        <Avatar
                           size="sm"
-                          borderRadius="full"
-                          colorScheme={statusMeta.label !== "Inactive" ? "red" : "green"}
-                          variant={statusMeta.label !== "Inactive" ? "outline" : "solid"}
-                          onClick={() => onToggleStatus?.(user)}
-                          isLoading={statusUpdatingId === user._id}
+                          name={user.name || "User"}
+                          src={user.pic?.url}
+                          bgGradient="linear(to-br, blue.400, purple.500)"
+                          color="white"
+                          fontWeight="bold"
+                        />
+                        <Box flex="1" minW={0}>
+                          <Text fontWeight="800" fontSize="sm" color={useColorModeValue("gray.800", "white")} noOfLines={1}>
+                            {user.name || "--"}
+                          </Text>
+                          <Text fontSize="xs" color={muted} noOfLines={1}>
+                            {user.email || "No email address"}
+                          </Text>
+                        </Box>
+                        <Badge colorScheme={statusMeta.colorScheme} variant="subtle" borderRadius="full" px={2.5} py={0.5} fontSize="9px" fontWeight="800">
+                          {statusMeta.label.toUpperCase()}
+                        </Badge>
+                      </HStack>
+
+                      {/* Card Body - Horizontal rounded metadata tags */}
+                      <Flex flexWrap="wrap" gap={1.5} mb={3}>
+                        <Badge colorScheme="blue" variant="subtle" borderRadius="md" px={2} py={0.5} fontSize="10px" fontWeight="700">
+                          {formatRoleLabel(user.role).toUpperCase()}
+                        </Badge>
+                        {user.department && (
+                          <Badge colorScheme="purple" variant="subtle" borderRadius="md" px={2} py={0.5} fontSize="10px" fontWeight="700">
+                            {user.department.toUpperCase()}
+                          </Badge>
+                        )}
+                        <Badge colorScheme="teal" variant="subtle" borderRadius="md" px={2} py={0.5} fontSize="10px" fontWeight="700">
+                          {(user.company?.name || user.company?.company_name || "Unassigned").toUpperCase()}
+                        </Badge>
+                        <Badge colorScheme="green" variant="subtle" borderRadius="md" px={2} py={0.5} fontSize="10px" fontWeight="700">
+                          PHONE OTP
+                        </Badge>
+                      </Flex>
+
+                      <Divider borderColor={borderColorLight} mb={3} />
+
+                      {/* Card Footer Actions */}
+                      <HStack spacing={2} w="100%">
+                        <Button 
+                          size="xs" 
+                          colorScheme="blue" 
+                          variant="solid" 
+                          leftIcon={<Icon as={FiEye} boxSize={3} />} 
+                          onClick={() => onView(user)}
+                          borderRadius="lg"
+                          flex={1}
+                          py={3}
+                          fontSize="xs"
+                          fontWeight="700"
                         >
-                          {statusMeta.label !== "Inactive" ? "Deactivate" : "Activate"}
+                          View Details
                         </Button>
-                      ) : null}
-                      {canDelete ? <Button size="sm" variant="ghost" colorScheme="red" onClick={() => onDelete?.(user)}>Delete</Button> : null}
-                    </HStack>
-                  </Box>
-                );
-              })
-            )}
+                        
+                        {canEdit && (
+                          <IconButton
+                            aria-label="Edit User"
+                            icon={<Icon as={FiEdit2} boxSize={3.5} />}
+                            size="sm"
+                            variant="outline"
+                            borderColor={borderColorLight}
+                            colorScheme="purple"
+                            borderRadius="lg"
+                            w="32px"
+                            h="32px"
+                            onClick={() => onEdit(user)}
+                          />
+                        )}
+
+                        {canToggleStatus && (
+                          <IconButton
+                            aria-label={statusMeta.label !== "Inactive" ? "Deactivate" : "Activate"}
+                            icon={<Icon as={FiShield} boxSize={3.5} />}
+                            size="sm"
+                            variant="outline"
+                            borderColor={borderColorLight}
+                            colorScheme={statusMeta.label !== "Inactive" ? "red" : "green"}
+                            borderRadius="lg"
+                            w="32px"
+                            h="32px"
+                            onClick={() => onToggleStatus?.(user)}
+                            isLoading={statusUpdatingId === user._id}
+                          />
+                        )}
+
+                        {canDelete && (
+                          <IconButton
+                            aria-label="Delete User"
+                            icon={<Icon as={FiTrash2} boxSize={3.5} />}
+                            size="sm"
+                            variant="outline"
+                            borderColor={borderColorLight}
+                            colorScheme="red"
+                            borderRadius="lg"
+                            w="32px"
+                            h="32px"
+                            onClick={() => onDelete?.(user)}
+                          />
+                        )}
+                      </HStack>
+                    </Box>
+                  );
+                })}
+              </VStack>
+            }
 
             <HStack justify="space-between">
               <Button size="sm" variant="outline" onClick={() => setPage(Math.max(1, page - 1))} isDisabled={page <= 1}>

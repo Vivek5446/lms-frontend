@@ -46,7 +46,7 @@ const SectionCard = ({ title, icon, children, color }: any) => {
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_PATTERN = /^[0-9+()\-\s]{7,20}$/;
+const PHONE_PATTERN = /^(?:\+?[0-9]{1,3})?[-.\s]?[0-9]{10}$/;
 
 const getTodayDateValue = () => {
   const today = new Date();

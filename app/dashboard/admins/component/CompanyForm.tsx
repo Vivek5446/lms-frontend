@@ -113,6 +113,7 @@ export const companyInitialValues = {
   workNo: "",
   webLink: "",
   bio: "",
+  departments: "",
   primaryThemeColor: DEFAULT_LEARNER_PRIMARY_COLOR,
   verified_email_allowed: false,
   logo: { file: null },
@@ -142,6 +143,11 @@ const createCompanyFormValues = (company?: any) => ({
   workNo: company?.workNo || "",
   webLink: company?.webLink || "",
   bio: company?.bio || "",
+  departments: Array.isArray(company?.departments)
+    ? company.departments.join(", ")
+    : typeof company?.departments === "string"
+    ? company.departments
+    : "",
   primaryThemeColor: normalizeHexColor(
     company?.primaryThemeColor,
     DEFAULT_LEARNER_PRIMARY_COLOR
@@ -223,6 +229,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
       .trim()
       .min(10, "Company description should be at least 10 characters")
       .required("Company description is required"),
+    departments: Yup.string().trim().optional(),
     primaryThemeColor: Yup.string()
       .matches(/^#(?:[0-9A-Fa-f]{3}){1,2}$/, "Enter a valid hex color")
       .required("Primary theme color is required"),
@@ -473,6 +480,19 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                   >
                     Require email verification before activating users
                   </Checkbox>
+                </Box>
+
+                <Box mt={4}>
+                  <CustomInput
+                    label="Departments"
+                    name="departments"
+                    placeholder="e.g. Engineering, Marketing, HR (comma separated)"
+                    value={values.departments}
+                    onBlur={handleBlur}
+                    onChange={handleChange}
+                    error={fieldError("departments")}
+                    showError={showFieldError("departments")}
+                  />
                 </Box>
 
                 <Box mt={4}>
