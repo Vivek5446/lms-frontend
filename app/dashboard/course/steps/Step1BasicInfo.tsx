@@ -521,50 +521,31 @@ export default function Step1BasicInfo({
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Categories</label>
+            <label style={labelStyle}>Category</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {CATEGORIES.map((category) => {
-                const active = value.categories.includes(category);
-
-                return (
-                  <button
+              {value.categories.length > 0 ? (
+                value.categories.map((category) => (
+                  <span
                     key={category}
-                    onClick={() =>
-                      updateBasicInfo({
-                        categories: active
-                          ? value.categories.filter((item) => item !== category)
-                          : [...value.categories, category],
-                      })
-                    }
-                    onMouseEnter={(event) => {
-                      if (!active) {
-                        event.currentTarget.style.background = "#8B5CF6";
-                        event.currentTarget.style.color = "#FFFFFF";
-                      }
-                    }}
-                    onMouseLeave={(event) => {
-                      if (!active) {
-                        event.currentTarget.style.background = "#FFFFFF";
-                        event.currentTarget.style.color = "#6B7280";
-                      }
-                    }}
                     style={{
-                      padding: "5px 14px",
+                      padding: "6px 16px",
                       borderRadius: 999,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      cursor: "pointer",
-                      border: active ? "none" : "1.5px solid #E5E7EB",
-                      background: active ? "#22C55E" : "#FFFFFF",
-                      color: active ? "#FFFFFF" : "#6B7280",
-                      fontFamily: "inherit",
-                      transition: "all 0.2s ease",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      background: "#EFF6FF",
+                      color: "#2563EB",
+                      border: "1px solid #BFDBFE",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
                     }}
                   >
-                    {category}
-                  </button>
-                );
-              })}
+                    📁 {category}
+                  </span>
+                ))
+              ) : (
+                <span style={{ fontSize: 13, color: "#9CA3AF" }}>General</span>
+              )}
             </div>
           </div>
         </div>

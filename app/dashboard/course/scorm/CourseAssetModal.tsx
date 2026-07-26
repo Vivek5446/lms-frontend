@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { Download, ExternalLink, FileText, RotateCcw, Video, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LaunchContentKind } from "./sectionTracking";
+
+const VIDEO_PROGRESS_SYNC_INTERVAL_MS = 30000;
 
 interface CourseAssetModalProps {
   assetUrl: string;
@@ -12,7 +14,7 @@ interface CourseAssetModalProps {
   onBack: () => void;
   onOpened?: () => void | Promise<void>;
   onCompleted?: () => void | Promise<void>;
-  onProgressUpdate?: (data: { currentTime: number; duration: number; progress: number }) => void;
+  onProgressUpdate?: (data: { currentTime: number; duration: number; progress: number; reason?: "interval" | "pause" | "exit" }) => void;
   onStartOver?: () => void;
 }
 
@@ -32,7 +34,25 @@ export default function CourseAssetModal({
   const lastUpdateRef = useRef(0);
   const hasTrackedOpenRef = useRef(false);
   const hasTrackedCompletionRef = useRef(false);
+  const hasAppliedInitialTimeRef = useRef(false);
+  const onOpenedRef = useRef(onOpened);
+  const onCompletedRef = useRef(onCompleted);
+  const onProgressUpdateRef = useRef(onProgressUpdate);
   const [showStartOver, setShowStartOver] = useState(initialProgress >= 100);
+
+  useEffect(() => {
+    onOpenedRef.current = onOpened;
+    onCompletedRef.current = onCompleted;
+    onProgressUpdateRef.current = onProgressUpdate;
+  }, [onOpened, onCompleted, onProgressUpdate]);
+
+  useEffect(() => {
+    hasTrackedOpenRef.current = false;
+    hasTrackedCompletionRef.current = false;
+    hasAppliedInitialTimeRef.current = false;
+    lastUpdateRef.current = 0;
+    setShowStartOver(initialProgress >= 100);
+  }, [assetUrl, initialProgress]);
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
@@ -42,7 +62,7 @@ export default function CourseAssetModal({
 
     if (!hasTrackedOpenRef.current) {
       hasTrackedOpenRef.current = true;
-      void Promise.resolve(onOpened?.()).catch(() => undefined);
+      void Promise.resolve(onOpenedRef.current?.()).catch(() => undefined);
     }
 
     return () => {
@@ -54,36 +74,68 @@ export default function CourseAssetModal({
         const video = videoRef.current;
         if (video.currentTime > 0 && !hasTrackedCompletionRef.current) {
           const progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
-          onProgressUpdate?.({
+          onProgressUpdateRef.current?.({
             currentTime: video.currentTime,
             duration: video.duration,
             progress: Math.min(progress, 99),
+            reason: "exit",
           });
         }
       }
     };
-  }, [onOpened, assetKind, onProgressUpdate]);
+  }, [assetKind]);
 
-  // Restore initial time when video is ready
-  useEffect(() => {
-    if (assetKind === "video" && videoRef.current && initialTime > 0) {
-      videoRef.current.currentTime = initialTime;
+  const seekToInitialTime = useCallback(() => {
+    if (assetKind !== "video" || !videoRef.current || initialTime <= 0) {
+      return false;
     }
-  }, [initialTime, assetKind]);
+
+    const video = videoRef.current;
+    if (Number.isFinite(video.duration) && initialTime < video.duration) {
+      if (Math.abs(video.currentTime - initialTime) > 0.5) {
+        video.currentTime = initialTime;
+      }
+      hasAppliedInitialTimeRef.current = true;
+      return true;
+    }
+
+    return false;
+  }, [assetKind, initialTime]);
+
+  const applyInitialTime = () => {
+    if (hasAppliedInitialTimeRef.current) {
+      return;
+    }
+
+    seekToInitialTime();
+  };
+
+  useEffect(() => {
+    if (assetKind !== "video") {
+      return;
+    }
+
+    hasAppliedInitialTimeRef.current = false;
+    seekToInitialTime();
+  }, [assetKind, assetUrl, initialTime, seekToInitialTime]);
+
+  const handleLoadedMetadata = () => {
+    applyInitialTime();
+  };
 
   const handleTimeUpdate = () => {
-    if (!videoRef.current || !onProgressUpdate) return;
+    if (!videoRef.current || !onProgressUpdateRef.current) return;
     
     const now = Date.now();
-    // Throttle updates to every 10 seconds
-    if (now - lastUpdateRef.current > 10000) {
+    if (now - lastUpdateRef.current > VIDEO_PROGRESS_SYNC_INTERVAL_MS) {
       const video = videoRef.current;
       const progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
       
-      onProgressUpdate({
+      onProgressUpdateRef.current({
         currentTime: video.currentTime,
         duration: video.duration,
         progress: Math.min(progress, 99),
+        reason: "interval",
       });
       
       lastUpdateRef.current = now;
@@ -91,14 +143,15 @@ export default function CourseAssetModal({
   };
 
   const handlePause = () => {
-    if (!videoRef.current || !onProgressUpdate) return;
+    if (!videoRef.current || !onProgressUpdateRef.current) return;
     const video = videoRef.current;
     const progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
     
-    onProgressUpdate({
+    onProgressUpdateRef.current({
       currentTime: video.currentTime,
       duration: video.duration,
       progress: Math.min(progress, 99),
+      reason: "pause",
     });
   };
 
@@ -108,7 +161,7 @@ export default function CourseAssetModal({
     }
 
     hasTrackedCompletionRef.current = true;
-    void Promise.resolve(onCompleted?.()).catch(() => undefined);
+    void Promise.resolve(onCompletedRef.current?.()).catch(() => undefined);
   };
 
   const handleStartOver = () => {
@@ -130,6 +183,7 @@ export default function CourseAssetModal({
             controls
             autoPlay
             className="h-full w-full"
+            onLoadedMetadata={handleLoadedMetadata}
             onTimeUpdate={handleTimeUpdate}
             onPause={handlePause}
             onEnded={handleCompleted}

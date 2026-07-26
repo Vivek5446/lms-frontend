@@ -156,7 +156,7 @@ export default function CoursePlayer({
 
   const scheduleUiRefresh = (payload: ScormTrackingPayload, mode: "commit" | "finish") => {
     const shouldRefreshAnswers = Boolean(onRefreshAnswerSections && (isQuizReviewOpen || mode === "finish"));
-    const shouldRefreshProgress = Boolean(onRefreshProgress);
+    const shouldRefreshProgress = Boolean(onRefreshProgress && mode === "finish");
 
     if (!shouldRefreshAnswers && !shouldRefreshProgress) {
       return;

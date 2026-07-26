@@ -22,18 +22,29 @@ interface CourseListProps {
   mode?: "create" | "edit";
   courseId?: string;
   initialCourse?: any;
+  initialCategory?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCancel }: CourseListProps) {
+function CourseList({ mode = "create", courseId, initialCourse, initialCategory, onSuccess, onCancel }: CourseListProps) {
   const isCompact = useBreakpointValue({ base: true, md: false }) ?? false;
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [stepProgress, setStepProgress] = useState<Record<number, number>>({});
-  const [courseForm, setCourseForm] = useState<CourseFormState>(
-    mode === "edit" && initialCourse ? courseToFormState(initialCourse) : initialCourseFormState
-  );
+  const [courseForm, setCourseForm] = useState<CourseFormState>(() => {
+    if (mode === "edit" && initialCourse) {
+      return courseToFormState(initialCourse);
+    }
+    const state = { ...initialCourseFormState };
+    if (initialCategory) {
+      state.basicInfo = {
+        ...state.basicInfo,
+        categories: [initialCategory],
+      };
+    }
+    return state;
+  });
   const [finalAction, setFinalAction] = useState<"draft" | "publish">("publish");
   const router = useRouter();
   const isEditMode = mode === "edit";
@@ -121,7 +132,7 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
 
     let isMounted = true;
     courseStore
-      .fetchCourse(courseId)
+      .fetchCourse(courseId, { includeCurriculum: true })
       .then((course) => {
         if (course && isMounted) {
           setCourseForm(courseToFormState(course));
@@ -235,7 +246,6 @@ function CourseList({ mode = "create", courseId, initialCourse, onSuccess, onCan
           <Step3Progress
             value={courseForm.progress}
             onChange={(progress) => setCourseForm((prev) => ({ ...prev, progress }))}
-            moduleNames={courseForm.structure.modules.map((module) => module.name)}
             onProgressChange={(progressValue) => updateStepProgress(2, progressValue)}
           />
         );
