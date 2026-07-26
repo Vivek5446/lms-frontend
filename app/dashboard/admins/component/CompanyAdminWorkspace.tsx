@@ -448,6 +448,9 @@ const CompanyAdminWorkspace = ({
         managerLevels: Number(values.managerLevels) || 0,
         mobileNo: values.mobileNo,
         bio: values.bio,
+        departments: values.departments
+          ? values.departments.split(",").map((d: string) => d.trim()).filter(Boolean)
+          : [],
         primaryThemeColor: values.primaryThemeColor,
         addressInfo: values.addressInfo || [],
         deletedFiles: removedExistingLogo && existingLogoUrl ? [existingLogoUrl] : [],

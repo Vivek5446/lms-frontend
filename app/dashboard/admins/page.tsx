@@ -158,6 +158,9 @@ const DirectoryPage = observer(() => {
       const payload: any = {
         ...values,
         tenantSlug: values.tenantSlug || values.company_name,
+        departments: values.departments
+          ? values.departments.split(",").map((d: string) => d.trim()).filter(Boolean)
+          : [],
       };
 
       const logoFile = values?.logo?.file;
