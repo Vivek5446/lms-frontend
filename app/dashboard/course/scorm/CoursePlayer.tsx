@@ -365,7 +365,7 @@ export default function CoursePlayer({
           );
         }
 
-        if (initialConfig.initialProgress) {
+        if (!trackingEnabled && initialConfig.initialProgress) {
           launchPlayer(initialConfig.initialProgress);
         }
 
@@ -381,7 +381,7 @@ export default function CoursePlayer({
         }
 
         if (!runtime) {
-          launchPlayer(initializedProgress);
+          launchPlayer(initializedProgress || initialConfig.initialProgress);
         } else if (initializedProgress) {
           runtime.mergeState(
             buildScorm12InitialState({
