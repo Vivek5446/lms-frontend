@@ -35,8 +35,6 @@ export interface CourseBasicInfo {
   categories: string[];
   level: string;
   visibilityType: "private" | "public";
-  totalMarks: string;
-  passingMarks: string;
 }
 
 export interface CourseModuleSectionInput {
@@ -80,6 +78,7 @@ export interface CourseModuleInput {
 
 export interface CourseStructureState {
   quizMode: QuizMode;
+  passingPercentage: string;
   finalQuiz: CourseQuizInput;
   modules: CourseModuleInput[];
 }
@@ -290,11 +289,10 @@ export const initialCourseFormState: CourseFormState = {
     categories: [],
     level: "Beginner",
     visibilityType: "private",
-    totalMarks: "",
-    passingMarks: "",
   },
   structure: {
     quizMode: "per-module",
+    passingPercentage: "50",
     finalQuiz: createEmptyQuiz("Final course quiz"),
     modules: [],
   },
@@ -351,7 +349,7 @@ function summarizeQuiz(quiz: CourseQuizInput, fallbackTitle: string) {
         option3: options[2],
         option4: options[3],
         correctOption: question.correctOption,
-        marks: parseQuizMarks(question.marks),
+        marks: 1,
         explanation: question.explanation.trim(),
       };
     })
@@ -383,7 +381,7 @@ export function calculateCourseQuizTotalMarks(courseForm: CourseFormState) {
           question.option3.trim() &&
           question.option4.trim();
 
-        return questionTotal + (isComplete ? parseQuizMarks(question.marks) : 0);
+        return questionTotal + (isComplete ? 1 : 0);
       }, 0)
     );
   }, 0);
@@ -498,7 +496,7 @@ function mapExistingQuizQuestion(question: any, index: number): CourseQuizQuesti
     correctOption: ["Option-1", "Option-2", "Option-3", "Option-4"].includes(correctOption)
       ? correctOption
       : "Option-1",
-    marks: String(question?.marks ?? "1"),
+    marks: "1",
     explanation: String(question?.explanation || ""),
   };
 }
@@ -550,11 +548,10 @@ export function courseToFormState(course: any): CourseFormState {
       categories: Array.isArray(course?.taxonomy?.categories) ? course.taxonomy.categories : [],
       level: String(course?.taxonomy?.level || "Beginner"),
       visibilityType: course?.visibility?.type === "public" ? "public" : "private",
-      totalMarks: course?.assessment?.totalMarks == null ? "" : String(course.assessment.totalMarks),
-      passingMarks: course?.assessment?.passingMarks == null ? "" : String(course.assessment.passingMarks),
     },
     structure: {
       quizMode,
+      passingPercentage: String(course?.assessment?.passingPercentage ?? "50"),
       finalQuiz: mapExistingQuiz(curriculum.finalQuiz, "Final course quiz"),
       modules: modules.map((module: any, moduleIndex: number) => ({
         id: String(module?.moduleId || module?.id || createClientId()),
@@ -594,8 +591,8 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
   const accessDurationDays = parseNumericValue(courseForm.pricing.accessDurationDays);
   const completionDays = parseNumericValue(courseForm.progress.completionDays);
   const quizTotalMarks = calculateCourseQuizTotalMarks(courseForm);
-  const totalMarks = parseNumericValue(courseForm.basicInfo.totalMarks) ?? (quizTotalMarks > 0 ? quizTotalMarks : null);
-  const passingMarks = parseNumericValue(courseForm.basicInfo.passingMarks);
+  const totalMarks = quizTotalMarks > 0 ? quizTotalMarks : null;
+  const passingPercentage = parseNumericValue(courseForm.structure.passingPercentage) ?? 50;
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
 
   return {
@@ -629,7 +626,8 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
       },
       assessment: {
         totalMarks,
-        passingMarks,
+        passingMarks: null,
+        passingPercentage,
       },
       media: {
         thumbnail: summarizeFile(courseForm.basicInfo.thumbnail),

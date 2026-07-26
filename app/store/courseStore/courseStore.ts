@@ -11,10 +11,11 @@ export interface CourseVisibilityConfig {
 export interface CourseAssessmentConfig {
   totalMarks: number | null;
   passingMarks: number | null;
+  passingPercentage: number;
 }
 
 export interface CourseAssessmentCriteriaInput {
-  passingMarks: number | null;
+  passingPercentage?: number | null;
 }
 
 export interface CourseAssessmentSummary extends CourseAssessmentConfig {
@@ -911,7 +912,7 @@ class CourseStoreClass {
     departmentId?: string;
     departmentName?: string;
     userIds?: string[];
-    passingMarks?: number | null;
+    passingPercentage?: number | null;
     allowFurtherAssignment?: boolean;
     assignToAllUsers?: boolean;
   }) => {

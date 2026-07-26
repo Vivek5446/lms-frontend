@@ -230,7 +230,7 @@ export default function CourseQuizPlayer({
                   color={questionBadgeText}
                   fontSize="10px"
                 >
-                  {quiz.totalMarks} marks
+                  {quiz.totalMarks} point{quiz.totalMarks === 1 ? "" : "s"}
                 </Badge>
                 <Text fontSize="xs" color={textMuted} fontWeight="700">
                   {quiz.questions.length} questions

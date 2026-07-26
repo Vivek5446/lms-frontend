@@ -116,7 +116,7 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
   );
   const certificateButtonLabel = canDownloadCertificate ? "Download Certificate" : "Certificate Locked";
   const certificateReason =
-    course.certificate?.reason || "Complete the course and meet the passing marks requirement to unlock the certificate.";
+    course.certificate?.reason || "Complete the course and meet the passing percentage requirement to unlock the certificate.";
 
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {

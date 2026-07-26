@@ -140,10 +140,7 @@ export default function CourseQuizBuilder({ quiz, onChange, title, helper }: Cou
       question.option4.trim()
     );
   }).length;
-  const totalMarks = quiz.questions.reduce((total, question) => {
-    const marks = Number(question.marks || 1);
-    return total + (Number.isFinite(marks) ? Math.max(0, marks) : 1);
-  }, 0);
+  const totalMarks = completedQuestionCount;
   const incompleteCount = Math.max(quiz.questions.length - completedQuestionCount, 0);
   const primaryButtonLabel = quiz.questions.length > 0 ? "View or edit questions" : "Open quiz builder";
 
@@ -320,20 +317,7 @@ export default function CourseQuizBuilder({ quiz, onChange, title, helper }: Cou
                             })}
                           </div>
 
-                          <div className="mt-4 grid gap-3 md:grid-cols-[160px_1fr]">
-                            <div>
-                              <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-                                Marks
-                              </label>
-                              <Input
-                                type="number"
-                                min={0}
-                                step={0.5}
-                                value={question.marks}
-                                onChange={(event) => updateQuestion(question.id, { marks: event.target.value })}
-                                className="h-10 rounded-xl border-slate-200 bg-slate-50"
-                              />
-                            </div>
+                          <div className="mt-4">
                             <div>
                               <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
                                 Explanation or feedback

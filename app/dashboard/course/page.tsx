@@ -170,6 +170,12 @@ function CoursePage() {
     setView("gallery");
   };
 
+  const handleOpenCreate = (categoryName?: string) => {
+    courseStore.error = null;
+    setSelectedCategoryForCreation(categoryName);
+    setView("create");
+  };
+
   const handleOpenDetails = (course: CourseListItem) => {
     setActiveCourse(course);
     setView("details");
@@ -575,7 +581,7 @@ function CoursePage() {
         </div>
       </div>
 
-      {courseStore.error && !courseStore.isLoading ? (
+      {courseStore.error && !courseStore.isLoading && view === "gallery" ? (
         <div
           style={{
             marginBottom: 18,
@@ -744,9 +750,9 @@ function CoursePage() {
                       </td>
                       <td style={{ padding: "16px 18px" }}>
                         <div style={{ fontSize: 13, color: titleColor, fontWeight: 600 }}>
-                          {assessment?.totalMarks
-                            ? `${assessment.totalMarks} total marks`
-                            : "Not configured"}
+                          {assessment?.passingPercentage
+                            ? `${assessment.passingPercentage}% pass`
+                            : "50% pass"}
                         </div>
                       </td>
                       <td style={{ padding: "16px 18px" }}>
@@ -1003,7 +1009,7 @@ function CoursePage() {
                     size={{ base: "sm", md: "md" }}
                     borderRadius="full"
                     width={isCompact ? "calc(50% - 6px)" : "auto"}
-                    onClick={() => setView("create")}
+                    onClick={() => handleOpenCreate()}
                   >
                     Add New Course
                   </Button>
@@ -1034,13 +1040,11 @@ function CoursePage() {
               canCreateCourses={canCreateCourses}
               canEditCourses={canEditCourses}
               canDeleteCourses={canDeleteCourses}
-              canAssignCourses={canAssignCourses}
               canViewUsers={canViewUsers}
               onOpenDetails={handleOpenDetails}
               onOpenEdit={handleOpenEdit}
               onCreateCourseInCategory={(categoryName) => {
-                setSelectedCategoryForCreation(categoryName);
-                setView("create");
+                handleOpenCreate(categoryName);
               }}
               onDeleteCourse={async (courseId) => {
                 if (window.confirm("Are you sure you want to delete this course?")) {
@@ -1051,10 +1055,6 @@ function CoursePage() {
                     alert(err.message || "Failed to delete course");
                   }
                 }
-              }}
-              onAssignCourse={(course) => {
-                setActiveCourse(course);
-                setIsAssignModalOpen(true);
               }}
               onViewCourseUsers={(course) => {
                 setCourseUsersModal({ courseId: course._id, courseTitle: course.title });

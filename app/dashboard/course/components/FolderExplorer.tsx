@@ -38,7 +38,6 @@ import {
   FiEye,
   FiEdit3,
   FiTrash2,
-  FiUsers,
   FiLock,
   FiGlobe,
   FiDollarSign,
@@ -53,13 +52,11 @@ interface FolderExplorerProps {
   canCreateCourses: boolean;
   canEditCourses: boolean;
   canDeleteCourses: boolean;
-  canAssignCourses: boolean;
   canViewUsers: boolean;
   onOpenDetails: (course: CourseListItem) => void;
   onOpenEdit: (course: CourseListItem) => void;
   onCreateCourseInCategory: (categoryName: string) => void;
   onDeleteCourse?: (courseId: string) => void;
-  onAssignCourse?: (course: CourseListItem) => void;
   onViewCourseUsers?: (course: CourseListItem) => void;
 }
 
@@ -69,13 +66,11 @@ export const FolderExplorer = observer(function FolderExplorer({
   canCreateCourses,
   canEditCourses,
   canDeleteCourses,
-  canAssignCourses,
   canViewUsers,
   onOpenDetails,
   onOpenEdit,
   onCreateCourseInCategory,
   onDeleteCourse,
-  onAssignCourse,
   onViewCourseUsers,
 }: FolderExplorerProps) {
   const toast = useToast();
@@ -1128,18 +1123,6 @@ const MotionFlex = motion(Flex);
                       onClick={() => onOpenEdit(course)}
                     >
                       Edit
-                    </Button>
-                  )}
-
-                  {canAssignCourses && onAssignCourse && (
-                    <Button
-                      size="xs"
-                      leftIcon={<FiUsers />}
-                      variant="ghost"
-                      colorScheme="purple"
-                      onClick={() => onAssignCourse(course)}
-                    >
-                      Assign
                     </Button>
                   )}
 

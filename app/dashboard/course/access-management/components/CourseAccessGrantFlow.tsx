@@ -63,7 +63,6 @@ const CourseAccessGrantFlow = observer(() => {
   const [departmentName, setDepartmentName] = useState("");
   const [allowFurtherAssignment, setAllowFurtherAssignment] = useState(true);
   const [assignToAllUsers, setAssignToAllUsers] = useState(false);
-  const [passingMarks, setPassingMarks] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [userResults, setUserResults] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
@@ -117,10 +116,6 @@ const CourseAccessGrantFlow = observer(() => {
     setUserResults([]);
   }, [companyId, scopeType]);
 
-  useEffect(() => {
-    setPassingMarks("");
-  }, [selectedCourseId]);
-
   const canContinue = useMemo(() => {
     if (step === 0) {
       return Boolean(selectedCourseId);
@@ -142,12 +137,8 @@ const CourseAccessGrantFlow = observer(() => {
       return true;
     }
 
-    if (step === 2 && selectedCourse?.assessment?.totalMarks !== null && selectedCourse?.assessment?.totalMarks !== undefined) {
-      return Boolean(String(passingMarks).trim());
-    }
-
     return true;
-  }, [companyId, departmentName, passingMarks, scopeType, selectedCourse?.assessment?.totalMarks, selectedCourseId, selectedUsers.length, step]);
+  }, [companyId, departmentName, scopeType, selectedCourseId, selectedUsers.length, step]);
 
   const handleToggleUser = (user: any) => {
     setSelectedUsers((current) => {
@@ -172,10 +163,6 @@ const CourseAccessGrantFlow = observer(() => {
         companyId,
         departmentName: scopeType === "department" ? departmentName : undefined,
         userIds: scopeType === "user" ? selectedUsers.map((user) => user._id) : undefined,
-        passingMarks:
-          selectedCourse?.assessment?.totalMarks !== null && selectedCourse?.assessment?.totalMarks !== undefined
-            ? Number(passingMarks)
-            : null,
         allowFurtherAssignment,
         assignToAllUsers,
       });
@@ -194,7 +181,6 @@ const CourseAccessGrantFlow = observer(() => {
       setDepartmentName("");
       setAllowFurtherAssignment(true);
       setAssignToAllUsers(false);
-      setPassingMarks("");
       setSelectedUsers([]);
       setUserSearch("");
     } catch (err: any) {
@@ -429,27 +415,10 @@ const CourseAccessGrantFlow = observer(() => {
         {step === 2 ? (
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={5}>
             <Box borderWidth="1px" borderRadius="xl" p={5}>
-              <FormControl isRequired={selectedCourse?.assessment?.totalMarks !== null && selectedCourse?.assessment?.totalMarks !== undefined}>
-                <FormLabel>Passing marks / criteria</FormLabel>
-                <Input
-                  type="number"
-                  min={0}
-                  max={selectedCourse?.assessment?.totalMarks ?? undefined}
-                  value={passingMarks}
-                  onChange={(event) => setPassingMarks(event.target.value)}
-                  placeholder={
-                    selectedCourse?.assessment?.totalMarks !== null && selectedCourse?.assessment?.totalMarks !== undefined
-                      ? `Enter passing marks out of ${selectedCourse.assessment.totalMarks}`
-                      : "No total marks configured for this course"
-                  }
-                  isDisabled={selectedCourse?.assessment?.totalMarks === null || selectedCourse?.assessment?.totalMarks === undefined}
-                />
-                <Text color="gray.600" fontSize="sm" mt={2}>
-                  {selectedCourse?.assessment?.totalMarks !== null && selectedCourse?.assessment?.totalMarks !== undefined
-                    ? `This course has ${selectedCourse.assessment.totalMarks} total marks. Configure the passing requirement for this company scope here.`
-                    : "Passing criteria stays unconfigured until total marks exist on the course."}
-                </Text>
-              </FormControl>
+              <Text fontWeight="semibold">Passing criteria</Text>
+              <Text color="gray.600" fontSize="sm" mt={2}>
+                Passing score: {Number(selectedCourse?.assessment?.passingPercentage || 50)}%. This value is configured on the course.
+              </Text>
             </Box>
 
             <Box borderWidth="1px" borderRadius="xl" p={5}>
@@ -525,9 +494,7 @@ const CourseAccessGrantFlow = observer(() => {
                     Passing criteria
                   </Text>
                   <Text fontWeight="medium">
-                    {selectedCourse?.assessment?.totalMarks !== null && selectedCourse?.assessment?.totalMarks !== undefined
-                      ? `${passingMarks || "--"}/${selectedCourse.assessment.totalMarks}`
-                      : "Not configured"}
+                    {Number(selectedCourse?.assessment?.passingPercentage || 50)}%
                   </Text>
                 </Box>
               </SimpleGrid>

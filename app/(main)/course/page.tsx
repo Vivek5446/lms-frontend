@@ -1,9 +1,9 @@
 "use client";
 
+import { CourseCard } from "@/app/(main)/course/component/CourseCard";
 import MyCoursesBoard from "@/app/(main)/course/component/MyCoursesBoard";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import stores from "@/app/store/stores";
-import { CourseCard } from "@/app/(main)/course/component/CourseCard";
 import {
   Badge,
   Box,
@@ -26,11 +26,10 @@ import {
   Select,
   SimpleGrid,
   Spinner,
-  Stack,
   Text,
   useColorModeValue,
-  useToken,
   useDisclosure,
+  useToken,
   VStack
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
@@ -40,31 +39,15 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FiArrowRight,
   FiBookOpen,
-  FiClock,
-  FiDollarSign,
   FiFilter,
   FiGlobe,
   FiSearch,
-  FiStar,
   FiTrendingUp
 } from "react-icons/fi";
 
 type CatalogSort = "latest" | "popularity" | "price_asc" | "price_desc" | "highest_rated";
-
 const MotionBox = motion(Box);
 
-function formatCurrency(value?: number | null) {
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue) || numericValue <= 0) {
-    return "Free";
-  }
-
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(numericValue);
-}
 
 function AssessmentBadge({ summary }: { summary?: any }) {
   if (!summary || summary.outcome === "not_configured") {
@@ -134,10 +117,6 @@ const CoursesPage = observer(function CoursesPage() {
     "0 12px 28px rgba(37, 99, 235, 0.24)",
     "0 16px 32px rgba(15, 23, 42, 0.34)"
   );
-  const priceSummaryBg = useColorModeValue("blue.50", "blue.900");
-  const moduleSummaryBg = useColorModeValue("purple.50", "purple.900");
-  const assessmentSummaryBg = useColorModeValue("green.50", "green.900");
-  const ratingSummaryBg = useColorModeValue("orange.50", "orange.900");
   const [brand50, brand100, brand200, brand400, brand500, brand700] = useToken("colors", [
     "brand.50",
     "brand.100",

@@ -302,7 +302,6 @@ const AssignCourseModal = observer(
       matchedUsers: any[];
       failedEntries: any[];
     } | null>(null);
-    const [assessmentCriteriaByCourse, setAssessmentCriteriaByCourse] = useState<Record<string, { passingMarks: string }>>({});
 
     const companies = companyStore.companies.data || [];
     const selectedCompany = companies.find((company: any) => company._id === companyId) || auth.user?.companyDetails || null;
@@ -362,7 +361,6 @@ const AssignCourseModal = observer(
       setSelectedUsers([]);
       setCsvFile(null);
       setCsvPreview(null);
-      setAssessmentCriteriaByCourse({});
     }, [companyStore, defaultCourseId, fixedCompanyId, isOpen, role]);
 
     useEffect(() => {
@@ -394,29 +392,6 @@ const AssignCourseModal = observer(
       setCsvPreview(null);
     }, [assignmentTarget, companyId]);
 
-    useEffect(() => {
-      setAssessmentCriteriaByCourse((current) => {
-        const next = { ...current };
-        let changed = false;
-
-        selectedCourses.forEach((course: any) => {
-          if (!next[course._id]) {
-            next[course._id] = { passingMarks: course?.assessment?.passingMarks != null ? String(course.assessment.passingMarks) : "" };
-            changed = true;
-          }
-        });
-
-        Object.keys(next).forEach((courseId) => {
-          if (!selectedCourseIds.includes(courseId)) {
-            delete next[courseId];
-            changed = true;
-          }
-        });
-
-        return changed ? next : current;
-      });
-    }, [selectedCourseIds, selectedCourses]);
-
     const canContinue = useMemo(() => {
       if (step === 0) return selectedCourseIds.length > 0;
       if (step === 1) {
@@ -427,23 +402,12 @@ const AssignCourseModal = observer(
       }
       if (step === 2) {
         if (isCompanyInactive) return false;
-        const hasValidCriteria = selectedCourses.every((course: any) => {
-          const totalMarks = Number(course?.assessment?.totalMarks);
-          if (!Number.isFinite(totalMarks)) return true;
-
-          const passingMarks = assessmentCriteriaByCourse[course._id]?.passingMarks?.trim();
-          if (!passingMarks) return false;
-
-          const numericPassingMarks = Number(passingMarks);
-          return Number.isFinite(numericPassingMarks) && numericPassingMarks >= 0 && numericPassingMarks <= totalMarks;
-        });
-
-        return (noExpiry || Boolean(validTill)) && hasValidCriteria;
+        return noExpiry || Boolean(validTill);
       }
       if (isCompanyInactive) return false;
       if (assignmentTarget === "users") return combinedSelectedUsers.length > 0;
       return true;
-    }, [assessmentCriteriaByCourse, assignmentTarget, combinedSelectedUsers.length, companyId, departmentName, isCompanyInactive, noExpiry, selectedCourseIds.length, selectedCourses, step, validTill]);
+    }, [assignmentTarget, combinedSelectedUsers.length, companyId, departmentName, isCompanyInactive, noExpiry, selectedCourseIds.length, step, validTill]);
 
     const toggleSelectedCourse = (courseId: string) => {
       setSelectedCourseIds((current) => (current.includes(courseId) ? current.filter((id) => id !== courseId) : [...current, courseId]));
@@ -529,14 +493,7 @@ const AssignCourseModal = observer(
           userIds: assignmentTarget === "users" ? combinedSelectedUsers.map((u: any) => u._id) : undefined,
           validFrom: new Date().toISOString(),
           validTill: noExpiry ? null : new Date(validTill).toISOString(),
-          assessmentCriteriaByCourse: Object.fromEntries(
-            selectedCourseIds.map((courseId) => [
-              courseId,
-              {
-                passingMarks: assessmentCriteriaByCourse[courseId]?.passingMarks ? Number(assessmentCriteriaByCourse[courseId].passingMarks) : null,
-              },
-            ])
-          ),
+          assessmentCriteriaByCourse: Object.fromEntries(selectedCourseIds.map((courseId) => [courseId, {}])),
           allowFurtherAssignment,
         });
 
@@ -771,11 +728,10 @@ const AssignCourseModal = observer(
                   <Stack spacing={5}>
                     <Box {...SURFACE_PROPS} p={{ base: 4, md: 5 }}>
                       <Stack spacing={5}>
-                        <SectionHeader eyebrow="Rules" title="Passing criteria" description="Set the passing score for each selected course. Scores must stay within the configured total marks." />
+                        <SectionHeader eyebrow="Rules" title="Passing criteria" description="Each assignment uses the passing percentage configured on the course." />
                         <Stack spacing={3}>
                           {selectedCourses.map((course: any) => {
-                            const totalMarks = Number(course?.assessment?.totalMarks);
-                            const hasTotalMarks = Number.isFinite(totalMarks);
+                            const passingPercentage = Number(course?.assessment?.passingPercentage || 50);
 
                             return (
                               <Box key={course._id} borderWidth="1px" borderColor="gray.200" borderRadius="14px" p={{ base: 4, md: 5 }} bg="gray.50">
@@ -785,22 +741,12 @@ const AssignCourseModal = observer(
                                       {course.title}
                                     </Text>
                                     <Text color="gray.500" fontSize="sm">
-                                      {hasTotalMarks ? `Total marks: ${totalMarks}` : "No total marks configured for this course yet."}
+                                      Passing score: {Number.isFinite(passingPercentage) ? passingPercentage : 50}%
                                     </Text>
                                   </Stack>
                                   <Input
-                                    type="number"
-                                    min={0}
-                                    max={hasTotalMarks ? totalMarks : undefined}
-                                    value={assessmentCriteriaByCourse[course._id]?.passingMarks || ""}
-                                    onChange={(event) =>
-                                      setAssessmentCriteriaByCourse((current) => ({
-                                        ...current,
-                                        [course._id]: { passingMarks: event.target.value },
-                                      }))
-                                    }
-                                    placeholder={hasTotalMarks ? `Passing marks / ${totalMarks}` : "Not available"}
-                                    isDisabled={!hasTotalMarks}
+                                    value={`${Number.isFinite(passingPercentage) ? passingPercentage : 50}%`}
+                                    isReadOnly
                                     bg="white"
                                     borderRadius="14px"
                                     borderColor="gray.200"
@@ -1118,7 +1064,7 @@ const AssignCourseModal = observer(
                               <Tag borderRadius="full" colorScheme="blue" variant="subtle" px={3} py={2}>
                                 <TagLabel fontWeight="700">
                                   {course.title}
-                                  {Number.isFinite(Number(course?.assessment?.totalMarks)) ? ` • ${assessmentCriteriaByCourse[course._id]?.passingMarks || "--"}/${course.assessment.totalMarks}` : ""}
+                                  {` - ${Number(course?.assessment?.passingPercentage || 50)}% pass`}
                                 </TagLabel>
                               </Tag>
                             </WrapItem>

@@ -679,7 +679,7 @@ export default function CourseDetails({
             <div className="min-w-0">
               <p className="text-xs font-semibold text-foreground sm:text-sm">{quiz.title}</p>
               <p className="text-[11px] text-muted-foreground sm:text-xs">
-                {quiz.questionCount} question{quiz.questionCount === 1 ? "" : "s"} - {quiz.totalMarks} marks
+                {quiz.questionCount} question{quiz.questionCount === 1 ? "" : "s"} - {quiz.totalMarks} point{quiz.totalMarks === 1 ? "" : "s"}
               </p>
               <p className={`mt-1 text-xs sm:text-sm ${locked ? "text-slate-600 dark:text-slate-300" : completed ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300"}`}>
                 {locked

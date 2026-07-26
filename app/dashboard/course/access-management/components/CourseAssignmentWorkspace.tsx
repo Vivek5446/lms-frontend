@@ -90,7 +90,6 @@ const CourseAssignmentWorkspace = observer(() => {
   } | null>(null);
   const [noExpiry, setNoExpiry] = useState(true);
   const [validTill, setValidTill] = useState("");
-  const [assessmentCriteriaByCourse, setAssessmentCriteriaByCourse] = useState<Record<string, { passingMarks: string }>>({});
   const [lastResult, setLastResult] = useState<{
     successCount: number;
     failedEntries: any[];
@@ -126,29 +125,6 @@ const CourseAssignmentWorkspace = observer(() => {
       setDepartmentName(auth.user.department);
     }
   }, [auth.user?.department, isDepartmentHead]);
-
-  useEffect(() => {
-    setAssessmentCriteriaByCourse((current) => {
-      const next = { ...current };
-      let changed = false;
-
-      selectedCourses.forEach((course) => {
-        if (!next[course._id]) {
-          next[course._id] = { passingMarks: "" };
-          changed = true;
-        }
-      });
-
-      Object.keys(next).forEach((courseId) => {
-        if (!selectedCourseIds.includes(courseId)) {
-          delete next[courseId];
-          changed = true;
-        }
-      });
-
-      return changed ? next : current;
-    });
-  }, [selectedCourseIds, selectedCourses]);
 
   useEffect(() => {
     const timeoutId = setTimeout(async () => {
@@ -188,26 +164,11 @@ const CourseAssignmentWorkspace = observer(() => {
     }
 
     if (step === 2) {
-      const hasValidCriteria = selectedCourses.every((course) => {
-        const totalMarks = Number(course?.assessment?.totalMarks);
-        if (!Number.isFinite(totalMarks)) {
-          return true;
-        }
-
-        const passingMarks = assessmentCriteriaByCourse[course._id]?.passingMarks?.trim();
-        if (!passingMarks) {
-          return false;
-        }
-
-        const numericPassingMarks = Number(passingMarks);
-        return Number.isFinite(numericPassingMarks) && numericPassingMarks >= 0 && numericPassingMarks <= totalMarks;
-      });
-
-      return (noExpiry || Boolean(validTill)) && hasValidCriteria;
+      return noExpiry || Boolean(validTill);
     }
 
     return true;
-  }, [assessmentCriteriaByCourse, combinedSelectedUsers.length, departmentName, isDepartmentHead, noExpiry, selectedCourseIds.length, selectedCourses, step, targetMode, validTill]);
+  }, [combinedSelectedUsers.length, departmentName, isDepartmentHead, noExpiry, selectedCourseIds.length, step, targetMode, validTill]);
 
   const toggleSelectedUser = (user: any) => {
     setSelectedUsers((current) => {
@@ -233,7 +194,6 @@ const CourseAssignmentWorkspace = observer(() => {
     setUploadPreview(null);
     setNoExpiry(true);
     setValidTill("");
-    setAssessmentCriteriaByCourse({});
   };
 
   const handlePreviewUpload = async () => {
@@ -276,16 +236,7 @@ const CourseAssignmentWorkspace = observer(() => {
         validFrom: new Date().toISOString(),
         validTill: noExpiry ? null : new Date(validTill).toISOString(),
         dueDate: noExpiry ? null : new Date(validTill).toISOString(),
-        assessmentCriteriaByCourse: Object.fromEntries(
-          selectedCourseIds.map((courseId) => [
-            courseId,
-            {
-              passingMarks: assessmentCriteriaByCourse[courseId]?.passingMarks
-                ? Number(assessmentCriteriaByCourse[courseId].passingMarks)
-                : null,
-            },
-          ])
-        ),
+        assessmentCriteriaByCourse: Object.fromEntries(selectedCourseIds.map((courseId) => [courseId, {}])),
       });
 
       setLastResult(response?.data || null);
@@ -550,40 +501,18 @@ const CourseAssignmentWorkspace = observer(() => {
               <Box borderWidth="1px" borderRadius="2xl" p={4}>
                 <Text fontWeight="semibold">Passing criteria</Text>
                 <Text color="gray.600" fontSize="sm" mt={1}>
-                  Set the passing marks for each selected course. These criteria are stored with the assignment and can vary by company.
+                  Assignments use each course's configured passing percentage.
                 </Text>
                 <Stack spacing={4} mt={4}>
                   {selectedCourses.map((course) => {
-                    const totalMarks = Number(course?.assessment?.totalMarks);
-                    const hasTotalMarks = Number.isFinite(totalMarks);
+                    const passingPercentage = Number(course?.assessment?.passingPercentage || 50);
 
                     return (
                       <Box key={course._id} borderWidth="1px" borderRadius="xl" p={4}>
                         <Text fontWeight="semibold">{course.title}</Text>
                         <Text color="gray.600" fontSize="sm" mt={1}>
-                          {hasTotalMarks
-                            ? `Total marks: ${totalMarks}`
-                            : "This course does not have total marks configured yet."}
+                          Passing score: {Number.isFinite(passingPercentage) ? passingPercentage : 50}%
                         </Text>
-                        <FormControl mt={3} isRequired={hasTotalMarks}>
-                          <FormLabel mb={1}>Passing marks</FormLabel>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={hasTotalMarks ? totalMarks : undefined}
-                            value={assessmentCriteriaByCourse[course._id]?.passingMarks || ""}
-                            onChange={(event) =>
-                              setAssessmentCriteriaByCourse((current) => ({
-                                ...current,
-                                [course._id]: {
-                                  passingMarks: event.target.value,
-                                },
-                              }))
-                            }
-                            placeholder={hasTotalMarks ? `Enter passing marks out of ${totalMarks}` : "Not available"}
-                            isDisabled={!hasTotalMarks}
-                          />
-                        </FormControl>
                       </Box>
                     );
                   })}
@@ -665,9 +594,7 @@ const CourseAssignmentWorkspace = observer(() => {
                       <Tag borderRadius="full" colorScheme="blue" variant="subtle">
                         <TagLabel>
                           {course.title}
-                          {Number.isFinite(Number(course?.assessment?.totalMarks))
-                            ? ` • ${assessmentCriteriaByCourse[course._id]?.passingMarks || "--"}/${course.assessment.totalMarks}`
-                            : ""}
+                          {` - ${Number(course?.assessment?.passingPercentage || 50)}% pass`}
                         </TagLabel>
                       </Tag>
                     </WrapItem>

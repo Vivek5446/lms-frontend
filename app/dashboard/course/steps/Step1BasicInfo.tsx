@@ -66,10 +66,9 @@ export default function Step1BasicInfo({
     if (value.thumbnail) filled++;
     if (value.categories.length > 0) filled++;
     if (value.languages.length > 0) filled++;
-    if (value.totalMarks.trim()) filled++;
     if (value.companyId.trim()) filled++;
 
-    onProgressChange?.(Math.round((filled / 10) * 100));
+    onProgressChange?.(Math.round((filled / 9) * 100));
   }, [value, onProgressChange]);
 
   const onDrop = useCallback(
@@ -687,45 +686,6 @@ export default function Step1BasicInfo({
           </div>
         </div>
 
-        <div style={{ marginTop: 24 }}>
-          <label style={{ ...labelStyle, marginBottom: 12 }}>Assessment Setup</label>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "1.5rem",
-              maxWidth: 420,
-            }}
-          >
-            <div>
-              <label style={labelStyle}>Total Marks</label>
-              <input
-                type="number"
-                min="0"
-                placeholder="e.g., 100"
-                value={value.totalMarks}
-                onChange={(event) => updateBasicInfo({ totalMarks: event.target.value })}
-                style={inputStyle}
-                onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
-                onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Passing Marks {value.visibilityType === "public" && <span style={{ color: "red" }}>*</span>}</label>
-              <input
-                type="number"
-                min="0"
-                max={value.totalMarks || undefined}
-                placeholder="e.g., 40"
-                value={value.passingMarks}
-                onChange={(event) => updateBasicInfo({ passingMarks: event.target.value })}
-                style={inputStyle}
-                onFocus={(event) => (event.currentTarget.style.borderColor = "#2563EB")}
-                onBlur={(event) => (event.currentTarget.style.borderColor = "#E5E7EB")}
-              />
-            </div>
-          </div>
-        </div>
       </div>
     </StepWrapper>
   );

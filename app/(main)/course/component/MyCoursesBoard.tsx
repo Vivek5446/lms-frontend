@@ -465,6 +465,7 @@ const MyCoursesBoard = observer(
             sectionId: playerSection.sectionId,
             data: response,
           });
+          await courseStore.fetchCourseQuizzes(courseId).catch(() => undefined);
         }
       } catch (error: any) {
         toast({
@@ -578,6 +579,7 @@ const MyCoursesBoard = observer(
                     return Promise.all([
                       courseStore.fetchMyCourseDetail(activeCourseId),
                       courseStore.fetchMyCourses(),
+                      courseStore.fetchCourseQuizzes(activeCourseId),
                     ]).then(() => undefined);
                   }}
                   onBack={() => {

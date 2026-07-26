@@ -110,14 +110,12 @@ export default function Step8Review({
       label: "Assessment",
       status:
         quizQuestionCount > 0
-          ? `${quizQuestionCount} quiz question${quizQuestionCount === 1 ? "" : "s"} attached. Passing criteria will be set during assignment.`
-          : courseForm.basicInfo.totalMarks.trim()
-            ? `${courseForm.basicInfo.totalMarks} total marks. Passing criteria will be set during assignment.`
-            : "Assessment marks not configured yet",
+          ? `${quizQuestionCount} quiz question${quizQuestionCount === 1 ? "" : "s"} attached. Passing score: ${courseForm.structure.passingPercentage || 50}%.`
+          : `Passing score: ${courseForm.structure.passingPercentage || 50}%.`,
       colorClass: "text-step-2",
       bgClass: "bg-step-2/15",
-      complete: Boolean(courseForm.basicInfo.totalMarks.trim()),
-      stepIndex: 0,
+      complete: Number(courseForm.structure.passingPercentage) >= 1 && Number(courseForm.structure.passingPercentage) <= 100,
+      stepIndex: 1,
     },
   ];
 

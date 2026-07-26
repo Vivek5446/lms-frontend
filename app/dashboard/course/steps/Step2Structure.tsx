@@ -39,11 +39,12 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
     }
 
     const totalFields =
-      1 +
+      2 +
       value.modules.reduce((count, module) => count + 2 + module.sections.length * 3, 0);
 
     const completedFields =
       1 +
+      (Number(value.passingPercentage) >= 1 && Number(value.passingPercentage) <= 100 ? 1 : 0) +
       value.modules.reduce((count, module) => {
         if (module.name.trim()) count += 1;
         if (module.description.trim()) count += 1;
@@ -205,6 +206,17 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
     >
       <div className="space-y-6">
         <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+          <FormField label="Passing Percentage" required tooltip="Learners must meet or exceed this combined assessment percentage">
+            <Input
+              type="number"
+              min={1}
+              max={100}
+              value={value.passingPercentage}
+              onChange={(event) => onChange({ ...value, passingPercentage: event.target.value })}
+              placeholder="50"
+              className="bg-background border-border rounded-xl h-11 max-w-xs"
+            />
+          </FormField>
           <FormField label="Quiz Strategy" tooltip="Choose how quizzes are structured">
             <div className="grid grid-cols-2 gap-3 mt-1">
               {(["per-module", "final"] as const).map((mode) => (

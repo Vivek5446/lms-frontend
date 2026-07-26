@@ -28,9 +28,7 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
   const accessLabel = courseForm.pricing.accessDurationDays.trim()
     ? `${courseForm.pricing.accessDurationDays} days`
     : "Open access";
-  const assessmentLabel = courseForm.basicInfo.totalMarks.trim()
-    ? `${courseForm.basicInfo.totalMarks} total marks`
-    : "Not configured";
+  const assessmentLabel = `${courseForm.structure.passingPercentage || 50}% pass`;
   const quizCount =
     courseForm.structure.quizMode === "final"
       ? courseForm.structure.finalQuiz.questions.length
@@ -119,7 +117,7 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
                 {
                   icon: Award,
                   label: "Assessment",
-                  value: quizCount > 0 ? `${quizCount} quiz Qs` : assessmentLabel,
+                  value: quizCount > 0 ? `${quizCount} quiz Qs / ${assessmentLabel}` : assessmentLabel,
                 },
                 {
                   icon: Award,

@@ -538,14 +538,14 @@ export const CourseDetailsView = observer(({ courseId, onBack }: CourseDetailsVi
                       </Text>
                     </HStack>
 
-                    {course.assessment?.totalMarks && (
+                    {course.assessment && (
                       <HStack justify="space-between" fontSize="sm">
                         <HStack spacing={2} color={textSecondary}>
                           <Icon as={FiAward} />
                           <Text>Passing score</Text>
                         </HStack>
                         <Text fontWeight="semibold" color={textPrimary}>
-                          {course.assessment.passingMarks} / {course.assessment.totalMarks} marks
+                          {course.assessment.passingPercentage || 50}%
                         </Text>
                       </HStack>
                     )}
