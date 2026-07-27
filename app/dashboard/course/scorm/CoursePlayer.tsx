@@ -44,7 +44,7 @@ interface CoursePlayerProps {
   ) => void | Promise<void>;
 }
 
-const HEADER_H = 48;
+const HEADER_H = 64;
 
 const StableScormIframe = memo(function StableScormIframe({
   iframeRef,
@@ -602,30 +602,36 @@ export default function CoursePlayer({
           `}
         >
           <div
-            className="flex min-h-12 flex-shrink-0 items-center justify-between gap-2 border-b border-gray-100 bg-black px-2 py-2 dark:border-white/10 dark:bg-[#0F0F0F] sm:gap-3 sm:px-3"
-            style={{ minHeight: HEADER_H }}
+            className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#0F0F0F] px-6"
+            style={{ height: `${HEADER_H}px`, minHeight: `${HEADER_H}px`, flexShrink: 0 }}
           >
-            <h2 className="ml-1 min-w-0 flex-1 truncate text-xs font-medium text-gray-100 select-none dark:text-gray-400 sm:text-sm">
-              {courseTitle}
-            </h2>
+            <div className="min-w-0 flex-1 flex flex-col justify-center">
+              <span className="truncate text-sm font-bold text-white tracking-wide uppercase leading-tight block">{courseTitle}</span>
+              <span className="text-[9px] text-slate-400 font-medium tracking-wider uppercase mt-1 leading-none block">SCORM Package Player</span>
+            </div>
 
-            <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="flex flex-shrink-0 items-center gap-2">
               <Button
                 size="sm"
-                colorScheme="teal"
+                colorScheme="blue"
                 variant="outline"
                 onClick={() => setIsQuizReviewOpen(true)}
                 isDisabled={isBootstrapping}
-                h={{ base: "32px", sm: "36px" }}
-                px={{ base: 2, sm: 3 }}
-                fontSize={{ base: "11px", sm: "sm" }}
+                h="36px"
+                borderRadius="full"
+                borderColor="white/10"
+                color="slate.200"
+                _hover={{ bg: "white/5", color: "white", borderColor: "white/20" }}
+                _active={{ scale: 0.95 }}
+                fontSize="xs"
+                px={4}
               >
                 Quiz Review
               </Button>
               <button
                 type="button"
                 onClick={() => void toggleFullscreen()}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-200 transition hover:bg-white/10"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/5 border border-white/10 text-slate-300 transition hover:bg-white/10 hover:text-white hover:border-white/20 active:scale-95"
                 aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               >
                 {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
@@ -635,7 +641,7 @@ export default function CoursePlayer({
                 onClick={() => {
                   handleClosePlayer();
                 }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-200 transition hover:bg-white/10"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/5 border border-white/10 text-slate-300 transition hover:bg-red-500 hover:text-white hover:border-red-500 active:scale-95"
                 aria-label="Close player"
               >
                 <FiX size={18} />
