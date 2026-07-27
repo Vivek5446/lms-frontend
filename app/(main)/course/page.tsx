@@ -1,6 +1,6 @@
 "use client";
 
-import { CourseCard } from "@/app/(main)/course/component/CourseCard";
+import { CourseCard, CourseCardSkeleton } from "@/app/(main)/course/component/CourseCard";
 import MyCoursesBoard from "@/app/(main)/course/component/MyCoursesBoard";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import stores from "@/app/store/stores";
@@ -19,23 +19,20 @@ import {
   Heading,
   HStack,
   Icon,
-  Image,
   Input,
   InputGroup,
   InputLeftElement,
   Select,
   SimpleGrid,
-  Spinner,
   Text,
   useColorModeValue,
   useDisclosure,
   useToken,
   VStack
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiArrowRight,
   FiBookOpen,
@@ -46,28 +43,6 @@ import {
 } from "react-icons/fi";
 
 type CatalogSort = "latest" | "popularity" | "price_asc" | "price_desc" | "highest_rated";
-const MotionBox = motion(Box);
-
-
-function AssessmentBadge({ summary }: { summary?: any }) {
-  if (!summary || summary.outcome === "not_configured") {
-    return null;
-  }
-
-  const colorScheme = summary.outcome === "passed" ? "green" : summary.outcome === "failed" ? "red" : "orange";
-  const label =
-    summary.outcome === "passed"
-      ? "Passed"
-      : summary.outcome === "failed"
-        ? "Failed"
-        : "Assessment Pending";
-
-  return (
-    <Badge colorScheme={colorScheme} borderRadius="full" px={3} py={1} size={'sm'} fontSize={'xs'}>
-      {label}
-    </Badge>
-  );
-}
 
 const CoursesPage = observer(function CoursesPage() {
   const router = useRouter();
@@ -83,9 +58,10 @@ const CoursesPage = observer(function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [pricingFilter, setPricingFilter] = useState<"all" | "free" | "paid">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [courseTypeFilter, setCourseTypeFilter] = useState<"all" | "standard" | "scorm">("all");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [sortBy, setSortBy] = useState<CatalogSort>("latest");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(initialSearch);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const heroBg = useColorModeValue(
     "linear-gradient(135deg, var(--chakra-colors-brand-50) 0%, #ffffff 48%, var(--chakra-colors-brand-100) 100%)",
@@ -127,7 +103,6 @@ const CoursesPage = observer(function CoursesPage() {
   ]);
 
   useEffect(() => {
-    stores.courseStore.fetchPublicCourses().catch(() => undefined);
     if (isLearner) {
       stores.courseStore.fetchMyCourses().catch(() => undefined);
     }
@@ -137,12 +112,41 @@ const CoursesPage = observer(function CoursesPage() {
     setSearchQuery(initialSearch);
   }, [initialSearch]);
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
+
   const publicCourses = stores.courseStore.publicCourses || [];
+  const publicCoursesMeta = stores.courseStore.publicCoursesMeta;
   const assignedCourses = stores.courseStore.myCourses || [];
   const enrolledCourseIds = useMemo(
     () => new Set(assignedCourses.map((course) => String(course.courseId || "").trim()).filter(Boolean)),
     [assignedCourses]
   );
+
+  const catalogRequestParams = useMemo(
+    () => ({
+      limit: 12,
+      search: debouncedSearchQuery || undefined,
+      pricingModel: pricingFilter !== "all" ? pricingFilter : undefined,
+      category: categoryFilter !== "all" ? categoryFilter : undefined,
+      language: languageFilter !== "all" ? languageFilter : undefined,
+      sortBy,
+    }),
+    [categoryFilter, debouncedSearchQuery, languageFilter, pricingFilter, sortBy]
+  );
+
+  useEffect(() => {
+    if (requestedCourseId) {
+      return;
+    }
+
+    stores.courseStore.fetchPublicCourses(catalogRequestParams).catch(() => undefined);
+  }, [catalogRequestParams, requestedCourseId]);
 
   useEffect(() => {
     if (requestedEnrollmentCourseId) {
@@ -150,87 +154,55 @@ const CoursesPage = observer(function CoursesPage() {
     }
   }, [requestedEnrollmentCourseId, router]);
 
-  const availableCategories = useMemo(() => {
-    const categories = new Set<string>();
-    publicCourses.forEach((course) => {
-      (course.taxonomy?.categories || []).forEach((category) => {
-        if (category) categories.add(category);
-      });
-    });
-    return ["all", ...Array.from(categories).sort((left, right) => left.localeCompare(right))];
-  }, [publicCourses]);
+  const availableCategories = useMemo(
+    () => ["all", ...(publicCoursesMeta.availableCategories || [])],
+    [publicCoursesMeta.availableCategories]
+  );
 
-  const availableLanguages = useMemo(() => {
-    const languages = new Set<string>();
-    publicCourses.forEach((course) => {
-      (course.taxonomy?.languages || []).forEach((language) => {
-        if (language) languages.add(language);
-      });
-    });
-    return ["all", ...Array.from(languages).sort((left, right) => left.localeCompare(right))];
-  }, [publicCourses]);
+  const availableLanguages = useMemo(
+    () => ["all", ...(publicCoursesMeta.availableLanguages || [])],
+    [publicCoursesMeta.availableLanguages]
+  );
 
-  const filteredPublicCourses = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    const nextCourses = publicCourses.filter((course) => {
-      const searchableText = [
-        course.title,
-        course.description?.text,
-        course.taxonomy?.level,
-        ...(course.taxonomy?.categories || []),
-        ...(course.taxonomy?.languages || []),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+  const featuredAssignedCourses = useMemo(() => assignedCourses.slice(0, 4), [assignedCourses]);
+  const isInitialPublicCoursesLoading =
+    stores.courseStore.isPublicCoursesLoading && publicCourses.length === 0;
 
-      if (query && !searchableText.includes(query)) {
-        return false;
-      }
+  useEffect(() => {
+    if (requestedCourseId) {
+      return;
+    }
 
-      if (pricingFilter !== "all" && course.commerce?.pricingModel !== pricingFilter) {
-        return false;
-      }
+    const target = loadMoreRef.current;
+    if (!target) {
+      return;
+    }
 
-      if (categoryFilter !== "all" && !(course.taxonomy?.categories || []).includes(categoryFilter)) {
-        return false;
-      }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (
+          entry?.isIntersecting &&
+          stores.courseStore.publicCoursesMeta.hasMore &&
+          !stores.courseStore.isPublicCoursesLoading &&
+          !stores.courseStore.isPublicCoursesLoadingMore
+        ) {
+          stores.courseStore.loadMorePublicCourses().catch(() => undefined);
+        }
+      },
+      { rootMargin: "320px 0px" }
+    );
 
-      if (courseTypeFilter !== "all" && course.courseType !== courseTypeFilter) {
-        return false;
-      }
-
-      if (languageFilter !== "all" && !(course.taxonomy?.languages || []).includes(languageFilter)) {
-        return false;
-      }
-
-      return true;
-    });
-
-    nextCourses.sort((left, right) => {
-      if (sortBy === "popularity") {
-        return (right.metrics?.popularityScore || 0) - (left.metrics?.popularityScore || 0);
-      }
-
-      if (sortBy === "price_asc") {
-        return Number(left.commerce?.amountInRupees || 0) - Number(right.commerce?.amountInRupees || 0);
-      }
-
-      if (sortBy === "price_desc") {
-        return Number(right.commerce?.amountInRupees || 0) - Number(left.commerce?.amountInRupees || 0);
-      }
-
-      if (sortBy === "highest_rated") {
-        return (right.metrics?.averageRating || 0) - (left.metrics?.averageRating || 0);
-      }
-
-      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
-    });
-
-    return nextCourses;
-  }, [categoryFilter, courseTypeFilter, languageFilter, pricingFilter, publicCourses, searchQuery, sortBy]);
-
-  const featuredAssignedCourses = useMemo(() => assignedCourses.slice(0, 3), [assignedCourses]);
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [
+    publicCourses.length,
+    requestedCourseId,
+    stores.courseStore,
+    stores.courseStore.publicCoursesMeta.hasMore,
+    stores.courseStore.isPublicCoursesLoading,
+    stores.courseStore.isPublicCoursesLoadingMore,
+  ]);
 
   if (requestedCourseId) {
     return (
@@ -271,7 +243,7 @@ const FilterPanel = (
       />
     </InputGroup>
 
-    <SimpleGrid columns={{ base: 1, md: 4 }} spacing={2.5}>
+    <SimpleGrid columns={{ base: 1, md: 3 }} spacing={2.5}>
       <Select
         value={pricingFilter}
         onChange={(event) =>
@@ -294,18 +266,6 @@ const FilterPanel = (
             {category === "all" ? "Category" : category}
           </option>
         ))}
-      </Select>
-
-      <Select
-        value={courseTypeFilter}
-        onChange={(event) =>
-          setCourseTypeFilter(event.target.value as typeof courseTypeFilter)
-        }
-        {...filterInputStyles}
-      >
-        <option value="all">Type</option>
-        <option value="standard">Standard</option>
-        <option value="scorm">SCORM</option>
       </Select>
 
       <Select
@@ -425,7 +385,7 @@ const FilterPanel = (
               color: brand700,
               colorBg: brand50,
               label: "Courses",
-              value: publicCourses.length,
+              value: publicCoursesMeta.total,
             },
             {
               icon: FiTrendingUp,
@@ -557,7 +517,7 @@ const FilterPanel = (
         textTransform="none"
         fontSize="xs"
       >
-        {publicCourses.length} total
+        {publicCoursesMeta.total} total
       </Badge>
     </HStack>
 
@@ -594,7 +554,6 @@ const FilterPanel = (
           setSearchQuery("");
           setPricingFilter("all");
           setCategoryFilter("all");
-          setCourseTypeFilter("all");
           setLanguageFilter("all");
           setSortBy("latest");
         }}
@@ -630,69 +589,33 @@ const FilterPanel = (
               </Button>
             </Flex>
 
-            <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={{ base: 4, md: 5 }}>
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={{ base: 4, md: 5 }}>
               {featuredAssignedCourses.map((course) => (
-                <MotionBox
+                <Box
                   key={course.courseId}
-                  whileHover={{ y: -6 }}
-                  bg={cardBg}
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                  borderRadius="2xl"
-                  overflow="hidden"
-                  boxShadow="0 18px 45px rgba(15, 23, 42, 0.06)"
-                  cursor="pointer"
                   onClick={() => router.push(`/course?courseId=${course.courseId}`)}
                 >
-                  <Box position="relative">
-                    {course.thumbnailUrl ? (
-                    <Image src={course.thumbnailUrl} alt={course.title} h={{ base: "112px", sm: "140px", md: "190px" }} w="full" objectFit="cover" />
-                  ) : (
-                      <Box h={{ base: "112px", sm: "140px", md: "190px" }} bgGradient="linear(to-br, brand.600, brand.300)" />
-                    )}
-                    <Badge position="absolute" top={{ base: 3, md: 4 }} left={{ base: 3, md: 4 }} colorScheme="blue" borderRadius="full" px={3} py={1}>
-                      Private
-                    </Badge>
-                  </Box>
-
-                  <Box p={{ base: 3, md: 5 }}>
-                    <HStack spacing={2} flexWrap="wrap" mb={3}>
-                      <Badge colorScheme="gray" borderRadius="full" px={3} py={1}>
-                        {course.taxonomy?.level || "Beginner"}
-                      </Badge>
-                      <AssessmentBadge summary={course.assessmentSummary} />
-                    </HStack>
-                    <Heading size={{ base: "sm", md: "md" }} mb={2} noOfLines={2}>{course.title}</Heading>
-                    <Text fontSize="sm" color={mutedText} noOfLines={2} display={{ base: "none", md: "block" }}>
-                      {course.description?.text || "Assigned privately by your organization."}
-                    </Text>
-
-                    <HStack justify="space-between" mt={4}>
-                      <Text fontSize="sm" fontWeight="700" color="blue.500">
-                        {Math.round(Number(course.progress || 0))}% complete
-                      </Text>
-                      <Text fontSize="sm" color={softText}>
-                        {course.status === "completed" ? "Completed" : "In progress"}
-                      </Text>
-                    </HStack>
-
-                    <Button
-                      mt={{ base: 3, md: 4 }}
-                      h={{ base: "34px", md: "40px" }}
-                      w="full"
-                      size={{ base: "sm", md: "md" }}
-                      variant="outline"
-                      colorScheme="blue"
-                      borderRadius="xl"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        router.push(`/course?courseId=${course.courseId}`);
-                      }}
-                    >
-                      Continue Course
-                    </Button>
-                  </Box>
-                </MotionBox>
+                  <CourseCard
+                    course={{
+                      ...course,
+                      _id: course.courseId,
+                      courseType: undefined,
+                      commerce: {
+                        pricingModel: course.commerce?.pricingModel || "free",
+                        amountInRupees: course.commerce?.amountInRupees ?? 0,
+                      },
+                      metrics: {
+                        averageRating: course.assessmentSummary?.scorePercentage
+                          ? Math.min(5, Math.max(0, Number(course.assessmentSummary.scorePercentage) / 20))
+                          : null,
+                        enrolledCount: 0,
+                      },
+                    }}
+                    primaryBadgeLabel="Private"
+                    secondaryBadgeLabel={null}
+                    onClick={() => router.push(`/course?courseId=${course.courseId}`)}
+                  />
+                </Box>
               ))}
             </SimpleGrid>
           </Box>
@@ -711,7 +634,7 @@ const FilterPanel = (
             </Text>
             <Heading size={{ base: "md", md: "lg" }} mt={1}>Public learning catalog</Heading>
                 <Text mt={2} color={mutedText} display={{ base: "none", md: "block" }}>
-                  {filteredPublicCourses.length} course{filteredPublicCourses.length === 1 ? "" : "s"} match your current filters.
+                  {publicCoursesMeta.total} course{publicCoursesMeta.total === 1 ? "" : "s"} match your current filters.
                 </Text>
           </Box>
 
@@ -729,30 +652,47 @@ const FilterPanel = (
           </Button>
         </Flex>
 
-        {stores.courseStore.isPublicCoursesLoading ? (
-          <HStack justify="center" py={20}>
-            <Spinner color="blue.500" />
-            <Text color={mutedText}>Loading public courses...</Text>
-          </HStack>
-        ) : filteredPublicCourses.length === 0 ? (
+        {isInitialPublicCoursesLoading ? (
+          <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={{ base: 4, md: 5 }}>
+            {Array.from({ length: 12 }).map((_, index) => (
+              <CourseCardSkeleton key={`course-card-skeleton-${index}`} />
+            ))}
+          </SimpleGrid>
+        ) : publicCourses.length === 0 ? (
           <Box textAlign="center" py={16} borderRadius="2xl" bg={cardBg} borderWidth="1px" borderColor={borderColor}>
             <Icon as={FiBookOpen} boxSize={8} color="gray.400" />
             <Heading size="md" mt={4}>No public courses found</Heading>
             <Text mt={2} color={mutedText}>Try changing your search or filters to broaden the results.</Text>
           </Box>
         ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={{ base: 4, md: 5 }}>
-            {filteredPublicCourses.map((course) => (
-              <CourseCard
-                key={course._id}
-                course={course}
-                enrolled={enrolledCourseIds.has(String(course._id))}
-                onClick={() => {
-                  router.push(`/course?courseId=${course._id}`);
-                }}
-              />
-            ))}
-          </SimpleGrid>
+          <>
+            <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={{ base: 4, md: 5 }}>
+              {publicCourses.map((course) => (
+                <CourseCard
+                  key={course._id}
+                  course={course}
+                  enrolled={enrolledCourseIds.has(String(course._id))}
+                  onClick={() => {
+                    router.push(`/course?courseId=${course._id}`);
+                  }}
+                />
+              ))}
+
+              {stores.courseStore.isPublicCoursesLoadingMore
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <CourseCardSkeleton key={`course-card-loading-more-${index}`} />
+                  ))
+                : null}
+            </SimpleGrid>
+
+            <Box ref={loadMoreRef} h="1px" mt={6} />
+
+            {!publicCoursesMeta.hasMore && publicCourses.length > 0 ? (
+              <Text mt={6} textAlign="center" color={softText} fontSize="sm">
+                You&apos;ve reached the end of the catalog.
+              </Text>
+            ) : null}
+          </>
         )}
       </Box>
 

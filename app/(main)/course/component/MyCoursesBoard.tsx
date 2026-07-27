@@ -174,6 +174,23 @@ const MyCoursesBoard = observer(
       }
     }, [basePath, isCourseEnrolled, requestedCourseId, router, toast]);
 
+    useEffect(() => {
+      if (!requestedCourseId || isCourseEnrolled) {
+        return;
+      }
+
+      const normalizedCourseId = String(requestedCourseId).trim();
+      const hasCourseInCatalog = (courseStore.publicCourses || []).some(
+        (course) => String(course._id || "").trim() === normalizedCourseId
+      );
+
+      if (hasCourseInCatalog) {
+        return;
+      }
+
+      courseStore.fetchCourse(normalizedCourseId).catch(() => undefined);
+    }, [courseStore.publicCourses, isCourseEnrolled, requestedCourseId]);
+
     const activeCourse = useMemo(() => {
       if (!requestedCourseId) {
         return null;
@@ -487,7 +504,7 @@ const MyCoursesBoard = observer(
     if (requestedCourseId) {
       const isLoadingCourse =
         (isCourseEnrolled && courseStore.isMyCourseDetailLoading && !activeCourse) ||
-        (!isCourseEnrolled && courseStore.isPublicCoursesLoading && !activeCourse);
+        (!isCourseEnrolled && (courseStore.isPublicCoursesLoading || courseStore.isLoading) && !activeCourse);
 
       if (isLoadingCourse) {
         return (

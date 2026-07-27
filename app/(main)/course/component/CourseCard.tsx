@@ -11,6 +11,8 @@ import {
   Icon,
   useColorModeValue,
   Center,
+  Skeleton,
+  SkeletonText,
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import {
@@ -22,6 +24,7 @@ import {
   FiPenTool,
   FiTarget,
 } from 'react-icons/fi';
+import type { ReactNode } from 'react';
 
 const MotionBox = motion(Box);
 
@@ -41,6 +44,9 @@ interface CourseCardProps {
   course: any;
   enrolled?: boolean;
   onClick: () => void;
+  primaryBadgeLabel?: string;
+  secondaryBadgeLabel?: string | null;
+  topRightBadge?: ReactNode;
 }
 
 const getCardTheme = (title: string = '') => {
@@ -63,7 +69,14 @@ const getCardTheme = (title: string = '') => {
   return themes[Math.abs(title.charCodeAt(0) || 0) % themes.length];
 };
 
-export const CourseCard = ({ course, enrolled, onClick }: CourseCardProps) => {
+export const CourseCard = ({
+  course,
+  enrolled,
+  onClick,
+  primaryBadgeLabel = 'Public',
+  secondaryBadgeLabel = course?.courseType === 'scorm' ? 'SCORM' : 'Standard',
+  topRightBadge,
+}: CourseCardProps) => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.100', 'gray.700');
   const mutedText = useColorModeValue('gray.500', 'gray.400');
@@ -149,24 +162,30 @@ export const CourseCard = ({ course, enrolled, onClick }: CourseCardProps) => {
             textTransform="uppercase"
             boxShadow="0 1px 3px rgba(0,0,0,0.08)"
           >
-            Public
+            {primaryBadgeLabel}
           </Badge>
-          <Badge
-            bg="rgba(255,255,255,0.95)"
-            color="gray.700"
-            borderRadius="full"
-            px={2.5}
-            py={1}
-            fontSize="10px"
-            fontWeight="bold"
-            textTransform="uppercase"
-            boxShadow="0 1px 3px rgba(0,0,0,0.08)"
-          >
-            {course.courseType === 'scorm' ? 'SCORM' : 'Standard'}
-          </Badge>
+          {secondaryBadgeLabel ? (
+            <Badge
+              bg="rgba(255,255,255,0.95)"
+              color="gray.700"
+              borderRadius="full"
+              px={2.5}
+              py={1}
+              fontSize="10px"
+              fontWeight="bold"
+              textTransform="uppercase"
+              boxShadow="0 1px 3px rgba(0,0,0,0.08)"
+            >
+              {secondaryBadgeLabel}
+            </Badge>
+          ) : null}
         </HStack>
 
-        {enrolled && (
+        {topRightBadge ? (
+          <Box position="absolute" top={3} right={3} zIndex={1}>
+            {topRightBadge}
+          </Box>
+        ) : enrolled ? (
           <Badge
             position="absolute"
             top={3}
@@ -184,7 +203,7 @@ export const CourseCard = ({ course, enrolled, onClick }: CourseCardProps) => {
           >
             Enrolled
           </Badge>
-        )}
+        ) : null}
       </Box>
 
       {/* CONTENT AREA */}
@@ -288,5 +307,63 @@ export const CourseCard = ({ course, enrolled, onClick }: CourseCardProps) => {
         </HStack>
       </VStack>
     </MotionBox>
+  );
+};
+
+export const CourseCardSkeleton = () => {
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.100', 'gray.700');
+  const footerBorder = useColorModeValue('gray.100', 'gray.700');
+
+  return (
+    <Box
+      bg={cardBg}
+      borderWidth="1px"
+      borderColor={borderColor}
+      borderRadius={{ base: 'xl', md: '2xl' }}
+      overflow="hidden"
+      boxShadow="sm"
+      display="flex"
+      flexDirection="column"
+      height="100%"
+      w="full"
+    >
+      <Skeleton h={{ base: '140px', md: '176px' }} />
+
+      <VStack
+        p={{ base: 4, md: 5 }}
+        align="stretch"
+        spacing={{ base: 2.5, md: 3 }}
+        flex="1"
+      >
+        <HStack spacing={1.5}>
+          <Skeleton h="20px" w="74px" borderRadius="full" />
+          <Skeleton h="20px" w="82px" borderRadius="full" />
+        </HStack>
+
+        <Box>
+          <Skeleton h={{ base: '20px', md: '24px' }} w="78%" mb={2} />
+          <Box display={{ base: 'none', md: 'block' }}>
+            <SkeletonText noOfLines={2} spacing={3} skeletonHeight={3} />
+            <HStack spacing={4} mt={3}>
+              <Skeleton h="14px" w="44px" />
+              <Skeleton h="14px" w="36px" />
+            </HStack>
+          </Box>
+        </Box>
+
+        <HStack
+          justify="space-between"
+          align="center"
+          pt={{ base: 3, md: 4 }}
+          mt="auto"
+          borderTopWidth="1px"
+          borderColor={footerBorder}
+        >
+          <Skeleton h="18px" w="72px" />
+          <Skeleton h="18px" w="44px" />
+        </HStack>
+      </VStack>
+    </Box>
   );
 };

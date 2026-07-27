@@ -318,6 +318,15 @@ export interface PublicCourseItem extends CourseListItem {
   };
 }
 
+export interface PublicCourseCatalogMeta {
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+  availableCategories: string[];
+  availableLanguages: string[];
+}
+
 export interface CourseAssignmentAuditItem {
   _id: string;
   user?: {
@@ -618,11 +627,40 @@ function createClientUploadId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function serializeCatalogParams(params: Record<string, unknown>) {
+  const normalizedEntries = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
+    .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey));
+
+  return JSON.stringify(normalizedEntries);
+}
+
+function mergeUniquePublicCourses(items: PublicCourseItem[]) {
+  const uniqueItems = new Map<string, PublicCourseItem>();
+
+  items.forEach((item) => {
+    const courseId = String(item?._id || "").trim();
+    if (courseId) {
+      uniqueItems.set(courseId, item);
+    }
+  });
+
+  return Array.from(uniqueItems.values());
+}
+
 class CourseStoreClass {
   courses: CourseListItem[] = [];
   categories: CourseCategoryItem[] = [];
   isCategoriesLoading: boolean = false;
   publicCourses: PublicCourseItem[] = [];
+  publicCoursesMeta: PublicCourseCatalogMeta = {
+    total: 0,
+    offset: 0,
+    limit: 12,
+    hasMore: false,
+    availableCategories: [],
+    availableLanguages: [],
+  };
   accessibleCourses: AccessibleCourseItem[] = [];
   assignedCourseAccesses: AssignedCourseAccessItem[] = [];
   myCourses: MyCourseItem[] = [];
@@ -639,6 +677,7 @@ class CourseStoreClass {
   courseQuizzes: CourseQuizForLearner[] = [];
   isLoading: boolean = false;
   isPublicCoursesLoading: boolean = false;
+  isPublicCoursesLoadingMore: boolean = false;
   isAccessLoading: boolean = false;
   isAssignedCoursesLoading: boolean = false;
   isMyCoursesLoading: boolean = false;
@@ -657,6 +696,9 @@ class CourseStoreClass {
   error: string | null = null;
   accessError: string | null = null;
   draftCourseCode: string = "";
+  currentPublicCourseParams: Record<string, unknown> = {};
+  private publicCoursesRequestId: number = 0;
+  private publicCoursesQueryKey: string = "";
 
   constructor() {
     makeAutoObservable(this);
@@ -1049,7 +1091,7 @@ class CourseStoreClass {
       const { data } = await axios.post(`/courses/${normalizedCourseId}/enroll`);
       await Promise.all([
         this.fetchMyCourses(),
-        this.fetchPublicCourses(),
+        this.fetchPublicCourses(this.currentPublicCourseParams),
       ]);
       return data;
     } catch (err: any) {
@@ -1419,25 +1461,106 @@ class CourseStoreClass {
     }
   };
 
-  fetchPublicCourses = async (params: Record<string, unknown> = {}) => {
-    this.isPublicCoursesLoading = true;
-    this.error = null;
+  fetchPublicCourses = async (
+    params: Record<string, unknown> = {},
+    options: { append?: boolean } = {}
+  ) => {
+    const append = options.append === true;
+    const nextLimit = Number(params.limit || this.publicCoursesMeta.limit || 12) || 12;
+    const nextOffset = append
+      ? Number(params.offset ?? this.publicCourses.length)
+      : Number(params.offset || 0);
+    const normalizedParams = {
+      ...params,
+      limit: nextLimit,
+      offset: nextOffset,
+    };
+    const queryParams = {
+      ...normalizedParams,
+    };
+    delete queryParams.offset;
+    delete queryParams.limit;
+
+    const nextQueryKey = serializeCatalogParams(queryParams);
+    if (append) {
+      if (
+        this.isPublicCoursesLoading ||
+        this.isPublicCoursesLoadingMore ||
+        !this.publicCoursesMeta.hasMore ||
+        nextQueryKey !== this.publicCoursesQueryKey
+      ) {
+        return this.publicCourses;
+      }
+    }
+
+    const requestId = this.publicCoursesRequestId + 1;
+    this.publicCoursesRequestId = requestId;
+
+    runInAction(() => {
+      if (append) {
+        this.isPublicCoursesLoadingMore = true;
+      } else {
+        this.isPublicCoursesLoading = true;
+      }
+      this.error = null;
+    });
+
     try {
-      const { data } = await axios.get("/course/public", { params });
+      const { data } = await axios.get("/course/public", { params: normalizedParams });
+      if (requestId !== this.publicCoursesRequestId) {
+        return data.data || [];
+      }
+
+      const incomingCourses = Array.isArray(data.data) ? data.data : [];
+      const meta = data.meta || {};
       runInAction(() => {
-        this.publicCourses = data.data || [];
+        this.publicCourses = append
+          ? mergeUniquePublicCourses([...this.publicCourses, ...incomingCourses])
+          : mergeUniquePublicCourses(incomingCourses);
+        this.publicCoursesMeta = {
+          total: Number(meta.total || 0),
+          offset: Number(meta.offset || nextOffset),
+          limit: Number(meta.limit || nextLimit),
+          hasMore: Boolean(meta.hasMore),
+          availableCategories: Array.isArray(meta.availableCategories) ? meta.availableCategories : [],
+          availableLanguages: Array.isArray(meta.availableLanguages) ? meta.availableLanguages : [],
+        };
+        this.currentPublicCourseParams = queryParams;
+        this.publicCoursesQueryKey = nextQueryKey;
       });
-      return data.data || [];
+      return incomingCourses;
     } catch (err: any) {
       runInAction(() => {
         this.error = err?.response?.data?.error || "Failed to fetch public courses";
       });
       return Promise.reject(err?.response?.data || err);
     } finally {
-      runInAction(() => {
-        this.isPublicCoursesLoading = false;
-      });
+      if (requestId === this.publicCoursesRequestId) {
+        runInAction(() => {
+          this.isPublicCoursesLoading = false;
+          this.isPublicCoursesLoadingMore = false;
+        });
+      }
     }
+  };
+
+  loadMorePublicCourses = async () => {
+    if (
+      this.isPublicCoursesLoading ||
+      this.isPublicCoursesLoadingMore ||
+      !this.publicCoursesMeta.hasMore
+    ) {
+      return this.publicCourses;
+    }
+
+    return this.fetchPublicCourses(
+      {
+        ...this.currentPublicCourseParams,
+        limit: this.publicCoursesMeta.limit || 12,
+        offset: this.publicCourses.length,
+      },
+      { append: true }
+    );
   };
 
   fetchSectionProgress = async (params: {
