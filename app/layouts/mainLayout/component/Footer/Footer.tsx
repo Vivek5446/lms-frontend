@@ -53,7 +53,7 @@ export const Footer: React.FC = () => {
       borderTop="1px solid"
       borderColor={footerBorder}
       pt={{ base: 7, md: 10 }}
-      pb={{ base: "96px", md: 7 }}
+      pb={{ base: "26px", md: 7 }}
     >
       <Container maxW="full" px={{ base: 4, md: 6 }}>
         <Box
