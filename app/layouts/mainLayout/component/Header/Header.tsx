@@ -151,8 +151,7 @@ const Header: React.FC = observer(() => {
           <Flex align="center" justify="space-between" gap={4} position="relative" w="100%">
             {/* Left Section (Logo) */}
             <Box flex={{ base: "none", md: 1 }} display="flex" alignItems="center">
-              <NextLink href="/">
-              <ChakraLink _hover={{ textDecoration: 'none' }} display="flex" alignItems="center" gap={{ base: 1, md: 3 }}>
+              <ChakraLink as={NextLink} href="/" _hover={{ textDecoration: 'none' }} display="flex" alignItems="center" gap={{ base: 1, md: 3 }}>
                 <Box transition="transform 0.4s ease" _hover={{ transform: 'scale(1.06) rotate(-2deg)' }}>
                   <Image
                     src="https://www.lmscert.com/Logo%20LMS%20-1-.svg"
@@ -172,7 +171,6 @@ const Header: React.FC = observer(() => {
                   CRAFT
                 </Text>
               </ChakraLink>
-              </NextLink>
             </Box>
 
             {/* Center Section (Navigation) */}

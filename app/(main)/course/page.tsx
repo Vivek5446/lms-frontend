@@ -2,6 +2,8 @@
 
 import { CourseCard, CourseCardSkeleton } from "@/app/(main)/course/component/CourseCard";
 import MyCoursesBoard from "@/app/(main)/course/component/MyCoursesBoard";
+import { CoursePreviewDrawer } from "@/app/(main)/course/component/CoursePreviewDrawer";
+import { CourseFilterControls } from "@/app/(main)/course/component/CourseFilterControls";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import stores from "@/app/store/stores";
 import {
@@ -19,21 +21,26 @@ import {
   Heading,
   HStack,
   Icon,
+  Image,
   Input,
   InputGroup,
   InputLeftElement,
   SimpleGrid,
   Text,
+  useBreakpointValue,
   useColorModeValue,
   useDisclosure,
   useToken,
   VStack,
+  IconButton,
+  Circle,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { observer } from "mobx-react-lite";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  FiArrowLeft,
   FiArrowRight,
   FiBookOpen,
   FiCheck,
@@ -43,6 +50,7 @@ import {
   FiFilter,
   FiGlobe,
   FiGrid,
+  FiLayers,
   FiPlayCircle,
   FiSearch,
   FiStar,
@@ -52,8 +60,8 @@ import {
   FiZap,
 } from "react-icons/fi";
 
-type CatalogSort = "latest" | "popularity" | "price_asc" | "price_desc" | "highest_rated";
-type PricingFilter = "all" | "free" | "paid";
+export type CatalogSort = "latest" | "popularity" | "price_asc" | "price_desc" | "highest_rated";
+export type PricingFilter = "all" | "free" | "paid";
 
 const floatAnimation = keyframes`
   0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); }
@@ -94,6 +102,7 @@ const CoursesPage = observer(function CoursesPage() {
   const [languageFilter, setLanguageFilter] = useState("all");
   const [sortBy, setSortBy] = useState<CatalogSort>("latest");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(initialSearch);
+  const [selectedPreviewCourse, setSelectedPreviewCourse] = useState<any | null>(null);
 
   const catalogSectionRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -132,6 +141,7 @@ const CoursesPage = observer(function CoursesPage() {
     "brand.200",
     "brand.400",
   ]);
+
 
   useEffect(() => {
     if (isLearner) {
@@ -383,311 +393,7 @@ const CoursesPage = observer(function CoursesPage() {
     },
   ];
 
-  const renderFilterControls = (showSearch: boolean) => (
-    <VStack align="stretch" spacing={5}>
-      {showSearch ? (
-        <Box>
-          <Text
-            mb={2}
-            fontSize="xs"
-            fontWeight="800"
-            color={softText}
-            textTransform="uppercase"
-            letterSpacing="0.08em"
-          >
-            Find a course
-          </Text>
-          <InputGroup>
-            <InputLeftElement h="42px" pointerEvents="none">
-              <Icon as={FiSearch} color={softText} />
-            </InputLeftElement>
-            <Input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search courses..."
-              pl={10}
-              {...searchInputStyles}
-            />
-          </InputGroup>
-        </Box>
-      ) : null}
 
-      <Box>
-        <HStack mb={2.5} spacing={2}>
-          <Box
-            w="28px"
-            h="28px"
-            display="grid"
-            placeItems="center"
-            borderRadius="lg"
-            bg="brand.50"
-            color="brand.700"
-          >
-            <Icon as={FiDollarSign} fontSize="sm" />
-          </Box>
-          <Box>
-            <Text fontSize="sm" fontWeight="800" lineHeight="1.1">
-              Pricing
-            </Text>
-            <Text fontSize="xs" color={softText}>
-              Choose what suits you
-            </Text>
-          </Box>
-        </HStack>
-
-        <Grid templateColumns="repeat(3, minmax(0, 1fr))" gap={2}>
-          {[
-            { value: "all" as PricingFilter, label: "All" },
-            { value: "free" as PricingFilter, label: "Free" },
-            { value: "paid" as PricingFilter, label: "Paid" },
-          ].map((option) => {
-            const isActive = pricingFilter === option.value;
-
-            return (
-              <Button
-                key={option.value}
-                h="36px"
-                px={2}
-                size="sm"
-                borderRadius="xl"
-                variant={isActive ? "solid" : "outline"}
-                colorScheme="brand"
-                borderColor={isActive ? "brand.500" : borderColor}
-                fontSize="xs"
-                onClick={() => setPricingFilter(option.value)}
-                transition="all 0.2s ease"
-                _hover={{ transform: "translateY(-1px)", borderColor: "brand.300" }}
-              >
-                {option.label}
-              </Button>
-            );
-          })}
-        </Grid>
-      </Box>
-
-      <Box>
-        <HStack mb={2.5} spacing={2}>
-          <Box
-            w="28px"
-            h="28px"
-            display="grid"
-            placeItems="center"
-            borderRadius="lg"
-            bg="brand.50"
-            color="brand.700"
-          >
-            <Icon as={FiGrid} fontSize="sm" />
-          </Box>
-          <Box>
-            <Text fontSize="sm" fontWeight="800" lineHeight="1.1">
-              Categories
-            </Text>
-            <Text fontSize="xs" color={softText}>
-              Pick an area to explore
-            </Text>
-          </Box>
-        </HStack>
-
-        <Flex
-          gap={2}
-          flexWrap="wrap"
-          maxH="148px"
-          overflowY="auto"
-          pr={1}
-          css={hiddenScrollbarCss}
-        >
-          {availableCategories.map((category) => {
-            const isActive = categoryFilter === category;
-
-            return (
-              <Button
-                key={category}
-                size="xs"
-                h="30px"
-                px={3}
-                maxW="100%"
-                borderRadius="full"
-                variant={isActive ? "solid" : "outline"}
-                colorScheme="brand"
-                borderColor={isActive ? "brand.500" : borderColor}
-                leftIcon={category === "all" ? <FiGrid /> : <FiTag />}
-                onClick={() => setCategoryFilter(category)}
-                transition="all 0.2s ease"
-                _hover={{ transform: "translateY(-1px)", borderColor: "brand.300" }}
-              >
-                <Text as="span" noOfLines={1}>
-                  {category === "all" ? "All topics" : category}
-                </Text>
-              </Button>
-            );
-          })}
-        </Flex>
-      </Box>
-
-      <Box>
-        <HStack mb={2.5} spacing={2}>
-          <Box
-            w="28px"
-            h="28px"
-            display="grid"
-            placeItems="center"
-            borderRadius="lg"
-            bg="brand.50"
-            color="brand.700"
-          >
-            <Icon as={FiGlobe} fontSize="sm" />
-          </Box>
-          <Box>
-            <Text fontSize="sm" fontWeight="800" lineHeight="1.1">
-              Language
-            </Text>
-            <Text fontSize="xs" color={softText}>
-              Learn in your preferred language
-            </Text>
-          </Box>
-        </HStack>
-
-        <Flex
-          gap={2}
-          flexWrap="wrap"
-          maxH="112px"
-          overflowY="auto"
-          pr={1}
-          css={hiddenScrollbarCss}
-        >
-          {availableLanguages.map((language) => {
-            const isActive = languageFilter === language;
-
-            return (
-              <Button
-                key={language}
-                size="xs"
-                h="30px"
-                px={3}
-                maxW="100%"
-                borderRadius="full"
-                variant={isActive ? "solid" : "outline"}
-                colorScheme="brand"
-                borderColor={isActive ? "brand.500" : borderColor}
-                onClick={() => setLanguageFilter(language)}
-                transition="all 0.2s ease"
-                _hover={{ transform: "translateY(-1px)", borderColor: "brand.300" }}
-              >
-                <Text as="span" noOfLines={1}>
-                  {language === "all" ? "Every language" : language}
-                </Text>
-              </Button>
-            );
-          })}
-        </Flex>
-      </Box>
-
-      <Box>
-        <HStack mb={2.5} spacing={2}>
-          <Box
-            w="28px"
-            h="28px"
-            display="grid"
-            placeItems="center"
-            borderRadius="lg"
-            bg="brand.50"
-            color="brand.700"
-          >
-            <Icon as={FiZap} fontSize="sm" />
-          </Box>
-          <Box>
-            <Text fontSize="sm" fontWeight="800" lineHeight="1.1">
-              Arrange courses
-            </Text>
-            <Text fontSize="xs" color={softText}>
-              Set the order that feels right
-            </Text>
-          </Box>
-        </HStack>
-
-        <VStack align="stretch" spacing={2}>
-          {sortOptions.map((option) => {
-            const isActive = sortBy === option.value;
-
-            return (
-              <Button
-                key={option.value}
-                h="auto"
-                minH="52px"
-                py={2.5}
-                px={3}
-                justifyContent="flex-start"
-                textAlign="left"
-                borderRadius="xl"
-                variant="outline"
-                borderColor={isActive ? "brand.400" : borderColor}
-                bg={isActive ? "brand.50" : "transparent"}
-                color={isActive ? "brand.700" : undefined}
-                onClick={() => setSortBy(option.value)}
-                transition="all 0.2s ease"
-                _hover={{
-                  transform: "translateX(2px)",
-                  borderColor: "brand.300",
-                  bg: "brand.50",
-                }}
-              >
-                <Box
-                  w="31px"
-                  h="31px"
-                  flexShrink={0}
-                  display="grid"
-                  placeItems="center"
-                  borderRadius="lg"
-                  bg={isActive ? "brand.500" : "brand.50"}
-                  color={isActive ? "white" : "brand.700"}
-                >
-                  <Icon as={option.icon} fontSize="sm" />
-                </Box>
-
-                <Box ml={2.5} minW={0} flex="1">
-                  <Text fontSize="xs" fontWeight="800" lineHeight="1.15">
-                    {option.label}
-                  </Text>
-                  <Text mt={0.5} fontSize="10px" color={isActive ? "brand.600" : softText}>
-                    {option.description}
-                  </Text>
-                </Box>
-
-                <Box
-                  w="20px"
-                  h="20px"
-                  ml={2}
-                  flexShrink={0}
-                  display="grid"
-                  placeItems="center"
-                  borderRadius="full"
-                  bg={isActive ? "brand.500" : "transparent"}
-                  color="white"
-                  borderWidth="1px"
-                  borderColor={isActive ? "brand.500" : borderColor}
-                >
-                  {isActive ? <Icon as={FiCheck} fontSize="11px" /> : null}
-                </Box>
-              </Button>
-            );
-          })}
-        </VStack>
-      </Box>
-
-      <Button
-        w="full"
-        h="40px"
-        variant="ghost"
-        color={mutedText}
-        borderRadius="xl"
-        leftIcon={<FiX />}
-        onClick={resetFilters}
-        isDisabled={activeFilterCount === 0}
-      >
-        Clear all filters
-      </Button>
-    </VStack>
-  );
 
   return (
     <Box minH="100vh" bg={pageBg}>
@@ -725,9 +431,9 @@ const CoursesPage = observer(function CoursesPage() {
         />
 
         <Grid
-          maxW="8xl"
+          maxW="full"
           mx="auto"
-          px={{ base: 4, md: 8 }}
+          px={{ base: 4, md: 8, lg: 12, xl: 16 }}
           py={{ base: 5, md: 7 }}
           minH={{ base: "188px", md: "238px" }}
           templateColumns={{ base: "1fr", md: "minmax(0, 1fr) 360px" }}
@@ -943,7 +649,7 @@ const CoursesPage = observer(function CoursesPage() {
         </Grid>
       </Box>
 
-      <Box maxW="8xl" mx="auto" px={{ base: 4, md: 8 }} py={{ base: 6, md: 9 }}>
+      <Box maxW="full" mx="auto" px={{ base: 4, md: 8, lg: 12, xl: 16 }} py={{ base: 6, md: 9 }}>
         {isLearner && featuredAssignedCourses.length > 0 ? (
           <Box mb={{ base: 8, md: 11 }}>
             <Flex justify="space-between" align="center" mb={{ base: 4, md: 5 }} gap={3}>
@@ -1018,32 +724,45 @@ const CoursesPage = observer(function CoursesPage() {
             align={{ base: "flex-start", md: "flex-end" }}
             direction={{ base: "column", md: "row" }}
             gap={{ base: 3, md: 5 }}
-            mb={{ base: 4, md: 6 }}
+            mb={{ base: 5, md: 7 }}
           >
             <Box minW={0}>
               <HStack spacing={2} mb={1}>
                 <Box w="18px" h="3px" borderRadius="full" bg="brand.500" />
                 <Text
                   fontSize="xs"
-                  fontWeight="800"
+                  fontWeight="900"
                   color="brand.600"
                   textTransform="uppercase"
-                  letterSpacing="0.1em"
+                  letterSpacing="0.12em"
                 >
                   Explore
                 </Text>
               </HStack>
-              <Heading size={{ base: "md", md: "lg" }}>Public learning catalog</Heading>
-              <Text mt={1.5} color={mutedText} fontSize={{ base: "sm", md: "md" }}>
+              <Heading fontSize={{ base: "2xl", md: "3xl" }} fontWeight="900" letterSpacing="tight">
+                Public{" "}
+                <Box as="span" bgGradient="linear(to-r, brand.500, brand.700)" bgClip="text">
+                  Learning Catalog
+                </Box>
+              </Heading>
+              <Text mt={1.5} color={mutedText} fontSize="sm" fontWeight="700">
                 {publicCoursesMeta.total} course{publicCoursesMeta.total === 1 ? "" : "s"} match your current view.
               </Text>
             </Box>
 
-            <HStack display={{ base: "none", md: "flex" }} spacing={2} color={softText}>
+            <HStack
+              display={{ base: "none", md: "flex" }}
+              spacing={2}
+              color="brand.500"
+              cursor="pointer"
+              _hover={{ color: "brand.600" }}
+              transition="color 0.2s"
+            >
               <Icon as={FiGlobe} />
-              <Text fontSize="sm" fontWeight="700">
+              <Text fontSize="sm" fontWeight="800">
                 Browse the complete catalog
               </Text>
+              <Icon as={FiArrowRight} />
             </HStack>
           </Flex>
 
@@ -1061,19 +780,43 @@ const CoursesPage = observer(function CoursesPage() {
               />
             </InputGroup>
 
-            <Button
-              h="42px"
-              minW="42px"
-              px={activeFilterCount > 0 ? 3 : 0}
-              colorScheme="brand"
-              variant={activeFilterCount > 0 ? "solid" : "outline"}
-              borderRadius="xl"
-              leftIcon={<FiFilter />}
-              onClick={onOpen}
+            <IconButton
               aria-label="Open course filters"
+              icon={<FiFilter size={18} />}
+              onClick={onOpen}
+              h="42px"
+              w="42px"
+              borderRadius="xl"
+              variant={activeFilterCount > 0 ? "solid" : "outline"}
+              colorScheme="brand"
+              bg={activeFilterCount > 0 ? "brand.500" : useColorModeValue("brand.50", "whiteAlpha.100")}
+              color={activeFilterCount > 0 ? "white" : "brand.600"}
+              borderColor={activeFilterCount > 0 ? "brand.500" : useColorModeValue("brand.100", "whiteAlpha.200")}
+              _hover={{ transform: "scale(1.05)" }}
+              _active={{ transform: "scale(0.95)" }}
+              transition="all 0.2s"
+              position="relative"
             >
-              {activeFilterCount > 0 ? activeFilterCount : ""}
-            </Button>
+              {activeFilterCount > 0 && (
+                <Box
+                  position="absolute"
+                  top="-6px"
+                  right="-6px"
+                  bg="red.500"
+                  color="white"
+                  borderRadius="full"
+                  w="18px"
+                  h="18px"
+                  fontSize="10px"
+                  fontWeight="900"
+                  display="grid"
+                  placeItems="center"
+                  boxShadow="md"
+                >
+                  {activeFilterCount}
+                </Box>
+              )}
+            </IconButton>
           </Flex>
 
           {activeFilterLabels.length > 0 ? (
@@ -1111,21 +854,35 @@ const CoursesPage = observer(function CoursesPage() {
           >
             <Box
               display={{ base: "none", lg: "block" }}
-      position="sticky"
-      top="20px"
-   alignSelf="start"
-      maxH="calc(100vh - 40px)"
-      overflowY="auto"
-      p={4}
-      borderWidth="1px"
-      borderColor={borderColor}
-      borderRadius="3xl"
-      bg={cardBg}
-      boxShadow={softShadow}
-      css={hiddenScrollbarCss}
+              position="sticky"
+              top="96px"
+              alignSelf="start"
+              p={5}
+              borderWidth="1px"
+              borderColor={borderColor}
+              borderRadius="3xl"
+              bg={cardBg}
+              boxShadow={softShadow}
             >
               
-              {renderFilterControls(true)}
+              <CourseFilterControls
+                showSearch={true}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                pricingFilter={pricingFilter}
+                setPricingFilter={setPricingFilter}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                languageFilter={languageFilter}
+                setLanguageFilter={setLanguageFilter}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                availableCategories={availableCategories}
+                availableLanguages={availableLanguages}
+                softText={softText}
+                borderColor={borderColor}
+                searchInputStyles={searchInputStyles}
+              />
             </Box>
 
             <Box minW={0}>
@@ -1232,7 +989,7 @@ const CoursesPage = observer(function CoursesPage() {
                         <CourseCard
                           course={course}
                           enrolled={enrolledCourseIds.has(String(course._id))}
-                          onClick={() => router.push(`/course?courseId=${course._id}`)}
+                          onClick={() => setSelectedPreviewCourse(course)}
                         />
                       </Box>
                     ))}
@@ -1260,47 +1017,97 @@ const CoursesPage = observer(function CoursesPage() {
         </Box>
       </Box>
 
-      <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+      <Drawer isOpen={isOpen} placement="bottom" onClose={onClose} size="full">
         <DrawerOverlay backdropFilter="blur(8px)" />
-        <DrawerContent borderTopRadius="3xl" bg={drawerBg} maxH="86vh">
-          <DrawerCloseButton mt={2} />
-          <DrawerHeader borderBottomWidth="1px" borderColor={borderColor} pr={12}>
-            <HStack spacing={3}>
-              <Box
-                w="36px"
-                h="36px"
-                display="grid"
-                placeItems="center"
-                borderRadius="xl"
-                bg="brand.50"
-                color="brand.700"
-              >
-                <Icon as={FiFilter} />
-              </Box>
+        <DrawerContent borderTopRadius="none" bg={drawerBg} h="100vh">
+          <DrawerHeader borderBottomWidth="1px" borderColor={borderColor} py={4} px={5}>
+            <HStack spacing={4} align="center">
+              <IconButton
+                aria-label="Back"
+                icon={<FiArrowLeft size={18} />}
+                onClick={onClose}
+                variant="solid"
+                borderRadius="full"
+                w="38px"
+                h="38px"
+                bg={useColorModeValue("brand.50", "whiteAlpha.100")}
+                color="brand.600"
+                _hover={{ bg: useColorModeValue("brand.100", "whiteAlpha.200"), transform: "scale(1.05)" }}
+                _active={{ transform: "scale(0.95)" }}
+                border="none"
+                transition="all 0.2s"
+              />
               <Box>
-                <Text fontSize="md" fontWeight="800">
-                  Filter courses
+                <Text fontSize="lg" fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                  <Box as="span" color={useColorModeValue("gray.800", "white")}>FILTER </Box>
+                  <Box as="span" bgGradient={useColorModeValue("linear(to-r, brand.500, brand.700)", "linear(to-r, brand.300, brand.500)")} bgClip="text">
+                    COURSES
+                  </Box>
                 </Text>
-                <Text fontSize="xs" color={softText} fontWeight="500">
-                  Refine the catalog without leaving the courses.
+                <Text fontSize="9px" color={softText} fontWeight="700" letterSpacing="0.2em" mt={0.5} textTransform="uppercase">
+                  Refine learning catalog
                 </Text>
               </Box>
             </HStack>
           </DrawerHeader>
-          <DrawerBody py={5}>
-            {renderFilterControls(false)}
+          <DrawerBody
+            py={5}
+            overflowY="auto"
+            css={{
+              "&::-webkit-scrollbar": { width: "4px" },
+              "&::-webkit-scrollbar-track": { background: "transparent" },
+              "&::-webkit-scrollbar-thumb": { background: "#ccc", borderRadius: "4px" },
+            }}
+          >
+            <CourseFilterControls
+              showSearch={false}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              pricingFilter={pricingFilter}
+              setPricingFilter={setPricingFilter}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={setCategoryFilter}
+              languageFilter={languageFilter}
+              setLanguageFilter={setLanguageFilter}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              availableCategories={availableCategories}
+              availableLanguages={availableLanguages}
+              softText={softText}
+              borderColor={borderColor}
+              searchInputStyles={searchInputStyles}
+            />
+          </DrawerBody>
+          <Box
+            p={4}
+            borderTopWidth="1px"
+            borderColor={borderColor}
+            bg={drawerBg}
+            zIndex={2}
+          >
             <Button
-              mt={5}
               w="full"
+              h="52px"
               colorScheme="brand"
+              bgGradient="linear(to-r, brand.500, brand.600)"
               borderRadius="xl"
+              fontWeight="900"
+              fontSize="sm"
+              letterSpacing="0.05em"
               onClick={onClose}
+              _hover={{ bgGradient: "linear(to-r, brand.600, brand.700)" }}
+              transition="all 0.2s"
             >
               Show matching courses
             </Button>
-          </DrawerBody>
+          </Box>
         </DrawerContent>
       </Drawer>
+
+      <CoursePreviewDrawer
+        course={selectedPreviewCourse}
+        onClose={() => setSelectedPreviewCourse(null)}
+      />
     </Box>
   );
 });

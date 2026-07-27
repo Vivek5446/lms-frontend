@@ -68,7 +68,7 @@ export default function CourseAssetModal({
     return () => {
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
-      
+
       // Save current position on unmount if it's a video
       if (assetKind === "video" && videoRef.current) {
         const video = videoRef.current;
@@ -125,19 +125,19 @@ export default function CourseAssetModal({
 
   const handleTimeUpdate = () => {
     if (!videoRef.current || !onProgressUpdateRef.current) return;
-    
+
     const now = Date.now();
     if (now - lastUpdateRef.current > VIDEO_PROGRESS_SYNC_INTERVAL_MS) {
       const video = videoRef.current;
       const progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
-      
+
       onProgressUpdateRef.current({
         currentTime: video.currentTime,
         duration: video.duration,
         progress: Math.min(progress, 99),
         reason: "interval",
       });
-      
+
       lastUpdateRef.current = now;
     }
   };
@@ -146,7 +146,7 @@ export default function CourseAssetModal({
     if (!videoRef.current || !onProgressUpdateRef.current) return;
     const video = videoRef.current;
     const progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
-    
+
     onProgressUpdateRef.current({
       currentTime: video.currentTime,
       duration: video.duration,
@@ -176,13 +176,14 @@ export default function CourseAssetModal({
   const renderContent = () => {
     if (assetKind === "video") {
       return (
-        <div className="relative h-full w-full bg-black">
+        <div className="relative w-full flex-1 sm:aspect-video bg-black flex items-center justify-center overflow-hidden">
           <video
             ref={videoRef}
             src={assetUrl}
             controls
             autoPlay
-            className="h-full w-full"
+            className="w-full max-h-full object-contain mx-auto"
+            style={{ width: "100%", maxHeight: "100%" }}
             onLoadedMetadata={handleLoadedMetadata}
             onTimeUpdate={handleTimeUpdate}
             onPause={handlePause}
@@ -264,24 +265,32 @@ export default function CourseAssetModal({
       }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 8 }}
+        initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97, y: 8 }}
-        transition={{ duration: 0.2 }}
+        exit={{ opacity: 0, scale: 0.98, y: 10 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
-        className="flex h-[100dvh] w-screen flex-col overflow-hidden rounded-none bg-white shadow-[0_24px_80px_rgba(0,0,0,0.5)] sm:h-[92dvh] sm:w-[96vw] sm:rounded-2xl lg:h-[88dvh] lg:w-[88vw] xl:w-[78vw]"
+        className="flex h-[100dvh] w-screen flex-col overflow-hidden rounded-none bg-slate-950 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.8)] border border-white/5 sm:h-auto sm:max-w-5xl sm:w-full sm:rounded-xl"
       >
-        <div className="flex min-h-12 items-center justify-between gap-2 border-b border-slate-200 bg-slate-950 px-2 py-2 sm:gap-3 sm:px-3">
-          <div className="flex min-w-0 items-center gap-2 text-slate-200">
-            {assetKind === "video" ? <Video className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-            <h2 className="truncate text-sm font-medium">{title}</h2>
+        <div
+          className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-slate-900/80 backdrop-blur-md"
+          style={{ height: "64px", paddingLeft: "24px", paddingRight: "24px", flexShrink: 0 }}
+        >
+          <div className="flex min-w-0 items-center gap-3 text-slate-200">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              {assetKind === "video" ? <Video className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+            </div>
+            <div className="min-w-0 flex flex-col justify-center">
+              <span className="truncate text-xs font-bold text-white tracking-wide uppercase leading-tight block">{title}</span>
+              <span className="text-[8px] text-slate-400 font-medium tracking-wider uppercase mt-0.5 leading-none block">Lesson Viewer</span>
+            </div>
           </div>
-          <div className="flex flex-shrink-0 items-center gap-1 sm:gap-2">
+          <div className="flex flex-shrink-0 items-center gap-2">
             <a
               href={assetUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-200 transition hover:bg-white/10"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3.5 py-1.5 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white hover:border-white/20 active:scale-95"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Open</span>
@@ -289,7 +298,7 @@ export default function CourseAssetModal({
             <a
               href={assetUrl}
               download
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-200 transition hover:bg-white/10"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3.5 py-1.5 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white hover:border-white/20 active:scale-95"
             >
               <Download className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Download</span>
@@ -297,7 +306,7 @@ export default function CourseAssetModal({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-200 transition hover:bg-white/10"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 text-slate-300 transition hover:bg-red-500 hover:text-white hover:border-red-500 active:scale-95"
               aria-label="Close asset viewer"
             >
               <X className="h-4 w-4" />
@@ -305,7 +314,7 @@ export default function CourseAssetModal({
           </div>
         </div>
 
-        <div className="relative flex-1 bg-slate-950">{renderContent()}</div>
+        <div className="relative flex-1 bg-slate-950 overflow-hidden flex flex-col">{renderContent()}</div>
       </motion.div>
     </div>
   );

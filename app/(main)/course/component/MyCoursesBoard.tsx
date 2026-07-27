@@ -24,18 +24,20 @@ import {
   HStack,
   Icon,
   Image,
+  Progress,
   SimpleGrid,
   Spinner,
   Stack,
   Text,
   useColorModeValue,
-  useToast
+  useToast,
+  VStack,
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FiBookOpen, FiCheckCircle, FiClock, FiPlayCircle } from "react-icons/fi";
+import { FiArrowRight, FiBookOpen, FiCheckCircle, FiClock, FiPlayCircle } from "react-icons/fi";
 import MYCourseBoardCard from "./MyCourseBoardCard";
 
 function formatDate(value?: string | null) {
@@ -140,6 +142,14 @@ const MyCoursesBoard = observer(
     }, []);
 
     const courses = courseStore.myCourses || [];
+    const nextUpCourse = useMemo(() => {
+      if (courses.length === 0) return null;
+      const inProgress = courses.find((c) => {
+        const p = Number(c.progress || 0);
+        return p > 0 && p < 100;
+      });
+      return inProgress || courses[0];
+    }, [courses]);
     const isCourseEnrolled = useMemo(() => {
       if (!requestedCourseId) {
         return false;
@@ -664,7 +674,7 @@ const MyCoursesBoard = observer(
 
     return (
       <Box minH="100vh" bg={pageBg} px={{ base: 3, md: 6 }} py={{ base: 3, md: 6 }} overflowX="hidden">
-        <Stack spacing={{ base: 3, md: 6 }} maxW="7xl" mx="auto">
+        <Stack spacing={{ base: 3, md: 6 }} maxW="full" mx="auto">
           <Box
             borderRadius="2xl"
             overflow="hidden"
@@ -676,7 +686,7 @@ const MyCoursesBoard = observer(
             w="full"
           >
             <Grid
-              templateColumns={{ base: "1fr", lg: "1fr 360px" }}
+              templateColumns={{ base: "1fr", lg: nextUpCourse ? "1fr 380px" : "1fr 360px" }}
               minH={{ base: "auto", lg: "248px" }}
               gap={0}
             >
@@ -685,36 +695,69 @@ const MyCoursesBoard = observer(
                 py={{ base: 4, md: 8 }}
                 position="relative"
                 zIndex={1}
+                display="flex"
+                flexDirection="column"
+                justifyContent="space-between"
               >
-                <HStack spacing={2} mb={{ base: 2, md: 3 }}>
-                  <Icon as={FiPlayCircle} color="blue.500" boxSize={4} />
-                  <Badge colorScheme="blue" borderRadius="full" px={3} py={1} textTransform="none" fontSize="xs">
-                    My learning
-                  </Badge>
-                </HStack>
+                <Box>
+                  <HStack spacing={2} mb={{ base: 2, md: 3 }}>
+                    <Icon as={FiPlayCircle} color="blue.500" boxSize={4} />
+                    <Badge colorScheme="blue" borderRadius="full" px={3} py={1} textTransform="none" fontSize="xs">
+                      My learning
+                    </Badge>
+                  </HStack>
 
-                <Heading
-                  fontSize={{ base: "xl", sm: "2xl", md: "4xl" }}
-                  fontWeight="800"
-                  lineHeight={{ base: "1.15", md: "1.08" }}
-                >
-                  Continue learning{" "}
-                  <Text as="span" color="blue.600">
-                    today
+                  <Heading
+                    fontSize={{ base: "xl", sm: "2xl", md: "4xl" }}
+                    fontWeight="800"
+                    lineHeight={{ base: "1.15", md: "1.08" }}
+                  >
+                    Continue learning{" "}
+                    <Text as="span" color="blue.600">
+                      today
+                    </Text>
+                  </Heading>
+                  <Text mt={3} color={subduedText} maxW="2xl" display={{ base: "none", md: "block" }}>
+                    Your assigned courses, progress, expiry status, and next actions are gathered into one focused learning space.
                   </Text>
-                </Heading>
-                <Text mt={3} color={subduedText} maxW="2xl" display={{ base: "none", md: "block" }}>
-                  Your assigned courses, progress, expiry status, and next actions are gathered into one focused learning space.
-                </Text>
+                </Box>
 
-                <Box mt={{ base: 3, md: 5 }} maxW="560px">
-                  <GlassSearchInput
-                    value={searchQuery}
-                    onChange={(val) => setSearchQuery(val)}
-                    placeholder="Search courses"
-                    maxW="100%"
-                    isLearner={false}
-                  />
+                <Box mt={{ base: 3, md: 5 }}>
+                  <Box maxW="560px">
+                    <GlassSearchInput
+                      value={searchQuery}
+                      onChange={(val) => setSearchQuery(val)}
+                      placeholder="Search courses"
+                      maxW="100%"
+                      isLearner={false}
+                    />
+                  </Box>
+
+                  {nextUpCourse && (
+                    <Box
+                      display={{ base: "block", lg: "none" }}
+                      mt={3}
+                      p={3}
+                      bg={useColorModeValue("blue.50", "blue.900")}
+                      borderRadius="xl"
+                      borderWidth="1px"
+                      borderColor={useColorModeValue("blue.100", "blue.800")}
+                      onClick={() => handleOpenCourse(nextUpCourse.courseId || nextUpCourse._id)}
+                      cursor="pointer"
+                    >
+                      <HStack justify="space-between" align="center">
+                        <VStack align="stretch" spacing={0.5} minW={0} flex="1">
+                          <Text fontSize="9px" fontWeight="900" color="blue.500" textTransform="uppercase">
+                            Resume Next Up • {Math.round(nextUpCourse.progress || 0)}%
+                          </Text>
+                          <Text fontSize="xs" fontWeight="800" noOfLines={1}>
+                            {nextUpCourse.title}
+                          </Text>
+                        </VStack>
+                        <Icon as={FiArrowRight} color="blue.500" />
+                      </HStack>
+                    </Box>
+                  )}
                 </Box>
 
                 <SimpleGrid columns={3} spacing={{ base: 2, md: 3 }} mt={{ base: 3, md: 5 }} maxW="560px">
@@ -738,23 +781,87 @@ const MyCoursesBoard = observer(
                 </SimpleGrid>
               </Box>
 
-              <Box
-                position="relative"
-                overflow="hidden"
-                display={{ base: "none", lg: "block" }}
-                minH="248px"
-              >
-                <Image
-                  src="/images/happy-schoolgirl-with-new-books.jpg"
-                  alt="Learning"
-                  position="absolute"
-                  inset={0}
-                  w="full"
-                  h="full"
-                  objectFit="cover"
-                  objectPosition="center top"
-                />
-              </Box>
+              {nextUpCourse ? (
+                <Box
+                  p={{ base: 4, md: 6 }}
+                  bg={useColorModeValue("blue.50", "blue.900")}
+                  display={{ base: "none", lg: "flex" }}
+                  flexDirection="column"
+                  justifyContent="space-between"
+                  borderLeftWidth={{ lg: "1px" }}
+                  borderColor={borderColor}
+                  position="relative"
+                  overflow="hidden"
+                >
+                  <Box
+                    position="absolute"
+                    top="-20%"
+                    right="-20%"
+                    w="150px"
+                    h="150px"
+                    bg="blue.400"
+                    opacity={0.15}
+                    filter="blur(40px)"
+                    borderRadius="full"
+                    pointerEvents="none"
+                  />
+                  <VStack align="stretch" spacing={3} zIndex={1}>
+                    <HStack justify="space-between">
+                      <Badge colorScheme="blue" borderRadius="full" px={2} py={0.5} fontSize="10px">
+                        Next Up
+                      </Badge>
+                      <Text fontSize="xs" fontWeight="800" color="blue.500">
+                        {Math.round(nextUpCourse.progress || 0)}% Done
+                      </Text>
+                    </HStack>
+                    <Heading size="xs" noOfLines={2} fontWeight="900" lineHeight="1.3">
+                      {nextUpCourse.title}
+                    </Heading>
+                    <Text fontSize="xs" color={subduedText} noOfLines={3}>
+                      {nextUpCourse.description?.text || "Resume your course and continue building your skills."}
+                    </Text>
+                  </VStack>
+
+                  <VStack align="stretch" spacing={2.5} mt={4} zIndex={1}>
+                    <Progress
+                      value={nextUpCourse.progress || 0}
+                      size="xs"
+                      borderRadius="full"
+                      bg={useColorModeValue("blue.100", "whiteAlpha.200")}
+                      colorScheme="blue"
+                    />
+                    <Button
+                      w="full"
+                      size="sm"
+                      h="38px"
+                      colorScheme="blue"
+                      borderRadius="xl"
+                      rightIcon={<FiArrowRight />}
+                      onClick={() => handleOpenCourse(nextUpCourse.courseId || nextUpCourse._id)}
+                    >
+                      Resume Learning
+                    </Button>
+                  </VStack>
+                </Box>
+              ) : (
+                <Box
+                  position="relative"
+                  overflow="hidden"
+                  display={{ base: "none", lg: "block" }}
+                  minH="248px"
+                >
+                  <Image
+                    src="/images/happy-schoolgirl-with-new-books.jpg"
+                    alt="Learning"
+                    position="absolute"
+                    inset={0}
+                    w="full"
+                    h="full"
+                    objectFit="cover"
+                    objectPosition="center top"
+                  />
+                </Box>
+              )}
             </Grid>
           </Box>
 

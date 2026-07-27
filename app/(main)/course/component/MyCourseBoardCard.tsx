@@ -146,42 +146,43 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
       onKeyDown={handleCardKeyDown}
       w="full"
     >
-      <Flex display={{ base: "flex", md: "none" }} p={2.5} gap={2.5} align="stretch">
+      <Flex display={{ base: "flex", md: "none" }} p={3.5} gap={3.5} align="center">
         <Box
           position="relative"
-          w="84px"
-          h="96px"
+          w="90px"
+          h="90px"
           flexShrink={0}
-          borderRadius="lg"
+          borderRadius="2xl"
           overflow="hidden"
-          bgGradient="linear(to-br, blue.700, teal.400)"
+          bgGradient="linear(to-br, blue.600, teal.400)"
+          boxShadow="sm"
         >
           {course.thumbnailUrl ? (
             <Image src={course.thumbnailUrl} alt={course.title} w="full" h="full" objectFit="cover" />
           ) : null}
-          <Box position="absolute" inset={0} bgGradient="linear(to-t, blackAlpha.600, transparent)" />
+          <Box position="absolute" inset={0} bgGradient="linear(to-t, blackAlpha.500, transparent)" />
           <HStack
             position="absolute"
-            left={2}
-            bottom={2}
+            left={1.5}
+            bottom={1.5}
             spacing={1}
-            bg="blackAlpha.500"
-            color="white"
+            bg="rgba(0, 0, 0, 0.55)"
+            backdropFilter="blur(8px)"
             px={2}
-            py={1}
+            py={0.5}
             borderRadius="full"
           >
-            <Circle size="6px" bg={dotColor} />
-            <Text fontSize="10px" fontWeight="800" noOfLines={1}>
+            <Circle size="5px" bg={dotColor} />
+            <Text fontSize="9px" fontWeight="800" color="white" noOfLines={1}>
               {statusLabel}
             </Text>
           </HStack>
         </Box>
 
-        <Flex direction="column" minW={0} flex="1" justify="space-between" gap={2}>
+        <Flex direction="column" minW={0} flex="1" justify="space-between" align="stretch" gap={2}>
           <Box minW={0}>
             <HStack justify="space-between" align="start" gap={2}>
-              <Text fontSize="sm" fontWeight="800" lineHeight="1.25" color={titleColor} noOfLines={2}>
+              <Text fontSize="sm" fontWeight="800" lineHeight="1.3" color={titleColor} noOfLines={2}>
                 {course.title}
               </Text>
               <Text fontSize="xs" fontWeight="900" color="blue.500" flexShrink={0}>
@@ -191,20 +192,20 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
 
             {assessmentLabel ? (
               <Box
-                mt={2}
-                px={2}
-                py={1}
+                mt={1.5}
+                px={2.5}
+                py={0.5}
                 borderRadius="full"
                 bg={assessmentBg}
                 color={assessmentText}
-                fontSize="10px"
+                fontSize="9px"
                 fontWeight="800"
                 display="inline-flex"
                 alignItems="center"
                 gap={1}
                 maxW="100%"
               >
-                <Icon as={FiStar} boxSize={3} />
+                <Icon as={FiStar} boxSize={2.5} />
                 <Text noOfLines={1}>{assessmentLabel}</Text>
               </Box>
             ) : null}
@@ -224,10 +225,10 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
                 },
               }}
             />
-            <HStack mt={2} spacing={2} color={subduedText} fontSize="11px" fontWeight="700">
+            <HStack mt={1.5} spacing={2} color={subduedText} fontSize="10px" fontWeight="700">
               <HStack spacing={1} minW={0}>
                 <Icon as={FiLayers} boxSize={3} color="blue.400" />
-                <Text noOfLines={1}>{course.curriculum?.totalModules ?? 0} modules</Text>
+                <Text noOfLines={1}>{course.curriculum?.totalModules ?? 0} mod</Text>
               </HStack>
               <Text color={dividerColor}>|</Text>
               <HStack spacing={1} minW={0}>
@@ -237,14 +238,14 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
             </HStack>
           </Box>
 
-          <HStack spacing={2} flexWrap="wrap">
+          <HStack spacing={2} pt={1}>
             <Button
-              size="sm"
-              h="32px"
+              size="xs"
+              h="28px"
               px={3}
-              fontSize="xs"
+              fontSize="10px"
               colorScheme="blue"
-              borderRadius="lg"
+              borderRadius="full"
               rightIcon={<FiArrowRight />}
               onClick={(event) => {
                 event.stopPropagation();
@@ -253,24 +254,20 @@ const MYCourseBoardCard: React.FC<CourseCardProps> = ({
             >
               {progress > 0 ? "Continue" : "Start"}
             </Button>
-            {shouldShowCertificateButton ? (
+            {shouldShowCertificateButton && canDownloadCertificate ? (
               <Button
-                size="sm"
-                h="32px"
+                size="xs"
+                h="28px"
                 px={2.5}
-                fontSize="xs"
+                fontSize="10px"
                 variant="outline"
-                colorScheme={canDownloadCertificate ? "green" : "gray"}
-                borderRadius="lg"
+                colorScheme="green"
+                borderRadius="full"
                 leftIcon={<FiDownload />}
-                isDisabled={!canDownloadCertificate}
-                isLoading={canDownloadCertificate && isCertificateDownloading}
-                title={canDownloadCertificate ? "Download certificate" : certificateReason}
+                isLoading={isCertificateDownloading}
                 onClick={(event) => {
                   event.stopPropagation();
-                  if (canDownloadCertificate) {
-                    handleDownloadCertificate?.(course.courseId);
-                  }
+                  handleDownloadCertificate?.(course.courseId);
                 }}
               >
                 Certificate
