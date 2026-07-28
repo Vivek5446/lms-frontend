@@ -67,12 +67,8 @@ const CourseCategoryPage = observer(() => {
   const textSecondary = useColorModeValue("gray.600", "gray.400");
   const cardBg = useColorModeValue("white", "gray.800");
 
-  const userRole = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
-  const isSuperadmin = userRole === "superadmin";
-
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "master" | "company">("all");
 
   // Modal states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -105,25 +101,14 @@ const CourseCategoryPage = observer(() => {
 
   const categories = stores.courseStore.categories || [];
 
-  const masterCategories = categories.filter((c) => c.isMaster || !c.company);
-  const companyCategories = categories.filter((c) => !c.isMaster && c.company);
-
   const filteredCategories = categories.filter((cat) => {
-    const matchesSearch =
+    return (
       cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (cat.description && cat.description.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const isMaster = Boolean(cat.isMaster || !cat.company);
-    const matchesType =
-      filterType === "all" ||
-      (filterType === "master" && isMaster) ||
-      (filterType === "company" && !isMaster);
-
-    return matchesSearch && matchesType;
+      (cat.description && cat.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
   });
 
-  const totalMasterCount = masterCategories.length;
-  const totalCompanyCount = companyCategories.length;
+  const totalMasterCount = categories.length;
   const totalCoursesMapped = categories.reduce((sum, c) => sum + (c.courseCount || 0), 0);
 
   const handleOpenCreate = () => {
@@ -160,13 +145,13 @@ const CourseCategoryPage = observer(() => {
     setIsSubmitting(true);
     try {
       await stores.courseStore.createCategory(formName.trim(), formDescription.trim(), {
-        isMaster: isSuperadmin,
+        isMaster: true,
         parentCategory: formParentCategory || undefined,
       });
 
       toast({
-        title: isSuperadmin ? "Master Category Created" : "Category Created",
-        description: `"${formName.trim()}" category has been created.`,
+        title: "Category Added to Master",
+        description: `"${formName.trim()}" has been added to the Master Category list.`,
         status: "success",
         duration: 3000,
         isClosable: true,
@@ -177,7 +162,7 @@ const CourseCategoryPage = observer(() => {
     } catch (err: any) {
       toast({
         title: "Error Creating Category",
-        description: err?.message || "Failed to create category.",
+        description: err?.message || "Failed to create category in master.",
         status: "error",
         duration: 4000,
         isClosable: true,
@@ -205,7 +190,7 @@ const CourseCategoryPage = observer(() => {
 
       toast({
         title: "Category Updated",
-        description: "Category details updated successfully.",
+        description: "Master category details updated successfully.",
         status: "success",
         duration: 3000,
         isClosable: true,
@@ -272,10 +257,10 @@ const CourseCategoryPage = observer(() => {
             />
             <Box>
               <Text fontSize="2xl" fontWeight="bold" color={useColorModeValue("gray.800", "white")}>
-                Course Categories Master List
+                Course Category Master List
               </Text>
               <Text fontSize="sm" color={textSecondary}>
-                Manage course categories master list, add new categories, edit, or delete existing categories.
+                Maintain the global Master Category list. All categories are global and populated in dropdowns everywhere.
               </Text>
             </Box>
           </HStack>
@@ -289,12 +274,12 @@ const CourseCategoryPage = observer(() => {
             _hover={{ transform: "translateY(-1px)", shadow: "lg" }}
             onClick={handleOpenCreate}
           >
-            {isSuperadmin ? "Add Master Category" : "Add Category"}
+            Add Master Category
           </Button>
         </Flex>
 
         {/* Summary Cards */}
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={5}>
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={5}>
           <MotionBox
             bg={cardBg}
             p={5}
@@ -307,7 +292,7 @@ const CourseCategoryPage = observer(() => {
           >
             <HStack justify="space-between" mb={2}>
               <Text fontSize="sm" fontWeight="medium" color={textSecondary}>
-                Master Categories
+                Total Master Categories
               </Text>
               <Flex p={2} bg="purple.50" color="purple.600" borderRadius="lg">
                 <Icon as={Layers} size={20} />
@@ -317,33 +302,7 @@ const CourseCategoryPage = observer(() => {
               {totalMasterCount}
             </Text>
             <Text fontSize="xs" color="purple.600" mt={1}>
-              Global master categories
-            </Text>
-          </MotionBox>
-
-          <MotionBox
-            bg={cardBg}
-            p={5}
-            borderRadius="xl"
-            borderWidth="1px"
-            borderColor={borderColor}
-            shadow="sm"
-            whileHover={{ y: -3 }}
-            transition={{ duration: 0.2 }}
-          >
-            <HStack justify="space-between" mb={2}>
-              <Text fontSize="sm" fontWeight="medium" color={textSecondary}>
-                Company Categories
-              </Text>
-              <Flex p={2} bg="blue.50" color="blue.600" borderRadius="lg">
-                <Icon as={Building2} size={20} />
-              </Flex>
-            </HStack>
-            <Text fontSize="2xl" fontWeight="bold" color={useColorModeValue("gray.800", "white")}>
-              {totalCompanyCount}
-            </Text>
-            <Text fontSize="xs" color="blue.600" mt={1}>
-              Company-specific categories
+              Global master dropdown options
             </Text>
           </MotionBox>
 
@@ -385,49 +344,33 @@ const CourseCategoryPage = observer(() => {
           >
             <HStack justify="space-between" mb={2}>
               <Text fontSize="sm" fontWeight="medium" color={textSecondary}>
-                Total Available Categories
+                Dropdown Visibility
               </Text>
-              <Flex p={2} bg="amber.50" color="orange.600" borderRadius="lg">
-                <Icon as={Folder} size={20} />
+              <Flex p={2} bg="blue.50" color="blue.600" borderRadius="lg">
+                <Icon as={Building2} size={20} />
               </Flex>
             </HStack>
             <Text fontSize="2xl" fontWeight="bold" color={useColorModeValue("gray.800", "white")}>
-              {categories.length}
+              Global
             </Text>
-            <Text fontSize="xs" color="orange.600" mt={1}>
-              Master + Company categories
+            <Text fontSize="xs" color="blue.600" mt={1}>
+              Visible to all users and admins
             </Text>
           </MotionBox>
         </SimpleGrid>
 
         {/* Filter and Search Bar */}
         <Box bg={sectionBg} p={4} borderRadius="xl" borderWidth="1px" borderColor={borderColor}>
-          <Flex gap={4} flexWrap="wrap" align="center" justify="space-between">
-            <HStack spacing={3} flex={1} minW="260px">
-              <Icon as={Search} color={textSecondary} />
-              <Input
-                placeholder="Search category name or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                variant="unstyled"
-                fontSize="sm"
-              />
-            </HStack>
-
-            <HStack spacing={3}>
-              <Select
-                size="sm"
-                borderRadius="md"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as any)}
-                w="180px"
-              >
-                <option value="all">All Category Types</option>
-                <option value="master">Master Categories Only</option>
-                <option value="company">Company Categories Only</option>
-              </Select>
-            </HStack>
-          </Flex>
+          <HStack spacing={3}>
+            <Icon as={Search} color={textSecondary} />
+            <Input
+              placeholder="Search category name or description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              variant="unstyled"
+              fontSize="sm"
+            />
+          </HStack>
         </Box>
 
         {/* Categories Table */}
@@ -443,7 +386,7 @@ const CourseCategoryPage = observer(() => {
                 No categories found
               </Text>
               <Button size="sm" colorScheme="purple" variant="outline" onClick={handleOpenCreate}>
-                Create Category
+                Add First Master Category
               </Button>
             </VStack>
           ) : (
@@ -452,17 +395,15 @@ const CourseCategoryPage = observer(() => {
                 <Thead bg={headerBg}>
                   <Tr>
                     <Th>Category Name</Th>
-                    <Th>Type</Th>
                     <Th>Description</Th>
-                    <Th>Parent Master Category</Th>
-                    <Th>Scope / Company</Th>
+                    <Th>Parent Category</Th>
+                    <Th>Created By</Th>
                     <Th isNumeric>Courses</Th>
                     <Th isNumeric>Actions</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
                   {filteredCategories.map((category) => {
-                    const isMaster = Boolean(category.isMaster || !category.company);
                     const companyName =
                       typeof category.company === "object" && category.company
                         ? category.company.name
@@ -476,24 +417,12 @@ const CourseCategoryPage = observer(() => {
                       <Tr key={category._id || category.name} _hover={{ bg: useColorModeValue("gray.50", "gray.750") }}>
                         <Td fontWeight="semibold">
                           <HStack spacing={2}>
-                            <Icon as={TagIcon} color={isMaster ? "purple.500" : "blue.500"} size={16} />
+                            <Icon as={TagIcon} color="purple.500" size={16} />
                             <Text color={useColorModeValue("gray.800", "white")}>{category.name}</Text>
                           </HStack>
                         </Td>
 
-                        <Td>
-                          {isMaster ? (
-                            <Badge colorScheme="purple" borderRadius="full" px={3} py={0.5}>
-                              Master
-                            </Badge>
-                          ) : (
-                            <Badge colorScheme="blue" borderRadius="full" px={3} py={0.5}>
-                              Company
-                            </Badge>
-                          )}
-                        </Td>
-
-                        <Td maxW="240px">
+                        <Td maxW="280px">
                           <Text fontSize="xs" color={textSecondary} isTruncated>
                             {category.description || "—"}
                           </Text>
@@ -512,17 +441,17 @@ const CourseCategoryPage = observer(() => {
                         </Td>
 
                         <Td>
-                          {isMaster ? (
-                            <Badge variant="outline" colorScheme="green" fontSize="xs">
-                              Global
-                            </Badge>
-                          ) : (
+                          {companyName ? (
                             <HStack spacing={1}>
                               <Icon as={Building2} size={14} color="blue.500" />
                               <Text fontSize="xs" color={textSecondary} fontWeight="medium">
-                                {companyName || "Company Scoped"}
+                                {companyName}
                               </Text>
                             </HStack>
+                          ) : (
+                            <Badge colorScheme="purple" borderRadius="full" px={2} fontSize="xs">
+                              Superadmin (Global)
+                            </Badge>
                           )}
                         </Td>
 
@@ -572,7 +501,7 @@ const CourseCategoryPage = observer(() => {
           <ModalContent borderRadius="xl">
             <form onSubmit={handleCreateSubmit}>
               <ModalHeader fontSize="lg" fontWeight="bold">
-                {isSuperadmin ? "Create Master Category" : "Create Company Category"}
+                Add Master Category
               </ModalHeader>
               <ModalCloseButton />
               <ModalBody py={4}>
@@ -590,25 +519,23 @@ const CourseCategoryPage = observer(() => {
                     />
                   </FormControl>
 
-                  {masterCategories.length > 0 && (
-                    <FormControl>
-                      <FormLabel fontSize="sm" fontWeight="semibold">
-                        Parent Master Category (Optional)
-                      </FormLabel>
-                      <Select
-                        placeholder="None (Root Category)"
-                        value={formParentCategory}
-                        onChange={(e) => setFormParentCategory(e.target.value)}
-                        borderRadius="lg"
-                      >
-                        {masterCategories.map((mc) => (
-                          <option key={mc._id || mc.name} value={mc._id}>
-                            {mc.name} (Master)
-                          </option>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="semibold">
+                      Parent Category (Optional)
+                    </FormLabel>
+                    <Select
+                      placeholder="None (Root Category)"
+                      value={formParentCategory}
+                      onChange={(e) => setFormParentCategory(e.target.value)}
+                      borderRadius="lg"
+                    >
+                      {categories.map((mc) => (
+                        <option key={mc._id || mc.name} value={mc._id}>
+                          {mc.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
 
                   <FormControl>
                     <FormLabel fontSize="sm" fontWeight="semibold">
@@ -628,7 +555,7 @@ const CourseCategoryPage = observer(() => {
                   Cancel
                 </Button>
                 <Button colorScheme="purple" type="submit" isLoading={isSubmitting} borderRadius="lg" px={6}>
-                  Create Category
+                  Add Master Category
                 </Button>
               </ModalFooter>
             </form>
@@ -659,7 +586,7 @@ const CourseCategoryPage = observer(() => {
 
                   <FormControl>
                     <FormLabel fontSize="sm" fontWeight="semibold">
-                      Parent Master Category (Optional)
+                      Parent Category (Optional)
                     </FormLabel>
                     <Select
                       placeholder="None (Root Category)"
@@ -667,7 +594,7 @@ const CourseCategoryPage = observer(() => {
                       onChange={(e) => setFormParentCategory(e.target.value)}
                       borderRadius="lg"
                     >
-                      {masterCategories
+                      {categories
                         .filter((mc) => mc._id !== editingCategory?._id)
                         .map((mc) => (
                           <option key={mc._id || mc.name} value={mc._id}>

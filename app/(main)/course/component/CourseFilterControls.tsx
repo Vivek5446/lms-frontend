@@ -14,9 +14,11 @@ import {
   useColorModeValue,
   VStack,
 } from "@chakra-ui/react";
-import React from "react";
+import React, { useState } from "react";
 import {
   FiCheck,
+  FiChevronDown,
+  FiChevronUp,
   FiDollarSign,
   FiFilter,
   FiGlobe,
@@ -73,6 +75,15 @@ export const CourseFilterControls: React.FC<CourseFilterControlsProps> = ({
   borderColor,
   searchInputStyles,
 }) => {
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const INITIAL_CATEGORY_LIMIT = 8;
+
+  const visibleCategories = showAllCategories
+    ? availableCategories
+    : availableCategories.slice(0, INITIAL_CATEGORY_LIMIT);
+
+  const hasMoreCategories = availableCategories.length > INITIAL_CATEGORY_LIMIT;
+
   const sortOptions = [
     {
       value: "popularity" as CatalogSort,
@@ -236,20 +247,19 @@ export const CourseFilterControls: React.FC<CourseFilterControlsProps> = ({
         <Flex
           gap={2}
           flexWrap="wrap"
-          maxH="160px"
-          overflowY="auto"
           pr={1}
           css={hiddenScrollbarCss}
         >
-          {availableCategories.map((category) => {
+          {visibleCategories.map((category) => {
             const isActive = categoryFilter === category;
 
             return (
               <Button
                 key={category}
                 size="xs"
-                h="30px"
-                px={3.5}
+                h="26px"
+                px={2.5}
+                fontSize="xs"
                 maxW="100%"
                 borderRadius="full"
                 variant={isActive ? "solid" : "outline"}
@@ -257,24 +267,43 @@ export const CourseFilterControls: React.FC<CourseFilterControlsProps> = ({
                 color={isActive ? "white" : useColorModeValue("gray.600", "gray.350")}
                 borderColor={isActive ? "brand.500" : useColorModeValue("gray.200", "whiteAlpha.200")}
                 boxShadow={isActive ? "0 4px 12px rgba(98,105,255,0.2)" : "none"}
-                fontWeight="700"
                 leftIcon={category === "all" ? <FiGrid size={12} /> : <FiTag size={12} />}
                 onClick={() => setCategoryFilter(category)}
                 transition="all 0.2s ease"
                 _hover={{
                   bg: isActive ? "brand.600" : useColorModeValue("gray.50", "whiteAlpha.50"),
                   borderColor: isActive ? "brand.600" : useColorModeValue("gray.300", "whiteAlpha.300"),
-                  transform: "translateY(-1px)"
+                  transform: "translateY(-1px)",
                 }}
                 _active={{ transform: "translateY(0)" }}
               >
                 <Text as="span" noOfLines={1}>
-                  {category === "all" ? "All topics" : category}
+                  {category === "all" ? "All topics" : category}s
                 </Text>
               </Button>
             );
           })}
         </Flex>
+
+        {hasMoreCategories && (
+          <Button
+            size="xs"
+            variant="ghost"
+            colorScheme="brand"
+            fontSize="11px"
+            fontWeight="700"
+            onClick={() => setShowAllCategories((prev) => !prev)}
+            rightIcon={showAllCategories ? <FiChevronUp /> : <FiChevronDown />}
+            mt={2.5}
+            px={2.5}
+            h="26px"
+            borderRadius="full"
+          >
+            {showAllCategories
+              ? "Show Less"
+              : `Show More (${availableCategories.length - INITIAL_CATEGORY_LIMIT} more)`}
+          </Button>
+        )}
       </Box>
 
       <Box>

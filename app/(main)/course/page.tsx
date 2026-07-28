@@ -1,9 +1,9 @@
 "use client";
 
 import { CourseCard, CourseCardSkeleton } from "@/app/(main)/course/component/CourseCard";
-import MyCoursesBoard from "@/app/(main)/course/component/MyCoursesBoard";
-import { CoursePreviewDrawer } from "@/app/(main)/course/component/CoursePreviewDrawer";
 import { CourseFilterControls } from "@/app/(main)/course/component/CourseFilterControls";
+import { CoursePreviewDrawer } from "@/app/(main)/course/component/CoursePreviewDrawer";
+import MyCoursesBoard from "@/app/(main)/course/component/MyCoursesBoard";
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import stores from "@/app/store/stores";
 import {
@@ -12,7 +12,6 @@ import {
   Button,
   Drawer,
   DrawerBody,
-  DrawerCloseButton,
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
@@ -21,19 +20,15 @@ import {
   Heading,
   HStack,
   Icon,
-  Image,
+  IconButton,
   Input,
   InputGroup,
   InputLeftElement,
   SimpleGrid,
   Text,
-  useBreakpointValue,
   useColorModeValue,
   useDisclosure,
-  useToken,
-  VStack,
-  IconButton,
-  Circle,
+  useToken
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { observer } from "mobx-react-lite";
@@ -43,21 +38,17 @@ import {
   FiArrowLeft,
   FiArrowRight,
   FiBookOpen,
-  FiCheck,
   FiClock,
   FiCompass,
   FiDollarSign,
   FiFilter,
   FiGlobe,
-  FiGrid,
-  FiLayers,
   FiPlayCircle,
   FiSearch,
   FiStar,
-  FiTag,
   FiTrendingUp,
   FiX,
-  FiZap,
+  FiZap
 } from "react-icons/fi";
 
 export type CatalogSort = "latest" | "popularity" | "price_asc" | "price_desc" | "highest_rated";
@@ -196,15 +187,23 @@ const CoursesPage = observer(function CoursesPage() {
   }, [catalogRequestParams, requestedCourseId]);
 
   useEffect(() => {
+    stores.courseStore.fetchMasterCategories().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     if (requestedEnrollmentCourseId) {
       router.replace(`/course?courseId=${requestedEnrollmentCourseId}`);
     }
   }, [requestedEnrollmentCourseId, router]);
 
-  const availableCategories = useMemo(
-    () => ["all", ...(publicCoursesMeta.availableCategories || [])],
-    [publicCoursesMeta.availableCategories]
-  );
+  const availableCategories = useMemo(() => {
+    const masterNames = (stores.courseStore.masterCategories || []).map((c) => c.name);
+    const catalogNames = publicCoursesMeta.availableCategories || [];
+    const combined = Array.from(new Set([...masterNames, ...catalogNames])).sort((a, b) =>
+      a.localeCompare(b)
+    );
+    return ["all", ...combined];
+  }, [publicCoursesMeta.availableCategories, stores.courseStore.masterCategories]);
 
   const availableLanguages = useMemo(
     () => ["all", ...(publicCoursesMeta.availableLanguages || [])],
@@ -848,7 +847,7 @@ const CoursesPage = observer(function CoursesPage() {
           ) : null}
 
           <Grid
-            templateColumns={{ base: "1fr", lg: "300px minmax(0, 1fr)" }}
+            templateColumns={{ base: "1fr", lg: "320px minmax(0, 1fr)" }}
             gap={{ base: 5, lg: 6 }}
             alignItems="start"
           >
