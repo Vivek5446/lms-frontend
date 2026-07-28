@@ -1,51 +1,36 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { observer } from "mobx-react-lite";
-import { motion, AnimatePresence } from "framer-motion";
+import { CourseCategoryItem, CourseListItem, courseStore } from "@/app/store/courseStore/courseStore";
 import {
-  useColorModeValue,
-  useBreakpointValue,
-  useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  Input,
-  Button,
-  FormControl,
-  FormLabel,
-  Box,
-  Flex,
-  Text,
   Badge,
+  Box,
+  Button,
+  Flex,
   Icon,
   Skeleton,
   SkeletonCircle,
   SkeletonText,
+  Text,
+  useBreakpointValue,
+  useColorModeValue,
+  useToast
 } from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { observer } from "mobx-react-lite";
+import { useMemo, useState } from "react";
 import {
-  FiFolder,
-  FiPlus,
   FiArrowLeft,
   FiBookOpen,
-  FiSearch,
   FiChevronRight,
-  FiFilter,
-  FiEye,
   FiEdit3,
-  FiTrash2,
-  FiLock,
-  FiGlobe,
-  FiDollarSign,
-  FiTrendingUp,
+  FiEye,
+  FiFolder,
+  FiPlus,
+  FiSearch,
+  FiTrash2
 } from "react-icons/fi";
-import { courseStore, CourseListItem, CourseCategoryItem } from "@/app/store/courseStore/courseStore";
 import { getCategoryIconMeta } from "../utils/folderIconUtils";
-
+import CreateCategoryModal from "./CreateCategoryModal";
 interface FolderExplorerProps {
   categories: CourseCategoryItem[];
   courses: CourseListItem[];
@@ -76,9 +61,6 @@ export const FolderExplorer = observer(function FolderExplorer({
   const toast = useToast();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryDesc, setNewCategoryDesc] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Scoped search & filter inside selected folder
   const [folderSearch, setFolderSearch] = useState("");
@@ -90,53 +72,19 @@ export const FolderExplorer = observer(function FolderExplorer({
   const titleColor = useColorModeValue("#0F172A", "#F8FAFC");
   const textColor = useColorModeValue("#475569", "#CBD5E1");
   const mutedColor = useColorModeValue("#64748B", "#94A3B8");
-  const hoverBg = useColorModeValue("#F8FAFC", "#1E293B");
 
   const isMobile = useBreakpointValue({ base: true, md: false }) ?? false;
   const ALL_COURSES_KEY = "__all_courses__";
 
-  const handleCreateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = newCategoryName.trim();
-    if (!trimmed) {
-      toast({
-        title: "Category name required",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await courseStore.createCategory(trimmed, newCategoryDesc.trim());
-      await courseStore.fetchCategories();
-      toast({
-        title: "Category Created",
-        description: `"${trimmed}" folder is ready!`,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-      setNewCategoryName("");
-      setNewCategoryDesc("");
-      setIsAddModalOpen(false);
-      setSelectedCategory(trimmed);
-    } catch (err: any) {
-      toast({
-        title: "Error creating category",
-        description: err.message || "Failed to create category",
-        status: "error",
-        duration: 4000,
-        isClosable: true,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleCreateCategory = async (
+    name: string,
+    description: string,
+    options?: { parentCategory?: string }
+  ) => {
+    await courseStore.createCategory(name, description, options);
+    await courseStore.fetchCategories();
   };
 
-  // Filter courses by selected category
   const filteredCoursesInCategory = useMemo(() => {
     if (!selectedCategory) return [];
 
@@ -484,113 +432,6 @@ const MotionFlex = motion(Flex);
   </MotionFlex>
 
 </MotionBox>
-              // <motion.div
-              //   key={cat._id || cat.name}
-              //   whileHover={{ y: -4, scale: 1.01 }}
-              //   whileTap={{ scale: 0.98 }}
-              //   onClick={() => setSelectedCategory(cat.name)}
-              //   style={{
-              //     background: cardBg,
-              //     borderRadius: 16,
-              //     border: `1.5px solid ${borderColor}`,
-              //     padding: "20px 22px",
-              //     cursor: "pointer",
-              //     boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
-              //     transition: "all 0.2s ease",
-              //     display: "flex",
-              //     flexDirection: "column",
-              //     justifyContent: "space-between",
-              //     position: "relative",
-              //     overflow: "hidden",
-              //   }}
-              // >
-              //   {/* Folder Header Accent */}
-              //   <div
-              //     style={{
-              //       display: "flex",
-              //       alignItems: "center",
-              //       justifyContent: "space-between",
-              //       marginBottom: 16,
-              //     }}
-              //   >
-              //     <div
-              //       style={{
-              //         width: 48,
-              //         height: 48,
-              //         borderRadius: 12,
-              //         background: iconMeta.gradient,
-              //         display: "flex",
-              //         alignItems: "center",
-              //         justifyContent: "center",
-              //         boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
-              //       }}
-              //     >
-              //       <IconComponent size={24} color={iconMeta.color} />
-              //     </div>
-              //     <span
-              //       style={{
-              //         fontSize: 12,
-              //         fontWeight: 700,
-              //         padding: "4px 10px",
-              //         borderRadius: 20,
-              //         background: iconMeta.badgeBg,
-              //         color: iconMeta.color,
-              //       }}
-              //     >
-              //       {cat.courseCount} {cat.courseCount === 1 ? "Course" : "Courses"}
-              //     </span>
-              //   </div>
-
-              //   {/* Folder Info */}
-              //   <div>
-              //     <h3
-              //       style={{
-              //         fontSize: 17,
-              //         fontWeight: 700,
-              //         color: titleColor,
-              //         margin: "0 0 6px",
-              //         overflow: "hidden",
-              //         textOverflow: "ellipsis",
-              //         whiteSpace: "nowrap",
-              //       }}
-              //     >
-              //       {cat.name}
-              //     </h3>
-              //     <p
-              //       style={{
-              //         fontSize: 13,
-              //         color: mutedColor,
-              //         margin: 0,
-              //         lineHeight: 1.4,
-              //         display: "-webkit-box",
-              //         WebkitLineClamp: 2,
-              //         WebkitBoxOrient: "vertical",
-              //         overflow: "hidden",
-              //         minHeight: 36,
-              //       }}
-              //     >
-              //       {cat.description || `Browse courses under ${cat.name}.`}
-              //     </p>
-              //   </div>
-
-              //   {/* Bottom Explorer Action */}
-              //   <div
-              //     style={{
-              //       marginTop: 18,
-              //       paddingTop: 12,
-              //       borderTop: `1px solid ${borderColor}`,
-              //       display: "flex",
-              //       alignItems: "center",
-              //       justifyContent: "space-between",
-              //       fontSize: 13,
-              //       fontWeight: 600,
-              //       color: "#2563EB",
-              //     }}
-              //   >
-              //     <span>Open Folder</span>
-              //     <FiChevronRight size={16} />
-              //   </div>
-              // </motion.div>
             );
           })}
 
@@ -655,56 +496,15 @@ const MotionFlex = motion(Flex);
         </div>
 
         {/* Modal for Adding New Category */}
-        <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} isCentered size="md">
-          <ModalOverlay backdropFilter="blur(4px)" />
-          <ModalContent borderRadius={16}>
-            <ModalHeader fontSize={18} fontWeight={700} borderBottom={`1px solid ${borderColor}`}>
-              Create New Category Folder
-            </ModalHeader>
-            <ModalCloseButton />
-            <form onSubmit={handleCreateCategory}>
-              <ModalBody py={6}>
-                <FormControl isRequired mb={4}>
-                  <FormLabel fontSize={14} fontWeight={600}>
-                    Category Name
-                  </FormLabel>
-                  <Input
-                    placeholder="e.g. Sales, Business Analysis, Full Stack, AI"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    borderRadius={10}
-                    autoFocus
-                  />
-                </FormControl>
-                <FormControl mb={2}>
-                  <FormLabel fontSize={14} fontWeight={600}>
-                    Description (Optional)
-                  </FormLabel>
-                  <Input
-                    placeholder="Brief description of courses stored in this folder"
-                    value={newCategoryDesc}
-                    onChange={(e) => setNewCategoryDesc(e.target.value)}
-                    borderRadius={10}
-                  />
-                </FormControl>
-              </ModalBody>
-              <ModalFooter borderTop={`1px solid ${borderColor}`} gap={3}>
-                <Button variant="ghost" onClick={() => setIsAddModalOpen(false)} borderRadius={10}>
-                  Cancel
-                </Button>
-                <Button
-                  colorScheme="blue"
-                  type="submit"
-                  isLoading={isSubmitting}
-                  borderRadius={10}
-                  px={6}
-                >
-                  Create Folder
-                </Button>
-              </ModalFooter>
-            </form>
-          </ModalContent>
-        </Modal>
+
+        <CreateCategoryModal
+  isOpen={isAddModalOpen}
+  onClose={() => setIsAddModalOpen(false)}
+  onCreate={handleCreateCategory}
+  onCreated={(categoryName) => {
+    setSelectedCategory(categoryName);
+  }}
+/>
       </div>
     );
   }

@@ -3,6 +3,7 @@
 import React, { useCallback } from "react";
 import { FileText, ImagePlus, Images, Plus, Sparkles, Trash2, UserRound, X } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import stores from "@/app/store/stores";
 import RichTextEditor from "../richTextEditor/RichTextEditor";
 import { StepWrapper } from "./component/StepWrapper";
 import {
@@ -521,30 +522,79 @@ export default function Step1BasicInfo({
           </div>
           <div>
             <label style={labelStyle}>Category</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {value.categories.length > 0 ? (
-                value.categories.map((category) => (
-                  <span
-                    key={category}
-                    style={{
-                      padding: "6px 16px",
-                      borderRadius: 999,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      background: "#EFF6FF",
-                      color: "#2563EB",
-                      border: "1px solid #BFDBFE",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                    }}
-                  >
-                    📁 {category}
-                  </span>
-                ))
-              ) : (
-                <span style={{ fontSize: 13, color: "#9CA3AF" }}>General</span>
-              )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <select
+                value={value.categories[0] || ""}
+                onChange={(e) => {
+                  const selected = e.target.value;
+                  updateBasicInfo({
+                    categories: selected ? [selected] : [],
+                  });
+                }}
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  border: "1.5px solid #E5E7EB",
+                  fontSize: 14,
+                  background: "#FFFFFF",
+                  fontFamily: "inherit",
+                }}
+              >
+                <option value="">-- Select Category --</option>
+                <optgroup label="Master Categories List">
+                  {((stores.courseStore.masterCategories?.length ? stores.courseStore.masterCategories : stores.courseStore.categories) || [])
+                    .map((cat) => (
+                      <option key={cat._id || cat.name} value={cat.name}>
+                        📁 {cat.name}
+                      </option>
+                    ))}
+                </optgroup>
+                {(stores.courseStore.categories || []).some((c) => !c.isMaster && c.company) && (
+                  <optgroup label="My Company Folders">
+                    {(stores.courseStore.categories || [])
+                      .filter((c) => !c.isMaster && c.company)
+                      .map((cat) => (
+                        <option key={cat._id || cat.name} value={cat.name}>
+                          🏢 {cat.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                )}
+                <optgroup label="General Topics">
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                {value.categories.length > 0 ? (
+                  value.categories.map((category) => (
+                    <span
+                      key={category}
+                      style={{
+                        padding: "6px 16px",
+                        borderRadius: 999,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        background: "#EFF6FF",
+                        color: "#2563EB",
+                        border: "1px solid #BFDBFE",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      📁 {category}
+                    </span>
+                  ))
+                ) : (
+                  <span style={{ fontSize: 13, color: "#9CA3AF" }}>General</span>
+                )}
+              </div>
             </div>
           </div>
         </div>

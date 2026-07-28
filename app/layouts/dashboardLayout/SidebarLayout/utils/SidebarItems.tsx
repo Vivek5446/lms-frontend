@@ -96,6 +96,14 @@ const sidebarDatas: SidebarItem[] = [
         role: ["superadmin", "admin", "departmenthead"],
         permissionKey: PERMISSION_KEYS.VIEW_ASSIGNED_COURSES,
       },
+      {
+        id: 175,
+        name: "Course Categories",
+        icon: <PlusSquareIcon />,
+        url: "/dashboard/course/categories",
+        role: ["superadmin", "admin", "departmenthead"],
+        permissionKey: PERMISSION_KEYS.VIEW_ASSIGNED_COURSES,
+      },
     ],
   },
   {

@@ -58,7 +58,11 @@ export interface CourseCategoryItem {
   name: string;
   slug?: string;
   description?: string;
+  isMaster?: boolean;
+  company?: { _id: string; name: string } | string | null;
+  parentCategory?: { _id: string; name: string } | string | null;
   courseCount: number;
+  createdAt?: string;
 }
 
 export interface CourseListItem {
@@ -651,6 +655,7 @@ function mergeUniquePublicCourses(items: PublicCourseItem[]) {
 class CourseStoreClass {
   courses: CourseListItem[] = [];
   categories: CourseCategoryItem[] = [];
+  masterCategories: CourseCategoryItem[] = [];
   isCategoriesLoading: boolean = false;
   publicCourses: PublicCourseItem[] = [];
   publicCoursesMeta: PublicCourseCatalogMeta = {
@@ -741,14 +746,36 @@ class CourseStoreClass {
     }
   };
 
-  createCategory = async (name: string, description?: string) => {
+  fetchMasterCategories = async () => {
     try {
-      const { data } = await axios.post("/course/categories", { name, description });
+      const { data } = await axios.get("/course/categories", { params: { type: "master" } });
+      runInAction(() => {
+        this.masterCategories = data.data || [];
+      });
+      return data.data || [];
+    } catch (err: any) {
+      console.error("Failed to fetch master categories", err);
+      return [];
+    }
+  };
+
+  createCategory = async (
+    name: string,
+    description?: string,
+    options?: { isMaster?: boolean; parentCategory?: string }
+  ) => {
+    try {
+      const { data } = await axios.post("/course/categories", {
+        name,
+        description,
+        isMaster: options?.isMaster,
+        parentCategory: options?.parentCategory,
+      });
       const newCat = data.data;
       runInAction(() => {
         if (newCat) {
           const index = this.categories.findIndex(
-            (c) => c.name.toLowerCase() === newCat.name.toLowerCase()
+            (c) => c._id === newCat._id || c.name.toLowerCase() === newCat.name.toLowerCase()
           );
           if (index >= 0) {
             this.categories[index] = newCat;
@@ -761,6 +788,40 @@ class CourseStoreClass {
       return newCat;
     } catch (err: any) {
       const msg = err?.response?.data?.error || "Failed to create category";
+      throw new Error(msg);
+    }
+  };
+
+  updateCategory = async (
+    id: string,
+    payload: { name?: string; description?: string; parentCategory?: string }
+  ) => {
+    try {
+      const { data } = await axios.put(`/course/categories/${id}`, payload);
+      const updatedCat = data.data;
+      runInAction(() => {
+        if (updatedCat) {
+          const index = this.categories.findIndex((c) => c._id === id);
+          if (index >= 0) {
+            this.categories[index] = { ...this.categories[index], ...updatedCat };
+          }
+        }
+      });
+      return updatedCat;
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || "Failed to update category";
+      throw new Error(msg);
+    }
+  };
+
+  deleteCategory = async (id: string) => {
+    try {
+      await axios.delete(`/course/categories/${id}`);
+      runInAction(() => {
+        this.categories = this.categories.filter((c) => c._id !== id);
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || "Failed to delete category";
       throw new Error(msg);
     }
   };

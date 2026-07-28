@@ -433,7 +433,7 @@ const CoursesPage = observer(function CoursesPage() {
         <Grid
           maxW="full"
           mx="auto"
-          px={{ base: 4, md: 8, lg: 12, xl: 16 }}
+          px={{ base: 4, md: 8, lg: 12 }}
           py={{ base: 5, md: 7 }}
           minH={{ base: "188px", md: "238px" }}
           templateColumns={{ base: "1fr", md: "minmax(0, 1fr) 360px" }}

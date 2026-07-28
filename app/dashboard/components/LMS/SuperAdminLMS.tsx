@@ -65,7 +65,8 @@ import {
   Zap,
   Activity,
   PieChart,
-  TrendingDown
+  TrendingDown,
+  Folder
 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
@@ -74,6 +75,7 @@ import BatchesAnalytics from "./components/superadmincomponent/BatchesAnalytics"
 import CompaniesAnalytics from "./components/superadmincomponent/CompaniesAnalytics";
 import CoursesAnalytics from "./components/superadmincomponent/CoursesAnalytics";
 import OverviewTab from "./components/superadmincomponent/OverviewTab";
+import CourseCategoryMaster from "./components/superadmincomponent/CourseCategoryMaster";
 
 // Register ChartJS components
 ChartJS.register(
@@ -192,7 +194,7 @@ const SuperAdminLMS = observer(() => {
   // State for dynamic data
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [analysisView, setAnalysisView] = useState<"overview" | "courses" | "companies" | "batches">("overview");
+  const [analysisView, setAnalysisView] = useState<"overview" | "courses" | "companies" | "batches" | "course-category">("overview");
   const [stats, setStats] = useState({
     totalCompanies: 0,
     totalBatches: 0,
@@ -769,6 +771,7 @@ const SuperAdminLMS = observer(() => {
             <Wrap spacing={3}>
               {[
                 { key: "overview", label: "Overview", icon: BarChart3, color: "purple" },
+                { key: "course-category", label: "Course Category", icon: Folder, color: "pink" },
                 { key: "courses", label: "Courses", icon: BookOpen, color: "blue" },
                 { key: "companies", label: "Companies", icon: Building2, color: "teal" },
                 { key: "batches", label: "Batches", icon: GraduationCap, color: "orange" },
@@ -821,6 +824,7 @@ const SuperAdminLMS = observer(() => {
               />
             )}
 
+            {analysisView === "course-category" && <CourseCategoryMaster />}
             {analysisView === "courses" && <CoursesAnalytics />}
             {analysisView === "companies" && <CompaniesAnalytics />}
             {analysisView === "batches" && <BatchesAnalytics />}
