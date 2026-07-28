@@ -10,64 +10,45 @@ interface MetadataMap {
 
 export const METADATA_MAP: MetadataMap = {
   '/': {
-    title: 'LMS',
-    description: 'LMS'
-  },
-  '/therapist': {
-    title: 'Choose The Right Therapist For You | Dental Health',
-    description: 'Find the perfect therapist for your mental health journey with Dental Health. Our expert professionals offer personalized therapy sessions to help you overcome stress, anxiety, depression, and more. Get the support you need with a compassionate and experienced therapist. Book a consultation today!'
+    title: 'SkillShift | Modern Learning Management System',
+    description: 'Empower your team with SkillShift LMS. Create, manage, and track online courses effortlessly.'
   },
   '/contact-us': {
-    title: 'Contact Us | LMS',
-    description: 'Get in touch with LMS for expert mental health support. Call us at 9899 129943 or visit our clinic for personalized therapy and counseling services. We are here to help you on your journey to better mental well-being. Contact us today!'
+    title: 'Contact Us | SkillShift',
+    description: 'Get in touch with the SkillShift team for enterprise LMS support and sales inquiries.'
   },
   '/about-us': {
-    title: 'About Us | LMS',
-    description: 'LMS is dedicated to providing expert mental health care through personalized therapy and counseling. Our team of experienced therapists helps individuals overcome stress, anxiety, depression, and other mental health challenges. Learn more about our mission, values, and services.'
+    title: 'About Us | SkillShift',
+    description: 'SkillShift is dedicated to providing an expert modern learning platform. Learn more about our mission and values.'
   },
   '/blogs': {
-    title: 'Dental Healthcare Blog | Expert Mental Health Insights & Tips',
-    description: 'Explore expert mental health insights, tips, and resources on the Dental Healthcare Blog. Get guidance on stress management, anxiety, depression, therapy, and overall well-being. Stay informed and take a step toward better mental health today!'
+    title: 'SkillShift Blog | E-learning Insights',
+    description: 'Explore expert insights on e-learning, instructional design, and modern corporate training.'
   },
   '/service': {
-    title: 'Services We Offer | LMS',
-    description: 'Explore the wide range of mental health services offered at LMS, including therapy for individuals, couples, families, and more. Achieve emotional well-being with expert care.'
+    title: 'Services We Offer | SkillShift',
+    description: 'Explore the wide range of e-learning solutions and custom course development services offered by SkillShift.'
   },
   '/terms-condition': {
-    title: 'Terms & Conditions | LMS',
-    description: 'Read the Terms & Conditions of LMS for a clear understanding of our services, policies, and user agreements. Your privacy and rights are our priority.'
+    title: 'Terms & Conditions | SkillShift',
+    description: 'Read the Terms & Conditions of SkillShift for a clear understanding of our services, policies, and user agreements.'
   },
-  '/assessment': {
-    title: 'Comprehensive Mental Health Assessments at LMS',
-    description: 'Get accurate mental health assessments at LMS. Our expert evaluations help diagnose conditions like depression, anxiety, ADHD, and more—guiding personalized treatment plans.'
-  },
-  '/supervision': {
-    title: 'Professional Therapist Supervision Services | LMS',
-    description: 'At LMS, our clinical supervision ensures quality and ethical care for every patient. We maintain the highest standards in therapy through ongoing expert review and collaboration.'
-  },
-  '/self-assessment': {
-    title: 'Psychological Assessment Noida | Comprehensive Mental Health Assessments',
-    description: 'Take a short, confidential self-assessment to understand what you might be going through.'
-  },
-  '/dashboard/approvals': {
-    title: 'Approval Dashboard | Workflow',
-    description: 'Review pending approvals, inspect dynamic document data, and track approved or rejected workflow actions in one dashboard.'
+  '/dashboard': {
+    title: 'Dashboard | SkillShift',
+    description: 'SkillShift learner dashboard. Track your courses and progress.'
   }
 };
 
 export const getMetadataForPath = (path: string): PageMetadata => {
-  // Try to get exact path match
   if (METADATA_MAP[path]) {
     return METADATA_MAP[path];
   }
 
-  // For dynamic paths or nested routes, try to find a parent path
   for (const key in METADATA_MAP) {
     if (path.startsWith(key) && key !== '/') {
       return METADATA_MAP[key];
     }
   }
 
-  // Default fallback
   return METADATA_MAP['/'];
 };

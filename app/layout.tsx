@@ -27,9 +27,9 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
   } = stores;
   const pathname = usePathname();
   const [metadata, setMetadata] = useState<PageMetadata>({
-    title: "CRAFT",
+    title: "SkillShift",
     description:
-      "LMS",
+      "SkillShift Learning Management System",
   });
 
   useEffect(() => {
@@ -103,7 +103,7 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
         <meta name="description" content={metadata.description} />
         <meta
           property="og:image"
-          content="https://www.Dentalhealth.com/images/logo.png"
+          content="/logo.png"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta charSet="UTF-8" />

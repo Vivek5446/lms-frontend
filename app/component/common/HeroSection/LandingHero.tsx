@@ -37,6 +37,14 @@ import {
     FiTrendingUp,
     FiZap,
 } from "react-icons/fi";
+export interface LandingHeroSlide {
+  backgroundImage: string;
+  illustration: string;
+  floatingTitle: string;
+  floatingText: string;
+  statValue: string;
+  statLabel: string;
+}
 
 interface LandingHeroProps {
   searchQuery: string;
@@ -47,6 +55,7 @@ interface LandingHeroProps {
   backgroundImages?: string[];
   totalCourses?: number | string;
   transitionInterval?: number;
+  slides?: LandingHeroSlide[];
 }
 
 interface HeroSceneContent {
