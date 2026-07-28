@@ -348,6 +348,50 @@ const CommunitySidebar = observer(() => {
       <Drawer isOpen={chatStore.isCreateDrawerOpen || chatStore.isEditDrawerOpen} placement="bottom" onClose={handleDrawerClose} size="full">
         <DrawerOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
         <DrawerContent h="100vh" bg={drawerBg} color={inputColor} borderTopRadius="none">
+          {/* ── Full Width Sticky Header ── */}
+          <Box
+            w="100%"
+            px={{ base: 5, md: 8 }}
+            py={{ base: 4, md: 5 }}
+            bg={drawerBg}
+            borderBottom="1px solid"
+            borderColor={borderColor}
+            position="sticky"
+            top={0}
+            zIndex={20}
+          >
+            <HStack spacing={4} align="center">
+              <IconButton
+                aria-label="Close"
+                icon={<FiArrowLeft size={17} />}
+                onClick={handleDrawerClose}
+                variant="solid"
+                borderRadius="full"
+                w={{ base: "36px", md: "42px" }} h={{ base: "36px", md: "42px" }}
+                bg={useColorModeValue("gray.100", "gray.750")}
+                color={useColorModeValue("gray.700", "gray.200")}
+                border="1px solid"
+                borderColor={useColorModeValue("gray.200", "gray.600")}
+                boxShadow="sm"
+                _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+                _active={{ transform: "scale(0.95)" }}
+                transition="all 0.2s"
+                flexShrink={0}
+              />
+              <Box>
+                <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                  <Box as="span" color={headingColor}>{chatStore.editingCommunity ? "EDIT " : "CREATE "}</Box>
+                  <Box as="span" bgGradient={useColorModeValue("linear(to-r, brand.500, brand.700)", "linear(to-r, brand.300, brand.500)")} bgClip="text">
+                    COMMUNITY
+                  </Box>
+                </Text>
+                <Text fontSize="10px" color={subColor} fontWeight="700" letterSpacing="0.2em" mt={0.5}>
+                  {chatStore.editingCommunity ? "REFINE YOUR SPACE" : "BUILD YOUR TRIBE"}
+                </Text>
+              </Box>
+            </HStack>
+          </Box>
+
           <DrawerBody
             p={0} overflowY="auto"
             css={{
@@ -364,38 +408,6 @@ const CommunitySidebar = observer(() => {
               pt={{ base: 6, md: 10 }}
               pb="130px"
             >
-
-              {/* ── Header ── */}
-              <HStack mb={{ base: 6, md: 10 }} spacing={4} align="center">
-                <IconButton
-                  aria-label="Close"
-                  icon={<FiArrowLeft size={17} />}
-                  onClick={handleDrawerClose}
-                  variant="solid"
-                  borderRadius="full"
-                  w={{ base: "36px", md: "42px" }} h={{ base: "36px", md: "42px" }}
-                  bg={useColorModeValue("gray.100", "gray.750")}
-                  color={useColorModeValue("gray.700", "gray.200")}
-                  border="1px solid"
-                  borderColor={useColorModeValue("gray.200", "gray.600")}
-                  boxShadow="sm"
-                  _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
-                  _active={{ transform: "scale(0.95)" }}
-                  transition="all 0.2s"
-                  flexShrink={0}
-                />
-                <Box>
-                  <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
-                    <Box as="span" color={headingColor}>{chatStore.editingCommunity ? "EDIT " : "CREATE "}</Box>
-                    <Box as="span" bgGradient={useColorModeValue("linear(to-r, brand.500, brand.700)", "linear(to-r, brand.300, brand.500)")} bgClip="text">
-                      COMMUNITY
-                    </Box>
-                  </Text>
-                  <Text fontSize="10px" color={subColor} fontWeight="700" letterSpacing="0.2em" mt={0.5}>
-                    {chatStore.editingCommunity ? "REFINE YOUR SPACE" : "BUILD YOUR TRIBE"}
-                  </Text>
-                </Box>
-              </HStack>
 
               {/* ── Community Icon ── */}
               <Box mb={{ base: 6, md: 8 }}>
