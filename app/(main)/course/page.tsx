@@ -50,6 +50,7 @@ import {
   FiX,
   FiZap
 } from "react-icons/fi";
+import CourseCatalogHero from "./component/CourseCatalogHero";
 
 export type CatalogSort = "latest" | "popularity" | "price_asc" | "price_desc" | "highest_rated";
 export type PricingFilter = "all" | "free" | "paid";
@@ -396,7 +397,12 @@ const CoursesPage = observer(function CoursesPage() {
 
   return (
     <Box minH="100vh" bg={pageBg}>
-      <Box
+
+      <CourseCatalogHero
+  totalCourses={publicCoursesMeta.total}
+  onExploreCourses={scrollToCatalog}
+/>
+      {/* <Box
         bg={heroBg}
         borderBottomWidth="1px"
         borderColor={borderColor}
@@ -516,14 +522,12 @@ const CoursesPage = observer(function CoursesPage() {
             </HStack>
           </Box>
 
-          {/* Floating glass cards with photo backgrounds */}
           <Box
             display={{ base: "none", md: "block" }}
             position="relative"
             h="180px"
             aria-hidden="true"
           >
-            {/* Card 1: Start learning */}
             <Box
               position="absolute"
               top="8px"
@@ -541,7 +545,6 @@ const CoursesPage = observer(function CoursesPage() {
                 bgSize="cover"
                 bgPosition="center"
               />
-              {/* <Box position="absolute" inset={0} bgGradient={glassOverlayGradient} /> */}
               <Box
                 position="relative"
                 p={4}
@@ -581,7 +584,6 @@ const CoursesPage = observer(function CoursesPage() {
               </Box>
             </Box>
 
-            {/* Card 2: Learn your way */}
             <Box
               position="absolute"
               left="4px"
@@ -599,7 +601,6 @@ const CoursesPage = observer(function CoursesPage() {
                 bgSize="cover"
                 bgPosition="center"
               />
-              {/* <Box position="absolute" inset={0} bgGradient={glassOverlayGradient} /> */}
               <Box
                 position="relative"
                 p={3.5}
@@ -646,7 +647,7 @@ const CoursesPage = observer(function CoursesPage() {
             />
           </Box>
         </Grid>
-      </Box>
+      </Box> */}
 
       <Box maxW="full" mx="auto" px={{ base: 4, md: 8, lg: 12, xl: 16 }} py={{ base: 6, md: 9 }}>
         {isLearner && featuredAssignedCourses.length > 0 ? (

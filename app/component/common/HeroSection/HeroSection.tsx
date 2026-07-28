@@ -1,7 +1,7 @@
 "use client";
 
+import { CourseCarousel } from "@/app/(main)/course/component/CourseCarousel";
 import stores from "@/app/store/stores";
-import { CourseCard } from "@/app/(main)/course/component/CourseCard";
 import {
   Badge,
   Box,
@@ -25,25 +25,6 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { observer } from "mobx-react-lite";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import {
-  FaArrowRight,
-  FaBolt,
-  FaBook,
-  FaCheckCircle,
-  FaClock,
-  FaGraduationCap,
-  FaLock,
-  FaPlayCircle,
-  FaSearch,
-  FaStar,
-  FaTrophy,
-  FaUserGraduate,
-  FaUsers,
-} from "react-icons/fa";
-import { GiOpenBook } from "react-icons/gi";
 import {
   ArrowRight,
   BookOpen,
@@ -56,7 +37,21 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import { CourseCarousel } from "@/app/(main)/course/component/CourseCarousel";
+import { observer } from "mobx-react-lite";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import {
+  FaArrowRight,
+  FaBolt,
+  FaCheckCircle,
+  FaClock,
+  FaGraduationCap,
+  FaLock,
+  FaPlayCircle,
+  FaSearch,
+  FaStar,
+  FaTrophy
+} from "react-icons/fa";
 import {
   FiBriefcase,
   FiCode,
@@ -65,6 +60,8 @@ import {
   FiTarget,
   FiTrendingUp,
 } from "react-icons/fi";
+import LandingHero from "./LandingHero";
+import ContinueLearningSection from "./ContinueLearningSection";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -319,7 +316,52 @@ export default observer(function LMSLandingPage() {
 
   return (
     <Box minH="100vh" bg={bgMain}>
-      <Box
+
+      <>
+ <LandingHero
+  searchQuery={searchQuery}
+  onSearchChange={setSearchQuery}
+  onExplore={handleExplore}
+  transitionInterval={6500}
+  slides={[
+    {
+      backgroundImage: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      illustration: "/images/hero/learning-books.png",
+      floatingTitle: "Discover new courses",
+      floatingText: "Find your next skill",
+      statValue: "120+ courses",
+      statLabel: "Across multiple categories",
+    },
+    {
+      backgroundImage: "https://images.unsplash.com/photo-1758873272955-3b066dd11c6b?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8ODJ8fG9ubGluZSUyMGNvdXJzZXN8ZW58MHx8MHx8fDA%3D",
+      illustration: "/images/hero/online-learning.png",
+      floatingTitle: "Learn from anywhere",
+      floatingText: "Continue across devices",
+      statValue: "Self-paced",
+      statLabel: "Learning that fits your day",
+    },
+    {
+      backgroundImage: "https://images.unsplash.com/photo-1588702547923-7093a6c3ba33?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzR8fG9ubGluZSUyMGNvdXJzZXN8ZW58MHx8MHx8fDA%3D",
+      illustration: "/images/hero/certificate-growth.png",
+      floatingTitle: "Reach your goals",
+      floatingText: "Complete courses and grow",
+      statValue: "Progress tracking",
+      statLabel: "See how far you have come",
+    },
+  ]}
+/>
+
+  {isLearner && featuredAssignedCourses.length > 0 ? (
+    <ContinueLearningSection
+      courses={featuredAssignedCourses}
+      onContinue={(course) =>
+        router.push(`/course?courseId=${course.courseId}`)
+      }
+      onViewAll={() => router.push("/course")}
+    />
+  ) : null}
+</>
+      {/* <Box
         as="section"
         position="relative"
         overflow="hidden"
@@ -328,7 +370,6 @@ export default observer(function LMSLandingPage() {
         borderBottomWidth="1px"
         borderColor={subtleBorder}
       >
-        {/* Glows — animated to float, same size/position/color as before */}
         <MotionCircle
           animate={{ y: [0, -20, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
@@ -480,32 +521,6 @@ export default observer(function LMSLandingPage() {
                 </Button>
               </Flex>
 
-              {/* Secondary CTAs */}
-              {/* <HStack spacing={3} pt={1}>
-                <Button
-                  size="sm"
-                  borderRadius="full"
-                  bg={textPrimary}
-                  color="white"
-                  px={5}
-                  _hover={{ transform: "translateY(-2px)" }}
-                  onClick={handleExplore}
-                >
-                  Start learning free
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  borderRadius="full"
-                  color={textSecondary}
-                  leftIcon={<FaPlayCircle size={14} />}
-                  _hover={{ color: brand700 }}
-                >
-                  Watch demo
-                </Button>
-              </HStack> */}
-
-              {/* Icon feature strip (pace / instructors / certificates) */}
               <SimpleGrid
                 columns={{ base: 1, sm: 3 }}
                 spacing={4}
@@ -546,31 +561,6 @@ export default observer(function LMSLandingPage() {
                   </HStack>
                 ))}
               </SimpleGrid>
-
-              {/* <HStack spacing={1.5} flexWrap="wrap">
-                {categoryChips.map((item) => (
-                  <Button
-                    key={item}
-                    size="xs"
-                    variant="ghost"
-                    borderRadius="full"
-                    bg={glassBg}
-                    color={textSecondary}
-                    borderWidth="1px"
-                    borderColor={borderColor}
-                    fontSize="11px"
-                    px={3}
-                    h="26px"
-                    _hover={{
-                      color: brand700,
-                      borderColor: brand200,
-                      bg: cardBg,
-                    }}
-                  >
-                    {item}
-                  </Button>
-                ))}
-              </HStack> */}
 
               {isLearner && featuredAssignedCourses.length > 0 ? (
                 <Box
@@ -658,7 +648,6 @@ export default observer(function LMSLandingPage() {
 
             {isLearner && featuredAssignedCourses.length > 0 ? (
               <Box display={{ base: "none", lg: "block" }}>
-                {/* ...unchanged assigned-courses panel... */}
                 <Box
                   bgImage={learnerPanelBg}
                   borderRadius="2xl"
@@ -750,7 +739,6 @@ export default observer(function LMSLandingPage() {
                 </Box>
               </Box>
             ) : (
-              // Right column visual — image + floating stat badges anchored to it
               <Box
                 display={{ base: "none", lg: "block" }}
                 position="relative"
@@ -773,7 +761,6 @@ export default observer(function LMSLandingPage() {
                   />
                 </motion.div>
 
-                {/* Top-left badge — anchored as % of image box */}
                 <Box
                   position="absolute"
                   left="-6%"
@@ -800,7 +787,6 @@ export default observer(function LMSLandingPage() {
                   </Box>
                 </Box>
 
-                {/* Bottom-right badge — anchored as % of image box */}
                 <Box
                   position="absolute"
                   right="-8%"
@@ -830,7 +816,6 @@ export default observer(function LMSLandingPage() {
             )}
           </Grid>
 
-          {/* Bottom stats bar (Courses / Rating / Learners / Categories) */}
           <div className="relative mx-auto hidden max-w-7xl px-6 pt-10 pb-6 lg:block">
             <motion.div
               variants={fadeUp}
@@ -866,7 +851,7 @@ export default observer(function LMSLandingPage() {
             </motion.div>
           </div>
         </Box>
-      </Box>
+      </Box> */}
 
       <Box as="section" py={{ base: 8, md: 20 }}>
         <Box maxW="full" mx="auto" px={{ base: 4, md: 8 }}>
