@@ -1,25 +1,23 @@
 'use client';
 
-import { PERMISSION_KEYS, hasAnyCourseViewPermission, hasPermission } from '@/app/config/utils/permissions';
-import { isLearnerRole, isManagerRole } from '@/app/config/utils/roleAccess';
-import stores from '@/app/store/stores';
-import { Box, useColorMode } from '@chakra-ui/react';
-import { motion } from 'framer-motion';
-import { Compass, Home, SlidersHorizontal, User } from 'lucide-react';
+import React from 'react';
+import { Box, Flex, Icon, Link as ChakraLink, Text, useColorMode, Button } from '@chakra-ui/react';
+import NextLink from 'next/link';
+import { usePathname } from 'next/navigation';
+import { FiHome, FiBookOpen, FiUser, FiGrid, FiMenu, FiMessageCircle } from 'react-icons/fi';
 import { observer } from 'mobx-react-lite';
-import { usePathname, useRouter } from 'next/navigation';
+import stores from '@/app/store/stores';
+import { isLearnerRole, isManagerRole } from '@/app/config/utils/roleAccess';
+import { PERMISSION_KEYS, hasAnyCourseViewPermission, hasPermission } from '@/app/config/utils/permissions';
 
 interface MobileFooterNavProps {
   mobileMenuOpen: boolean;
   onToggleMobileMenu: () => void;
 }
 
-const spring = { type: 'spring' as const, stiffness: 320, damping: 28 };
-
 export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }: MobileFooterNavProps) => {
   const { colorMode } = useColorMode();
   const pathname = usePathname();
-  const router = useRouter();
 
   const user = stores.auth.user;
   const role = String(stores.auth.userType || user?.role || '').toLowerCase();
@@ -37,25 +35,30 @@ export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }:
           ? '/dashboard/batches'
           : '/course';
 
-  const navItems = [
-    { key: 'home', label: 'Home', icon: Home, href: '/' },
-    { key: 'courses', label: 'Courses', icon: Compass, href: '/course' },
-    // { key: 'learning', label: isLearner ? 'Learning' : 'Dashboard', icon: GraduationCap, href: isLoggedIn ? appHref : '/login' },
-    { key: 'profile', label: 'Profile', icon: User, href: isLoggedIn ? '/user-profile' : '/login' },
-    { key: 'more', label: 'More', icon: SlidersHorizontal, isDrawer: true },
-  ];
+  const bottomNavLinks = React.useMemo(() => {
+    const links = [
+      { href: '/', label: 'Home', icon: FiHome },
+      { href: '/course', label: 'Courses', icon: FiBookOpen },
+    ];
 
-  const getActiveKey = () => {
-    if (mobileMenuOpen) return 'more';
-    if (pathname === '/user-profile') return 'profile';
-    if (pathname === '/' || pathname === '') return 'home';
-    if (pathname.startsWith('/course')) return 'courses';
-    if (pathname.startsWith('/dashboard') || pathname.startsWith('/batches') || pathname.startsWith('/manager')) return 'learning';
-    return '';
-  };
+    // 3. Center Profile/Login Button
+    const profileLink = isLoggedIn
+      ? { href: '/dashboard', label: 'Dashboard', icon: FiUser, isCenter: true }
+      : { href: '/login', label: 'Login', icon: FiUser, isCenter: true };
 
-  const activeKey = getActiveKey();
-  const isDark = colorMode === 'dark';
+    links.push(profileLink);
+
+    // 4. Fill the 4th spot so we always have exactly 5 tabs (including 'More')
+    if (isLearner) {
+      links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
+    } else if (isManagerUser) {
+      links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
+    } else {
+      links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
+    }
+
+    return links;
+  }, [appHref, isLearner, isLoggedIn, isManagerUser]);
 
   return (
     <Box
@@ -65,65 +68,141 @@ export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }:
       right="0"
       bottom="0"
       zIndex="1000"
-      px={4}
-      pb="calc(12px + env(safe-area-inset-bottom, 0px))"
-      pt={2}
-      pointerEvents="none"
+      bg={colorMode === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(5, 5, 5, 0.95)'}
+      borderTop="1px solid"
+      borderColor={colorMode === 'light' ? 'gray.200' : 'gray.800'}
+      backdropFilter="blur(24px)"
+      boxShadow={colorMode === 'light' ? '0 -4px 30px rgba(0, 0, 0, 0.04)' : '0 -4px 30px rgba(0, 0, 0, 0.5)'}
+      pb="env(safe-area-inset-bottom, 0px)"
     >
-      <nav
-        className={`pointer-events-auto relative flex w-full max-w-md items-center justify-between mx-auto rounded-full p-1.5 backdrop-blur-xl transition-colors duration-300 ${
-          isDark
-            ? 'bg-slate-900/90 ring-1 ring-slate-800 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)]'
-            : 'bg-white/90 ring-1 ring-slate-200/80 shadow-[0_10px_40px_-10px_rgba(15,23,42,0.18)]'
-        }`}
+      <Flex
+        h="68px"
+        w="full"
+        maxW="520px"
+        mx="auto"
+        align="center"
+        justify="space-around"
+        px={2}
+        position="relative"
       >
-        {navItems.map((item) => {
-          const isActive = activeKey === item.key;
-
-          const handleClick = () => {
-            if (item.isDrawer) {
-              onToggleMobileMenu();
-            } else {
-              if (mobileMenuOpen) {
-                onToggleMobileMenu();
-              }
-              if (item.href) {
-                router.push(item.href);
-              }
-            }
-          };
+        {bottomNavLinks.map((link: any) => {
+          const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+          const isCenter = link.isCenter;
 
           return (
-            <motion.button
-              key={item.key}
-              whileTap={{ scale: 0.93 }}
-              onClick={handleClick}
-              className="relative flex flex-1 flex-col items-center justify-center py-2 min-h-[48px] select-none"
+            <ChakraLink
+              key={link.href}
+              as={NextLink}
+              href={link.href}
+              position="relative"
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              justifyContent="center"
+              h={isCenter ? "64px" : "full"}
+              w={isCenter ? "64px" : "14"}
+              mt={isCenter ? "-36px" : "0"}
+              borderRadius={isCenter ? "full" : "none"}
+              border={isCenter ? "5px solid" : "none"}
+              borderColor={isCenter ? (colorMode === 'light' ? 'white' : 'gray.900') : "transparent"}
+              bgGradient={isCenter ? (colorMode === 'light' ? 'linear(to-br, brand.400, brand.600)' : 'linear(to-br, brand.500, brand.700)') : "none"}
+              color={
+                isCenter
+                  ? "white"
+                  : (isActive ? (colorMode === 'light' ? 'brand.600' : 'brand.400') : (colorMode === 'light' ? 'gray.400' : 'gray.500'))
+              }
+              boxShadow={isCenter ? (colorMode === 'light' ? '0 10px 20px -5px var(--chakra-colors-brand-500)' : '0 10px 20px -5px rgba(0,0,0,0.8)') : "none"}
+              transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+              _hover={{ textDecoration: 'none', transform: isCenter ? 'translateY(-2px)' : 'none' }}
+              _active={{ transform: 'scale(0.92)' }}
+              zIndex={isCenter ? 10 : 1}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="mobile-nav-pill"
-                  transition={spring}
-                  className="absolute inset-1 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md shadow-blue-500/30"
+              {/* Active Indicator (Line at top) */}
+              {isActive && !isCenter && (
+                <Box
+                  position="absolute"
+                  top="-1px"
+                  h="3px"
+                  w="28px"
+                  borderBottomRadius="md"
+                  bg={colorMode === 'light' ? 'brand.500' : 'brand.400'}
+                  boxShadow={colorMode === 'light' ? '0 2px 8px var(--chakra-colors-brand-200)' : '0 2px 8px var(--chakra-colors-brand-800)'}
                 />
               )}
-              <span
-                className={`relative z-10 flex flex-col items-center gap-0.5 transition-colors duration-200 ${
-                  isActive
-                    ? 'text-white font-bold'
-                    : isDark
-                      ? 'text-slate-400 hover:text-slate-200'
-                      : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <item.icon className="h-5 w-5 stroke-[2.2]" />
-                <span className="text-[10.5px] font-semibold leading-none">{item.label}</span>
-              </span>
-            </motion.button>
+
+              {/* Icon */}
+              <Icon
+                as={link.icon}
+                boxSize={isCenter ? "26px" : "22px"}
+                transition="all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                transform={(!isCenter && isActive) ? 'scale(1.15) translateY(-2px)' : 'scale(1) translateY(0)'}
+                mb={isCenter ? 0 : 1}
+              />
+
+              {/* Label */}
+              {!isCenter && (
+                <Text
+                  fontSize="10px"
+                  fontWeight={isActive ? "700" : "500"}
+                  transition="all 0.3s"
+                  color={isActive ? (colorMode === 'light' ? 'brand.600' : 'brand.400') : (colorMode === 'light' ? 'gray.500' : 'gray.500')}
+                  lineHeight="1"
+                  noOfLines={1}
+                >
+                  {link.label}
+                </Text>
+              )}
+            </ChakraLink>
           );
         })}
-      </nav>
+
+        {/* 'More' / Hamburger Button */}
+        <Button
+          variant="unstyled"
+          position="relative"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          h="full"
+          w="14"
+          color={mobileMenuOpen ? (colorMode === 'light' ? 'brand.600' : 'brand.400') : (colorMode === 'light' ? 'gray.400' : 'gray.500')}
+          transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+          _active={{ transform: 'scale(0.92)' }}
+          onClick={onToggleMobileMenu}
+        >
+          {/* Active Indicator (Line at top) */}
+          {mobileMenuOpen && (
+            <Box
+              position="absolute"
+              top="-1px"
+              h="3px"
+              w="28px"
+              borderBottomRadius="md"
+              bg={colorMode === 'light' ? 'brand.500' : 'brand.400'}
+              boxShadow={colorMode === 'light' ? '0 2px 8px var(--chakra-colors-brand-200)' : '0 2px 8px var(--chakra-colors-brand-800)'}
+            />
+          )}
+
+          <Icon
+            as={FiMenu}
+            boxSize="22px"
+            transition="all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+            transform={mobileMenuOpen ? 'scale(1.15) translateY(-2px)' : 'scale(1) translateY(0)'}
+            mb={1}
+          />
+
+          <Text
+            fontSize="10px"
+            fontWeight={mobileMenuOpen ? "700" : "500"}
+            transition="all 0.3s"
+            color={mobileMenuOpen ? (colorMode === 'light' ? 'brand.600' : 'brand.400') : (colorMode === 'light' ? 'gray.500' : 'gray.500')}
+            lineHeight="1"
+          >
+            More
+          </Text>
+        </Button>
+      </Flex>
     </Box>
   );
 });
-

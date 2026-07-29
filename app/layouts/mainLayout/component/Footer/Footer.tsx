@@ -49,7 +49,6 @@ export const Footer: React.FC = () => {
   return (
     <Box
       as="footer"
-      display={{ base: "none", md: "block" }}
       bg={footerBg}
       borderTop="1px solid"
       borderColor={footerBorder}
