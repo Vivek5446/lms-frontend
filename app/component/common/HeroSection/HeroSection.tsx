@@ -1037,7 +1037,7 @@ export default observer(function LMSLandingPage() {
         </Box>
       </Box>
       {/* Testimonials */}
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section className="px-16 py-16">
         <VStack align="start" spacing={2}>
           <Text
             fontSize="xs"
@@ -1103,7 +1103,7 @@ export default observer(function LMSLandingPage() {
       </section>
 
       {/* Dashboard promo */}
-      <section className="mx-auto max-w-7xl px-6 pb-16">
+      <section className="px-16 pb-16">
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -1214,7 +1214,7 @@ export default observer(function LMSLandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="mx-auto max-w-7xl px-6 pb-16">
+      <section className=" px-12 pb-16">
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -1247,7 +1247,7 @@ export default observer(function LMSLandingPage() {
       </section>
 
       {/* Footer perks */}
-      <section className="mx-auto max-w-7xl px-6 pb-12">
+      <section className="px-16 pb-12">
         <div className="grid grid-cols-2 gap-8 border-t border-slate-100 pt-10 md:grid-cols-4">
           <Perk
             icon={<ShieldCheck className="h-5 w-5 text-slate-500" />}
