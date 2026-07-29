@@ -125,17 +125,17 @@ const Header: React.FC = observer(() => {
     <>
       <Box
         as="header"
-        position={{ base: 'relative', md: 'fixed' }}
+        position="fixed"
         w="100%"
         top="0"
         zIndex="1000"
-        bg={colorMode === 'light' ? 'rgba(255, 255, 255, 0.75)' : 'rgba(10, 15, 30, 0.75)'}
+        bg={colorMode === 'light' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(10, 15, 30, 0.85)'}
         backdropFilter="blur(24px) saturate(200%)"
         borderBottom="1px solid"
         borderColor={colorMode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'}
         boxShadow={scrolled ? (colorMode === 'light' ? '0 4px 20px -4px rgba(0, 0, 0, 0.06)' : '0 4px 20px -4px rgba(0, 0, 0, 0.5)') : 'none'}
         transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-        py={2}
+        py={{ base: 1.5, md: 2 }}
       >
         {/* Premium subtle top gradient line */}
         <Box
@@ -275,56 +275,76 @@ const Header: React.FC = observer(() => {
 
               {isLoggedIn ? (
                 <>
-                  <Menu>
-                    <MenuButton
-                      as={Button}
-                      variant="ghost"
-                      p={1}
-                      h="auto"
-                      borderRadius="full"
-                      display={{ base: 'none', md: 'inline-flex' }}
-                      _hover={{ bg: colorMode === 'light' ? 'brand.50' : 'gray.800' }}
-                    >
-                      <HStack spacing={3}>
-                        <Avatar
-                          size="sm"
-                          name={displayName}
-                          src={user?.pic?.url || ''}
-                          bg="brand.600"
-                          color="white"
-                        />
+                  {/* Desktop Dropdown Menu */}
+                  <Box display={{ base: 'none', md: 'inline-flex' }}>
+                    <Menu>
+                      <MenuButton
+                        as={Button}
+                        variant="ghost"
+                        p={1}
+                        h="auto"
+                        borderRadius="full"
+                        _hover={{ bg: colorMode === 'light' ? 'brand.50' : 'gray.800' }}
+                      >
+                        <HStack spacing={3}>
+                          <Avatar
+                            size="sm"
+                            name={displayName}
+                            src={user?.pic?.url || ''}
+                            bg="brand.600"
+                            color="white"
+                          />
+                        </HStack>
+                      </MenuButton>
+                      <MenuList borderRadius="2xl" p={2}>
+                        <Box px={3} py={2}>
+                          <Text fontWeight="bold" noOfLines={1}>{displayName}</Text>
+                          <Text fontSize="sm" color="gray.500" noOfLines={1}>{user?.username || ''}</Text>
+                        </Box>
+                        <MenuItem borderRadius="xl" onClick={() => router.push('/user-profile')}>
+                          View profile
+                        </MenuItem>
+                        <MenuItem borderRadius="xl" as={NextLink} href={appHref}>
+                          {isLearner ? 'Go to learning' : 'Open dashboard'}
+                        </MenuItem>
+                        <MenuItem borderRadius="xl" color="red.500" onClick={handleLogout}>
+                          Logout
+                        </MenuItem>
+                      </MenuList>
+                    </Menu>
+                  </Box>
 
-                      </HStack>
-                    </MenuButton>
-                    <MenuList borderRadius="2xl" p={2}>
-                      <Box px={3} py={2}>
-                        <Text fontWeight="bold" noOfLines={1}>{displayName}</Text>
-                        <Text fontSize="sm" color="gray.500" noOfLines={1}>{user?.username || ''}</Text>
-                      </Box>
-                      <MenuItem borderRadius="xl" onClick={() => router.push('/user-profile')}>
-                        View profile
-                      </MenuItem>
-                      <MenuItem borderRadius="xl" as={NextLink} href={appHref}>
-                        {isLearner ? 'Go to learning' : 'Open dashboard'}
-                      </MenuItem>
-                      <MenuItem borderRadius="xl" color="red.500" onClick={handleLogout}>
-                        Logout
-                      </MenuItem>
-                    </MenuList>
-                  </Menu>
+                  {/* Mobile Profile Avatar Action */}
+                  <IconButton
+                    aria-label="Profile"
+                    icon={
+                      <Avatar
+                        size="xs"
+                        name={displayName}
+                        src={user?.pic?.url || ''}
+                        bg="brand.600"
+                        color="white"
+                      />
+                    }
+                    variant="ghost"
+                    size="sm"
+                    borderRadius="full"
+                    display={{ base: 'flex', md: 'none' }}
+                    onClick={() => router.push('/user-profile')}
+                  />
                 </>
               ) : (
                 <ChakraLink
                   as={NextLink}
                   href="/login"
-                  display={{ base: 'none', sm: 'flex' }}
+                  display={{ base: 'flex', sm: 'flex' }}
                   bgGradient={colorMode === 'light' ? 'linear(to-r, brand.600, brand.500)' : 'linear(to-r, brand.500, brand.400)'}
                   color="white"
-                  px={6}
-                  py={2}
+                  px={{ base: 4, sm: 6 }}
+                  py={1.5}
                   borderRadius="full"
                   fontWeight="bold"
-                  fontSize="sm"
+                  fontSize="xs"
                   boxShadow={colorMode === 'light' ? '0 4px 14px 0 rgba(79, 70, 229, 0.3)' : '0 4px 14px 0 rgba(99, 102, 241, 0.3)'}
                   _hover={{
                     bgGradient: colorMode === 'light' ? 'linear(to-r, brand.700, brand.600)' : 'linear(to-r, brand.600, brand.500)',
@@ -337,57 +357,6 @@ const Header: React.FC = observer(() => {
                   Login
                 </ChakraLink>
               )}
-
-              <Button
-                display={{ base: 'flex', md: 'none' }}
-                variant="ghost"
-                onClick={() => setIsSidebarOpen(true)}
-                aria-label="Toggle Sidebar Menu"
-                rounded="lg"
-                minH="44px"
-                minW="44px"
-                p={0}
-                _hover={{ bg: colorMode === 'light' ? 'brand.50' : 'gray.700' }}
-              >
-                {/* Animated Hamburger Icon */}
-                <Box position="relative" w="20px" h="14px">
-                  {/* Top Line */}
-                  <Box
-                    position="absolute"
-                    h="2px"
-                    w="100%"
-                    bg={colorMode === 'light' ? 'gray.700' : 'gray.200'}
-                    borderRadius="full"
-                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                    top={isSidebarOpen ? '6px' : '0'}
-                    transform={isSidebarOpen ? 'rotate(45deg)' : 'none'}
-                  />
-                  {/* Middle Line */}
-                  <Box
-                    position="absolute"
-                    h="2px"
-                    w="100%"
-                    bg={colorMode === 'light' ? 'gray.700' : 'gray.200'}
-                    borderRadius="full"
-                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                    top="6px"
-                    opacity={isSidebarOpen ? 0 : 1}
-                    transform={isSidebarOpen ? 'translateX(10px)' : 'none'}
-                  />
-                  {/* Bottom Line */}
-                  <Box
-                    position="absolute"
-                    h="2px"
-                    w={isSidebarOpen ? "100%" : "75%"}
-                    bg={colorMode === 'light' ? 'gray.700' : 'gray.200'}
-                    borderRadius="full"
-                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                    bottom={isSidebarOpen ? '6px' : '0'}
-                    right="0"
-                    transform={isSidebarOpen ? 'rotate(-45deg)' : 'none'}
-                  />
-                </Box>
-              </Button>
             </HStack>
             </Flex>
           </Flex>

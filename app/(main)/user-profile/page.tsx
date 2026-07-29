@@ -454,7 +454,7 @@ const ProfilePage: React.FC = observer(() => {
     <Box
       bg={pageBg}
       minH="100vh"
-      py={{ base: 4, md: 8 }}
+      py={{ base: 2, md: 8 }}
       px={{ base: 4, sm: 6, md: "60px" }}
       transition="background 0.2s"
     >

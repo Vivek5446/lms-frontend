@@ -50,7 +50,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <Header />
       </Box>
 
-      <Box as="main" pt={{ base: 0, md: "64px" }}>
+      <Box as="main" pt={{ base: pathname.startsWith("/chat") ? 0 : "48px", md: "64px" }}>
         {children}
       </Box>
 
