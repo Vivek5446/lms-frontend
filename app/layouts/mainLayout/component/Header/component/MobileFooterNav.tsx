@@ -73,7 +73,7 @@ export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }:
       borderColor={colorMode === 'light' ? 'gray.200' : 'gray.800'}
       backdropFilter="blur(24px)"
       boxShadow={colorMode === 'light' ? '0 -4px 30px rgba(0, 0, 0, 0.04)' : '0 -4px 30px rgba(0, 0, 0, 0.5)'}
-      pb="env(safe-area-inset-bottom, 0px)"
+      pb="calc(env(safe-area-inset-bottom, 0px) + 8px)"
     >
       <Flex
         h="68px"

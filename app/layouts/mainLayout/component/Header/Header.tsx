@@ -135,7 +135,8 @@ const Header: React.FC = observer(() => {
         borderColor={colorMode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'}
         boxShadow={scrolled ? (colorMode === 'light' ? '0 4px 20px -4px rgba(0, 0, 0, 0.06)' : '0 4px 20px -4px rgba(0, 0, 0, 0.5)') : 'none'}
         transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-        py={{ base: 1.5, md: 2 }}
+        pt={{ base: 'calc(env(safe-area-inset-top, 0px) + 6px)', md: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}
+        pb={{ base: 1.5, md: 2 }}
       >
         {/* Premium subtle top gradient line */}
         <Box
@@ -238,43 +239,43 @@ const Header: React.FC = observer(() => {
                 borderRadius="full"
               />
 
-              {/* Notification Icon */}
-              <IconButton
-                aria-label="Notifications"
-                icon={
-                  <Box position="relative" display="flex" alignItems="center" justifyContent="center">
-                    <Icon as={FiBell} boxSize="20px" />
-                    <Box
-                      position="absolute"
-                      top="0px"
-                      right="2px"
-                      w="7px"
-                      h="7px"
-                      bg="red.500"
-                      borderRadius="full"
-                      boxShadow="0 0 0 1px rgba(0,0,0,0.1)"
-                    />
-                  </Box>
-                }
-                variant="ghost"
-                size="md"
-                color={colorMode === 'light' ? 'gray.700' : 'gray.200'}
-                bg={{ base: 'transparent', md: colorMode === 'light' ? 'gray.50' : 'rgba(255, 255, 255, 0.05)' }}
-                border={{ base: 'none', md: '1px solid' }}
-                borderColor={{ base: 'transparent', md: colorMode === 'light' ? 'gray.200' : 'rgba(255, 255, 255, 0.08)' }}
-                _hover={{
-                  bg: colorMode === 'light' ? 'gray.100' : 'rgba(255, 255, 255, 0.12)',
-                  color: colorMode === 'light' ? 'brand.600' : 'white',
-                  transform: 'translateY(-1px)',
-                }}
-                _active={{ transform: 'scale(0.95)' }}
-                transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                borderRadius="full"
-                display={{ base: 'flex', md: 'flex' }}
-              />
-
               {isLoggedIn ? (
                 <>
+                  {/* Notification Icon */}
+                  <IconButton
+                    aria-label="Notifications"
+                    icon={
+                      <Box position="relative" display="flex" alignItems="center" justifyContent="center">
+                        <Icon as={FiBell} boxSize="20px" />
+                        <Box
+                          position="absolute"
+                          top="0px"
+                          right="2px"
+                          w="7px"
+                          h="7px"
+                          bg="red.500"
+                          borderRadius="full"
+                          boxShadow="0 0 0 1px rgba(0,0,0,0.1)"
+                        />
+                      </Box>
+                    }
+                    variant="ghost"
+                    size="md"
+                    color={colorMode === 'light' ? 'gray.700' : 'gray.200'}
+                    bg={{ base: 'transparent', md: colorMode === 'light' ? 'gray.50' : 'rgba(255, 255, 255, 0.05)' }}
+                    border={{ base: 'none', md: '1px solid' }}
+                    borderColor={{ base: 'transparent', md: colorMode === 'light' ? 'gray.200' : 'rgba(255, 255, 255, 0.08)' }}
+                    _hover={{
+                      bg: colorMode === 'light' ? 'gray.100' : 'rgba(255, 255, 255, 0.12)',
+                      color: colorMode === 'light' ? 'brand.600' : 'white',
+                      transform: 'translateY(-1px)',
+                    }}
+                    _active={{ transform: 'scale(0.95)' }}
+                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                    borderRadius="full"
+                    display={{ base: 'flex', md: 'flex' }}
+                  />
+
                   {/* Desktop Dropdown Menu */}
                   <Box display={{ base: 'none', md: 'inline-flex' }}>
                     <Menu>
