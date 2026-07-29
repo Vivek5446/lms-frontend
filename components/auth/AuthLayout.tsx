@@ -57,7 +57,7 @@ export function AuthLayout({
       </div>
 
       {/* ── Fixed top bar ── */}
-      <div className="fixed top-6 left-0 w-full flex justify-between items-center px-6 z-[120] pointer-events-none">
+      <div className="fixed left-0 w-full flex justify-between items-center px-6 z-[120] pointer-events-none top-[calc(40px+1.5rem)] sm:top-6">
         <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-black/40 dark:text-white/30 transition-colors">ACADEMY</span>
         <div className="flex items-center gap-2">
           <span className="text-[8px] font-bold tracking-[0.3em] uppercase text-black/30 dark:text-white/20 transition-colors">Learner Access</span>
@@ -75,7 +75,8 @@ export function AuthLayout({
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="pt-20 pb-8 px-7 flex flex-col items-center"
+            className="pb-8 px-7 flex flex-col items-center"
+            style={{ paddingTop: 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 2.5rem)' }}
           >
             <h1 className="text-[2rem] font-[900] leading-tight text-transparent bg-clip-text bg-gradient-to-br from-primary via-[#8b5cf6] to-[#F7B733] drop-shadow-[0_10px_20px_rgba(var(--primary),0.2)] tracking-tighter uppercase whitespace-nowrap">
               LUMA LMS
@@ -98,7 +99,7 @@ export function AuthLayout({
 
         {/* Sticky footer — button + link */}
         {(mobileAction || mobileFooter) && (
-          <div className="sticky bottom-0 z-20 px-6 pb-8 pt-6 flex flex-col gap-4">
+          <div className="sticky bottom-0 z-20 px-6 pt-6 flex flex-col gap-4" style={{ paddingBottom: '80px' }}>
             {mobileAction}
             {mobileFooter}
           </div>

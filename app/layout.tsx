@@ -1,7 +1,7 @@
 "use client";
 
 import { observer } from "mobx-react-lite";
-import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
+import { ChakraProvider, ColorModeScript, useColorMode } from "@chakra-ui/react";
 import { buildAppTheme, lato, shouldUseCompanyDashboardBranding } from "./theme/theme";
 import "./globals.css";
 import MainLayout from "./layouts/mainLayout/MainLayout";
@@ -50,7 +50,20 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // // // console.log('RootLayout hydrated, body classes:', document.body.className);
+      // Removed viewport-fit=cover logic since we are relying on standard Android StatusBar
+
+      // Fallback/Enhancement: Use Capacitor SafeArea plugin to inject CSS variables directly
+      import('capacitor-plugin-safe-area').then(({ SafeArea }) => {
+        SafeArea.getSafeAreaInsets().then(({ insets }) => {
+          document.documentElement.style.setProperty('--safe-area-top', `${insets.top}px`);
+          document.documentElement.style.setProperty('--safe-area-bottom', `${insets.bottom}px`);
+        }).catch(() => {}); // ignore if not in capacitor
+
+        SafeArea.addListener('safeAreaChanged', data => {
+          document.documentElement.style.setProperty('--safe-area-top', `${data.insets.top}px`);
+          document.documentElement.style.setProperty('--safe-area-bottom', `${data.insets.bottom}px`);
+        });
+      }).catch(() => {});
     }
   }, []);
 
@@ -105,20 +118,62 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
           property="og:image"
           content="/logo.png"
         />
+        <meta name="theme-color" content="#171923" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta charSet="UTF-8" />
         <ColorModeScript initialColorMode="light" />
       </head>
       <body className={`${lato.className} ${montserrat.className}`}>
         <ChakraProvider theme={activeTheme}>
+          <NavigationBarManager />
           <Notification />
           <Suspense fallback={null}>
-            <LayoutComponent>{children}</LayoutComponent>
+             <LayoutComponent>{children}</LayoutComponent>
           </Suspense>
         </ChakraProvider>
       </body>
     </html>
   );
 });
+
+import { Box } from '@chakra-ui/react';
+
+const MobileStatusBar = () => {
+  const { colorMode } = useColorMode();
+  return (
+    <Box 
+      display={{ base: 'block', md: 'none' }}
+      position="fixed"
+      top={0}
+      left={0}
+      right={0}
+      height="40px"
+      bg={colorMode === 'light' ? '#FFFFFF' : '#171923'}
+      zIndex={999999}
+    />
+  );
+};
+
+const NavigationBarManager = () => {
+  const { colorMode } = useColorMode();
+
+  useEffect(() => {
+    // 1. Navigation Bar (Bottom)
+    import('@capawesome/capacitor-navigation-bar').then(({ NavigationBar }) => {
+      const navColor = colorMode === 'light' ? '#FFFFFF' : '#0A0F1E';
+      NavigationBar.setColor({ color: navColor }).catch(() => {});
+      NavigationBar.setStyle({ style: colorMode === 'light' ? 'LIGHT' : 'DARK' as any }).catch(() => {});
+    }).catch(() => {});
+
+    // 2. Status Bar (Top)
+    import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+      StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
+      StatusBar.setStyle({ style: colorMode === 'light' ? Style.Light : Style.Dark }).catch(() => {});
+    }).catch(() => {});
+  }, [colorMode]);
+
+  return <MobileStatusBar />;
+};
 
 export default RootLayout;

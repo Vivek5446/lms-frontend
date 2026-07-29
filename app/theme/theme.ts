@@ -18,6 +18,14 @@ const breakpoints = {
 };
 
 const components = {
+  Drawer: {
+    baseStyle: {
+      dialog: {
+        paddingTop: { base: '40px', md: '0' },
+        paddingBottom: { base: '64px', md: '0' },
+      },
+    },
+  },
   Button: {
     baseStyle: {
       fontWeight: "bold",

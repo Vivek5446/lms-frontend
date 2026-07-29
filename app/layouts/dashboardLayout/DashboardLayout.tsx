@@ -108,6 +108,7 @@ const DashboardLayout = observer(({ children }: { children: React.ReactNode }) =
             }
           >
             {children}
+            <div className="block xl:hidden" style={{ height: '100px', width: '100%', flexShrink: 0 }} />
           </ContentContainer>
         </Container>
       </MainContainer>
@@ -152,7 +153,13 @@ const HeaderContainer = styled.div<{
 }>`
   z-index: 99;
   height: ${headerHeight};
+  padding-top: 0;
   position: fixed;
+  
+  @media (max-width: 768px) {
+    height: calc(${headerHeight} + max(env(safe-area-inset-top, 0px), 36px));
+    padding-top: max(env(safe-area-inset-top, 0px), 36px);
+  }
   top: 0;
   right: 0;
   left: ${({ $sidebarOffset }) => $sidebarOffset};
@@ -174,14 +181,15 @@ const HeaderContainer = styled.div<{
 `;
 
 const ContentContainer = styled.div<{ $isMobile: boolean }>`
-  padding: ${({ $isMobile }) =>
-    $isMobile ? '0 0 24px' : `${contentLargeBodyPadding}`};
+  padding: ${({ $isMobile }) => ($isMobile ? '0' : `${contentLargeBodyPadding}`)};
+  padding-bottom: ${({ $isMobile }) =>
+    $isMobile ? 'max(env(safe-area-inset-bottom, 0px), 48px)' : `${contentLargeBodyPadding}`};
   width: 100%;
   max-width: 100%;
   min-width: 0;
   overflow-x: hidden;
-  min-height: calc(100dvh - ${headerHeight});
+  min-height: calc(100dvh - calc(${headerHeight} + var(--safe-area-top, env(safe-area-inset-top, 0px))));
   transition: all 0.3s ease-in-out;
-  margin-top: ${headerHeight};
+  margin-top: calc(${headerHeight} + var(--safe-area-top, env(safe-area-inset-top, 0px)));
   box-sizing: border-box;
 `;

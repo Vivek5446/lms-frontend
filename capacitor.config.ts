@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const serverUrl =
   process.env.CAPACITOR_SERVER_URL ||
-  (process.env.CAPACITOR_DEV_SERVER === 'true' ? 'http://10.0.2.2:3000' : undefined);
+  (process.env.CAPACITOR_DEV_SERVER === 'true' ? 'http://172.30.18.126:3000' : 'http://172.30.18.126:3000');
 
 const config: CapacitorConfig = {
   appId: 'com.lms.frontend',
@@ -22,6 +22,11 @@ const config: CapacitorConfig = {
       launchShowDuration: 3000,
       launchAutoHide: true,
       androidSplashResourceName: "splash"
+    },
+    StatusBar: {
+      overlaysWebView: false,
+      backgroundColor: "#171923",
+      style: "DARK"
     }
   }
 };

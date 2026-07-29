@@ -677,7 +677,7 @@ const ChatWindow = observer(() => {
         </VStack>
       </Box>
 
-      <Box p={4} bg={bgPanel} borderTop="1px solid" borderColor={borderColor}>
+      <Box p={4} pb={{ base: "64px", md: 4 }} bg={bgPanel} borderTop="1px solid" borderColor={borderColor}>
         {isSelectionMode ? (
           <Flex
             w="full"

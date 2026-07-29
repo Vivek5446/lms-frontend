@@ -127,7 +127,7 @@ const Header: React.FC = observer(() => {
         as="header"
         position="fixed"
         w="100%"
-        top="0"
+        top={{ base: '40px', md: '0' }}
         zIndex="1000"
         bg={colorMode === 'light' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(10, 15, 30, 0.85)'}
         backdropFilter="blur(24px) saturate(200%)"
@@ -135,8 +135,10 @@ const Header: React.FC = observer(() => {
         borderColor={colorMode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'}
         boxShadow={scrolled ? (colorMode === 'light' ? '0 4px 20px -4px rgba(0, 0, 0, 0.06)' : '0 4px 20px -4px rgba(0, 0, 0, 0.5)') : 'none'}
         transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-        pt={{ base: 'calc(env(safe-area-inset-top, 0px) + 6px)', md: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}
         pb={{ base: 1.5, md: 2 }}
+        style={{
+          paddingTop: '8px'
+        }}
       >
         {/* Premium subtle top gradient line */}
         <Box

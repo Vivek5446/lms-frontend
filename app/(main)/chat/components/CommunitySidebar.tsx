@@ -602,7 +602,7 @@ const CommunitySidebar = observer(() => {
           <Box
             position="absolute" bottom={0} left={0} right={0}
             bg={footerBg}
-            px={{ base: 5, md: 8 }} pb={{ base: 6, md: 8 }} pt={8}
+            px={{ base: 5, md: 8 }} pb={{ base: "64px", md: 8 }} pt={8}
           >
             <Box maxW={{ base: "100%", md: "600px", lg: "680px" }} mx="auto">
               <Button

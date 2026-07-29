@@ -311,7 +311,7 @@ export function DashboardFilters({
                 "linear-gradient(to top, #1a202c 70%, transparent)"
               )}
               px={5}
-              pb={6}
+              pb={{ base: "64px", md: 6 }}
               pt={8}
             >
               <Box maxW={{ base: "100%", md: "600px", lg: "680px" }} mx="auto">
