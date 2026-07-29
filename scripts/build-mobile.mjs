@@ -74,9 +74,12 @@ function getMobileBackendUrl() {
 const mobileBackendUrl = getMobileBackendUrl();
 
 if (process.platform === 'win32') {
-  process.env.JAVA_HOME = 'd:\\personal\\dental\\jdk21\\jdk-21.0.6+7';
-  process.env.PATH = `d:\\personal\\dental\\jdk21\\jdk-21.0.6+7\\bin;${process.env.PATH}`;
+  process.env.JAVA_HOME = 'f:\\personal\\dental\\jdk21\\jdk-21.0.6+7';
+  process.env.PATH = `f:\\personal\\dental\\jdk21\\jdk-21.0.6+7\\bin;${process.env.PATH}`;
+  process.env.ANDROID_HOME = 'F:\\AndroidSDK';
 }
+
+
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {

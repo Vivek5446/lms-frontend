@@ -9,14 +9,14 @@ import {
   Menu, MenuButton, MenuList, MenuItem, MenuDivider, Textarea, useToast
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import stores from "../../../store/stores";
 import { FiArrowLeft, FiMoreVertical, FiSend, FiX, FiPaperclip, FiAlertTriangle, FiTrash2, FiCheck, FiEdit } from "react-icons/fi";
 const ChatWindow = observer(() => {
   const { chatStore } = stores;
   const router = useRouter();
-  const params = useParams();
-  const communityId = params?.communityId as string;
+  const searchParams = useSearchParams();
+  const communityId = searchParams.get('communityId') as string;
   const [messageText, setMessageText] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);

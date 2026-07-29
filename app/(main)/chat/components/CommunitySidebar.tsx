@@ -51,7 +51,7 @@ const CommunitySidebar = observer(() => {
 
   const handleSelectCommunity = (community: any) => {
     chatStore.setActiveCommunity(community);
-    router.push(`/chat/${community._id}`);
+    router.push(`/chat/view?communityId=${community._id}`);
   };
 
   const [name, setName]             = useState("");
@@ -132,7 +132,7 @@ const CommunitySidebar = observer(() => {
           category: category || "General", icon, logo_url: logoUrl
         });
         toast({ title: "Community created!", status: "success", duration: 3000 });
-        router.push(`/chat/${result.data._id}`);
+        router.push(`/chat/view?communityId=${result.data._id}`);
       }
       handleDrawerClose();
     } catch {

@@ -30,7 +30,7 @@ export default function CreateQuizPage() {
 
   const handleQuizSaved = (newQuizId: string) => {
     // Redirect to the edit view so they can add questions
-    router.push(`/dashboard/quiz/${newQuizId}?tab=questions`);
+    router.push(`/dashboard/quiz/edit?id=${newQuizId}&tab=questions`);
   };
 
   return (

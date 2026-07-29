@@ -16,18 +16,17 @@ import {
 import { useState, useEffect } from "react";
 import { FaClipboardList } from "react-icons/fa";
 import { FiSettings, FiArrowLeft } from "react-icons/fi";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import QuizSettingsForm from "../components/QuizSettingsForm";
 import QuestionBuilder from "../components/QuestionBuilder";
 
 export default function EditQuizPage() {
   const router = useRouter();
-  const params = useParams();
   const searchParams = useSearchParams();
   const toast = useToast();
   
-  const quizId = params.id as string;
+  const quizId = searchParams.get('id') as string;
   const initialTab = searchParams.get("tab") as "settings" | "questions" | null;
   
   const [activeTab, setActiveTab] = useState<"settings" | "questions">(initialTab || "settings");

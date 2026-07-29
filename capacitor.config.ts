@@ -6,7 +6,7 @@ const serverUrl =
 
 const config: CapacitorConfig = {
   appId: 'com.lms.frontend',
-  appName: 'LMS',
+  appName: 'LMS App',
   webDir: 'out',
   ...(serverUrl
     ? {
@@ -16,6 +16,14 @@ const config: CapacitorConfig = {
         },
       }
     : {}),
+  plugins: {
+    SplashScreen: {
+      backgroundColor: "#000000",
+      launchShowDuration: 3000,
+      launchAutoHide: true,
+      androidSplashResourceName: "splash"
+    }
+  }
 };
 
 export default config;

@@ -262,7 +262,7 @@ export default function QuizDashboardPage() {
                           colorScheme="blue"
                           rounded="xl"
                           px={4}
-                          onClick={() => router.push(`/dashboard/quiz/${quiz._id}`)}
+                          onClick={() => router.push(`/dashboard/quiz/edit?id=${quiz._id}`)}
                           _hover={{ bg: "blue.50" }}
                         >
                           Edit

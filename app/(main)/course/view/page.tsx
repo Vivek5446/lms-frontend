@@ -1,13 +1,13 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Center, Spinner } from '@chakra-ui/react';
 
 export default function CourseDetailsRedirectPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const id = params?.id;
+  const id = searchParams.get('id');
 
   useEffect(() => {
     if (id) {
