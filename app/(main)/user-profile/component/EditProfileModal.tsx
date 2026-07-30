@@ -27,9 +27,11 @@ import {
   Textarea,
   useBreakpointValue,
   useColorModeValue,
+  Badge,
+  IconButton,
   VStack,
 } from '@chakra-ui/react';
-import { FiCheck, FiEdit2 } from 'react-icons/fi';
+import { FiCheck, FiEdit2, FiArrowLeft } from 'react-icons/fi';
 
 const EditProfileModal = ({
   onClose,
@@ -256,52 +258,100 @@ const EditProfileModal = ({
   // Mobile rendering (Bottom Sheet Drawer)
   if (isMobile) {
     return (
-      <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+      <Drawer isOpen={isOpen} placement="bottom" size="full" onClose={onClose}>
         <DrawerOverlay bg="blackAlpha.700" backdropFilter="blur(8px)" />
         <DrawerContent
           bg={modalBg}
-          borderTopRadius="3xl"
-          maxH="90vh"
           maxW="100%"
           w="100%"
           pt={0}
-          pb={0}
-          borderTop="1px solid"
-          borderColor={modalBorder}
           overflow="hidden"
         >
-          {/* <Box w="40px" h="4px" bg={useColorModeValue('gray.300', 'gray.600')} borderRadius="full" mx="auto" mt={3} /> */}
-          <DrawerCloseButton top={4} right={4} borderRadius="full" />
-          <DrawerHeader py={4} borderBottom="1px solid" borderColor={modalBorder}>
-            {headerContent}
-          </DrawerHeader>
-          <DrawerBody py={5} overflowY="auto">
-            {formFields}
+          <DrawerBody 
+            p={0} 
+            overflowY="auto"
+            sx={{
+              "&::-webkit-scrollbar": { width: "4px" },
+              "&::-webkit-scrollbar-track": { background: "transparent" },
+              "&::-webkit-scrollbar-thumb": { background: "#cbd5e1", borderRadius: "4px" },
+            }}
+          >
+            <Box w="100%" px={{ base: 5, md: 8 }} pt={{ base: "calc(env(safe-area-inset-top, 24px) + 16px)", md: 5 }} pb="130px">
+              {/* HEADER */}
+              <HStack mb={{ base: 6, md: 5 }} spacing={4} align="center" justify="space-between">
+                <HStack spacing={4}>
+                  <IconButton
+                    aria-label="Close"
+                    icon={<FiArrowLeft size={18} />}
+                    onClick={onClose}
+                    variant="solid"
+                    borderRadius="full"
+                    w={{ base: "36px", md: "42px" }} h={{ base: "36px", md: "42px" }}
+                    bg={useColorModeValue("gray.100", "gray.800")}
+                    color={useColorModeValue("gray.700", "gray.300")}
+                    _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "translateX(-2px)" }}
+                    transition="all 0.2s"
+                  />
+                  <Box>
+                    <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                      <Box as="span" color={useColorModeValue("gray.800", "white")}>EDIT </Box>
+                      <Box as="span" bgGradient="linear(to-r, #6269FF, #8A2BE2)" bgClip="text">PROFILE</Box>
+                    </Text>
+                    <Text fontSize="10px" color={useColorModeValue("gray.500", "gray.400")} fontWeight="700" letterSpacing="0.2em" mt={0.5}>
+                      UPDATE YOUR PERSONAL DETAILS
+                    </Text>
+                  </Box>
+                </HStack>
+                <Badge colorScheme="blue" variant="subtle" px={3} py={1} borderRadius="full" fontSize="xs" fontWeight="800">
+                  USER
+                </Badge>
+              </HStack>
+
+              {formFields}
+            </Box>
           </DrawerBody>
-          <DrawerFooter borderTop="1px solid" borderColor={modalBorder} gap={2}>
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              size="md"
-              borderRadius="xl"
-              flex={1}
-              color={useColorModeValue('gray.600', 'gray.400')}
-            >
-              Cancel
-            </Button>
-          <Button
-              leftIcon={<FiCheck size={14} />}
-              onClick={handleSave}
-              isLoading={saving}
-              loadingText="Saving…"
-              size="sm"
-              borderRadius="xl"
-              flex={1}
-              colorScheme="blue"
-            >
-              Save Changes
-            </Button>
-          </DrawerFooter>
+          
+          {/* FOOTER */}
+          <Box
+            position="absolute" bottom={0} left={0} right={0}
+            bg={useColorModeValue("linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 30%)", "linear-gradient(180deg, rgba(23,25,35,0) 0%, rgba(23,25,35,1) 30%)")}
+            px={{ base: 5, md: 8 }} 
+            pb={{ base: "calc(env(safe-area-inset-bottom, 20px) + 32px)", md: 8 }} 
+            pt={8}
+            zIndex={10}
+          >
+            <HStack w="100%" spacing={3}>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                h={{ base: "52px", md: "56px" }}
+                borderRadius="xl"
+                flex={1}
+                color={useColorModeValue('gray.600', 'gray.400')}
+                fontWeight="800"
+              >
+                CANCEL
+              </Button>
+              <Button
+                h={{ base: "52px", md: "56px" }}
+                onClick={handleSave}
+                isLoading={saving}
+                loadingText="SAVING…"
+                borderRadius="xl"
+                flex={1.5}
+                bgGradient="linear(to-r, #6269FF, #4F46E5)"
+                color="white"
+                fontWeight="900"
+                letterSpacing="0.05em"
+                _hover={{ transform: "translateY(-2px)", boxShadow: "0 10px 30px rgba(98,105,255,0.5)", bgGradient: "linear(to-r, #4F46E5, #6269FF)" }}
+                _active={{ transform: "translateY(0)" }}
+                border="1px solid"
+                borderColor="rgba(255,255,255,0.1)"
+              >
+                SAVE CHANGES
+              </Button>
+            </HStack>
+          </Box>
         </DrawerContent>
       </Drawer>
     );
