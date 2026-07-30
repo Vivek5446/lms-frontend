@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const serverUrl =
   process.env.CAPACITOR_SERVER_URL ||
-  (process.env.CAPACITOR_DEV_SERVER === 'true' ? 'http://172.30.18.126:3000' : 'http://172.30.18.126:3000');
+  (process.env.CAPACITOR_DEV_SERVER === 'true' ? 'http://172.30.18.126:3000' : undefined);
 
 const config: CapacitorConfig = {
   appId: 'com.lms.frontend',

@@ -26,8 +26,5 @@ export function expandRoleAliases(roles: string[] = []) {
 }
 
 export function getDefaultAuthenticatedRoute(user: any) {
-  const role = normalizeRole(user?.role || user?.userType);
-  return ["superadmin", "admin", "departmenthead"].includes(role)
-    ? "/dashboard"
-    : "/";
+  return "/";
 }
