@@ -133,13 +133,6 @@ function buildFormFromUser(user: any, personalInfo: any) {
   };
 }
 
-const dummyCertificates = [
-  { id: "CERT-9041", title: "Web Dev Masterclass", issueDate: "Jan 2026", grade: "A+", issuer: "CRAFT LMS Academy" },
-  { id: "CERT-8820", title: "UI/UX Design Systems", issueDate: "Nov 2025", grade: "Pass", issuer: "CRAFT LMS Design Guild" },
-  { id: "CERT-7412", title: "Leadership Essentials", issueDate: "Aug 2025", grade: "Honors", issuer: "Executive Development" },
-  { id: "CERT-6029", title: "AI & Prompt Engineering", issueDate: "May 2025", grade: "A", issuer: "CRAFT AI Lab" },
-];
-
 const dummyBookmarks = [
   { title: "React 19 & Next.js Server Components", author: "Sarah Connor", category: "Development", pct: 45 },
   { title: "Figma Advanced Component Design", author: "Alex Rivera", category: "Design", pct: 80 },
@@ -164,12 +157,14 @@ const ProfilePage: React.FC = observer(() => {
   const [activeModal, setActiveModal] = useState<"certificates" | "bookmarks" | "teams" | "help" | "details" | null>(null);
 
   const user = stores.auth.user;
+  const courseStore = stores.courseStore;
   const personalInfo = user?.profile_details?.personalInfo || {};
 
   const [tempForm, setTempForm] = useState(emptyForm);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [certificateDownloadError, setCertificateDownloadError] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const modalAvatarInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -180,6 +175,17 @@ const ProfilePage: React.FC = observer(() => {
     if (!user) return;
     setForm(buildFormFromUser(user, personalInfo));
   }, [user]);
+
+  useEffect(() => {
+    if (!user?._id) return;
+    void courseStore.fetchMyCertificates().catch(() => undefined);
+  }, [courseStore, user?._id]);
+
+  useEffect(() => {
+    if (activeModal !== "certificates" || !user?._id) return;
+    setCertificateDownloadError(null);
+    void courseStore.fetchMyCertificates().catch(() => undefined);
+  }, [activeModal, courseStore, user?._id]);
 
   const fullName = `${form.firstName} ${form.lastName}`.trim() || s(user?.name) || "Learner";
   const location = [form.city, form.state, form.country].filter(Boolean).join(", ");
@@ -376,13 +382,39 @@ const ProfilePage: React.FC = observer(() => {
   const cardBg = useColorModeValue("white", "gray.800");
   const glassBg = useColorModeValue("rgba(255, 255, 255, 0.85)", "rgba(26, 32, 44, 0.85)");
   const accentGradient = useColorModeValue("linear(to-br, blue.500, blue.300)", "linear(to-br, blue.400, blue.600)");
+  const certificateCountLabel = courseStore.isMyCertificatesLoading ? "..." : `${courseStore.myCertificates.length}`;
+
+  const handleDownloadCertificate = async (courseId: string, courseName: string) => {
+    setCertificateDownloadError(null);
+
+    try {
+      await courseStore.downloadMyCertificate(courseId);
+      toast({
+        title: "Certificate downloaded",
+        description: courseName ? `${courseName} PDF saved successfully.` : undefined,
+        status: "success",
+        duration: 3000,
+        position: "top-right",
+      });
+    } catch (error: any) {
+      const message = error?.message || "Please try again.";
+      setCertificateDownloadError(message);
+      toast({
+        title: "Unable to download certificate",
+        description: message,
+        status: "error",
+        duration: 4000,
+        position: "top-right",
+      });
+    }
+  };
 
   const menuItems = [
     {
       key: "certificates",
       icon: Award,
       label: "Certificates",
-      badge: "5",
+      badge: certificateCountLabel,
       color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
       desc: "View & download earned certificates",
       onClick: () => setActiveModal("certificates"),
@@ -430,46 +462,371 @@ const ProfilePage: React.FC = observer(() => {
     },
   ];
 
-  const renderCertificatesContent = (
-    <VStack spacing={3} align="stretch">
-      {dummyCertificates.map((cert) => (
-        <div
-          key={cert.id}
-          className={`flex items-center justify-between p-3.5 rounded-2xl border transition-colors ${
-            isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
-          }`}
-        >
-          <div className="min-w-0 flex-1 pr-3">
-            <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-              {cert.id}
-            </span>
-            <h4 className="mt-1 text-sm font-bold truncate">{cert.title}</h4>
-            <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-              {cert.issuer} • Issued {cert.issueDate}
-            </p>
-          </div>
-          <Button
-            size="sm"
-            leftIcon={<Download className="h-3.5 w-3.5" />}
-            colorScheme="amber"
-            borderRadius="xl"
-            fontSize="xs"
-            onClick={() =>
-              toast({
-                title: "Certificate Downloaded",
-                description: `Downloaded ${cert.title} (${cert.id})`,
-                status: "success",
-                duration: 3000,
-              })
-            }
-          >
-            PDF
-          </Button>
-        </div>
-      ))}
-    </VStack>
-  );
+  // const renderCertificatesContent = (
+  //   <VStack spacing={3} align="stretch">
+  //     {certificateDownloadError ? (
+  //       <Box
+  //         borderRadius="2xl"
+  //         border="1px solid"
+  //         borderColor={isDark ? "red.900" : "red.100"}
+  //         bg={isDark ? "red.950" : "red.50"}
+  //         px={4}
+  //         py={3}
+  //       >
+  //         <Text fontSize="xs" fontWeight="bold" color={isDark ? "red.200" : "red.600"}>
+  //           Failed to download PDF
+  //         </Text>
+  //         <Text mt={1} fontSize="xs" color={isDark ? "red.100" : "red.500"}>
+  //           {certificateDownloadError}
+  //         </Text>
+  //       </Box>
+  //     ) : null}
+  //     {courseStore.isMyCertificatesLoading ? (
+  //       <Flex
+  //         minH="180px"
+  //         direction="column"
+  //         align="center"
+  //         justify="center"
+  //         gap={3}
+  //         className={`rounded-3xl border ${
+  //           isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
+  //         }`}
+  //       >
+  //         <Spinner color="orange.400" />
+  //         <Text fontSize="sm" fontWeight="semibold">
+  //           Loading your certificates...
+  //         </Text>
+  //       </Flex>
+  //     ) : courseStore.myCertificatesError ? (
+  //       <Box
+  //         className={`rounded-3xl border p-5 ${
+  //           isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
+  //         }`}
+  //       >
+  //         <Text fontSize="sm" fontWeight="bold">
+  //           Failed to load certificates
+  //         </Text>
+  //         <Text mt={1} fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>
+  //           {courseStore.myCertificatesError}
+  //         </Text>
+  //         <Button
+  //           mt={4}
+  //           size="sm"
+  //           borderRadius="xl"
+  //           colorScheme="orange"
+  //           onClick={() => void courseStore.fetchMyCertificates().catch(() => undefined)}
+  //         >
+  //           Retry
+  //         </Button>
+  //       </Box>
+  //     ) : courseStore.myCertificates.length === 0 ? (
+  //       <Box
+  //         className={`rounded-3xl border p-6 text-center ${
+  //           isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
+  //         }`}
+  //       >
+  //         <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-500/10 text-amber-500">
+  //           <Award className="h-7 w-7" />
+  //         </div>
+  //         <Text mt={4} fontSize="sm" fontWeight="bold">
+  //           No certificates earned yet
+  //         </Text>
+  //         <Text mt={2} fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>
+  //           Certificates will appear here after you complete eligible courses and successfully earn them.
+  //         </Text>
+  //       </Box>
+  //     ) : (
+  //       courseStore.myCertificates.map((cert) => {
+  //         const isDownloading = courseStore.certificateDownloadCourseId === cert.courseId;
 
+  //         return (
+  //           <div
+  //             key={cert._id || cert.courseId}
+  //             className={`flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition-colors ${
+  //               isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
+  //             }`}
+  //           >
+  //             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-500">
+  //               <Award className="h-6 w-6" />
+  //             </div>
+  //             <div className="min-w-0 flex-1">
+  //               <div className="flex flex-wrap items-center gap-2">
+  //                 <h4 className="text-sm font-bold truncate">{cert.certificateName}</h4>
+  //                 <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+  //                   {String(cert.status || "issued").replace(/_/g, " ")}
+  //                 </span>
+  //               </div>
+  //               <p className={`mt-1 text-xs font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>
+  //                 {cert.courseName}
+  //               </p>
+  //               <p className={`mt-1 text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+  //                 {cert.certificateNo ? `${cert.certificateNo} • ` : ""}
+  //                 Issued {fmtDate(cert.issuedAt || undefined)}
+  //               </p>
+  //             </div>
+  //             <Button
+  //               size="sm"
+  //               leftIcon={isDownloading ? undefined : <Download className="h-3.5 w-3.5" />}
+  //               colorScheme="orange"
+  //               borderRadius="xl"
+  //               fontSize="xs"
+  //               isLoading={isDownloading}
+  //               loadingText="Downloading"
+  //               onClick={() => void handleDownloadCertificate(cert.courseId, cert.courseName)}
+  //             >
+  //               Download PDF
+  //             </Button>
+  //           </div>
+  //         );
+  //       })
+  //     )}
+  //     {([] as any[]).map((cert) => (
+  //       <div
+  //         key={cert.id}
+  //         className={`flex items-center justify-between p-3.5 rounded-2xl border transition-colors ${
+  //           isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
+  //         }`}
+  //       >
+  //         <div className="min-w-0 flex-1 pr-3">
+  //           <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+  //             {cert.id}
+  //           </span>
+  //           <h4 className="mt-1 text-sm font-bold truncate">{cert.title}</h4>
+  //           <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+  //             {cert.issuer} • Issued {cert.issueDate}
+  //           </p>
+  //         </div>
+  //         <Button
+  //           size="sm"
+  //           leftIcon={<Download className="h-3.5 w-3.5" />}
+  //           colorScheme="amber"
+  //           borderRadius="xl"
+  //           fontSize="xs"
+  //           onClick={() =>
+  //             toast({
+  //               title: "Certificate Downloaded",
+  //               description: `Downloaded ${cert.title} (${cert.id})`,
+  //               status: "success",
+  //               duration: 3000,
+  //             })
+  //           }
+  //         >
+  //           PDF
+  //         </Button>
+  //       </div>
+  //     ))}
+  //   </VStack>
+  // );
+
+
+  const renderCertificatesContent = (
+  <VStack spacing={3} align="stretch">
+    {certificateDownloadError ? (
+      <Box
+        borderRadius="xl"
+        border="1px solid"
+        borderColor={isDark ? "red.900" : "red.100"}
+        bg={isDark ? "red.950" : "red.50"}
+        px={3.5}
+        py={3}
+      >
+        <Text
+          fontSize="xs"
+          fontWeight="bold"
+          color={isDark ? "red.200" : "red.600"}
+        >
+          Failed to download PDF
+        </Text>
+
+        <Text
+          mt={1}
+          fontSize="xs"
+          color={isDark ? "red.100" : "red.500"}
+        >
+          {certificateDownloadError}
+        </Text>
+      </Box>
+    ) : null}
+
+    {courseStore.isMyCertificatesLoading ? (
+      <Flex
+        minH="160px"
+        direction="column"
+        align="center"
+        justify="center"
+        gap={3}
+        className={`rounded-2xl border ${
+          isDark
+            ? "border-slate-700/80 bg-slate-800/50"
+            : "border-slate-200/80 bg-white"
+        }`}
+      >
+        <Spinner size="sm" color="orange.400" />
+
+        <Text fontSize="xs" fontWeight="semibold">
+          Loading your certificates...
+        </Text>
+      </Flex>
+    ) : courseStore.myCertificatesError ? (
+      <Box
+        className={`rounded-2xl border p-4 ${
+          isDark
+            ? "border-slate-700/80 bg-slate-800/50"
+            : "border-slate-200/80 bg-white"
+        }`}
+      >
+        <Text fontSize="sm" fontWeight="bold">
+          Failed to load certificates
+        </Text>
+
+        <Text
+          mt={1}
+          fontSize="xs"
+          color={isDark ? "gray.400" : "gray.500"}
+        >
+          {courseStore.myCertificatesError}
+        </Text>
+
+        <Button
+          mt={3}
+          size="sm"
+          borderRadius="lg"
+          colorScheme="orange"
+          onClick={() =>
+            void courseStore.fetchMyCertificates().catch(() => undefined)
+          }
+        >
+          Retry
+        </Button>
+      </Box>
+    ) : courseStore.myCertificates.length === 0 ? (
+      <Box
+        className={`rounded-2xl border px-5 py-7 text-center ${
+          isDark
+            ? "border-slate-700/80 bg-slate-800/50"
+            : "border-slate-200/80 bg-white"
+        }`}
+      >
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-500">
+          <Award className="h-6 w-6" />
+        </div>
+
+        <Text mt={3} fontSize="sm" fontWeight="bold">
+          No certificates earned yet
+        </Text>
+
+        <Text
+          mt={1.5}
+          fontSize="xs"
+          lineHeight="1.6"
+          color={isDark ? "gray.400" : "gray.500"}
+        >
+          Your earned certificates will appear here after completing eligible
+          courses.
+        </Text>
+      </Box>
+    ) : (
+      <VStack spacing={2.5} align="stretch">
+        {courseStore.myCertificates.map((cert) => {
+          const isDownloading =
+            courseStore.certificateDownloadCourseId === cert.courseId;
+
+          const statusLabel = String(cert.status || "issued").replace(
+            /_/g,
+            " ",
+          );
+
+          return (
+            <div
+              key={cert._id || cert.courseId}
+              className={`grid grid-cols-[44px_minmax(0,1fr)_36px] items-start gap-3 rounded-2xl border p-3 transition-all duration-200 sm:grid-cols-[48px_minmax(0,1fr)_40px] sm:items-center sm:p-3.5 ${
+                isDark
+                  ? "border-slate-700/80 bg-slate-800/50 shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:border-slate-600"
+                  : "border-slate-200/80 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.04)] hover:border-slate-300"
+              }`}
+            >
+              {/* Certificate icon */}
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-amber-500 sm:h-12 sm:w-12 sm:rounded-2xl">
+                <Award className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+
+              {/* Certificate information */}
+              <div className="min-w-0">
+                <h4
+                  className={`line-clamp-2 break-words text-[13px] font-bold leading-5 sm:text-sm ${
+                    isDark ? "text-white" : "text-slate-900"
+                  }`}
+                  title={cert.certificateName}
+                >
+                  {cert.certificateName}
+                </h4>
+
+                <p
+                  className={`mt-0.5 line-clamp-1 text-[11px] font-medium sm:text-xs ${
+                    isDark ? "text-slate-300" : "text-slate-600"
+                  }`}
+                  title={cert.courseName}
+                >
+                  {cert.courseName}
+                </p>
+
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                    {statusLabel}
+                  </span>
+
+                  <span
+                    className={`text-[10px] ${
+                      isDark ? "text-slate-400" : "text-slate-500"
+                    }`}
+                  >
+                    Issued {fmtDate(cert.issuedAt || undefined)}
+                  </span>
+                </div>
+
+                {cert.certificateNo ? (
+                  <p
+                    className={`mt-1 truncate text-[10px] ${
+                      isDark ? "text-slate-500" : "text-slate-400"
+                    }`}
+                    title={cert.certificateNo}
+                  >
+                    Certificate ID: {cert.certificateNo}
+                  </p>
+                ) : null}
+              </div>
+
+              {/* Icon-only download button */}
+              <button
+                type="button"
+                aria-label={`Download ${cert.certificateName} certificate`}
+                title="Download certificate PDF"
+                disabled={isDownloading}
+                onClick={() =>
+                  void handleDownloadCertificate(
+                    cert.courseId,
+                    cert.courseName,
+                  )
+                }
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-10 ${
+                  isDark
+                    ? "bg-orange-400/10 text-orange-300 hover:bg-orange-400/20"
+                    : "bg-orange-50 text-orange-600 hover:bg-orange-100"
+                }`}
+              >
+                {isDownloading ? (
+                  <Spinner size="xs" color="currentColor" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </VStack>
+    )}
+  </VStack>
+);
   const renderBookmarksContent = (
     <VStack spacing={3} align="stretch">
       {dummyBookmarks.map((bm, i) => (
@@ -929,7 +1286,7 @@ const ProfilePage: React.FC = observer(() => {
                       <Award className="h-6 w-6" />
                     </div>
                     <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-                      5 Certs
+                      {courseStore.isMyCertificatesLoading ? "Loading" : `${courseStore.myCertificates.length} Certs`}
                     </span>
                   </Flex>
                   <h3 className="mt-4 text-base font-bold group-hover:text-blue-600 transition-colors">
@@ -1185,11 +1542,7 @@ const ProfilePage: React.FC = observer(() => {
 
         <div
         className="mt-3"
-          // className={`mt-4 overflow-hidden rounded-3xl ring-1 ${
-          //   isDark
-          //     ? "bg-slate-900/90 ring-slate-800"
-          //     : "bg-white ring-slate-200/80 shadow-sm"
-          // }`}
+       
         >
           {menuItems.map((m, i) => (
             <motion.button

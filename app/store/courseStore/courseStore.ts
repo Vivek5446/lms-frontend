@@ -36,6 +36,19 @@ export interface CourseCertificateSummary {
   templateName?: string;
 }
 
+export interface EarnedCertificateListItem {
+  _id: string;
+  courseId: string;
+  certificateNo: string;
+  certificateName: string;
+  courseName: string;
+  issuedAt?: string | null;
+  status: string;
+  downloadUrl?: string;
+  templateId?: string;
+  templateName?: string;
+}
+
 export interface CourseMetrics {
   averageRating: number | null;
   popularityScore: number;
@@ -669,6 +682,7 @@ class CourseStoreClass {
   accessibleCourses: AccessibleCourseItem[] = [];
   assignedCourseAccesses: AssignedCourseAccessItem[] = [];
   myCourses: MyCourseItem[] = [];
+  myCertificates: EarnedCertificateListItem[] = [];
   courseAssignmentAudit: CourseAssignmentAuditItem[] = [];
   currentCourse: MyCourseDetailItem | null = null;
   modules: CourseModuleListItem[] = [];
@@ -686,6 +700,7 @@ class CourseStoreClass {
   isAccessLoading: boolean = false;
   isAssignedCoursesLoading: boolean = false;
   isMyCoursesLoading: boolean = false;
+  isMyCertificatesLoading: boolean = false;
   isMyCourseDetailLoading: boolean = false;
   isCourseQuizzesLoading: boolean = false;
   certificateDownloadCourseId: string | null = null;
@@ -700,6 +715,7 @@ class CourseStoreClass {
   submissionDetail: string = "";
   error: string | null = null;
   accessError: string | null = null;
+  myCertificatesError: string | null = null;
   draftCourseCode: string = "";
   currentPublicCourseParams: Record<string, unknown> = {};
   private publicCoursesRequestId: number = 0;
@@ -1219,6 +1235,97 @@ class CourseStoreClass {
         certificate,
       };
     }
+
+    if (certificate.status === "issued") {
+      this.myCertificates = this.myCertificates.map((issuedCertificate) =>
+        String(issuedCertificate.courseId || "").trim() === normalizedCourseId
+          ? {
+              ...issuedCertificate,
+              certificateNo: certificate.certificateNo || issuedCertificate.certificateNo,
+              issuedAt: certificate.issuedAt ?? issuedCertificate.issuedAt ?? null,
+              status: certificate.status,
+              downloadUrl: certificate.downloadUrl || issuedCertificate.downloadUrl,
+              templateId: certificate.templateId || issuedCertificate.templateId,
+              templateName: certificate.templateName || issuedCertificate.templateName,
+              certificateName:
+                certificate.templateName || issuedCertificate.certificateName || "Certificate of Completion",
+            }
+          : issuedCertificate
+      );
+    }
+  };
+
+  private buildIssuedCertificateSummary = (
+    certificate: Pick<
+      EarnedCertificateListItem,
+      "certificateNo" | "issuedAt" | "downloadUrl" | "templateId" | "templateName"
+    >
+  ): CourseCertificateSummary => ({
+    enabled: true,
+    status: "issued",
+    canIssue: false,
+    reason: "Certificate issued",
+    certificateNo: certificate.certificateNo,
+    issuedAt: certificate.issuedAt ?? null,
+    downloadUrl: certificate.downloadUrl,
+    templateId: certificate.templateId,
+    templateName: certificate.templateName,
+  });
+
+  private syncIssuedCertificatesToCourses = (certificates: EarnedCertificateListItem[]) => {
+    const issuedCertificatesByCourseId = new Map(
+      certificates.map((certificate) => [String(certificate.courseId || "").trim(), certificate])
+    );
+
+    this.myCourses = this.myCourses.map((course) => {
+      const matchedCertificate = issuedCertificatesByCourseId.get(String(course.courseId || "").trim());
+      if (!matchedCertificate) {
+        return course;
+      }
+
+      return {
+        ...course,
+        certificate: this.buildIssuedCertificateSummary(matchedCertificate),
+      };
+    });
+
+    const currentCourseId = String(this.currentCourse?._id || this.currentCourse?.courseId || "").trim();
+    const currentCourseCertificate = issuedCertificatesByCourseId.get(currentCourseId);
+    if (this.currentCourse && currentCourseCertificate) {
+      this.currentCourse = {
+        ...this.currentCourse,
+        certificate: this.buildIssuedCertificateSummary(currentCourseCertificate),
+      };
+    }
+  };
+
+  fetchMyCertificates = async () => {
+    runInAction(() => {
+      this.isMyCertificatesLoading = true;
+      this.myCertificatesError = null;
+    });
+
+    try {
+      const { data } = await axios.get("/certificates/my");
+      const certificates = Array.isArray(data?.data) ? data.data : [];
+
+      runInAction(() => {
+        this.myCertificates = certificates;
+        this.syncIssuedCertificatesToCourses(certificates);
+      });
+
+      return certificates;
+    } catch (err: any) {
+      runInAction(() => {
+        this.myCertificatesError =
+          err?.response?.data?.message || err?.response?.data?.error || "Failed to fetch certificates";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isMyCertificatesLoading = false;
+      });
+    }
   };
 
   fetchMyCertificate = async (courseId: string) => {
@@ -1290,6 +1397,7 @@ class CourseStoreClass {
       window.URL.revokeObjectURL(downloadUrl);
 
       await this.fetchMyCertificate(courseId).catch(() => undefined);
+      await this.fetchMyCertificates().catch(() => undefined);
       return true;
     } catch (err: any) {
       return Promise.reject(new Error(await this.parseCertificateDownloadError(err)));
