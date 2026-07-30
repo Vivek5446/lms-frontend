@@ -76,7 +76,7 @@ export function AuthLayout({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="pb-8 px-7 flex flex-col items-center"
-            style={{ paddingTop: 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 2.5rem)' }}
+            style={{ paddingTop: 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 4.5rem)' }}
           >
             <h1 className="text-[2rem] font-[900] leading-tight text-transparent bg-clip-text bg-gradient-to-br from-primary via-[#8b5cf6] to-[#F7B733] drop-shadow-[0_10px_20px_rgba(var(--primary),0.2)] tracking-tighter uppercase whitespace-nowrap">
               LUMA LMS

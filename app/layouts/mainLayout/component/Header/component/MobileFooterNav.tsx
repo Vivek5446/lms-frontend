@@ -74,7 +74,7 @@ export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }:
       backdropFilter="blur(24px)"
       boxShadow={colorMode === 'light' ? '0 -4px 30px rgba(0, 0, 0, 0.04)' : '0 -4px 30px rgba(0, 0, 0, 0.5)'}
       style={{
-        paddingBottom: '64px'
+        paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))'
       }}
     >
       <Flex

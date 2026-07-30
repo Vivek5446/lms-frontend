@@ -1,5 +1,6 @@
 "use client";
 
+import { Geolocation } from '@capacitor/geolocation';
 import { Autocomplete, GoogleMap, MarkerF, useLoadScript } from "@react-google-maps/api";
 import { Form, Formik, getIn } from "formik";
 import { AnimatePresence, motion } from "framer-motion";
@@ -324,42 +325,46 @@ const Register = observer(() => {
     setLocationStatus("Location details filled from Google Places.");
   };
 
-  const detectCurrentLocation = (setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void) => {
-    if (!navigator.geolocation) {
-      openNotification({ title: "Location unavailable", message: "Your browser does not support current location detection.", type: "error" });
-      return;
-    }
+  const detectCurrentLocation = async (setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void) => {
     setLocationBusy(true);
     setLocationStatus("Requesting current location permission...");
-    
-    // Add a manual timeout to prevent infinite loading if the user ignores the prompt
+
     let timeoutFired = false;
-    const fallbackTimeout = setTimeout(() => {
+    const safetyTimeout = setTimeout(() => {
       timeoutFired = true;
       setLocationBusy(false);
-      setLocationStatus("Permission prompt timed out. Please search or fill manually.");
-    }, 6000);
+      setLocationStatus("Location request timed out. Please try again.");
+    }, 12000);
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        if (timeoutFired) return;
-        clearTimeout(fallbackTimeout);
-        const point = { lat: position.coords.latitude, lng: position.coords.longitude };
-        setSelectedPoint(point);
-        setMapCenter(point);
-        setFieldValue("location.lat", point.lat);
-        setFieldValue("location.lng", point.lng);
-        await geocodePoint(point, setFieldValue);
-      },
-      () => {
-        if (timeoutFired) return;
-        clearTimeout(fallbackTimeout);
-        setLocationBusy(false);
-        setLocationStatus("Permission was blocked. Search or fill the location manually.");
-        openNotification({ title: "Could not read current location", message: "Please allow location access or search for the address.", type: "error" });
-      },
-      { enableHighAccuracy: true, timeout: 5000 }
-    );
+    try {
+      try {
+        const permissions = await Geolocation.checkPermissions();
+        if (permissions?.location && permissions.location !== 'granted') {
+          await Geolocation.requestPermissions();
+        }
+      } catch (permError) {
+        // Ignore checkPermissions errors on some web environments
+      }
+
+      if (timeoutFired) return;
+
+      const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+      if (timeoutFired) return;
+
+      clearTimeout(safetyTimeout);
+      const point = { lat: position.coords.latitude, lng: position.coords.longitude };
+      setSelectedPoint(point);
+      setMapCenter(point);
+      setFieldValue("location.lat", point.lat);
+      setFieldValue("location.lng", point.lng);
+      await geocodePoint(point, setFieldValue);
+    } catch (e: any) {
+      if (timeoutFired) return;
+      clearTimeout(safetyTimeout);
+      setLocationBusy(false);
+      setLocationStatus("Permission was blocked or GPS is off. Please try again.");
+      openNotification({ title: "Could not read location", message: "Ensure GPS is on and location is permitted.", type: "error" });
+    }
   };
 
   const stepTitles: Record<Step, { eyebrow: string; title: string; sub: string }> = {
@@ -394,7 +399,7 @@ const Register = observer(() => {
           }
           const nextStep = stepsForType[Math.min(currentIdx + 1, stepsForType.length - 1)];
           setStep(nextStep);
-          
+
           if (nextStep === "location" && !values.location.city) {
             detectCurrentLocation(setFieldValue);
           }
@@ -413,16 +418,16 @@ const Register = observer(() => {
                     <span className="text-[10px] font-black uppercase tracking-[0.25em] ml-1 text-left text-black/70 dark:text-white/70 mb-2 block">
                       Phone number<span className="text-red-500 dark:text-red-400 ml-1">*</span>
                     </span>
-                    <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 mt-3 transition-all duration-500 border-black/20 focus-within:border-primary dark:border-white/20 dark:focus-within:border-primary/50">
-                      <span className="text-xl font-semibold mr-3 text-black/60 dark:text-white/40">+91</span>
+                    <div className="flex items-center justify-start border-b-2 pb-2 transition-all duration-500 border-black/20 focus-within:border-primary dark:border-white/20 dark:focus-within:border-primary mt-2">
+                      <span className="text-2xl font-bold mr-3 text-black/60 dark:text-white/40">+91</span>
                       <input
                         autoFocus
                         type="tel"
                         maxLength={10}
-                        placeholder="0000000000"
+                        placeholder="000 000 0000"
                         value={values.phone}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "");
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 10);
                           setPhone(val);
                           setFieldValue("phone", val);
                         }}
@@ -432,7 +437,7 @@ const Register = observer(() => {
                             sendOtp();
                           }
                         }}
-                        className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-left text-black placeholder:text-black/30 dark:text-white dark:placeholder:text-white/30"
+                        className="bg-transparent border-none outline-none font-bold text-3xl tracking-wide w-full text-black placeholder:text-black/20 dark:text-white dark:placeholder:text-white/20"
                       />
                     </div>
                   </label>
@@ -558,14 +563,14 @@ const Register = observer(() => {
                     )}
 
                     {!values.location.city && !locationBusy && (
-                      <div className="w-full mt-4 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                      <div className="hidden sm:block w-full mt-4 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="text-[9px] font-black uppercase tracking-[0.3em] text-center text-black/40 dark:text-white/40 mb-2">Or enter manually</div>
                         <Field name="location.address" label="Address" placeholder="Street Address" value={values.location.address} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.address") ? getIn(errors, "location.address") : undefined} required />
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="hidden sm:grid grid-cols-2 gap-3">
                           <Field name="location.city" label="City" placeholder="City" value={values.location.city} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.city") ? getIn(errors, "location.city") : undefined} required />
                           <Field name="location.state" label="State" placeholder="State" value={values.location.state} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.state") ? getIn(errors, "location.state") : undefined} required />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="hidden sm:grid grid-cols-2 gap-3">
                           <Field name="location.country" label="Country" placeholder="Country" value={values.location.country} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.country") ? getIn(errors, "location.country") : undefined} required />
                           <Field name="location.postalCode" label="Pincode" placeholder="Postal Code" value={values.location.postalCode} onChange={handleChange} onBlur={handleBlur} error={getIn(touched, "location.postalCode") ? getIn(errors, "location.postalCode") : undefined} required />
                         </div>
@@ -807,11 +812,11 @@ function ReviewCard({ form, phone }: { form: SignupValues; phone: string }) {
       ["Company email", form.companyEmail],
     );
   }
-  
-  const locationString = form.location.formattedAddress 
-    ? form.location.formattedAddress.replace(/^[A-Z0-9\+]{8,12},\s*/, "") 
+
+  const locationString = form.location.formattedAddress
+    ? form.location.formattedAddress.replace(/^[A-Z0-9\+]{8,12},\s*/, "")
     : [form.location.address, form.location.city, form.location.state].filter(Boolean).join(", ");
-    
+
   if (locationString) {
     rows.push(["Location", locationString]);
   }

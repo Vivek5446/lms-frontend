@@ -69,9 +69,9 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
 
   const getLayout = () => {
     if (
-      pathname === "/login" ||
-      pathname === "/register" ||
-      pathname === "/forgot-password"
+      pathname?.startsWith("/login") ||
+      pathname?.startsWith("/register") ||
+      pathname?.startsWith("/forgot-password")
     ) {
       return AuthenticationLayout;
     } else if (pathname?.startsWith("/dashboard")) {
@@ -142,7 +142,7 @@ import { Box } from '@chakra-ui/react';
 const MobileStatusBar = () => {
   const { colorMode } = useColorMode();
   return (
-    <Box 
+    <Box
       display={{ base: 'block', md: 'none' }}
       position="fixed"
       top={0}

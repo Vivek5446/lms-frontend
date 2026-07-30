@@ -139,21 +139,23 @@ const LoginPage = observer(() => {
 
     return (
       <AuthLayout mobileFooter={newUserLink} mobileAction={actionBtn}>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col mb-10 gap-2">
           <NextLink
             href="/"
-            className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black/60 hover:text-primary dark:text-white/60 dark:hover:text-primary transition-colors"
+            className="inline-flex items-center w-fit gap-1.5 text-xs font-bold text-slate-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors mb-4"
           >
-            <ArrowLeft className="h-3.5 w-3.5" /> Home
+            <ArrowLeft className="h-4 w-4" /> Back to Home
           </NextLink>
-          <p className="text-[10px] font-[900] uppercase tracking-[0.3em] text-black/70 dark:text-white/70">
+          <h2 className="text-3xl font-[900] text-slate-800 dark:text-white tracking-tight">
             Welcome Back
+          </h2>
+          <p className="text-sm font-medium text-slate-500 dark:text-gray-400">
+            Enter your mobile number to sign in
           </p>
-          <div className="w-10" />
         </div>
 
-        <div className="flex items-center justify-start border-b-[1.5px] pb-1.5 transition-all duration-500 border-black/20 focus-within:border-primary dark:border-white/20 dark:focus-within:border-primary mt-2">
-          <span className="text-xl font-semibold mr-3 text-black/60 dark:text-white/40">+91</span>
+        <div className="flex items-center justify-start border-b-2 pb-2 transition-all duration-500 border-black/20 focus-within:border-primary dark:border-white/20 dark:focus-within:border-primary mt-2">
+          <span className="text-2xl font-bold mr-3 text-black/60 dark:text-white/40">+91</span>
           <input
             ref={phoneInputRef}
             type="tel"
@@ -165,8 +167,8 @@ const LoginPage = observer(() => {
                 handleRequestOtp();
               }
             }}
-            className="bg-transparent border-none outline-none font-semibold text-2xl w-full text-black placeholder:text-black/30 dark:text-white dark:placeholder:text-white/30"
-            placeholder="0000000000"
+            className="bg-transparent border-none outline-none font-bold text-3xl tracking-wide w-full text-black placeholder:text-black/20 dark:text-white dark:placeholder:text-white/20"
+            placeholder="000 000 0000"
             disabled={loading}
           />
         </div>
@@ -204,22 +206,24 @@ const LoginPage = observer(() => {
 
   return (
     <AuthLayout mobileFooter={newUserLink} mobileAction={actionBtn}>
-      <button
-        onClick={() => { setStep("phone"); setOtpValue(""); setErrorText(""); }}
-        className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black/60 hover:text-primary dark:text-white/60 dark:hover:text-primary transition-colors mb-6"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Change Number
-      </button>
+      <div className="flex flex-col mb-10 gap-2">
+        <button
+          onClick={() => { setStep("phone"); setOtpValue(""); setErrorText(""); }}
+          className="inline-flex items-center w-fit gap-1.5 text-xs font-bold text-slate-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" /> Change Number
+        </button>
 
-      <p className={cn(
-        "text-[1.2rem] sm:text-[15px] font-[900] uppercase tracking-widest leading-tight",
-        errorText ? "text-red-500" : isUnlocked ? "text-green-500" : "text-black dark:text-white"
-      )}>
-        {isUnlocked ? "SIGN IN SUCCESSFUL" : errorText ? "INVALID CODE" : "VERIFY IT'S YOU"}
-      </p>
-      <p className="text-[10px] font-bold uppercase tracking-[0.25em] mt-2 text-black/50 dark:text-white/50">
-        Enter the 6-digit OTP sent to +91 {phone}
-      </p>
+        <h2 className={cn(
+          "text-3xl font-[900] tracking-tight",
+          errorText ? "text-red-500" : isUnlocked ? "text-green-500" : "text-slate-800 dark:text-white"
+        )}>
+          {isUnlocked ? "Success!" : errorText ? "Invalid Code" : "Verify OTP"}
+        </h2>
+        <p className="text-sm font-medium text-slate-500 dark:text-gray-400">
+          Sent to +91 {phone}
+        </p>
+      </div>
 
       {/* Single input + 6 visual boxes */}
       <div
