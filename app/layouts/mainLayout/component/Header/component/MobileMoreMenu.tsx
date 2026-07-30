@@ -21,7 +21,7 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
-import { FiHome, FiBookOpen, FiGrid, FiUsers, FiInfo, FiMail, FiUser, FiLogOut, FiChevronRight } from 'react-icons/fi';
+import { FiHome, FiBookOpen, FiGrid, FiUsers, FiInfo, FiMail, FiUser, FiLogOut, FiChevronRight, FiArrowLeft } from 'react-icons/fi';
 import { Icon } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -87,26 +87,63 @@ export const MobileMenuDrawer = observer(({ isOpen, onClose, placement, onProfil
       <DrawerOverlay display={{ base: 'block', md: 'none' }} />
       <DrawerContent
         display={{ base: 'block', md: 'none' }}
-        bg={colorMode === 'light' ? 'white' : '#050505'}
-        borderTopRadius={placement === 'bottom' ? '3xl' : 'none'}
+        bg={colorMode === 'light' ? '#FFFFFA' : 'gray.900'}
+        borderTopRadius="none"
         borderTop={placement === 'bottom' ? '1px solid' : 'none'}
-        borderColor={colorMode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}
+        borderColor={colorMode === 'light' ? 'gray.200' : 'gray.700'}
         boxShadow={placement === 'bottom' ? '0 -10px 40px rgba(0,0,0,0.1)' : 'none'}
+        h="100vh"
       >
-        {placement === 'bottom' && (
-          <Box w="48px" h="5px" bg={colorMode === 'light' ? 'gray.300' : 'gray.600'} borderRadius="full" mx="auto" mt={4} mb={2} />
-        )}
+        <Box
+          w="100%"
+          px={5}
+          py={4}
+          bg={colorMode === 'light' ? '#FFFFFA' : 'gray.900'}
+          borderBottom="1px solid"
+          borderColor={colorMode === 'light' ? 'gray.200' : 'gray.700'}
+          position="sticky"
+          top={0}
+          zIndex={20}
+        >
+          <HStack spacing={4} align="center">
+            <Button
+              onClick={onClose}
+              variant="solid"
+              borderRadius="full"
+              p={0}
+              w="36px" h="36px" minW="36px"
+              bg={colorMode === 'light' ? 'gray.100' : 'gray.700'}
+              color={colorMode === 'light' ? 'gray.700' : 'gray.200'}
+              border="1px solid"
+              borderColor={colorMode === 'light' ? 'gray.200' : 'gray.600'}
+              boxShadow="sm"
+              _hover={{ bg: colorMode === 'light' ? 'gray.200' : 'gray.600', transform: "scale(1.05)" }}
+              _active={{ transform: "scale(0.95)" }}
+              transition="all 0.2s"
+              flexShrink={0}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Icon as={FiArrowLeft} boxSize="16px" />
+            </Button>
+            <Box>
+              <Text fontSize="xl" fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                <Box as="span" color={colorMode === 'light' ? 'gray.900' : 'white'} textTransform="uppercase">APP </Box>
+                <Box as="span" bgGradient={colorMode === 'light' ? 'linear(to-r, brand.500, brand.700)' : 'linear(to-r, brand.300, brand.500)'} bgClip="text" textTransform="uppercase">
+                  SETTINGS
+                </Box>
+              </Text>
+              <Text fontSize="10px" color={colorMode === 'light' ? 'gray.600' : 'gray.400'} fontWeight="700" letterSpacing="0.2em" mt={0.5}>
+                MANAGE YOUR PREFERENCES
+              </Text>
+            </Box>
+          </HStack>
+        </Box>
         
-        <DrawerCloseButton top={4} right={4} />
-        <DrawerHeader display="flex" alignItems="center" px={6} h="65px" borderBottom="1px solid" borderColor={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'}>
-          <Text fontSize="xl" fontWeight="900" fontStyle="italic" letterSpacing="tighter" textTransform="uppercase" bgGradient={colorMode === 'light' ? 'linear(to-br, black, gray.500)' : 'linear(to-br, white, gray.400)'} bgClip="text">
-            Settings
-          </Text>
-        </DrawerHeader>
-        
-        <DrawerBody p={0} overflowY="auto" pb={12}>
+        <DrawerBody p={0} overflowY="auto" pb={{ base: 24, sm: 16 }}>
           {/* Main Navigation Group */}
-          <Box px={4} pt={4} pb={2}>
+          <Box px={4} pt={6} pb={2}>
             <Text fontSize="8px" fontWeight="900" color={colorMode === 'light' ? 'gray.400' : 'gray.500'} textTransform="uppercase" letterSpacing="widest" mb={2} display="flex" alignItems="center" gap={1.5}>
               <Text as="span" fontSize="14px">🧭</Text> Navigation
             </Text>
@@ -115,16 +152,15 @@ export const MobileMenuDrawer = observer(({ isOpen, onClose, placement, onProfil
               return (
                 <NextLink key={link.href} href={link.href} passHref legacyBehavior>
                   <ChakraLink _hover={{ textDecoration: 'none' }} onClick={onClose}>
-                    <Flex align="center" justify="space-between" py={3} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
-                      <HStack spacing={3}>
-                        <Flex w="28px" h="28px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
+                    <Flex align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
+                      <HStack spacing={4}>
+                        <Flex w="32px" h="32px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
                           <Icon as={link.icon} boxSize="16px" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} _groupHover={{ color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="colors" />
                         </Flex>
-                        <Text fontSize="12px" fontWeight="bold" textTransform="uppercase" letterSpacing="wide" color={colorMode === 'light' ? 'blackAlpha.900' : 'whiteAlpha.900'} _groupHover={{ transform: 'translateX(4px)' }} transition="transform">
+                        <Text fontSize="14px" fontWeight="600" color={colorMode === 'light' ? 'gray.700' : 'gray.200'} _groupHover={{ transform: 'translateX(4px)', color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="all 0.2s">
                           {link.label}
                         </Text>
                       </HStack>
-                      <Icon as={FiChevronRight} boxSize="16px" color={colorMode === 'light' ? 'gray.300' : 'gray.600'} />
                     </Flex>
                   </ChakraLink>
                 </NextLink>
@@ -134,24 +170,23 @@ export const MobileMenuDrawer = observer(({ isOpen, onClose, placement, onProfil
 
           {/* Info & Support Group */}
           <Box px={4} py={2}>
-            <Text fontSize="8px" fontWeight="900" color={colorMode === 'light' ? 'gray.400' : 'gray.500'} textTransform="uppercase" letterSpacing="widest" mb={2} display="flex" alignItems="center" gap={1.5}>
-              <Text as="span" fontSize="14px">🛠️</Text> Support & Info
+            <Text fontSize="10px" fontWeight="800" color={colorMode === 'light' ? 'gray.400' : 'gray.500'} textTransform="uppercase" letterSpacing="0.15em" mb={2} pl={1}>
+              SUPPORT & INFO
             </Text>
             
             {infoLinks.map((link) => {
               return (
                 <NextLink key={link.href} href={link.href} passHref legacyBehavior>
                   <ChakraLink _hover={{ textDecoration: 'none' }} onClick={onClose}>
-                    <Flex align="center" justify="space-between" py={3} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
-                      <HStack spacing={3}>
-                        <Flex w="28px" h="28px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
+                    <Flex align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
+                      <HStack spacing={4}>
+                        <Flex w="32px" h="32px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
                           <Icon as={link.icon} boxSize="16px" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} _groupHover={{ color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="colors" />
                         </Flex>
-                        <Text fontSize="12px" fontWeight="bold" textTransform="uppercase" letterSpacing="wide" color={colorMode === 'light' ? 'blackAlpha.900' : 'whiteAlpha.900'} _groupHover={{ transform: 'translateX(4px)' }} transition="transform">
+                        <Text fontSize="14px" fontWeight="600" color={colorMode === 'light' ? 'gray.700' : 'gray.200'} _groupHover={{ transform: 'translateX(4px)', color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="all 0.2s">
                           {link.label}
                         </Text>
                       </HStack>
-                      <Icon as={FiChevronRight} boxSize="16px" color={colorMode === 'light' ? 'gray.300' : 'gray.600'} />
                     </Flex>
                   </ChakraLink>
                 </NextLink>
@@ -161,20 +196,20 @@ export const MobileMenuDrawer = observer(({ isOpen, onClose, placement, onProfil
 
           {/* Account Group */}
           <Box px={4} py={2}>
-            <Text fontSize="8px" fontWeight="900" color={colorMode === 'light' ? 'gray.400' : 'gray.500'} textTransform="uppercase" letterSpacing="widest" mb={2} display="flex" alignItems="center" gap={1.5}>
-              <Text as="span" fontSize="14px">👤</Text> Account
+            <Text fontSize="10px" fontWeight="800" color={colorMode === 'light' ? 'gray.400' : 'gray.500'} textTransform="uppercase" letterSpacing="0.15em" mb={2} pl={1}>
+              ACCOUNT
             </Text>
 
             <Flex 
               as="button" w="full" onClick={toggleColorMode} 
-              align="center" justify="space-between" py={3} px={2} mx={-2} borderRadius="xl" 
+              align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" 
               role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}
             >
-              <HStack spacing={3}>
-                <Flex w="28px" h="28px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
+              <HStack spacing={4}>
+                <Flex w="32px" h="32px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
                   <Icon as={colorMode === 'light' ? MoonIcon : SunIcon} boxSize="16px" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} _groupHover={{ color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="colors" />
                 </Flex>
-                <Text fontSize="12px" fontWeight="bold" textTransform="uppercase" letterSpacing="wide" color={colorMode === 'light' ? 'blackAlpha.900' : 'whiteAlpha.900'} _groupHover={{ transform: 'translateX(4px)' }} transition="transform">
+                <Text fontSize="14px" fontWeight="600" color={colorMode === 'light' ? 'gray.700' : 'gray.200'} _groupHover={{ transform: 'translateX(4px)', color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="all 0.2s">
                   {colorMode === 'light' ? 'Dark Mode' : 'Light Mode'}
                 </Text>
               </HStack>
@@ -184,81 +219,78 @@ export const MobileMenuDrawer = observer(({ isOpen, onClose, placement, onProfil
               <>
                 <Flex 
                   as="button" w="full" onClick={() => { onClose(); onProfileClick(); }} 
-                  align="center" justify="space-between" py={3} px={2} mx={-2} borderRadius="xl" 
+                  align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" 
                   role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}
                 >
-                  <HStack spacing={3}>
-                    <Flex w="28px" h="28px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
+                  <HStack spacing={4}>
+                    <Flex w="32px" h="32px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
                       <Icon as={FiUser} boxSize="16px" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} _groupHover={{ color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="colors" />
                     </Flex>
-                    <Text fontSize="12px" fontWeight="bold" textTransform="uppercase" letterSpacing="wide" color={colorMode === 'light' ? 'blackAlpha.900' : 'whiteAlpha.900'} _groupHover={{ transform: 'translateX(4px)' }} transition="transform">
+                    <Text fontSize="14px" fontWeight="600" color={colorMode === 'light' ? 'gray.700' : 'gray.200'} _groupHover={{ transform: 'translateX(4px)', color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="all 0.2s">
                       View Profile
                     </Text>
                   </HStack>
-                  <Icon as={FiChevronRight} boxSize="16px" color={colorMode === 'light' ? 'gray.300' : 'gray.600'} />
                 </Flex>
 
                 <Flex 
                   as="button" w="full" onClick={() => { router.push(appHref); onClose(); }} 
-                  align="center" justify="space-between" py={3} px={2} mx={-2} borderRadius="xl" 
+                  align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" 
                   role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}
                 >
-                  <HStack spacing={3}>
-                    <Flex w="28px" h="28px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
+                  <HStack spacing={4}>
+                    <Flex w="32px" h="32px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
                       <Icon as={FiBookOpen} boxSize="16px" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} _groupHover={{ color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="colors" />
                     </Flex>
-                    <Text fontSize="12px" fontWeight="bold" textTransform="uppercase" letterSpacing="wide" color={colorMode === 'light' ? 'blackAlpha.900' : 'whiteAlpha.900'} _groupHover={{ transform: 'translateX(4px)' }} transition="transform">
+                    <Text fontSize="14px" fontWeight="600" color={colorMode === 'light' ? 'gray.700' : 'gray.200'} _groupHover={{ transform: 'translateX(4px)', color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="all 0.2s">
                       {isLearner ? 'My Learning' : 'Dashboard'}
                     </Text>
                   </HStack>
-                  <Icon as={FiChevronRight} boxSize="16px" color={colorMode === 'light' ? 'gray.300' : 'gray.600'} />
                 </Flex>
               </>
-            )}
-          </Box>
-
-          {/* Account Actions Group (Logout) */}
-          <Box px={4} py={2}>
-            {isLoggedIn ? (
-              <>
-                <Text fontSize="8px" fontWeight="900" color={colorMode === 'light' ? 'gray.400' : 'gray.500'} textTransform="uppercase" letterSpacing="widest" mb={2} display="flex" alignItems="center" gap={1.5}>
-                  <Text as="span" fontSize="14px">⚙️</Text> Account Actions
-                </Text>
-                <Flex 
-                  as="button" w="full" onClick={() => { handleLogout(); onClose(); }} 
-                  align="center" justify="space-between" py={3} px={2} mx={-2} borderRadius="xl" 
-                  transition="all" _hover={{ bg: colorMode === 'light' ? 'red.50' : 'rgba(239, 68, 68, 0.1)' }} _active={{ transform: 'scale(0.98)' }}
-                  color="red.500" role="group"
-                >
-                  <HStack spacing={3}>
-                    <Flex w="28px" h="28px" borderRadius="lg" bg={colorMode === 'light' ? 'red.50' : 'rgba(239,68,68,0.1)'} align="center" justify="center" _groupHover={{ bg: 'red.500' }} transition="colors">
-                      <Icon as={FiLogOut} boxSize="16px" color="red.500" _groupHover={{ color: 'white' }} transition="colors" />
-                    </Flex>
-                    <Text fontSize="12px" fontWeight="bold" textTransform="uppercase" letterSpacing="wide" color="red.500" _groupHover={{ transform: 'translateX(4px)' }} transition="transform">
-                      Unplug (Log Out)
-                    </Text>
-                  </HStack>
-                </Flex>
-              </>
-            ) : (
-              <NextLink href="/login" passHref legacyBehavior>
-                <ChakraLink _hover={{ textDecoration: 'none' }} onClick={onClose}>
-                  <Flex 
-                    align="center" justify="center" py={4} mt={4} 
-                    bgGradient={colorMode === 'light' ? 'linear(to-r, brand.600, brand.500)' : 'linear(to-r, brand.500, brand.400)'} 
-                    borderRadius="xl" color="white" fontWeight="bold" fontSize="14px" textTransform="uppercase"
-                    boxShadow={colorMode === 'light' ? '0 4px 14px 0 rgba(79, 70, 229, 0.3)' : '0 4px 14px 0 rgba(99, 102, 241, 0.3)'}
-                  >
-                    <HStack spacing={2}>
-                      <Icon as={FiUser} boxSize="16px" />
-                      <Text>Login</Text>
-                    </HStack>
-                  </Flex>
-                </ChakraLink>
-              </NextLink>
             )}
           </Box>
         </DrawerBody>
+
+        {/* ── Sticky Footer (Logout / Login) ── */}
+        <Box
+          position="absolute" bottom={0} left={0} right={0}
+          bg={colorMode === 'light' ? 'linear-gradient(to top, #FFFFFA 70%, transparent)' : 'linear-gradient(to top, #171923 70%, transparent)'}
+          px={5} pb={{ base: 16, sm: 10 }} pt={10}
+          zIndex={20}
+        >
+          {isLoggedIn ? (
+            <Button
+              w="full" h="52px"
+              borderRadius="xl"
+              bg={colorMode === 'light' ? 'red.50' : 'rgba(239, 68, 68, 0.1)'}
+              color="red.500"
+              fontSize="14px" fontWeight="bold" letterSpacing="wide"
+              onClick={() => { handleLogout(); onClose(); }}
+              leftIcon={<FiLogOut size={18} />}
+              _hover={{ bg: colorMode === 'light' ? 'red.100' : 'rgba(239, 68, 68, 0.2)', transform: 'translateY(-2px)' }}
+              _active={{ transform: 'translateY(0)' }}
+              transition="all 0.2s"
+            >
+              UNPLUG (LOG OUT)
+            </Button>
+          ) : (
+            <Button
+              w="full" h="52px"
+              borderRadius="xl"
+              bgGradient={colorMode === 'light' ? 'linear(to-r, brand.600, brand.500)' : 'linear(to-r, brand.500, brand.400)'}
+              color="white"
+              fontSize="14px" fontWeight="bold" letterSpacing="wide" textTransform="uppercase"
+              onClick={() => { router.push('/login'); onClose(); }}
+              leftIcon={<FiUser size={18} />}
+              boxShadow={colorMode === 'light' ? '0 4px 14px 0 rgba(79, 70, 229, 0.3)' : '0 4px 14px 0 rgba(99, 102, 241, 0.3)'}
+              _hover={{ bgGradient: colorMode === 'light' ? 'linear(to-r, brand.700, brand.600)' : 'linear(to-r, brand.600, brand.500)', transform: 'translateY(-2px)' }}
+              _active={{ transform: 'translateY(0)' }}
+              transition="all 0.2s"
+            >
+              LOGIN
+            </Button>
+          )}
+        </Box>
       </DrawerContent>
     </Drawer>
   );
