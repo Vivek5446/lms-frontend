@@ -554,14 +554,14 @@ const SidebarLayout: React.FC<SidebarProps> = observer(
             borderBottomRightRadius="24px"
             overflow="hidden"
           >
-            <DrawerCloseButton
+            {/* <DrawerCloseButton
               variant="ghost"
               fontSize="lg"
               color={INACTIVE_TEXT}
               _hover={{ color: "white", bg: HOVER_BG }}
               mt={2}
               _focus={{ boxShadow: "none" }}
-            />
+            /> */}
             <SidebarLogo showBrand />
             <DrawerBody px={3} pb={5} className="customScrollBar">
               <SidebarAccordion
