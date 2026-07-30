@@ -127,7 +127,7 @@ const Header: React.FC = observer(() => {
         as="header"
         position="fixed"
         w="100%"
-        top={{ base: '40px', md: '0' }}
+        top="0"
         zIndex="1000"
         bg={colorMode === 'light' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(10, 15, 30, 0.85)'}
         backdropFilter="blur(24px) saturate(200%)"
@@ -137,7 +137,7 @@ const Header: React.FC = observer(() => {
         transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
         pb={{ base: 1.5, md: 2 }}
         style={{
-          paddingTop: '8px'
+          paddingTop: 'calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 8px)'
         }}
       >
         {/* Premium subtle top gradient line */}
