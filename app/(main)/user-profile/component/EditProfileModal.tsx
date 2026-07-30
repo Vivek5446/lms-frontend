@@ -1,5 +1,6 @@
 import { genderOptions } from '@/app/config/constant';
 import {
+  Avatar,
   Box,
   Button,
   Drawer,
@@ -35,6 +36,9 @@ const EditProfileModal = ({
   isOpen,
   form,
   handleChange,
+  onAvatarSelect,
+  onAvatarChange,
+  onAvatarRemove,
   handleSave,
   saving,
 }: any) => {
@@ -61,6 +65,40 @@ const EditProfileModal = ({
 
   const formFields = (
     <VStack spacing={4} align="stretch">
+      <FormControl>
+        <FormLabel {...labelStyle}>Profile Picture</FormLabel>
+        <Box
+          border="1px solid"
+          borderColor={useColorModeValue('gray.200', 'gray.700')}
+          borderRadius="16px"
+          p={4}
+          bg={useColorModeValue('gray.50', 'gray.800')}
+        >
+          <HStack spacing={4} align="center">
+            <Avatar
+              size="xl"
+              name={`${form.firstName || ""} ${form.lastName || ""}`.trim() || "Profile"}
+              src={form?.pic?.url || ""}
+            />
+            <VStack align="flex-start" spacing={2} flex={1}>
+              <Text fontSize="13px" color={useColorModeValue('gray.600', 'gray.300')}>
+                Upload a clear square photo to update your profile avatar.
+              </Text>
+              <HStack spacing={2} flexWrap="wrap">
+                <Button size="sm" borderRadius="xl" colorScheme="blue" onClick={onAvatarSelect}>
+                  {form?.pic?.url ? 'Replace Photo' : 'Upload Photo'}
+                </Button>
+                {form?.pic?.url ? (
+                  <Button size="sm" borderRadius="xl" variant="outline" colorScheme="red" onClick={onAvatarRemove}>
+                    Remove
+                  </Button>
+                ) : null}
+              </HStack>
+            </VStack>
+          </HStack>
+        </Box>
+      </FormControl>
+
       {/* Name row */}
       <Grid templateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
         <FormControl>
@@ -224,10 +262,15 @@ const EditProfileModal = ({
           bg={modalBg}
           borderTopRadius="3xl"
           maxH="90vh"
+          maxW="100%"
+          w="100%"
+          pt={0}
+          pb={0}
           borderTop="1px solid"
           borderColor={modalBorder}
+          overflow="hidden"
         >
-          <Box w="40px" h="4px" bg={useColorModeValue('gray.300', 'gray.600')} borderRadius="full" mx="auto" mt={3} />
+          {/* <Box w="40px" h="4px" bg={useColorModeValue('gray.300', 'gray.600')} borderRadius="full" mx="auto" mt={3} /> */}
           <DrawerCloseButton top={4} right={4} borderRadius="full" />
           <DrawerHeader py={4} borderBottom="1px solid" borderColor={modalBorder}>
             {headerContent}
@@ -235,7 +278,7 @@ const EditProfileModal = ({
           <DrawerBody py={5} overflowY="auto">
             {formFields}
           </DrawerBody>
-          <DrawerFooter borderTop="1px solid" borderColor={modalBorder} gap={2} py={4}>
+          <DrawerFooter borderTop="1px solid" borderColor={modalBorder} gap={2}>
             <Button
               variant="ghost"
               onClick={onClose}
@@ -246,7 +289,7 @@ const EditProfileModal = ({
             >
               Cancel
             </Button>
-            <Button
+          <Button
               leftIcon={<FiCheck size={14} />}
               onClick={handleSave}
               isLoading={saving}

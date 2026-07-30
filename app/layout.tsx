@@ -150,7 +150,8 @@ const MobileStatusBar = () => {
       right={0}
       height="40px"
       bg={colorMode === 'light' ? '#FFFFFF' : '#171923'}
-      zIndex={999999}
+      zIndex={900}
+      pointerEvents="none"
     />
   );
 };
