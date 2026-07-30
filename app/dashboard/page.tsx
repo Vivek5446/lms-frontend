@@ -35,7 +35,7 @@ const Page = observer(() => {
     );
   }
 
-  const pageBg = useColorModeValue("gray.50", "gray.900");
+  const pageBg = useColorModeValue("white", "gray.900");
 
   return (
     <PermissionGate

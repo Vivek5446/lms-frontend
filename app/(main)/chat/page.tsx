@@ -5,7 +5,7 @@ import { observer } from "mobx-react-lite";
 import stores from "../../store/stores";
 
 const ChatRootPage = observer(() => {
-  const bgMain = useColorModeValue("gray.50", "gray.900");
+  const bgMain = useColorModeValue("white", "gray.900");
   const iconColor = useColorModeValue("brand.500", "brand.300");
   const glowColor = useColorModeValue("rgba(98, 105, 255, 0.15)", "rgba(98, 105, 255, 0.08)");
   const textColor = useColorModeValue("gray.800", "white");

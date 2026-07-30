@@ -99,7 +99,7 @@ const CoursesPage = observer(function CoursesPage() {
   const catalogSectionRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const pageBg = useColorModeValue("gray.50", "gray.900");
+  const pageBg = useColorModeValue("white", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const mutedText = useColorModeValue("gray.600", "gray.300");

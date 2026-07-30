@@ -155,7 +155,7 @@ export const CourseDetailsView = observer(({ courseId, onBack }: CourseDetailsVi
     }
   };
 
-  const bgMain = useColorModeValue("gray.50", "gray.900");
+  const bgMain = useColorModeValue("white", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.100", "gray.700");
   const textPrimary = useColorModeValue("gray.800", "whiteAlpha.900");

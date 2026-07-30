@@ -129,7 +129,7 @@ const MyCoursesBoard = observer(
       "all" | "active" | "in_progress" | "completed"
     >("all");
 
-    const pageBg = useColorModeValue("gray.50", "gray.900");
+    const pageBg = useColorModeValue("white", "gray.900");
     const cardBg = useColorModeValue("white", "gray.800");
     const subduedText = useColorModeValue("gray.600", "gray.300");
     const borderColor = useColorModeValue("gray.200", "gray.700");
