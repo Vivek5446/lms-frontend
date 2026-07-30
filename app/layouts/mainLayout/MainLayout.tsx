@@ -16,7 +16,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
-  const shellBg = useColorModeValue("#F6F8FB", "gray.950");
+  const shellBg = useColorModeValue("#FFFFFF", "gray.950");
 
   const {
     auth: { user, sessionReady },

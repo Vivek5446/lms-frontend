@@ -24,7 +24,7 @@ import { FiArrowRight, FiBookOpen, FiGrid, FiUsers } from "react-icons/fi";
 const MainBatchesPage = observer(() => {
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
   const isLearner = Boolean(stores.auth.user) && isLearnerRole(role);
-  const pageBg = useColorModeValue("#F8FAFC", "gray.900");
+  const pageBg = useColorModeValue("white", "gray.900");
   const heroBg = useColorModeValue(
     "linear-gradient(135deg, var(--chakra-colors-brand-50) 0%, #ffffff 50%, var(--chakra-colors-brand-100) 100%)",
     "linear-gradient(135deg, var(--chakra-colors-gray-900) 0%, rgba(15, 23, 42, 0.98) 42%, var(--chakra-colors-brand-900) 100%)"

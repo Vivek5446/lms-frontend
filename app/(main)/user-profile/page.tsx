@@ -370,7 +370,7 @@ const ProfilePage: React.FC = observer(() => {
     router.push("/login");
   };
 
-  const pageBg = useColorModeValue("gray.50", "gray.950");
+  const pageBg = useColorModeValue("white", "gray.950");
   const pageHeadingColor = useColorModeValue("gray.900", "gray.50");
   const pageSubColor = useColorModeValue("gray.500", "gray.400");
   const cardBg = useColorModeValue("white", "gray.800");
@@ -411,6 +411,14 @@ const ProfilePage: React.FC = observer(() => {
       color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
       desc: "Phone, address, DOB & employee code",
       onClick: () => setActiveModal("details"),
+    },
+    {
+      key: "my-learning",
+      icon: BookOpen,
+      label: "My Learning",
+      color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+      desc: "Open your enrolled courses and continue learning",
+      onClick: () => router.push("/my-learning"),
     },
     {
       key: "help",
@@ -608,7 +616,12 @@ const ProfilePage: React.FC = observer(() => {
       <Box display={{ base: "none", md: "block" }}>
         <Flex justify="space-between" align="center" mb={6}>
           <Box>
-            <Text fontSize="24px" fontWeight="800" color={pageHeadingColor} letterSpacing="-0.02em">
+            <Text
+              fontSize="24px"
+              fontWeight="800"
+              color={pageHeadingColor}
+              letterSpacing="-0.02em"
+            >
               My Profile
             </Text>
             <Text fontSize="13px" color={pageSubColor} mt="2px">
@@ -618,7 +631,13 @@ const ProfilePage: React.FC = observer(() => {
 
           <HStack spacing={3}>
             <Button
-              leftIcon={isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-700" />}
+              leftIcon={
+                isDark ? (
+                  <Sun className="h-4 w-4 text-amber-400" />
+                ) : (
+                  <Moon className="h-4 w-4 text-slate-700" />
+                )
+              }
               onClick={toggleColorMode}
               size="sm"
               px={4}
@@ -645,7 +664,10 @@ const ProfilePage: React.FC = observer(() => {
           </HStack>
         </Flex>
 
-        <Grid templateColumns={{ base: "1fr", lg: "360px 1fr", xl: "380px 1fr" }} gap={6}>
+        <Grid
+          templateColumns={{ base: "1fr", lg: "360px 1fr", xl: "380px 1fr" }}
+          gap={6}
+        >
           <VStack spacing={6} align="stretch">
             <Box
               bg={cardBg}
@@ -673,7 +695,12 @@ const ProfilePage: React.FC = observer(() => {
               }}
             >
               <Box position="relative" zIndex={1} mb={4}>
-                <Box p="6px" borderRadius="full" bgGradient={accentGradient} boxShadow="0 10px 25px -5px rgba(59, 130, 246, 0.3)">
+                <Box
+                  p="6px"
+                  borderRadius="full"
+                  bgGradient={accentGradient}
+                  boxShadow="0 10px 25px -5px rgba(59, 130, 246, 0.3)"
+                >
                   <Avatar
                     name={fullName}
                     src={profileImageUrl}
@@ -700,12 +727,21 @@ const ProfilePage: React.FC = observer(() => {
                   aria-label="Update profile picture"
                   _hover={{ transform: "translateY(-1px)" }}
                 >
-                  {avatarUploading ? <Spinner size="sm" /> : <Camera className="h-4 w-4" />}
+                  {avatarUploading ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
                 </Button>
               </Box>
 
               <VStack spacing={1} zIndex={1} textTransform="capitalize">
-                <Text fontSize="22px" fontWeight="800" letterSpacing="-0.03em" color={useColorModeValue("gray.900", "white")}>
+                <Text
+                  fontSize="22px"
+                  fontWeight="800"
+                  letterSpacing="-0.03em"
+                  color={useColorModeValue("gray.900", "white")}
+                >
                   {form.title ? `${form.title} ${fullName}` : fullName}
                 </Text>
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-0.5 text-xs font-bold text-blue-600 dark:text-blue-400">
@@ -718,17 +754,20 @@ const ProfilePage: React.FC = observer(() => {
               <VStack spacing={2.5} w="full" align="center" zIndex={1}>
                 <HStack color="gray.500" fontSize="13px">
                   <FiMail size={14} />
-                  <Text fontWeight="600" fontSize="sm">{s(user?.username)}</Text>
+                  <Text fontWeight="600" fontSize="sm">
+                    {s(user?.username)}
+                  </Text>
                 </HStack>
                 {location && (
                   <HStack color="gray.500" fontSize="13px">
                     <FiMapPin size={14} />
-                    <Text fontWeight="500" fontSize="xs">{location}</Text>
+                    <Text fontWeight="500" fontSize="xs">
+                      {location}
+                    </Text>
                   </HStack>
                 )}
               </VStack>
             </Box>
-
           </VStack>
 
           <VStack spacing={6} align="stretch">
@@ -744,43 +783,113 @@ const ProfilePage: React.FC = observer(() => {
               <Flex justify="space-between" align="center" mb={6}>
                 <HStack spacing={3}>
                   <Icon as={MdOutlineVerified} color="blue.400" boxSize={6} />
-                  <Text fontSize="18px" fontWeight="700">My Profile Details</Text>
+                  <Text fontSize="18px" fontWeight="700">
+                    My Profile Details
+                  </Text>
                 </HStack>
                 <Box w="8px" h="8px" borderRadius="full" bg="emerald.400" />
               </Flex>
 
               <Grid templateColumns="repeat(2, 1fr)" gap={5}>
                 {[
-                  { icon: FiBriefcase, label: "Department", value: s(user?.department), color: "purple.400" },
-                  { icon: FiHash, label: "Employee Code", value: s(user?.code), color: "red.400" },
-                  { icon: FiCalendar, label: "Joined Date", value: fmtDate(user?.joiningDate), color: "teal.400" },
-                  { icon: FiCalendar, label: "Date of Birth", value: fmtDate(form.dateOfBirth || user?.dateOfBirth), color: "pink.400" },
-                  { icon: FiUser, label: "Gender", value: genderLabel(form.gender || user?.gender), color: "cyan.400" },
-                  { icon: FiMapPin, label: "Address", value: form.address, color: "green.400" },
-                  { icon: FiMapPin, label: "City", value: form.city, color: "yellow.500" },
-                  { icon: FiMapPin, label: "Country", value: form.country, color: "orange.300" },
+                  {
+                    icon: FiBriefcase,
+                    label: "Department",
+                    value: s(user?.department),
+                    color: "purple.400",
+                  },
+                  {
+                    icon: FiHash,
+                    label: "Employee Code",
+                    value: s(user?.code),
+                    color: "red.400",
+                  },
+                  {
+                    icon: FiCalendar,
+                    label: "Joined Date",
+                    value: fmtDate(user?.joiningDate),
+                    color: "teal.400",
+                  },
+                  {
+                    icon: FiCalendar,
+                    label: "Date of Birth",
+                    value: fmtDate(form.dateOfBirth || user?.dateOfBirth),
+                    color: "pink.400",
+                  },
+                  {
+                    icon: FiUser,
+                    label: "Gender",
+                    value: genderLabel(form.gender || user?.gender),
+                    color: "cyan.400",
+                  },
+                  {
+                    icon: FiMapPin,
+                    label: "Address",
+                    value: form.address,
+                    color: "green.400",
+                  },
+                  {
+                    icon: FiMapPin,
+                    label: "City",
+                    value: form.city,
+                    color: "yellow.500",
+                  },
+                  {
+                    icon: FiMapPin,
+                    label: "Country",
+                    value: form.country,
+                    color: "orange.300",
+                  },
                 ].map((item, idx) => (
-                  <HStack key={idx} spacing={4} _hover={{ transform: "translateX(4px)" }} transition="0.2s">
+                  <HStack
+                    key={idx}
+                    spacing={4}
+                    _hover={{ transform: "translateX(4px)" }}
+                    transition="0.2s"
+                  >
                     <Flex
                       align="center"
                       justify="center"
                       p={2.5}
                       borderRadius="14px"
-                      bg={useColorModeValue(`${item.color.split('.')[0]}.50`, "whiteAlpha.100")}
+                      bg={useColorModeValue(
+                        `${item.color.split(".")[0]}.50`,
+                        "whiteAlpha.100",
+                      )}
                     >
                       <Icon as={item.icon} color={item.color} boxSize={5} />
                     </Flex>
                     <VStack align="flex-start" spacing={0}>
-                      <Text fontSize="xs" fontWeight="bold" color="gray.400" textTransform="uppercase">{item.label}</Text>
-                      <Text fontWeight="600" fontSize="14px">{item.value || "N/A"}</Text>
+                      <Text
+                        fontSize="xs"
+                        fontWeight="bold"
+                        color="gray.400"
+                        textTransform="uppercase"
+                      >
+                        {item.label}
+                      </Text>
+                      <Text fontWeight="600" fontSize="14px">
+                        {item.value || "N/A"}
+                      </Text>
                     </VStack>
                   </HStack>
                 ))}
               </Grid>
 
               {form.bio && (
-                <Box mt={6} pt={4} borderTop="1px border" borderColor={useColorModeValue("gray.100", "gray.800")}>
-                  <Text fontSize="xs" fontWeight="bold" color="gray.400" textTransform="uppercase" mb={2}>
+                <Box
+                  mt={6}
+                  pt={4}
+                  borderTop="1px border"
+                  borderColor={useColorModeValue("gray.100", "gray.800")}
+                >
+                  <Text
+                    fontSize="xs"
+                    fontWeight="bold"
+                    color="gray.400"
+                    textTransform="uppercase"
+                    mb={2}
+                  >
                     About Me
                   </Text>
                   <Box
@@ -790,7 +899,11 @@ const ProfilePage: React.FC = observer(() => {
                     borderLeft="4px solid"
                     borderColor="blue.400"
                   >
-                    <Text fontSize="13px" lineHeight="1.7" color={useColorModeValue("gray.700", "gray.300")}>
+                    <Text
+                      fontSize="13px"
+                      lineHeight="1.7"
+                      color={useColorModeValue("gray.700", "gray.300")}
+                    >
                       {form.bio}
                     </Text>
                   </Box>
@@ -819,8 +932,12 @@ const ProfilePage: React.FC = observer(() => {
                       5 Certs
                     </span>
                   </Flex>
-                  <h3 className="mt-4 text-base font-bold group-hover:text-blue-600 transition-colors">Certificates</h3>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">View and download your earned PDF certificates</p>
+                  <h3 className="mt-4 text-base font-bold group-hover:text-blue-600 transition-colors">
+                    Certificates
+                  </h3>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    View and download your earned PDF certificates
+                  </p>
                 </Box>
               </motion.div>
 
@@ -844,8 +961,12 @@ const ProfilePage: React.FC = observer(() => {
                       3 Saved
                     </span>
                   </Flex>
-                  <h3 className="mt-4 text-base font-bold group-hover:text-purple-600 transition-colors">Bookmarks</h3>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Access saved courses & learning materials</p>
+                  <h3 className="mt-4 text-base font-bold group-hover:text-purple-600 transition-colors">
+                    Bookmarks
+                  </h3>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    Access saved courses & learning materials
+                  </p>
                 </Box>
               </motion.div>
 
@@ -869,8 +990,12 @@ const ProfilePage: React.FC = observer(() => {
                       Team
                     </span>
                   </Flex>
-                  <h3 className="mt-4 text-base font-bold group-hover:text-emerald-600 transition-colors">Teams & Department</h3>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Department colleagues and team leads</p>
+                  <h3 className="mt-4 text-base font-bold group-hover:text-emerald-600 transition-colors">
+                    Teams & Department
+                  </h3>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    Department colleagues and team leads
+                  </p>
                 </Box>
               </motion.div>
 
@@ -894,8 +1019,12 @@ const ProfilePage: React.FC = observer(() => {
                       Support
                     </span>
                   </Flex>
-                  <h3 className="mt-4 text-base font-bold group-hover:text-blue-600 transition-colors">Help & Support</h3>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">FAQs, guidebooks & contact support desk</p>
+                  <h3 className="mt-4 text-base font-bold group-hover:text-blue-600 transition-colors">
+                    Help & Support
+                  </h3>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    FAQs, guidebooks & contact support desk
+                  </p>
                 </Box>
               </motion.div>
             </Grid>
@@ -903,44 +1032,25 @@ const ProfilePage: React.FC = observer(() => {
         </Grid>
       </Box>
 
-      <Box display={{ base: "block", md: "none" }} pb={{ base: 28, md: 0 }}>
+      <Box display={{ base: "block", md: "none" }} pb={{ base: 28, md: 0 }} mt={2}>
         <div className="flex items-center justify-between pb-4">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">My Profile</h1>
-            <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            <h1 className="text-xl font-black tracking-tight">My Profile</h1>
+            <p
+              className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+            >
               Manage your personal info & preferences
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleColorMode}
-              aria-label="Toggle color mode"
-              className={`grid h-10 w-10 place-items-center rounded-2xl transition-transform active:scale-95 ring-1 ${
-                isDark ? "bg-slate-900 ring-slate-800 text-amber-400" : "bg-white ring-slate-200 text-slate-700 shadow-sm"
-              }`}
-            >
-              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-            <button
-              onClick={handleOpenEdit}
-              aria-label="Edit Profile"
-              className={`grid h-10 w-10 place-items-center rounded-2xl transition-transform active:scale-95 ring-1 ${
-                isDark ? "bg-slate-900 ring-slate-800 text-blue-400" : "bg-white ring-slate-200 text-blue-600 shadow-sm"
-              }`}
-            >
-              <Edit2 className="h-4.5 w-4.5" />
-            </button>
-          </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-3xl p-4 shadow-md shadow-blue-500/20">
+        <div className="relative overflow-hidden rounded-3xl p-2">
           <div className="pointer-events-none absolute inset-0" />
           <div className="relative flex items-center gap-4">
             <div className="relative shrink-0">
               <Avatar
-                // size="lg"
-                h={'80px'}
-                w={'80px'}
+                h={"90px"}
+                w={"90px"}
                 name={fullName}
                 src={profileImageUrl}
                 color="white"
@@ -955,7 +1065,11 @@ const ProfilePage: React.FC = observer(() => {
                   isDark ? "bg-slate-900 text-white" : "bg-white text-slate-700"
                 }`}
               >
-                {avatarUploading ? <Spinner size="sm" /> : <Camera className="h-4 w-4" />}
+                {avatarUploading ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
               </button>
             </div>
             <div className="min-w-0 flex-1">
@@ -964,7 +1078,9 @@ const ProfilePage: React.FC = observer(() => {
               </h2>
               <p className="mt-1 font-semibold flex items-center gap-1 text-xs truncate">
                 <Mail className="h-3 w-3 shrink-0 opacity-80" />
-                <span className="truncate">{s(user?.username) || "No email"}</span>
+                <span className="truncate">
+                  {s(user?.username) || "No email"}
+                </span>
               </p>
               {/* <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold uppercase backdrop-blur mt-1">
                 <Sparkles className="h-3 w-3" /> {roleName || "Member"}
@@ -973,52 +1089,128 @@ const ProfilePage: React.FC = observer(() => {
           </div>
         </div>
 
-        <motion.div
-          whileTap={{ scale: 0.98 }}
-          onClick={toggleColorMode}
-          className={`mt-4 flex items-center justify-between rounded-3xl p-4 cursor-pointer transition-all ring-1 ${
-            isDark ? "bg-slate-900/90 ring-slate-800" : "bg-white ring-slate-200/80 shadow-sm"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className={`grid h-10 w-10 place-items-center rounded-2xl ${
-                isDark ? "bg-amber-400/10 text-amber-400" : "bg-indigo-50 text-indigo-600"
-              }`}
-            >
-              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </div>
-            <div>
-              <p className="text-sm font-bold">Theme Mode</p>
-              <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                {isDark ? "Dark Mode 🌙" : "Light Mode ☀️"}
-              </p>
-            </div>
-          </div>
-          <div
-            className={`flex h-6 w-11 items-center rounded-full p-1 transition-colors ${
-              isDark ? "bg-indigo-600 justify-end" : "bg-slate-300 justify-start"
+        {false && (
+          <motion.div
+            whileTap={{ scale: 0.98 }}
+            onClick={toggleColorMode}
+            className={`mt-4 flex items-center justify-between rounded-3xl p-4 cursor-pointer transition-all ring-1 ${
+              isDark
+                ? "bg-slate-900/90 ring-slate-800"
+                : "bg-white ring-slate-200/80 shadow-sm"
             }`}
           >
-            <motion.div layout className="h-4 w-4 rounded-full bg-white shadow-md" />
-          </div>
-        </motion.div>
+            <div className="flex items-center gap-3">
+              <div
+                className={`grid h-10 w-10 place-items-center rounded-2xl ${
+                  isDark
+                    ? "bg-amber-400/10 text-amber-400"
+                    : "bg-indigo-50 text-indigo-600"
+                }`}
+              >
+                {isDark ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-bold">Theme Mode</p>
+                <p
+                  className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                >
+                  {isDark ? "Dark Mode 🌙" : "Light Mode ☀️"}
+                </p>
+              </div>
+            </div>
+            <div
+              className={`flex h-6 w-11 items-center rounded-full p-1 transition-colors ${
+                isDark
+                  ? "bg-indigo-600 justify-end"
+                  : "bg-slate-300 justify-start"
+              }`}
+            >
+              <motion.div
+                layout
+                className="h-4 w-4 rounded-full bg-white shadow-md"
+              />
+            </div>
+          </motion.div>
+        )}
+
+       <div
+  className={`mt-3 grid grid-cols-3 gap-2 rounded-3xl border p-2 ${
+    isDark
+      ? "border-white/10 bg-white/[0.03] shadow-[0_4px_18px_rgba(0,0,0,0.18)]"
+      : "border-gray-200/80 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.06)]"
+  }`}
+>
+  <button
+    type="button"
+    onClick={handleOpenEdit}
+    className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-center transition-all duration-200 hover:bg-current/5 active:scale-95 ${
+      isDark ? "text-blue-300" : "text-blue-600"
+    }`}
+  >
+    <Edit2 className="h-4 w-4" />
+    <span className="mt-2 text-[11px] font-bold">Edit</span>
+  </button>
+
+  <button
+    type="button"
+    onClick={toggleColorMode}
+    className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-center transition-all duration-200 hover:bg-current/5 active:scale-95 ${
+      isDark ? "text-amber-300" : "text-amber-600"
+    }`}
+  >
+    {isDark ? (
+      <Sun className="h-[18px] w-[18px]" />
+    ) : (
+      <Moon className="h-[18px] w-[18px]" />
+    )}
+
+    <span className="mt-2 text-[11px] font-bold">Theme</span>
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setActiveModal("details")}
+    className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-center transition-all duration-200 hover:bg-current/5 active:scale-95 ${
+      isDark ? "text-violet-300" : "text-violet-600"
+    }`}
+  >
+    <UserIcon className="h-[18px] w-[18px]" />
+    <span className="mt-2 text-[11px] font-bold">Details</span>
+  </button>
+</div>
 
         <div
-          className={`mt-4 overflow-hidden rounded-3xl ring-1 ${
-            isDark ? "bg-slate-900/90 ring-slate-800" : "bg-white ring-slate-200/80 shadow-sm"
-          }`}
+        className="mt-3"
+          // className={`mt-4 overflow-hidden rounded-3xl ring-1 ${
+          //   isDark
+          //     ? "bg-slate-900/90 ring-slate-800"
+          //     : "bg-white ring-slate-200/80 shadow-sm"
+          // }`}
         >
           {menuItems.map((m, i) => (
             <motion.button
               key={m.key}
-              whileTap={{ backgroundColor: isDark ? "rgba(30, 41, 59, 0.6)" : "rgb(248, 250, 252)" }}
+              whileTap={{
+                backgroundColor: isDark
+                  ? "rgba(30, 41, 59, 0.6)"
+                  : "rgb(248, 250, 252)",
+              }}
               onClick={m.onClick}
               className={`flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors ${
-                i !== menuItems.length - 1 ? (isDark ? "border-b border-slate-800/80" : "border-b border-slate-100") : ""
+                i !== menuItems.length - 1
+                  ? isDark
+                    ? "border-b border-slate-800/80"
+                    : "border-b border-slate-100"
+                  : ""
               }`}
             >
-              <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${m.color}`}>
+              <div
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${m.color}`}
+              >
                 <m.icon className="h-4.5 w-4.5" />
               </div>
               <div className="min-w-0 flex-1">
@@ -1030,9 +1222,15 @@ const ProfilePage: React.FC = observer(() => {
                     </span>
                   )}
                 </div>
-                <p className={`mt-0.5 truncate text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{m.desc}</p>
+                <p
+                  className={`mt-0.5 truncate text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                >
+                  {m.desc}
+                </p>
               </div>
-              <ChevronRight className={`h-4 w-4 shrink-0 ${isDark ? "text-slate-600" : "text-slate-400"}`} />
+              <ChevronRight
+                className={`h-4 w-4 shrink-0 ${isDark ? "text-slate-600" : "text-slate-400"}`}
+              />
             </motion.button>
           ))}
         </div>
@@ -1054,9 +1252,13 @@ const ProfilePage: React.FC = observer(() => {
         isOpen={isEditOpen}
         onClose={handleModalClose}
         form={tempForm}
-        handleChange={(field: string, value: any) => setTempForm((c) => ({ ...c, [field]: value }))}
+        handleChange={(field: string, value: any) =>
+          setTempForm((c) => ({ ...c, [field]: value }))
+        }
         onAvatarSelect={() => modalAvatarInputRef.current?.click()}
-        onAvatarChange={(file: File | null) => handleAvatarSelection(file, false)}
+        onAvatarChange={(file: File | null) =>
+          handleAvatarSelection(file, false)
+        }
         onAvatarRemove={handleTempAvatarRemove}
         handleSave={handleSave}
         saving={saving}
@@ -1084,21 +1286,50 @@ const ProfilePage: React.FC = observer(() => {
         }}
       />
 
-      {modalMeta && (
-        isMobile ? (
-          <Drawer isOpen={Boolean(activeModal)} placement="bottom" onClose={() => setActiveModal(null)}>
+      {modalMeta &&
+        (isMobile ? (
+          <Drawer
+            isOpen={Boolean(activeModal)}
+            placement="bottom"
+            onClose={() => setActiveModal(null)}
+          >
             <DrawerOverlay bg="blackAlpha.700" backdropFilter="blur(8px)" />
-            <DrawerContent bg={isDark ? "gray.900" : "white"} color={isDark ? "white" : "gray.900"} borderTopRadius="3xl" maxH="85vh">
-              <Box w="40px" h="4px" bg={isDark ? "gray.600" : "gray.300"} borderRadius="full" mx="auto" mt={3} />
+            <DrawerContent
+              bg={isDark ? "gray.900" : "white"}
+              color={isDark ? "white" : "gray.900"}
+              borderTopRadius="3xl"
+              maxH="85vh"
+            >
+              <Box
+                w="40px"
+                h="4px"
+                bg={isDark ? "gray.600" : "gray.300"}
+                borderRadius="full"
+                mx="auto"
+                mt={3}
+              />
               <DrawerCloseButton top={4} right={4} borderRadius="full" />
-              <DrawerHeader py={4} borderBottomWidth="1px" borderColor={isDark ? "gray.800" : "gray.100"}>
+              <DrawerHeader
+                py={4}
+                borderBottomWidth="1px"
+                borderColor={isDark ? "gray.800" : "gray.100"}
+              >
                 <HStack spacing={3}>
-                  <div className={`grid h-9 w-9 place-items-center rounded-xl ${modalMeta.color}`}>
+                  <div
+                    className={`grid h-9 w-9 place-items-center rounded-xl ${modalMeta.color}`}
+                  >
                     <modalMeta.icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <Text fontSize="md" fontWeight="bold">{modalMeta.title}</Text>
-                    <Text fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>{modalMeta.sub}</Text>
+                    <Text fontSize="md" fontWeight="bold">
+                      {modalMeta.title}
+                    </Text>
+                    <Text
+                      fontSize="xs"
+                      color={isDark ? "gray.400" : "gray.500"}
+                    >
+                      {modalMeta.sub}
+                    </Text>
                   </div>
                 </HStack>
               </DrawerHeader>
@@ -1112,17 +1343,41 @@ const ProfilePage: React.FC = observer(() => {
             </DrawerContent>
           </Drawer>
         ) : (
-          <Modal isOpen={Boolean(activeModal)} onClose={() => setActiveModal(null)} size="lg" isCentered motionPreset="slideInBottom">
+          <Modal
+            isOpen={Boolean(activeModal)}
+            onClose={() => setActiveModal(null)}
+            size="lg"
+            isCentered
+            motionPreset="slideInBottom"
+          >
             <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(6px)" />
-            <ModalContent borderRadius="3xl" overflow="hidden" bg={isDark ? "gray.900" : "white"} color={isDark ? "white" : "gray.900"}>
-              <ModalHeader borderBottomWidth="1px" borderColor={isDark ? "gray.800" : "gray.100"} py={4}>
+            <ModalContent
+              borderRadius="3xl"
+              overflow="hidden"
+              bg={isDark ? "gray.900" : "white"}
+              color={isDark ? "white" : "gray.900"}
+            >
+              <ModalHeader
+                borderBottomWidth="1px"
+                borderColor={isDark ? "gray.800" : "gray.100"}
+                py={4}
+              >
                 <HStack spacing={3}>
-                  <div className={`grid h-9 w-9 place-items-center rounded-xl ${modalMeta.color}`}>
+                  <div
+                    className={`grid h-9 w-9 place-items-center rounded-xl ${modalMeta.color}`}
+                  >
                     <modalMeta.icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <Text fontSize="lg" fontWeight="bold">{modalMeta.title}</Text>
-                    <Text fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>{modalMeta.sub}</Text>
+                    <Text fontSize="lg" fontWeight="bold">
+                      {modalMeta.title}
+                    </Text>
+                    <Text
+                      fontSize="xs"
+                      color={isDark ? "gray.400" : "gray.500"}
+                    >
+                      {modalMeta.sub}
+                    </Text>
                   </div>
                 </HStack>
               </ModalHeader>
@@ -1136,8 +1391,7 @@ const ProfilePage: React.FC = observer(() => {
               </ModalBody>
             </ModalContent>
           </Modal>
-        )
-      )}
+        ))}
     </Box>
   );
 });

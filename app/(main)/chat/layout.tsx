@@ -6,7 +6,7 @@ import CommunitySidebar from "./components/CommunitySidebar";
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const bgMain = useColorModeValue("gray.50", "gray.900");
+  const bgMain = useColorModeValue("white", "gray.900");
   
   // On mobile, if we are deeper than /chat, hide this sidebar.
   // On desktop, always show it.
