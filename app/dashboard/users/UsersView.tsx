@@ -33,6 +33,7 @@ import UserDetailsModal from "./components/UserDetailsModal";
 import UserDrawer from "./components/UserDrawer";
 import UsersHeader from "./components/UsersHeader";
 import UsersTable from "./components/UsersTable";
+import { departmentStore } from "../../store/departmentStore/departmentStore";
 
 type UsersViewProps = {
   scopedCompanyId?: string;
@@ -439,6 +440,15 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       return isSame ? prev : { ...prev, managers: nextManagers };
     });
   }, [isUserDrawerOpen, selectedUserManagerLevels]);
+
+  useEffect(() => {
+    if (isUserDrawerOpen) {
+      const companyToFetch = isSuperadmin ? userForm.companyId : auth.company;
+      if (companyToFetch) {
+        departmentStore.fetchDepartments(companyToFetch, 1, 100);
+      }
+    }
+  }, [isUserDrawerOpen, userForm.companyId, auth.company, isSuperadmin]);
 
   useEffect(() => {
     if (!listTabs.some((item) => item.value === listTab)) {
@@ -1200,7 +1210,7 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   borderColor={borderColor}
   muted={muted}
   currentCompanyName={currentCompanyName}
-  currentCompanyDepartments={currentCompanyDepartments}
+  availableDepartments={departmentStore.departments}
   managerCompanyId={managerCompanyId}
   updateRole={updateRole}
   setManagerSelection={setManagerSelection}

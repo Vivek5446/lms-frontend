@@ -76,7 +76,7 @@ const buildUserFormErrors = ({
 }: {
   userForm: any;
   isSuperadmin: boolean;
-  availableDepartments: string[];
+  availableDepartments: any[];
   isDepartmentRequired: boolean;
 }) => {
   const errors: Record<string, string> = {};
@@ -118,12 +118,14 @@ const buildUserFormErrors = ({
     errors.companyId = "Company selection is required.";
   }
 
+  const departmentNames = availableDepartments.map((d: any) => typeof d === 'object' ? d.departmentName || d.name || d.code : d);
+
   if (isDepartmentRequired && !trimmedDepartment) {
     errors.department = "Department is required for this role.";
   } else if (
     trimmedDepartment &&
-    availableDepartments.length > 0 &&
-    !availableDepartments.includes(trimmedDepartment)
+    departmentNames.length > 0 &&
+    !departmentNames.includes(trimmedDepartment)
   ) {
     errors.department = "Select a valid department for the chosen company.";
   }
@@ -148,7 +150,7 @@ const UserDrawer = ({
   roleOptions,
   isSuperadmin,
   filteredCompanies,
-  currentCompanyDepartments,
+  availableDepartments = [],
   borderColor,
   muted,
   currentCompanyName,
@@ -171,9 +173,6 @@ const UserDrawer = ({
   const stateCode = selectedState?.isoCode || "";
 
   const availableCities = (countryCode && stateCode) ? City.getCitiesOfState(countryCode, stateCode) : [];
-  const availableDepartments = isSuperadmin
-    ? filteredCompanies.find((company: any) => company?._id === userForm.companyId)?.departments || []
-    : currentCompanyDepartments || [];
   const isDepartmentRequired = userForm.role === "departmenthead";
   const validationErrors = useMemo(
     () =>
@@ -469,10 +468,13 @@ const UserDrawer = ({
                   onChange={(option: any) =>
                     setUserForm((p: any) => ({ ...p, department: option?.value || "" }))
                   }
-                  options={availableDepartments.map((department: string) => ({
-                    label: department,
-                    value: department,
-                  }))}
+                  options={availableDepartments.map((department: any) => {
+                    const deptName = typeof department === 'object' ? department.departmentName || department.name || department.code : department;
+                    return {
+                      label: deptName,
+                      value: deptName,
+                    };
+                  })}
                 />
                 <CustomInput
                   label="Bio"

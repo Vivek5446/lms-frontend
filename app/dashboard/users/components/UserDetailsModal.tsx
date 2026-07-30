@@ -131,7 +131,7 @@ const UserDetailsModal = ({
         w={{ base: "100%", md: "85%" }} 
         h="100vh" 
         overflow="hidden" 
-        bg={useColorModeValue("white", "gray.950")} 
+        bg={useColorModeValue("white", "gray.900")} 
         borderRadius="none"
       >
         {/* PREMIUM STICKY HEADER WITH GLASS EFFECT */}

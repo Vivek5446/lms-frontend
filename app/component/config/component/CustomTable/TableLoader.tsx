@@ -18,7 +18,7 @@ const TableLoader: React.FC<TableLoaderProps> = ({
       <Tbody>
         <Tr>
           <Td colSpan={10} p={5}>
-            <Flex justifyContent="center">
+            <Flex justifyContent="center" alignItems="center">
               <SpinnerLoader size="lg"/>
             </Flex>
           </Td>
@@ -27,7 +27,7 @@ const TableLoader: React.FC<TableLoaderProps> = ({
     );
   }
 
-  if (show === 0) {
+  if (!loader && show === 0) {
     return (
       <Tbody>
         <Tr>
