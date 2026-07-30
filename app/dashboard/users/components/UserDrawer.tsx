@@ -544,7 +544,9 @@ const UserDrawer = ({
         <Box
           position="absolute" bottom={0} left={0} right={0}
           bg={useColorModeValue("linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 30%)", "linear-gradient(180deg, rgba(23,25,35,0) 0%, rgba(23,25,35,1) 30%)")}
-          px={{ base: 5, md: 8 }} pb={{ base: 6, md: 8 }} pt={8}
+          px={{ base: 5, md: 8 }} 
+          pb={{ base: "calc(env(safe-area-inset-bottom, 20px) + 32px)", md: 8 }} 
+          pt={8}
           zIndex={10}
         >
           <Box w="100%">

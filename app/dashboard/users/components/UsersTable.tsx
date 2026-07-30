@@ -28,6 +28,9 @@ import {
   useBreakpointValue,
   useColorModeValue,
   StackDivider,
+  Skeleton,
+  SkeletonCircle,
+  SkeletonText,
 } from "@chakra-ui/react";
 import {
   FiBriefcase,
@@ -571,21 +574,26 @@ const UsersTable = ({
             {canOpenBulk && (
               <Button
                 leftIcon={<Icon as={FiUpload} />}
+                iconSpacing={2}
                 variant="outline"
                 onClick={onOpenBulk}
                 size="md"
-                px={5}
+                px={{ base: 3, sm: 5 }}
+                fontSize={{ base: "xs", sm: "sm", md: "md" }}
                 flex={{ base: 1, sm: "initial" }}
                 borderRadius="full"
                 borderWidth="1px"
-                borderColor={outlineButtonBorder}
-                color={outlineButtonColor}
+                borderColor={useColorModeValue("gray.200", "whiteAlpha.300")}
+                bg={useColorModeValue("white", "whiteAlpha.100")}
+                color={useColorModeValue("gray.700", "gray.100")}
                 fontWeight="600"
+                boxShadow="sm"
                 _hover={{
-                  bg: outlineButtonHoverBg,
-                  borderColor: useColorModeValue("purple.500", "purple.400"),
+                  bg: useColorModeValue("gray.50", "whiteAlpha.200"),
+                  borderColor: useColorModeValue("blue.300", "blue.400"),
+                  color: useColorModeValue("blue.600", "blue.200"),
                   transform: "translateY(-1px)",
-                  boxShadow: "sm",
+                  boxShadow: "md",
                 }}
                 _active={{ transform: "translateY(0)" }}
                 transition="all 0.2s"
@@ -597,9 +605,11 @@ const UsersTable = ({
             {canOpenCreate && (
               <Button
                 leftIcon={<Icon as={FiUserPlus} />}
+                iconSpacing={2}
                 onClick={onOpenCreate}
                 size="md"
-                px={6}
+                px={{ base: 3, sm: 6 }}
+                fontSize={{ base: "xs", sm: "sm", md: "md" }}
                 flex={{ base: 1, sm: "initial" }}
                 borderRadius="full"
                 bgGradient={`linear(to-r, ${gradientFrom}, ${gradientTo})`}
@@ -746,9 +756,29 @@ const UsersTable = ({
             </InputGroup>
 
             {loading ? (
-              <Box bg={cardBg} borderWidth="1px" borderColor={borderColorLight} borderRadius="xl" p={5}>
-                <Text fontSize="sm" color={muted}>Loading users...</Text>
-              </Box>
+              <VStack spacing={3} align="stretch" w="100%">
+                {[1, 2, 3].map((i) => (
+                  <Box key={i} bg={cardBg} borderWidth="1px" borderColor={useColorModeValue("gray.200", "whiteAlpha.200")} borderRadius="2xl" p={4} boxShadow="sm">
+                    <HStack align="center" spacing={3} mb={3}>
+                      <SkeletonCircle size="8" />
+                      <Box flex="1">
+                        <Skeleton height="14px" width="60%" mb={2} />
+                        <Skeleton height="10px" width="80%" />
+                      </Box>
+                      <Skeleton height="16px" width="40px" borderRadius="full" />
+                    </HStack>
+                    <HStack spacing={2} mb={4}>
+                      <Skeleton height="20px" width="50px" borderRadius="md" />
+                      <Skeleton height="20px" width="70px" borderRadius="md" />
+                    </HStack>
+                    <Divider borderColor={borderColorLight} mb={3} />
+                    <HStack spacing={2} w="100%">
+                      <Skeleton height="32px" flex={1} borderRadius="lg" />
+                      <Skeleton height="32px" width="32px" borderRadius="lg" />
+                    </HStack>
+                  </Box>
+                ))}
+              </VStack>
             ) : users.length === 0 ? (
               <Box bg={cardBg} borderWidth="1px" borderColor={borderColorLight} borderRadius="xl" p={5}>
                 <Text fontSize="sm" color={muted}>No users found for this filter.</Text>
@@ -762,13 +792,17 @@ const UsersTable = ({
                       key={user._id} 
                       bg={cardBg} 
                       borderWidth="1px" 
-                      borderColor={borderColorLight} 
-                      borderBottom="4px solid"
-                      borderBottomColor={statusColor}
+                      borderColor={useColorModeValue("gray.200", "whiteAlpha.200")} 
                       borderRadius="2xl" 
-                      p={3.5} 
+                      p={4} 
                       boxShadow="sm"
-                      transition="transform 0.15s ease"
+                      transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+                      _hover={{
+                        transform: "translateY(-2px)",
+                        boxShadow: "md",
+                        borderColor: useColorModeValue("blue.200", "blue.700"),
+                        bg: useColorModeValue("blue.50", "whiteAlpha.50"),
+                      }}
                       _active={{ transform: "scale(0.98)" }}
                     >
                       {/* Card Header */}

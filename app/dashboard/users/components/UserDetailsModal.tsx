@@ -52,12 +52,12 @@ const SectionCard = ({ title, icon, color, children }: any) => {
   return (
     <Box mb={{ base: 5, md: 6 }}>
       <Flex align="center" mb={3} gap={2} px={1}>
-        <Flex 
-          w="24px" 
-          h="24px" 
-          borderRadius="lg" 
-          bg={useColorModeValue(`${color}.50`, `${color}.950/20`)} 
-          align="center" 
+        <Flex
+          w="24px"
+          h="24px"
+          borderRadius="lg"
+          bg={useColorModeValue(`${color}.50`, `${color}.950/20`)}
+          align="center"
           justify="center"
         >
           <Icon as={icon} color={`${color}.500`} boxSize={3.5} />
@@ -84,13 +84,13 @@ const SectionCard = ({ title, icon, color, children }: any) => {
 const DetailField = ({ label, value, icon, color }: { label: string; value?: string | null; icon: any; color: string }) => {
   return (
     <HStack spacing={3.5} align="center" minW={0} py={1}>
-      <Flex 
-        w="34px" 
-        h="34px" 
-        borderRadius="xl" 
-        bg={useColorModeValue(`${color}.50`, `${color}.950/20`)} 
-        align="center" 
-        justify="center" 
+      <Flex
+        w="34px"
+        h="34px"
+        borderRadius="xl"
+        bg={useColorModeValue(`${color}.50`, `${color}.950/20`)}
+        align="center"
+        justify="center"
         flexShrink={0}
       >
         <Icon as={icon} color={`${color}.500`} boxSize={4} />
@@ -126,12 +126,12 @@ const UserDetailsModal = ({
   return (
     <Drawer isOpen={isOpen} placement={placement} size="full" onClose={onClose} blockScrollOnMount={false}>
       <DrawerOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-      <DrawerContent 
-        maxW={{ base: "100%", md: "85%" }} 
-        w={{ base: "100%", md: "85%" }} 
-        h="100vh" 
-        overflow="hidden" 
-        bg={useColorModeValue("white", "gray.900")} 
+      <DrawerContent
+        maxW={{ base: "100%", md: "85%" }}
+        w={{ base: "100%", md: "85%" }}
+        h="100vh"
+        overflow="hidden"
+        bg={useColorModeValue("white", "gray.900")}
         borderRadius="none"
       >
         {/* PREMIUM STICKY HEADER WITH GLASS EFFECT */}
@@ -165,7 +165,7 @@ const UserDetailsModal = ({
                 transition="all 0.2s"
                 flexShrink={0}
               />
-              
+
               <Box minW={0}>
                 <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
                   <Box as="span" color={useColorModeValue("gray.800", "white")}>VIEW </Box>
@@ -173,9 +173,9 @@ const UserDetailsModal = ({
                     USER
                   </Box>
                 </Text>
-                <Text fontSize="10px" color={useColorModeValue("gray.500", "gray.400")} fontWeight="700" letterSpacing="0.2em" mt={0.5}>
+                {/* <Text fontSize="10px" color={useColorModeValue("gray.500", "gray.400")} fontWeight="700" letterSpacing="0.2em" mt={0.5}>
                   VIEWING DETAILED ACCOUNT DETAILS
-                </Text>
+                </Text> */}
               </Box>
             </HStack>
 
@@ -191,8 +191,8 @@ const UserDetailsModal = ({
           </HStack>
         </Box>
 
-        <DrawerBody 
-          p={0} 
+        <DrawerBody
+          p={0}
           overflowY="auto"
           sx={{
             "&::-webkit-scrollbar": { width: "4px" },
@@ -201,10 +201,10 @@ const UserDetailsModal = ({
           }}
         >
           <Box w="100%" px={{ base: 4, md: 8 }} pt={5} pb="150px">
-            
+
             {/* CONTENT BODY */}
             <VStack align="stretch" spacing={5}>
-              
+
               {/* Profile Card */}
               <SectionCard title="Profile Summary" icon={User} color="blue">
                 <HStack spacing={5} align="center">
