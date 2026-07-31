@@ -2,7 +2,12 @@
 
 import { observer } from "mobx-react-lite";
 import { ChakraProvider, ColorModeScript, useColorMode } from "@chakra-ui/react";
-import { buildAppTheme, lato, shouldUseCompanyDashboardBranding } from "./theme/theme";
+import {
+  buildAppTheme,
+  learnerBodyFont,
+  learnerHeadingFont,
+  shouldUseCompanyDashboardBranding,
+} from "./theme/theme";
 import "./globals.css";
 import MainLayout from "./layouts/mainLayout/MainLayout";
 import AuthenticationLayout from "./layouts/authenticationLayout/AuthenticationLayout";
@@ -11,13 +16,7 @@ import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import stores from "./store/stores";
 import Notification from "./component/common/Notification/Notification";
-import { Montserrat } from "next/font/google";
 import { getMetadataForPath, PageMetadata } from "./metadata";
-
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
 
 const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
   const {
@@ -124,7 +123,7 @@ const RootLayout = observer(({ children }: { children: React.ReactNode }) => {
         <meta charSet="UTF-8" />
         <ColorModeScript initialColorMode="light" />
       </head>
-      <body className={`${lato.className} ${montserrat.className}`}>
+      <body className={`${learnerBodyFont.variable} ${learnerHeadingFont.variable} antialiased`}>
         <ChakraProvider theme={activeTheme}>
           <NavigationBarManager />
           <Notification />

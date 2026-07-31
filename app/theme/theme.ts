@@ -1,12 +1,26 @@
 import { extendTheme, StyleFunctionProps } from "@chakra-ui/react";
-import { Lato } from "next/font/google";
+import { Inter, Manrope } from "next/font/google";
+import { Baloo_2, Nunito } from "next/font/google";
+
 
 export const DEFAULT_LEARNER_PRIMARY_COLOR = "#2563EB";
 export const DASHBOARD_DEFAULT_PRIMARY_COLOR = DEFAULT_LEARNER_PRIMARY_COLOR;
 
-const lato = Lato({
-  variable: "--font-lato",
-  weight: ["400", "700"],
+
+
+// export const learnerBodyFont = Nunito({
+//   variable: "--font-body",
+//   subsets: ["latin"],
+//   weight: ["400", "500", "600", "700"],
+// });
+
+export const learnerHeadingFont = Inter({
+  variable: "--font-heading",
+  subsets: ["latin"],
+});
+
+export const learnerBodyFont = Inter({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
@@ -29,6 +43,7 @@ const components = {
   Button: {
     baseStyle: {
       fontWeight: "bold",
+      fontFamily: "heading",
     },
     sizes: {
       xl: {
@@ -62,13 +77,19 @@ const components = {
       fontWeight: "300",
     },
   },
+  Heading: {
+    baseStyle: {
+      fontWeight: "700",
+      letterSpacing: "-0.03em",
+    },
+  },
 };
 
 const styles = {
   global: (props: StyleFunctionProps) => ({
     body: {
       bg: props.colorMode === "dark" ? "gray.900" : "#FFFFFA",
-      fontFamily: "var(--font-lato), sans-serif",
+      fontFamily: "var(--font-body), sans-serif",
       color: props.colorMode === "dark" ? "white" : "brand.900",
     },
   }),
@@ -149,8 +170,8 @@ const config = {
 };
 
 const fonts = {
-  heading: "Montserrat, sans-serif",
-  body: "var(--font-lato), sans-serif",
+  heading: "var(--font-heading), sans-serif",
+  body: "var(--font-body), sans-serif",
 };
 
 type BrandScale = {
@@ -312,5 +333,5 @@ export function buildAppTheme(options: ThemeBuildOptions = {}) {
 
 const theme = buildAppTheme();
 
-export { theme, lato, normalizeHexColor, mixHexColors };
+export { theme, normalizeHexColor, mixHexColors };
 export default theme;

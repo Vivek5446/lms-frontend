@@ -17,6 +17,7 @@ import {
   DrawerOverlay,
   Flex,
   Grid,
+  Heading,
   HStack,
   Icon,
   Modal,
@@ -973,14 +974,14 @@ const ProfilePage: React.FC = observer(() => {
       <Box display={{ base: "none", md: "block" }}>
         <Flex justify="space-between" align="center" mb={6}>
           <Box>
-            <Text
+            <Heading
               fontSize="24px"
               fontWeight="800"
               color={pageHeadingColor}
               letterSpacing="-0.02em"
             >
               My Profile
-            </Text>
+            </Heading >
             <Text fontSize="13px" color={pageSubColor} mt="2px">
               View and manage your personal details, achievements & preferences
             </Text>
@@ -1389,7 +1390,7 @@ const ProfilePage: React.FC = observer(() => {
         </Grid>
       </Box>
 
-      <Box display={{ base: "block", md: "none" }} pb={{ base: 28, md: 0 }} mt={2}>
+      <Box display={{ base: "block", md: "none" }} pb={{ base: 4, md: 0 }} mt={2}>
         <div className="flex items-center justify-between pb-4">
           <div>
             <h1 className="text-xl font-black tracking-tight">My Profile</h1>
@@ -1540,10 +1541,7 @@ const ProfilePage: React.FC = observer(() => {
   </button>
 </div>
 
-        <div
-        className="mt-3"
-       
-        >
+        <div className="mt-3" >
           {menuItems.map((m, i) => (
             <motion.button
               key={m.key}
@@ -1562,7 +1560,7 @@ const ProfilePage: React.FC = observer(() => {
               }`}
             >
               <div
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${m.color}`}
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl border ${m.color}`}
               >
                 <m.icon className="h-4.5 w-4.5" />
               </div>
@@ -1576,7 +1574,7 @@ const ProfilePage: React.FC = observer(() => {
                   )}
                 </div>
                 <p
-                  className={`mt-0.5 truncate text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                  className={`mt-0.5 truncate text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}
                 >
                   {m.desc}
                 </p>
