@@ -1,5 +1,4 @@
 'use client'
-
 import React from "react";
 import {
   Box,
@@ -66,9 +65,7 @@ export const Footer: React.FC = () => {
         >
           <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 6, md: 8 }}>
             <Stack spacing={{ base: 4, md: 5 }}>
-              <NextLink href="/">
-                {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
-                }
+              <NextLink href="/" passHref legacyBehavior>
                 <ChakraLink _hover={{ textDecoration: "none" }} display="flex" alignItems="center" gap={3}>
                   <Image
                     src="https://www.lmscert.com/Logo%20LMS%20-1-.svg"
@@ -121,9 +118,7 @@ export const Footer: React.FC = () => {
                   {section.title}
                 </Text>
                 {section.links.map((link) => (
-                  <NextLink key={link.name} href={link.href}>
-                    {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
-                    }
+                  <NextLink key={link.name} href={link.href} passHref legacyBehavior>
                     <ChakraLink fontSize="sm" color={textColor} _hover={{ color: "brand.500", textDecoration: "none" }}>
                       {link.name}
                     </ChakraLink>
@@ -139,9 +134,7 @@ export const Footer: React.FC = () => {
               <Text fontSize="sm" color={textColor}>
                 Have questions? Reach out to our learning advisors.
               </Text>
-              <NextLink href="/contact-us">
-                {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
-                }
+              <NextLink href="/contact-us" passHref legacyBehavior>
                 <ChakraLink
                   display="inline-flex"
                   alignItems="center"
@@ -179,9 +172,7 @@ export const Footer: React.FC = () => {
 
           <HStack spacing={{ base: 3, md: 6 }} flexWrap="wrap" justify="center">
             {footerLinks.legal.map((link) => (
-              <NextLink key={link.name} href={link.href}>
-                {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
-                }
+              <NextLink key={link.name} href={link.href} passHref legacyBehavior>
                 <ChakraLink fontSize="xs" color={subtleText} _hover={{ color: "brand.600" }}>
                   {link.name}
                 </ChakraLink>
