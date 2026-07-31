@@ -4,8 +4,11 @@ import { observer } from 'mobx-react-lite';
 import { newsStore } from '../../store/newsStore/newsStore';
 import { NewsPost } from './components/NewsPost';
 import { CreateNewsModal } from './components/CreateNewsModal';
-import { Box, Button, Container, Flex, Heading, Text, VStack, useColorModeValue, Center, Icon, IconButton, Skeleton, SkeletonCircle, SkeletonText } from '@chakra-ui/react';
-import { FiPlus, FiInbox } from 'react-icons/fi';
+import { CommentsDrawer } from './components/CommentsDrawer';
+import { Box, Button, Container, Flex, Heading, Text, VStack, useColorModeValue, Center, Icon, IconButton, Skeleton, SkeletonCircle, SkeletonText, useToast } from '@chakra-ui/react';
+import { FiPlus, FiInbox, FiImage, FiFeather, FiEdit3 } from 'react-icons/fi';
+
+import { authStore } from '../../store/authStore/authStore';
 
 const NewsSkeleton = () => {
   const bg = useColorModeValue('white', '#1b1f23');
@@ -31,21 +34,44 @@ const NewsSkeleton = () => {
 
 const NewsFeed = observer(() => {
   const [showCreate, setShowCreate] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   const bg = useColorModeValue('#f3f2ef', 'gray.900'); // Authentic LinkedIn gray background
   const headerBg = useColorModeValue('rgba(255, 255, 255, 0.95)', 'rgba(26, 32, 44, 0.95)');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const toast = useToast();
 
   useEffect(() => {
     newsStore.fetchPosts({ page: 1, limit: 30 });
   }, []);
 
+  const checkAuth = (action: string) => {
+    if (!authStore.user) {
+      toast({
+        title: "Login Required",
+        description: `Please login to ${action}`,
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleLike = async (postId: string, reactionType: string = 'like') => {
+    if (!checkAuth('react to posts')) return;
     await newsStore.toggleLike(postId, reactionType);
   };
 
   const handleComment = (postId: string) => {
-    console.log("Comment on post:", postId);
+    if (!checkAuth('comment on posts')) return;
+    setSelectedPostId(postId);
+  };
+
+  const handleCreatePost = () => {
+    if (!checkAuth('create a post')) return;
+    setShowCreate(true);
   };
 
   const handleDelete = async (postId: string) => {
@@ -83,7 +109,7 @@ const NewsFeed = observer(() => {
           </Text>
         </Box>
         <Button 
-          onClick={() => setShowCreate(true)} 
+          onClick={handleCreatePost} 
           leftIcon={<FiPlus />} 
           colorScheme="brand" 
           variant="solid" 
@@ -104,11 +130,49 @@ const NewsFeed = observer(() => {
                 <NewsSkeleton />
               </Box>
             ) : newsStore.posts.length === 0 ? (
-              <Center py={20} flexDir="column" gap={4} opacity={0.5} textAlign="center">
-                <Icon as={FiInbox} boxSize={12} color="gray.400" />
-                <Text fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" color="gray.500">
-                  The board is empty
-                </Text>
+              <Center py={24} px={4} flexDir="column" textAlign="center" w="full">
+                <Box 
+                  p={8} 
+                  bg={useColorModeValue('white', 'gray.800')} 
+                  borderRadius="2xl" 
+                  boxShadow="sm" 
+                  borderWidth="1px" 
+                  borderColor={useColorModeValue('gray.200', 'gray.700')}
+                  maxW="sm"
+                  w="full"
+                >
+                  <Center 
+                    w="80px" 
+                    h="80px" 
+                    bg={useColorModeValue('brand.50', 'brand.900')} 
+                    color={useColorModeValue('brand.500', 'brand.300')} 
+                    borderRadius="full" 
+                    mx="auto"
+                    mb={6}
+                    boxShadow={`inset 0 0 0 1px ${useColorModeValue('rgba(0,0,0,0.05)', 'rgba(255,255,255,0.05)')}`}
+                  >
+                    <Icon as={FiEdit3} boxSize={8} />
+                  </Center>
+                  <Text fontSize="xl" fontWeight="900" color={useColorModeValue('gray.900', 'white')} mb={3} letterSpacing="tight">
+                    No Posts Yet
+                  </Text>
+                  <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')} mb={8} lineHeight="1.6">
+                    The community board is waiting! Be the first to share an update, announcement, or something interesting.
+                  </Text>
+                  <Button
+                    colorScheme="brand"
+                    size="md"
+                    borderRadius="full"
+                    leftIcon={<FiPlus />}
+                    onClick={handleCreatePost}
+                    w="full"
+                    boxShadow="0 4px 14px 0 rgba(0, 0, 0, 0.1)"
+                    _hover={{ transform: 'translateY(-2px)', boxShadow: '0 6px 20px 0 rgba(0, 0, 0, 0.15)' }}
+                    transition="all 0.2s"
+                  >
+                    Create First Post
+                  </Button>
+                </Box>
               </Center>
             ) : (
               newsStore.posts.map(post => (
@@ -127,6 +191,13 @@ const NewsFeed = observer(() => {
       </Box>
       
       <CreateNewsModal open={showCreate} onOpenChange={setShowCreate} />
+      {selectedPostId && (
+        <CommentsDrawer 
+          isOpen={!!selectedPostId} 
+          onClose={() => setSelectedPostId(null)} 
+          postId={selectedPostId} 
+        />
+      )}
     </Box>
   );
 });

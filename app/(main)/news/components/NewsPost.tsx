@@ -3,10 +3,12 @@ import { Box, Flex, Avatar, Text, Image, IconButton, HStack, useColorModeValue, 
 import { FiThumbsUp, FiMessageSquare, FiMoreHorizontal, FiShare2, FiTrash2 } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { observer } from 'mobx-react-lite';
+import { CommentsDrawer } from './CommentsDrawer';
+import { ReactionsDrawer } from './ReactionsDrawer';
 import { authStore } from '../../../store/authStore/authStore';
 
-const REACTIONS = {
-  like: { icon: '👍', color: 'blue.500', label: 'Like' },
+export const REACTIONS = {
+  like: { icon: '👍', label: 'Like', color: '#0a66c2' },
   celebrate: { icon: '👏', color: 'green.500', label: 'Celebrate' },
   support: { icon: '🤝', color: 'purple.500', label: 'Support' },
   love: { icon: '❤️', color: 'red.500', label: 'Love' },
@@ -32,9 +34,10 @@ export const NewsPost = observer(({
   const textColor = useColorModeValue('gray.900', 'white');
   const subtextColor = useColorModeValue('gray.600', 'gray.400');
   const hoverBg = useColorModeValue('gray.100', 'whiteAlpha.200');
-  const linkedinBlue = useColorModeValue('#0a66c2', '#70b5f9');
   
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isReactionsOpen, setIsReactionsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hoverTimeout = React.useRef<any>(null);
   const touchTimer = React.useRef<any>(null);
@@ -246,11 +249,19 @@ export const NewsPost = observer(({
 
       {/* Social Counts */}
       <Flex px={4} py={2} justify="space-between" align="center">
-        <Text fontSize="12px" color={subtextColor}>
+        <Text 
+          fontSize="12px" 
+          color={subtextColor}
+          cursor={reactionSummary ? "pointer" : "default"}
+          _hover={reactionSummary ? { textDecoration: 'underline' } : undefined}
+          onClick={() => {
+            if (reactionSummary) setIsReactionsOpen(true);
+          }}
+        >
           {reactionSummary || ''}
         </Text>
-        <Text fontSize="12px" color={subtextColor} _hover={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={onComment}>
-          {post.comments?.length > 0 ? `${post.comments.length} comments` : ''}
+        <Text fontSize="12px" color={subtextColor} _hover={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={() => setIsCommentsOpen(true)}>
+          {post.commentCount > 0 ? `${post.commentCount} comments` : ''}
         </Text>
       </Flex>
 
@@ -282,8 +293,9 @@ export const NewsPost = observer(({
                   onTouchStart={handleTouchStart}
                   onTouchEnd={handleTouchEnd}
                   onClick={() => {
+                    // Do not call onLike here. We only want it to trigger from the popover icons.
                     if (!isMenuOpen) {
-                      onLike(currentUserReaction || 'like');
+                      setIsMenuOpen(true);
                     }
                   }}
                   _hover={{ bg: hoverBg }}
@@ -374,6 +386,21 @@ export const NewsPost = observer(({
           <Text fontWeight="600" fontSize="13px">Share</Text>
         </Button>
       </Flex>
+
+      {/* Comments Drawer */}
+      <CommentsDrawer 
+        isOpen={isCommentsOpen} 
+        onClose={() => setIsCommentsOpen(false)} 
+        postId={post._id} 
+      />
+
+      {/* Reactions Drawer */}
+      <ReactionsDrawer
+        isOpen={isReactionsOpen}
+        onClose={() => setIsReactionsOpen(false)}
+        postId={post._id}
+        reactionCounts={post.reactionCounts || {}}
+      />
     </Box>
   );
 });
