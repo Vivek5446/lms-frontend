@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    --font-heading: "Inter", sans-serif;
+    --font-body: "Inter", sans-serif;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -41,9 +43,20 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-body);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.03em;
   }
 
   html {
