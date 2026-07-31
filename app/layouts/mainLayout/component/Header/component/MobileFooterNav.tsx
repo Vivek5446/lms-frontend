@@ -4,7 +4,7 @@ import React from 'react';
 import { Box, Flex, Icon, Link as ChakraLink, Text, useColorMode, Button } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiHome, FiBookOpen, FiUser, FiGrid, FiMenu, FiMessageCircle } from 'react-icons/fi';
+import { FiHome, FiBookOpen, FiUser, FiGrid, FiMenu, FiMessageCircle, FiGlobe } from 'react-icons/fi';
 import { observer } from 'mobx-react-lite';
 import stores from '@/app/store/stores';
 import { isLearnerRole, isManagerRole } from '@/app/config/utils/roleAccess';
@@ -56,6 +56,9 @@ export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }:
     } else {
       links.push({ href: '/chat', label: 'Community', icon: FiMessageCircle });
     }
+
+    // 5. Add News as the 5th tab
+    links.push({ href: '/news', label: 'News', icon: FiGlobe });
 
     return links;
   }, [appHref, isLearner, isLoggedIn, isManagerUser]);
@@ -158,7 +161,7 @@ export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }:
           );
         })}
 
-        {/* 'More' / Hamburger Button */}
+        {/* 'More' / Hamburger Button (Commented out instead of removed)
         <Button
           variant="unstyled"
           position="relative"
@@ -173,7 +176,6 @@ export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }:
           _active={{ transform: 'scale(0.92)' }}
           onClick={onToggleMobileMenu}
         >
-          {/* Active Indicator (Line at top) */}
           {mobileMenuOpen && (
             <Box
               position="absolute"
@@ -204,6 +206,7 @@ export const MobileFooterNav = observer(({ mobileMenuOpen, onToggleMobileMenu }:
             More
           </Text>
         </Button>
+        */}
       </Flex>
     </Box>
   );

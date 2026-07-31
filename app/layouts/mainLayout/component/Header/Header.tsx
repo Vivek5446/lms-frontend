@@ -83,6 +83,7 @@ const Header: React.FC = observer(() => {
     ...(isLearner ? [{ href: '/batches', label: 'Batches' }] : []),
     ...(isManagerUser ? [{ href: '/manager', label: 'Learners' }] : []),
     { href: '/chat', label: 'Community' },
+    { href: '/news', label: 'News' },
     { href: '/about-us', label: 'About Us' },
     { href: '/contact-us', label: 'Contact Us' },
   ]), [isLearner, isManagerUser]);
@@ -190,7 +191,9 @@ const Header: React.FC = observer(() => {
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
-                  <NextLink key={link.href} href={link.href} passHref legacyBehavior>
+                  <NextLink key={link.href} href={link.href}>
+                    {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
+                    }
                     <ChakraLink
                       px={4}
                       py={1.5}
@@ -374,21 +377,21 @@ const Header: React.FC = observer(() => {
           onProfileClick={() => setIsProfileOpen(true)}
         />
 
-        {/* Bottom More Menu */}
-        <MobileMenuDrawer
-          isOpen={mobileMenuOpen}
-          placement="bottom"
-          onClose={() => setMobileMenuOpen(false)}
-          onProfileClick={() => setIsProfileOpen(true)}
-        />
+      {/* Bottom More Menu */}
+      <MobileMenuDrawer
+        isOpen={mobileMenuOpen}
+        placement="bottom"
+        onClose={() => setMobileMenuOpen(false)}
+        onProfileClick={() => setIsProfileOpen(true)}
+      />
 
-        {/* Bottom Footer Navigation */}
-        {!pathname.startsWith('/chat') && (
-          <MobileFooterNav
-            mobileMenuOpen={mobileMenuOpen}
-            onToggleMobileMenu={() => setMobileMenuOpen((open) => !open)}
-          />
-        )}
+      {/* Bottom Footer Navigation */}
+      {!pathname.startsWith('/chat') && (
+        <MobileFooterNav
+          mobileMenuOpen={mobileMenuOpen}
+          onToggleMobileMenu={() => setMobileMenuOpen((open) => !open)}
+        />
+      )}
 
       <UserProfileDrawer isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </>

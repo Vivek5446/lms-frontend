@@ -9,20 +9,20 @@ const NotFoundPage = () => {
       <p style={{ fontSize: '1.5rem', color: '#34495e' }}>
         The page you are looking for does not exist. Please check the URL or go back to the homepage.
       </p>
-      <Link href="/">
-        <a
-          style={{
-            marginTop: '1rem',
-            padding: '0.75rem 1.5rem',
-            backgroundColor: '#3498db',
-            color: 'white',
-            textDecoration: 'none',
-            borderRadius: '5px',
-            transition: 'background-color 0.3s ease',
-          }}
-        >
+      <Link
+        href="/"
+        style={{
+          marginTop: '1rem',
+          padding: '0.75rem 1.5rem',
+          backgroundColor: '#3498db',
+          color: 'white',
+          textDecoration: 'none',
+          borderRadius: '5px',
+          transition: 'background-color 0.3s ease',
+        }}>
+        
           Go Back to Homepage
-        </a>
+        
       </Link>
     </div>
   );

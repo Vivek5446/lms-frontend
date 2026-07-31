@@ -150,7 +150,9 @@ export const MobileMenuDrawer = observer(({ isOpen, onClose, placement, onProfil
             
             {mainLinks.map((link) => {
               return (
-                <NextLink key={link.href} href={link.href} passHref legacyBehavior>
+                <NextLink key={link.href} href={link.href}>
+                  {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
+                  }
                   <ChakraLink _hover={{ textDecoration: 'none' }} onClick={onClose}>
                     <Flex align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
                       <HStack spacing={4}>
@@ -176,7 +178,9 @@ export const MobileMenuDrawer = observer(({ isOpen, onClose, placement, onProfil
             
             {infoLinks.map((link) => {
               return (
-                <NextLink key={link.href} href={link.href} passHref legacyBehavior>
+                <NextLink key={link.href} href={link.href}>
+                  {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
+                  }
                   <ChakraLink _hover={{ textDecoration: 'none' }} onClick={onClose}>
                     <Flex align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
                       <HStack spacing={4}>
