@@ -1,7 +1,9 @@
+"use client";
+
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { Box, IconButton } from "@chakra-ui/react";
 import React, { ReactElement } from "react";
-import Slider from "react-slick";
+import Slider, { Settings } from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
@@ -100,7 +102,12 @@ interface CustomCarouselProps {
   hoverBgColor?: string;
   hoverIconColor?: string;
   initialIconColor?: string;
-  [key: string]: unknown; // Better than 'any' for type safety
+  responsive?: Settings["responsive"];
+  centerMode?: boolean;
+  centerPadding?: string;
+  className?: string;
+  slideClassName?: string;
+  [key: string]: unknown;
 }
 
 const CustomCarousel: React.FC<CustomCarouselProps> = ({
@@ -119,9 +126,12 @@ const CustomCarousel: React.FC<CustomCarouselProps> = ({
   hoverBgColor = "#DF837C",
   hoverIconColor = "white",
   initialIconColor = "black",
+  responsive,
+  className,
+  slideClassName,
   ...props
 }) => {
-  const settings = {
+  const settings: Settings = {
     dots: showDots,
     infinite: true,
     speed: 500,
@@ -147,7 +157,7 @@ const CustomCarousel: React.FC<CustomCarouselProps> = ({
         initialIconColor={initialIconColor}
       />
     ) : undefined,
-    responsive: [
+    responsive: responsive || [
       {
         breakpoint: 1024,
         settings: {
@@ -174,10 +184,18 @@ const CustomCarousel: React.FC<CustomCarouselProps> = ({
   };
 
   return (
-    <Box position="relative" width="full" p={{ base: 4, md: 4 }} maxWidth={maxWidth}>
+    <Box
+      position="relative"
+      width="full"
+      p={{ base: 4, md: 4 }}
+      maxWidth={maxWidth}
+      className={className}
+    >
       <Slider {...settings}>
         {React.Children.map(children, (child) => (
-          <Box px={2} pb={2}>{child}</Box>
+          <Box px={2} pb={2} className={slideClassName}>
+            {child}
+          </Box>
         ))}
       </Slider>
     </Box>

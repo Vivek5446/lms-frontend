@@ -1,6 +1,7 @@
 "use client";
 
 import { CourseCarousel } from "@/app/(main)/course/component/CourseCarousel";
+import CustomCarousel from "@/app/component/common/CustomCarousal/CustomCarousal";
 import stores from "@/app/store/stores";
 import {
   Badge,
@@ -1037,7 +1038,7 @@ export default observer(function LMSLandingPage() {
         </Box>
       </Box>
       {/* Testimonials */}
-      <section className="px-16 py-16">
+      <section className="px-4 py-12 md:px-8 md:py-16">
         <VStack align="start" spacing={2}>
           <Text
             fontSize="xs"
@@ -1061,12 +1062,65 @@ export default observer(function LMSLandingPage() {
             </Text>
           </Heading>
         </VStack>
+        <Box display={{ base: "block", md: "none" }} mt={6}>
+          <CustomCarousel
+            slidesToShow={1}
+            slidesToScroll={1}
+            autoplay
+            autoplaySpeed={3500}
+            showArrows={false}
+            showDots
+            maxWidth="100%"
+            className="testimonial-mobile-slider"
+            responsive={[
+              {
+                breakpoint: 768,
+                settings: {
+                  slidesToShow: 1,
+                  slidesToScroll: 1,
+                },
+              },
+            ]}
+          >
+            {testimonials.map((t) => (
+              <motion.figure
+                key={t.name}
+                variants={fadeUp}
+                className="mx-1 flex min-h-[240px] flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
+              >
+                <div className="mb-3 flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className="h-4 w-4 fill-amber-400 text-amber-400"
+                    />
+                  ))}
+                </div>
+                <blockquote className="flex-1 text-sm leading-relaxed text-slate-700">
+                  "{t.quote}"
+                </blockquote>
+                <figcaption className="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4">
+                  <div
+                    className={`grid h-10 w-10 place-items-center rounded-full text-sm font-bold ${t.bg}`}
+                  >
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">{t.name}</p>
+                    <p className="text-xs text-slate-500">{t.role}</p>
+                  </div>
+                </figcaption>
+              </motion.figure>
+            ))}
+          </CustomCarousel>
+        </Box>
+
         <motion.div
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-80px" }}
           variants={{ show: { transition: { staggerChildren: 0.1 } } }}
-          className="grid gap-6 md:grid-cols-3"
+          className="mt-6 hidden gap-6 md:grid md:grid-cols-3"
         >
           {testimonials.map((t) => (
             <motion.figure
