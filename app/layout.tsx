@@ -160,10 +160,12 @@ const NavigationBarManager = () => {
 
   useEffect(() => {
     // 1. Navigation Bar (Bottom)
-    import('@capawesome/capacitor-navigation-bar').then(({ NavigationBar }) => {
+    import('@ethion/capacitor-navigation-bar').then(({ NavigationBar }) => {
       const navColor = colorMode === 'light' ? '#FFFFFF' : '#0A0F1E';
-      NavigationBar.setColor({ color: navColor }).catch(() => {});
-      NavigationBar.setStyle({ style: colorMode === 'light' ? 'LIGHT' : 'DARK' as any }).catch(() => {});
+      NavigationBar.setColor({
+        color: navColor,
+        darkButtons: colorMode === 'light',
+      }).catch(() => {});
     }).catch(() => {});
 
     // 2. Status Bar (Top)
