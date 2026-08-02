@@ -11,6 +11,7 @@ import CourseMaterialsSection, {
 import CourseOverviewSection from "@/app/(main)/course/component/CourseOverviewSection";
 import CourseQuizReviewSection from "@/app/(main)/course/component/CourseQuizReviewSection";
 import ResponsiveDrawer from "@/app/component/common/Drawer/ResponsiveDrawer";
+import BackButton from "@/app/dashboard/course/components/BackButton";
 import CourseCurriculumPanel from "@/app/dashboard/course/components/CourseCurriculumPanel";
 import CourseAssetModal from "@/app/dashboard/course/scorm/CourseAssetModal";
 import CoursePlayer from "@/app/dashboard/course/scorm/CoursePlayer";
@@ -532,6 +533,22 @@ export default function CourseDetails({
       isMounted = false;
     };
   }, [courseId, courseStore]);
+
+  useEffect(() => {
+    if (!courseId) {
+      return;
+    }
+
+    // Opening a course can preserve the previous catalog scroll position.
+    // Reset to the top so the course title/header is visible immediately.
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [courseId]);
 
   const loadMoreModules = useCallback(async () => {
     if (
@@ -1242,9 +1259,11 @@ export default function CourseDetails({
       style={courseThemeStyle}
     >
       <main className="w-full pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-4 sm:pb-20 sm:pt-2 lg:px-6">
+
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
           <div className="min-w-0 flex-1">
             <div className="mt-6 flex flex-wrap items-center gap-2">
+        <BackButton onBack={onBack} />
               <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
                 Learning workspace
               </span>

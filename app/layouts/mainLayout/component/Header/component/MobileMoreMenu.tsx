@@ -150,22 +150,24 @@ export const MobileMenuDrawer = observer(({ isOpen, onClose, placement, onProfil
             
             {mainLinks.map((link) => {
               return (
-                <NextLink key={link.href} href={link.href}>
-                  {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
-                  }
-                  <ChakraLink _hover={{ textDecoration: 'none' }} onClick={onClose}>
-                    <Flex align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
-                      <HStack spacing={4}>
-                        <Flex w="32px" h="32px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
-                          <Icon as={link.icon} boxSize="16px" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} _groupHover={{ color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="colors" />
-                        </Flex>
-                        <Text fontSize="14px" fontWeight="600" color={colorMode === 'light' ? 'gray.700' : 'gray.200'} _groupHover={{ transform: 'translateX(4px)', color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="all 0.2s">
-                          {link.label}
-                        </Text>
-                      </HStack>
-                    </Flex>
-                  </ChakraLink>
-                </NextLink>
+                <ChakraLink
+                  key={link.href}
+                  as={NextLink}
+                  href={link.href}
+                  _hover={{ textDecoration: 'none' }}
+                  onClick={onClose}
+                >
+                  <Flex align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
+                    <HStack spacing={4}>
+                      <Flex w="32px" h="32px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
+                        <Icon as={link.icon} boxSize="16px" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} _groupHover={{ color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="colors" />
+                      </Flex>
+                      <Text fontSize="14px" fontWeight="600" color={colorMode === 'light' ? 'gray.700' : 'gray.200'} _groupHover={{ transform: 'translateX(4px)', color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="all 0.2s">
+                        {link.label}
+                      </Text>
+                    </HStack>
+                  </Flex>
+                </ChakraLink>
               );
             })}
           </Box>
@@ -178,22 +180,24 @@ export const MobileMenuDrawer = observer(({ isOpen, onClose, placement, onProfil
             
             {infoLinks.map((link) => {
               return (
-                <NextLink key={link.href} href={link.href}>
-                  {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
-                  }
-                  <ChakraLink _hover={{ textDecoration: 'none' }} onClick={onClose}>
-                    <Flex align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
-                      <HStack spacing={4}>
-                        <Flex w="32px" h="32px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
-                          <Icon as={link.icon} boxSize="16px" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} _groupHover={{ color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="colors" />
-                        </Flex>
-                        <Text fontSize="14px" fontWeight="600" color={colorMode === 'light' ? 'gray.700' : 'gray.200'} _groupHover={{ transform: 'translateX(4px)', color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="all 0.2s">
-                          {link.label}
-                        </Text>
-                      </HStack>
-                    </Flex>
-                  </ChakraLink>
-                </NextLink>
+                <ChakraLink
+                  key={link.href}
+                  as={NextLink}
+                  href={link.href}
+                  _hover={{ textDecoration: 'none' }}
+                  onClick={onClose}
+                >
+                  <Flex align="center" justify="space-between" py={2.5} px={2} mx={-2} borderRadius="xl" role="group" transition="all" _hover={{ bg: colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50' }} _active={{ transform: 'scale(0.98)' }}>
+                    <HStack spacing={4}>
+                      <Flex w="32px" h="32px" borderRadius="lg" bg={colorMode === 'light' ? 'blackAlpha.50' : 'whiteAlpha.50'} align="center" justify="center" _groupHover={{ bg: colorMode === 'light' ? 'brand.50' : 'brand.900' }} transition="colors">
+                        <Icon as={link.icon} boxSize="16px" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} _groupHover={{ color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="colors" />
+                      </Flex>
+                      <Text fontSize="14px" fontWeight="600" color={colorMode === 'light' ? 'gray.700' : 'gray.200'} _groupHover={{ transform: 'translateX(4px)', color: colorMode === 'light' ? 'brand.600' : 'brand.300' }} transition="all 0.2s">
+                        {link.label}
+                      </Text>
+                    </HStack>
+                  </Flex>
+                </ChakraLink>
               );
             })}
           </Box>

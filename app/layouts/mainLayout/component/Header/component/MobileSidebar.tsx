@@ -97,28 +97,29 @@ export const MobileSidebar = observer(({ isOpen, onClose, onProfileClick }: Mobi
             ) : null}
 
             {sidebarNavLinks.map((link) => (
-              <NextLink key={link.href} href={link.href}>
-                <ChakraLink
-                  p={{ base: '12px 14px', sm: '14px 16px' }}
-                  borderRadius="lg"
-                  fontWeight="600"
-                  fontSize={{ base: 'sm', sm: 'md' }}
-                  color={pathname === link.href ? (colorMode === 'light' ? 'brand.600' : 'brand.300') : (colorMode === 'light' ? 'gray.700' : 'gray.200')}
-                  bg={pathname === link.href ? (colorMode === 'light' ? 'brand.50' : 'brand.900') : 'transparent'}
-                  _hover={{
-                    bg: colorMode === 'light' ? 'gray.100' : 'gray.700',
-                    textDecoration: 'none',
-                    transform: 'translateX(4px)'
-                  }}
-                  transition="all 0.2s"
-                  minH="44px"
-                  display="flex"
-                  alignItems="center"
-                  onClick={onClose}
-                >
-                  {link.label}
-                </ChakraLink>
-              </NextLink>
+              <ChakraLink
+                key={link.href}
+                as={NextLink}
+                href={link.href}
+                p={{ base: '12px 14px', sm: '14px 16px' }}
+                borderRadius="lg"
+                fontWeight="600"
+                fontSize={{ base: 'sm', sm: 'md' }}
+                color={pathname === link.href ? (colorMode === 'light' ? 'brand.600' : 'brand.300') : (colorMode === 'light' ? 'gray.700' : 'gray.200')}
+                bg={pathname === link.href ? (colorMode === 'light' ? 'brand.50' : 'brand.900') : 'transparent'}
+                _hover={{
+                  bg: colorMode === 'light' ? 'gray.100' : 'gray.700',
+                  textDecoration: 'none',
+                  transform: 'translateX(4px)'
+                }}
+                transition="all 0.2s"
+                minH="44px"
+                display="flex"
+                alignItems="center"
+                onClick={onClose}
+              >
+                {link.label}
+              </ChakraLink>
             ))}
 
             <Box h="1px" bg={colorMode === 'light' ? 'gray.100' : 'gray.700'} my={2} />
@@ -174,30 +175,30 @@ export const MobileSidebar = observer(({ isOpen, onClose, onProfileClick }: Mobi
                 </Button>
               </>
             ) : (
-              <NextLink href="/login">
-                <ChakraLink
-                  p={{ base: '14px', sm: '16px' }}
-                  borderRadius="lg"
-                  fontWeight="bold"
-                  fontSize={{ base: 'sm', sm: 'md' }}
-                  color="white"
-                  bg={colorMode === 'light' ? 'brand.600' : 'brand.500'}
-                  textAlign="center"
-                  minH="48px"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  onClick={onClose}
-                  _hover={{
-                    textDecoration: 'none',
-                    bg: colorMode === 'light' ? 'brand.700' : 'brand.600',
-                    transform: 'translateY(-2px)'
-                  }}
-                  transition="all 0.2s"
-                >
-                  Login
-                </ChakraLink>
-              </NextLink>
+              <ChakraLink
+                as={NextLink}
+                href="/login"
+                p={{ base: '14px', sm: '16px' }}
+                borderRadius="lg"
+                fontWeight="bold"
+                fontSize={{ base: 'sm', sm: 'md' }}
+                color="white"
+                bg={colorMode === 'light' ? 'brand.600' : 'brand.500'}
+                textAlign="center"
+                minH="48px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                onClick={onClose}
+                _hover={{
+                  textDecoration: 'none',
+                  bg: colorMode === 'light' ? 'brand.700' : 'brand.600',
+                  transform: 'translateY(-2px)'
+                }}
+                transition="all 0.2s"
+              >
+                Login
+              </ChakraLink>
             )}
           </Stack>
         </DrawerBody>

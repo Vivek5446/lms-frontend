@@ -191,30 +191,29 @@ const Header: React.FC = observer(() => {
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
-                  <NextLink key={link.href} href={link.href}>
-                    {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
-                    }
-                    <ChakraLink
-                      px={4}
-                      py={1.5}
-                      fontSize="sm"
-                      fontWeight="600"
-                      borderRadius="full"
-                      color={isActive ? (colorMode === 'light' ? 'brand.700' : 'white') : (colorMode === 'light' ? 'gray.600' : 'gray.400')}
-                      bg={isActive ? (colorMode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.1)') : 'transparent'}
-                      boxShadow={isActive ? (colorMode === 'light' ? '0 2px 10px rgba(0,0,0,0.05)' : 'inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 10px rgba(0,0,0,0.2)') : 'none'}
-                      border={isActive && colorMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid transparent'}
-                      transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                      position="relative"
-                      _hover={{
-                        color: isActive ? (colorMode === 'light' ? 'brand.700' : 'white') : (colorMode === 'light' ? 'brand.600' : 'white'),
-                        bg: isActive ? (colorMode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.15)') : (colorMode === 'light' ? 'gray.100' : 'rgba(255, 255, 255, 0.05)'),
-                        textDecoration: 'none',
-                      }}
-                    >
-                      {link.label}
-                    </ChakraLink>
-                  </NextLink>
+                  <ChakraLink
+                    key={link.href}
+                    as={NextLink}
+                    href={link.href}
+                    px={4}
+                    py={1.5}
+                    fontSize="sm"
+                    fontWeight="600"
+                    borderRadius="full"
+                    color={isActive ? (colorMode === 'light' ? 'brand.700' : 'white') : (colorMode === 'light' ? 'gray.600' : 'gray.400')}
+                    bg={isActive ? (colorMode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.1)') : 'transparent'}
+                    boxShadow={isActive ? (colorMode === 'light' ? '0 2px 10px rgba(0,0,0,0.05)' : 'inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 10px rgba(0,0,0,0.2)') : 'none'}
+                    border={isActive && colorMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid transparent'}
+                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                    position="relative"
+                    _hover={{
+                      color: isActive ? (colorMode === 'light' ? 'brand.700' : 'white') : (colorMode === 'light' ? 'brand.600' : 'white'),
+                      bg: isActive ? (colorMode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.15)') : (colorMode === 'light' ? 'gray.100' : 'rgba(255, 255, 255, 0.05)'),
+                      textDecoration: 'none',
+                    }}
+                  >
+                    {link.label}
+                  </ChakraLink>
                 );
               })}
               </HStack>

@@ -4,54 +4,33 @@ import { CourseCarousel } from "@/app/(main)/course/component/CourseCarousel";
 import CustomCarousel from "@/app/component/common/CustomCarousal/CustomCarousal";
 import stores from "@/app/store/stores";
 import {
-  Badge,
   Box,
   Button,
   Center,
   Circle,
   Flex,
-  Grid,
   Heading,
   HStack,
   Icon,
-  Image,
-  Input,
-  Progress,
-  SimpleGrid,
   Spinner,
-  Stack,
   Text,
   useColorModeValue,
   useToken,
-  VStack,
+  VStack
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
   InfinityIcon,
   Lock,
   ShieldCheck,
   Smartphone,
-  Star,
-  Trophy,
-  Users,
+  Star
 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  FaArrowRight,
-  FaBolt,
-  FaCheckCircle,
-  FaClock,
-  FaGraduationCap,
-  FaLock,
-  FaPlayCircle,
-  FaSearch,
-  FaStar,
-  FaTrophy
+  FaArrowRight
 } from "react-icons/fa";
 import {
   FiBriefcase,
@@ -61,8 +40,8 @@ import {
   FiTarget,
   FiTrendingUp,
 } from "react-icons/fi";
-import LandingHero from "./LandingHero";
 import ContinueLearningSection from "./ContinueLearningSection";
+import LandingHero from "./LandingHero";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -362,498 +341,7 @@ export default observer(function LMSLandingPage() {
     />
   ) : null}
 </>
-      {/* <Box
-        as="section"
-        position="relative"
-        overflow="hidden"
-        bgImage={heroBaseBg}
-        pb={{ base: 4, md: 8 }}
-        borderBottomWidth="1px"
-        borderColor={subtleBorder}
-      >
-        <MotionCircle
-          animate={{ y: [0, -20, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          size={{ base: "180px", md: "300px" }}
-          bg={brand400}
-          opacity={glowOneOpacity}
-          position="absolute"
-          top={{ base: "-70px", md: "-100px" }}
-          left={{ base: "-70px", md: "-60px" }}
-          filter="blur(70px)"
-          pointerEvents="none"
-        />
-        <MotionCircle
-          animate={{ y: [0, 20, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          size={{ base: "200px", md: "340px" }}
-          bg={brand500}
-          opacity={glowTwoOpacity}
-          position="absolute"
-          top={{ base: "10px", md: "30px" }}
-          right={{ base: "-100px", md: "-100px" }}
-          filter="blur(80px)"
-          pointerEvents="none"
-        />
-        <Circle
-          size={{ base: "150px", md: "240px" }}
-          bg={brand200}
-          opacity={glowThreeOpacity}
-          position="absolute"
-          bottom={{ base: "-70px", md: "-110px" }}
-          left={{ base: "35%", md: "30%" }}
-          filter="blur(80px)"
-          pointerEvents="none"
-        />
-
-        <Box
-          maxW="full"
-          mx="auto"
-          px={{ base: 4, md: 8 }}
-          py={{ base: 4, md: 8 }}
-          position="relative"
-          zIndex={1}
-        >
-          <Grid
-            templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
-            gap={{ base: 8, lg: 16 }}
-            alignItems="center"
-          >
-            <VStack
-              align="start"
-              spacing={{ base: 3, md: 4 }}
-              maxW="2xl"
-              ml={{ lg: "60px" }}
-            >
-              <Badge
-                bg={glassBg}
-                color={brand700}
-                borderRadius="full"
-                px={3}
-                py={1}
-                borderWidth="1px"
-                borderColor={subtleBorder}
-                fontSize="10px"
-                textTransform="uppercase"
-                letterSpacing="0.08em"
-                display="flex"
-                alignItems="center"
-                gap={1}
-              >
-                <Icon as={FaBolt} boxSize={2.5} />
-                Learning platform
-              </Badge>
-
-              <Heading
-                as="h1"
-                fontSize={{ base: "1.7rem", sm: "2rem", md: "2.6rem" }}
-                fontWeight="extrabold"
-                lineHeight="1.1"
-                color={textPrimary}
-                letterSpacing="-0.03em"
-              >
-                Learn &amp; grow{" "}
-                <Text
-                  as="span"
-                  bgGradient={`linear(to-r, ${brand700}, ${brand500}, ${brand300})`}
-                  bgClip="text"
-                >
-                  faster
-                </Text>
-              </Heading>
-
-              <Text
-                display={{ base: "none", sm: "block" }}
-                fontSize={{ sm: "xs", md: "sm" }}
-                color={textSecondary}
-                maxW="38ch"
-                lineHeight="1.7"
-              >
-                Discover courses, compare formats, and jump back into your
-                assignments all in one place.
-              </Text>
-
-              <Flex
-                w="full"
-                maxW={{ base: "100%", md: "560px" }}
-                p={1.5}
-                bg={glassBg}
-                borderRadius="xl"
-                borderWidth="1px"
-                borderColor={subtleBorder}
-                backdropFilter="blur(20px)"
-                gap={2}
-                align="center"
-              >
-                <Flex align="center" gap={2} px={3} flex="1" minW={0}>
-                  <Icon
-                    as={FaSearch}
-                    color={brand500}
-                    boxSize={3.5}
-                    flexShrink={0}
-                  />
-                  <Input
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search courses, topics..."
-                    border="none"
-                    h="36px"
-                    fontSize="sm"
-                    _focusVisible={{ boxShadow: "none" }}
-                    px={0}
-                  />
-                </Flex>
-                <Button
-                  colorScheme="brand"
-                  borderRadius="lg"
-                  h={{ base: "32px", md: "36px" }}
-                  px={4}
-                  fontSize="sm"
-                  rightIcon={<FaArrowRight size={11} />}
-                  bgGradient={`linear(to-r, ${brand700}, ${brand500}, ${brand400})`}
-                  _hover={{
-                    bgGradient: `linear(to-r, ${brand700}, ${brand600}, ${brand500})`,
-                    transform: "translateY(-1px)",
-                  }}
-                  onClick={handleExplore}
-                  flexShrink={0}
-                >
-                  Explore
-                </Button>
-              </Flex>
-
-              <SimpleGrid
-                columns={{ base: 1, sm: 3 }}
-                spacing={4}
-                w="full"
-                maxW={{ base: "100%", md: "560px" }}
-                pt={2}
-                display={{ base: "none", md: "grid" }}
-              >
-                {[
-                  {
-                    icon: FaClock,
-                    title: "Learn at your pace",
-                    sub: "Anytime, anywhere",
-                  },
-                  {
-                    icon: FaGraduationCap,
-                    title: "Expert instructors",
-                    sub: "Industry pros",
-                  },
-                  {
-                    icon: FaTrophy,
-                    title: "Certificates",
-                    sub: "Boost your CV",
-                  },
-                ].map((f) => (
-                  <HStack key={f.title} align="start" spacing={2}>
-                    <Circle size="32px" bg={brand50 || glassBg} flexShrink={0}>
-                      <Icon as={f.icon} color={brand500} boxSize={3.5} />
-                    </Circle>
-                    <Box>
-                      <Text fontSize="xs" fontWeight="700" color={textPrimary}>
-                        {f.title}
-                      </Text>
-                      <Text fontSize="10px" color={textSecondary}>
-                        {f.sub}
-                      </Text>
-                    </Box>
-                  </HStack>
-                ))}
-              </SimpleGrid>
-
-              {isLearner && featuredAssignedCourses.length > 0 ? (
-                <Box
-                  display={{ base: "block", lg: "none" }}
-                  w="full"
-                  maxW={{ base: "100%", md: "560px" }}
-                  bg={glassBg}
-                  borderWidth="1px"
-                  borderColor={subtleBorder}
-                  borderRadius="xl"
-                  p={3}
-                  backdropFilter="blur(16px)"
-                >
-                  <HStack justify="space-between" mb={3}>
-                    <Text
-                      fontSize="10px"
-                      textTransform="uppercase"
-                      letterSpacing="0.08em"
-                      fontWeight="700"
-                      color={textSecondary}
-                    >
-                      Resume learning
-                    </Text>
-                    <Icon as={FaLock} color={brand500} boxSize={3} />
-                  </HStack>
-                  <Stack spacing={2}>
-                    {featuredAssignedCourses.map((course) => (
-                      <Flex
-                        key={course.courseId}
-                        align="center"
-                        gap={3}
-                        bg={cardBg}
-                        borderWidth="1px"
-                        borderColor={subtleBorder}
-                        borderRadius="lg"
-                        p={2.5}
-                      >
-                        <Box flex="1" minW={0}>
-                          <Text
-                            fontWeight="700"
-                            fontSize="xs"
-                            noOfLines={1}
-                            color={textPrimary}
-                          >
-                            {course.title}
-                          </Text>
-                          <Progress
-                            value={Math.round(Number(course.progress || 0))}
-                            size="xs"
-                            mt={1.5}
-                            borderRadius="full"
-                            bg="blackAlpha.100"
-                            sx={{
-                              "& > div": {
-                                background: `linear-gradient(90deg, ${brand700}, ${brand300})`,
-                              },
-                            }}
-                          />
-                          <Text fontSize="10px" color={textSecondary} mt={1}>
-                            {Math.round(Number(course.progress || 0))}% complete
-                          </Text>
-                        </Box>
-                        <Button
-                          size="xs"
-                          leftIcon={<FaPlayCircle size={10} />}
-                          colorScheme="brand"
-                          borderRadius="full"
-                          flexShrink={0}
-                          bgGradient={`linear(to-r, ${brand700}, ${brand500})`}
-                          _hover={{
-                            bgGradient: `linear(to-r, ${brand700}, ${brand600})`,
-                          }}
-                          onClick={() =>
-                            router.push(`/course?courseId=${course.courseId}`)
-                          }
-                        >
-                          Continue
-                        </Button>
-                      </Flex>
-                    ))}
-                  </Stack>
-                </Box>
-              ) : null}
-            </VStack>
-
-            {isLearner && featuredAssignedCourses.length > 0 ? (
-              <Box display={{ base: "none", lg: "block" }}>
-                <Box
-                  bgImage={learnerPanelBg}
-                  borderRadius="2xl"
-                  position="relative"
-                  overflow="hidden"
-                  p={4}
-                  color="white"
-                  boxShadow="0 20px 48px rgba(15, 23, 42, 0.18)"
-                >
-                  <Circle
-                    size="140px"
-                    position="absolute"
-                    top="-50px"
-                    right="-30px"
-                    bg={brand200}
-                    opacity={0.25}
-                    filter="blur(36px)"
-                    pointerEvents="none"
-                  />
-                  <HStack justify="space-between" mb={4}>
-                    <VStack align="start" spacing={0.5}>
-                      <Text
-                        fontSize="9px"
-                        color="whiteAlpha.700"
-                        textTransform="uppercase"
-                        letterSpacing="0.12em"
-                        fontWeight="700"
-                      >
-                        Assigned courses
-                      </Text>
-                      <Text fontSize="sm" fontWeight="700">
-                        Resume your learning
-                      </Text>
-                    </VStack>
-                    <Circle size="32px" bg="whiteAlpha.200">
-                      <Icon as={FaLock} boxSize={3} />
-                    </Circle>
-                  </HStack>
-                  <Stack spacing={2.5}>
-                    {featuredAssignedCourses.map((course) => (
-                      <Box
-                        key={course.courseId}
-                        p={3}
-                        borderRadius="xl"
-                        bg="whiteAlpha.100"
-                        border="1px solid rgba(255,255,255,0.12)"
-                      >
-                        <Flex justify="space-between" gap={2.5} align="start">
-                          <Box flex="1" minW={0}>
-                            <Text fontWeight="700" fontSize="sm" noOfLines={2}>
-                              {course.title}
-                            </Text>
-                            <Progress
-                              value={Math.round(Number(course.progress || 0))}
-                              size="xs"
-                              mt={2}
-                              borderRadius="full"
-                              bg="whiteAlpha.200"
-                              sx={{
-                                "& > div": {
-                                  background: `linear-gradient(90deg, ${brand50}, ${brand300})`,
-                                },
-                              }}
-                            />
-                            <Text fontSize="xs" color="whiteAlpha.700" mt={1}>
-                              {Math.round(Number(course.progress || 0))}%
-                              complete
-                            </Text>
-                          </Box>
-                          <Button
-                            size="sm"
-                            leftIcon={<FaPlayCircle size={12} />}
-                            bg="white"
-                            color={brand700}
-                            borderRadius="full"
-                            flexShrink={0}
-                            fontSize="xs"
-                            _hover={{ bg: brand50 }}
-                            onClick={() =>
-                              router.push(`/course?courseId=${course.courseId}`)
-                            }
-                          >
-                            Continue
-                          </Button>
-                        </Flex>
-                      </Box>
-                    ))}
-                  </Stack>
-                </Box>
-              </Box>
-            ) : (
-              <Box
-                display={{ base: "none", lg: "block" }}
-                position="relative"
-                maxW="md"
-                mx="auto"
-              >
-                <motion.div
-                  animate={{ y: [0, -14, 0] }}
-                  transition={{
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <Image
-                    src="/images/heroimg-Photoroom.png"
-                    alt="Graduation cap on stack of books"
-                    w="full"
-                    filter="drop-shadow(0 20px 30px rgba(0,0,0,0.15))"
-                  />
-                </motion.div>
-
-                <Box
-                  position="absolute"
-                  left="-6%"
-                  top="14%"
-                  zIndex={2}
-                  bg="whiteAlpha.900"
-                  borderRadius="xl"
-                  p={3}
-                  boxShadow="lg"
-                  display="flex"
-                  alignItems="center"
-                  gap={2}
-                >
-                  <Circle size="32px" bg="green.100">
-                    <Icon as={FaCheckCircle} color="green.600" boxSize={3.5} />
-                  </Circle>
-                  <Box>
-                    <Text fontSize="xs" fontWeight="700">
-                      Course completed
-                    </Text>
-                    <Text fontSize="10px" color={textSecondary}>
-                      +50 XP earned
-                    </Text>
-                  </Box>
-                </Box>
-
-                <Box
-                  position="absolute"
-                  right="-8%"
-                  bottom="10%"
-                  zIndex={2}
-                  bg="whiteAlpha.900"
-                  borderRadius="xl"
-                  p={3}
-                  boxShadow="lg"
-                  display="flex"
-                  alignItems="center"
-                  gap={2}
-                >
-                  <Circle size="32px" bg="amber.100">
-                    <Icon as={FaStar} color="amber.500" boxSize={3.5} />
-                  </Circle>
-                  <Box>
-                    <Text fontSize="xs" fontWeight="700">
-                      4.9 average
-                    </Text>
-                    <Text fontSize="10px" color={textSecondary}>
-                      from 12k reviews
-                    </Text>
-                  </Box>
-                </Box>
-              </Box>
-            )}
-          </Grid>
-
-          <div className="relative mx-auto hidden max-w-7xl px-6 pt-10 pb-6 lg:block">
-            <motion.div
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-50px" }}
-              className="grid grid-cols-2 gap-2 rounded-3xl border border-slate-100 bg-white/80 p-4 shadow-xl shadow-blue-500/5 backdrop-blur md:grid-cols-4 md:gap-6 md:p-8"
-            >
-              <Stat
-                icon={<BookOpen className="h-6 w-6 text-purple-500" />}
-                bg="bg-purple-100"
-                value="120+"
-                label="Courses"
-              />
-              <Stat
-                icon={<Star className="h-6 w-6 text-amber-500" />}
-                bg="bg-amber-100"
-                value="4.8"
-                label="Average Rating"
-              />
-              <Stat
-                icon={<Users className="h-6 w-6 text-emerald-500" />}
-                bg="bg-emerald-100"
-                value="10K+"
-                label="Learners"
-              />
-              <Stat
-                icon={<Trophy className="h-6 w-6 text-blue-500" />}
-                bg="bg-blue-100"
-                value="50+"
-                label="Categories"
-              />
-            </motion.div>
-          </div>
-        </Box>
-      </Box> */}
-
+     
       <Box as="section" py={{ base: 8, md: 20 }}>
         <Box maxW="full" mx="auto" px={{ base: 4, md: 8 }}>
           <Box maxW="full" mx="auto">
@@ -1157,7 +645,7 @@ export default observer(function LMSLandingPage() {
       </section>
 
       {/* Dashboard promo */}
-      <section className="px-16 pb-16">
+      {/* <section className="px-16 pb-16">
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -1265,10 +753,10 @@ export default observer(function LMSLandingPage() {
             </div>
           </div>
         </motion.div>
-      </section>
+      </section> */}
 
       {/* CTA */}
-      <section className=" px-12 pb-16">
+      {/* <section className=" px-12 pb-16">
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -1298,33 +786,36 @@ export default observer(function LMSLandingPage() {
             </div>
           </div>
         </motion.div>
-      </section>
+      </section> */}
 
       {/* Footer perks */}
-      <section className="px-16 pb-12">
-        <div className="grid grid-cols-2 gap-8 border-t border-slate-100 pt-10 md:grid-cols-4">
-          <Perk
-            icon={<ShieldCheck className="h-5 w-5 text-slate-500" />}
-            title="14-Day Money Back"
-            sub="Learn with confidence"
-          />
-          <Perk
-            icon={<InfinityIcon className="h-5 w-5 text-slate-500" />}
-            title="Lifetime Access"
-            sub="Yours to keep forever"
-          />
-          <Perk
-            icon={<Lock className="h-5 w-5 text-slate-500" />}
-            title="Secure Payments"
-            sub="100% secure checkout"
-          />
-          <Perk
-            icon={<Smartphone className="h-5 w-5 text-slate-500" />}
-            title="Mobile Friendly"
-            sub="Learn on the go"
-          />
-        </div>
-      </section>
+    <section className="mx-auto w-full max-w-7xl px-4 pb-8 sm:px-6 sm:pb-10 lg:px-8 lg:pb-12">
+  <div className="grid grid-cols-1 gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2 sm:gap-6 sm:pt-8 md:grid-cols-4 lg:gap-8 lg:pt-10">
+    <Perk
+      icon={<ShieldCheck className="h-5 w-5 text-slate-500" />}
+      title="14-Day Money Back"
+      sub="Learn with confidence"
+    />
+
+    <Perk
+      icon={<InfinityIcon className="h-5 w-5 text-slate-500" />}
+      title="Lifetime Access"
+      sub="Yours to keep forever"
+    />
+
+    <Perk
+      icon={<Lock className="h-5 w-5 text-slate-500" />}
+      title="Secure Payments"
+      sub="100% secure checkout"
+    />
+
+    <Perk
+      icon={<Smartphone className="h-5 w-5 text-slate-500" />}
+      title="Mobile Friendly"
+      sub="Learn on the go"
+    />
+  </div>
+</section>
     </Box>
   );
 });
