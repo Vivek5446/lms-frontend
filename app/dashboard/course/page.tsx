@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useBreakpointValue, useColorModeValue, Box, Flex, HStack, Heading, Text, Icon, Button } from "@chakra-ui/react";
 import {
@@ -29,14 +29,10 @@ import CourseList from "./CourseList";
 import CourseDetails from "./CourseDetails";
 import AssignCourseModal from "./components/AssignCourseModal";
 import CourseUsersModal from "./components/CourseUsersModal";
-import CoursePlayer from "./scorm/CoursePlayer";
-import CourseAssetModal from "./scorm/CourseAssetModal";
 import FolderExplorer from "./components/FolderExplorer";
 import {
-  buildCourseAssetUrl,
   CourseLaunchSection,
   getCourseSectionProgress,
-  isScormLaunchSection,
 } from "./scorm/sectionTracking";
 import { courseStore, CourseListItem } from "@/app/store/courseStore/courseStore";
 import stores from "@/app/store/stores";
@@ -360,38 +356,8 @@ function CoursePage() {
           onLaunchSection={(launchSection) => setPlayerSection(launchSection)}
           onEditCourse={canEditCourses ? () => handleOpenEdit(activeCourse) : undefined}
           onAssignCourse={canAssignCourses ? () => setIsAssignModalOpen(true) : undefined}
+          activeSectionProgress={initialScormProgress}
         />
-
-        <AnimatePresence>
-          {playerSection && isScormLaunchSection(playerSection) ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              style={{ position: "fixed", inset: 0, zIndex: 1400 }}
-            >
-              <CoursePlayer
-                courseId={activeCourse._id}
-                userId={stores.auth.user?._id}
-                learnerName={stores.auth.user?.name || stores.auth.user?.username || "Learner"}
-                courseTitle={activeCourse.title}
-                courseUrl={buildCourseAssetUrl(playerSection.assetPath)}
-                moduleId={playerSection.moduleId}
-                sectionId={playerSection.sectionId}
-                initialProgress={initialScormProgress}
-                onBack={() => setPlayerSection(null)}
-              />
-            </motion.div>
-          ) : playerSection ? (
-            <CourseAssetModal
-              assetKind={playerSection.contentKind}
-              assetUrl={buildCourseAssetUrl(playerSection.assetPath)}
-              title={playerSection.sectionTitle || activeCourse.title}
-              onBack={() => setPlayerSection(null)}
-            />
-          ) : null}
-        </AnimatePresence>
 
         <AssignCourseModal
           isOpen={isAssignModalOpen}

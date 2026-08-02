@@ -1,19 +1,19 @@
 "use client";
 
 import {
-  Award,
-  BookOpen,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  Download,
-  FileText,
-  GraduationCap,
-  Layers3,
-  ShieldCheck,
-  Sparkles,
-  UserRound,
-  UsersRound,
+    Award,
+    BookOpen,
+    CalendarDays,
+    CheckCircle2,
+    Clock3,
+    Download,
+    FileText,
+    GraduationCap,
+    Layers3,
+    ShieldCheck,
+    Sparkles,
+    UserRound,
+    UsersRound,
 } from "lucide-react";
 
 export interface CourseOverviewInstructor {

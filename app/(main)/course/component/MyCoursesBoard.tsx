@@ -2,11 +2,8 @@
 
 import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
 import CourseDetails from "@/app/dashboard/course/CourseDetails";
-import CourseAssetModal from "@/app/dashboard/course/scorm/CourseAssetModal";
-import CoursePlayer from "@/app/dashboard/course/scorm/CoursePlayer";
 import CourseQuizPlayer from "@/app/dashboard/course/quiz/CourseQuizPlayer";
 import {
-  buildCourseAssetUrl,
   CourseLaunchSection,
   getCourseSectionProgress,
   isScormLaunchSection,
@@ -563,83 +560,54 @@ const MyCoursesBoard = observer(
             }
             onEnrollCourse={!isCourseEnrolled ? handleEnrollCourse : undefined}
             isEnrolling={courseStore.enrollmentCourseId === requestedCourseId}
+            activeSectionProgress={initialSectionProgress}
+            onRefreshAnswers={() => {
+              const activeCourseId = activeCourse._id;
+              if (!activeCourseId) {
+                return Promise.resolve();
+              }
+
+              return managerStore
+                .fetchMyCourseAnswers(activeCourseId)
+                .then(() => undefined);
+            }}
+            onRefreshProgress={() => {
+              const activeCourseId = activeCourse._id;
+              if (!activeCourseId) {
+                return Promise.resolve();
+              }
+
+              return Promise.all([
+                courseStore.fetchMyCourseDetail(activeCourseId),
+                courseStore.fetchMyCourses(),
+                courseStore.fetchCourseQuizzes(activeCourseId),
+              ]).then(() => undefined);
+            }}
+            onNonScormOpened={
+              playerSection?.contentKind === "video"
+                ? () =>
+                    syncNonScormSectionProgress(
+                      "in_progress"
+                    )
+                : undefined
+            }
+            onNonScormProgressUpdate={(data) =>
+              syncNonScormSectionProgress(
+                "in_progress",
+                data
+              )
+            }
+            onNonScormCompleted={() =>
+              syncNonScormSectionProgress("completed")
+            }
+            onNonScormStartOver={() =>
+              syncNonScormSectionProgress("in_progress", {
+                startOver: true,
+              })
+            }
           />
 
           <AnimatePresence>
-            {playerSection && isScormLaunchSection(playerSection) ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                style={{ position: "fixed", inset: 0, zIndex: 1400 }}
-              >
-                <CoursePlayer
-                  courseTitle={activeCourse.title}
-                  courseUrl={buildCourseAssetUrl(playerSection.assetPath)}
-                  courseId={activeCourse._id}
-                  moduleId={playerSection.moduleId}
-                  sectionId={playerSection.sectionId}
-                  initialProgress={initialScormProgress}
-                  userId={stores.auth.user?._id}
-                  learnerName={
-                    stores.auth.user?.name ||
-                    stores.auth.user?.username ||
-                    stores.auth.user?.email
-                  }
-                  answerSections={managerStore.myCourseAnswers}
-                  isAnswerSectionsLoading={managerStore.isMyCourseAnswersLoading}
-                  onRefreshAnswerSections={() => {
-                    const activeCourseId = activeCourse._id;
-                    if (!activeCourseId) {
-                      return Promise.resolve();
-                    }
-
-                    return managerStore.fetchMyCourseAnswers(activeCourseId).then(() => undefined);
-                  }}
-                  onRefreshProgress={() => {
-                    const activeCourseId = activeCourse._id;
-                    if (!activeCourseId) {
-                      return Promise.resolve();
-                    }
-
-                    return Promise.all([
-                      courseStore.fetchMyCourseDetail(activeCourseId),
-                      courseStore.fetchMyCourses(),
-                      courseStore.fetchCourseQuizzes(activeCourseId),
-                    ]).then(() => undefined);
-                  }}
-                  onBack={() => {
-                    setPlayerSection(null);
-                    setLatestSectionProgress(null);
-                  }}
-                />
-              </motion.div>
-            ) : playerSection ? (
-              <CourseAssetModal
-                assetKind={playerSection.contentKind}
-                assetUrl={buildCourseAssetUrl(playerSection.assetPath)}
-                title={playerSection.sectionTitle || activeCourse.title}
-                initialTime={resolveSectionResumeTime(initialSectionProgress)}
-                initialProgress={initialSectionProgress?.progress || 0}
-                onOpened={
-                  playerSection.contentKind === "video"
-                    ? () => syncNonScormSectionProgress("in_progress")
-                    : undefined
-                }
-                onProgressUpdate={(data) => syncNonScormSectionProgress("in_progress", data)}
-                onCompleted={() => syncNonScormSectionProgress("completed")}
-                onStartOver={() =>
-                  syncNonScormSectionProgress("in_progress", {
-                    startOver: true,
-                  })
-                }
-                onBack={() => {
-                  setPlayerSection(null);
-                  setLatestSectionProgress(null);
-                }}
-              />
-            ) : null}
             {activeQuiz ? (
               <CourseQuizPlayer
                 quiz={activeQuiz}

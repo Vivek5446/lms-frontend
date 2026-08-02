@@ -5,8 +5,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 export type CourseDetailsTabId =
-  | "overview"
-  | "content"
+  | "about"
   | "materials"
   | "quiz-review";
 
@@ -37,7 +36,7 @@ function joinClasses(
 
 export default function CourseDetailsTabs({
   tabs,
-  defaultTab = "content",
+  defaultTab = "about",
   onTabChange,
   className,
   stickyOnMobile = true,

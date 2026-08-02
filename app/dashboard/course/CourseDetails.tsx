@@ -1,11 +1,18 @@
 "use client";
 
-import CourseContentSection from "@/app/(main)/course/component/CourseContentSection";
-import CourseDetailsTabs, { CourseDetailsTab, CourseDetailsTabId } from "@/app/(main)/course/component/CourseDetailsTabs";
-import CourseHeroSection from "@/app/(main)/course/component/CourseHeroSection";
-import CourseMaterialsSection, { buildCourseMaterialGroups, countCourseMaterials } from "@/app/(main)/course/component/CourseMaterialSection";
+import CourseDetailsTabs, {
+  CourseDetailsTab,
+  CourseDetailsTabId,
+} from "@/app/(main)/course/component/CourseDetailsTabs";
+import CourseMaterialsSection, {
+  buildCourseMaterialGroups,
+  countCourseMaterials,
+} from "@/app/(main)/course/component/CourseMaterialSection";
 import CourseOverviewSection from "@/app/(main)/course/component/CourseOverviewSection";
 import CourseQuizReviewSection from "@/app/(main)/course/component/CourseQuizReviewSection";
+import CourseCurriculumPanel from "@/app/dashboard/course/components/CourseCurriculumPanel";
+import CourseAssetModal from "@/app/dashboard/course/scorm/CourseAssetModal";
+import CoursePlayer from "@/app/dashboard/course/scorm/CoursePlayer";
 import {
   clampLearningProgress,
   getLearningProgressState,
@@ -17,6 +24,7 @@ import {
 } from "@/app/dashboard/course/scorm/quizReviewTypes";
 import type { CourseLaunchSection } from "@/app/dashboard/course/scorm/sectionTracking";
 import {
+  buildCourseAssetUrl,
   buildLaunchSection,
   deriveModuleId,
   deriveSectionId,
@@ -32,7 +40,15 @@ import {
   normalizeHexColor,
 } from "@/app/theme/theme";
 import { useColorMode, useTheme } from "@chakra-ui/react";
-import { Award, BookOpen, FileText, Layers3 } from "lucide-react";
+import {
+  Award,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  PanelRightOpen,
+  PlayCircle
+} from "lucide-react";
 import type { CSSProperties } from "react";
 import {
   useCallback,
@@ -41,19 +57,13 @@ import {
   useState,
 } from "react";
 
-// import CourseContentSection from "./components/CourseContentSection";
-// import CourseDetailsTabs from "./components/CourseDetailsTabs";
-// import type {
-//   CourseDetailsTab,
-//   CourseDetailsTabId,
-// } from "./components/CourseDetailsTabs";
-// import CourseHeroSection from "./components/CourseHeroSection";
-// import CourseMaterialsSection, {
-//   buildCourseMaterialGroups,
-//   countCourseMaterials,
-// } from "./components/CourseMaterialsSection";
-// import CourseOverviewSection from "./components/CourseOverviewSection";
-// import CourseQuizReviewSection from "./components/CourseQuizReviewSection";
+type InlineVideoProgressPayload = {
+  currentTime?: number;
+  duration?: number;
+  progress?: number;
+  reason?: "interval" | "pause" | "exit";
+  startOver?: boolean;
+};
 
 function hexToHslTriplet(hexColor: string) {
   const normalizedHex = String(hexColor || "")
@@ -110,6 +120,12 @@ function hexToHslTriplet(hexColor: string) {
   )}% ${Math.round(lightness * 100)}%`;
 }
 
+function joinClasses(
+  ...classes: Array<string | false | null | undefined>
+) {
+  return classes.filter(Boolean).join(" ");
+}
+
 function getStartLearningLabel(
   launchSection: CourseLaunchSection | null,
   fallbackPath?: string | null
@@ -146,37 +162,37 @@ function getSectionActionLabel(
 
   if (state === "completed") {
     if (launchSection.contentKind === "video") {
-      return "Rewatch Video";
+      return "Rewatch lesson";
     }
 
     if (launchSection.contentKind === "document") {
-      return "Reopen Document";
+      return "Reopen lesson";
     }
 
-    return "Review Lesson";
+    return "Review lesson";
   }
 
   if (state === "in_progress") {
     if (launchSection.contentKind === "video") {
-      return "Resume Video";
+      return "Resume video";
     }
 
     if (launchSection.contentKind === "document") {
-      return "Continue Document";
+      return "Continue document";
     }
 
-    return "Continue Lesson";
+    return "Continue lesson";
   }
 
   if (launchSection.contentKind === "video") {
-    return "Start Video";
+    return "Start video";
   }
 
   if (launchSection.contentKind === "document") {
-    return "Open Document";
+    return "Open document";
   }
 
-  return "Start Lesson";
+  return "Start lesson";
 }
 
 function formatCompactNumber(value: unknown, fallback = "0") {
@@ -247,6 +263,88 @@ function getPriceLabel(course: any) {
   return "Free";
 }
 
+function getInstructorInitials(name?: string) {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (!parts.length) {
+    return "CI";
+  }
+
+  return parts
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function resolveSectionResumeTime(
+  progressRecord?: {
+    currentTime?: number | null;
+    duration?: number | null;
+  } | null
+) {
+  if (!progressRecord) {
+    return 0;
+  }
+
+  const resumeTime = Math.max(
+    Number(progressRecord.currentTime || 0),
+    0
+  );
+  const duration = Math.max(
+    Number(progressRecord.duration || 0),
+    0
+  );
+
+  if (duration > 0) {
+    return Math.min(resumeTime, Math.max(duration - 1, 0));
+  }
+
+  return resumeTime;
+}
+
+function buildPlayableSections(
+  modules: any[],
+  unlockedSectionIds: ReadonlySet<string>,
+  enforceSequentialProgress: boolean
+) {
+  const items: Array<{
+    launchSection: CourseLaunchSection;
+    moduleRecord: any;
+    sectionRecord: any;
+  }> = [];
+
+  modules.forEach((moduleRecord: any) => {
+    (moduleRecord.sections || []).forEach((sectionRecord: any) => {
+      const launchSection = buildLaunchSection(
+        moduleRecord,
+        sectionRecord
+      );
+
+      if (!launchSection) {
+        return;
+      }
+
+      if (
+        enforceSequentialProgress &&
+        !unlockedSectionIds.has(launchSection.sectionId)
+      ) {
+        return;
+      }
+
+      items.push({
+        launchSection,
+        moduleRecord,
+        sectionRecord,
+      });
+    });
+  });
+
+  return items;
+}
+
 interface CourseDetailsProps {
   course: any;
   onBack: () => void;
@@ -264,6 +362,15 @@ interface CourseDetailsProps {
   isCertificateDownloading?: boolean;
   onEnrollCourse?: () => void;
   isEnrolling?: boolean;
+  activeSectionProgress?: any;
+  onRefreshProgress?: () => void | Promise<void>;
+  onRefreshAnswers?: () => void | Promise<void>;
+  onNonScormOpened?: () => void | Promise<void>;
+  onNonScormCompleted?: () => void | Promise<void>;
+  onNonScormProgressUpdate?: (
+    data: InlineVideoProgressPayload
+  ) => void;
+  onNonScormStartOver?: () => void;
 }
 
 export default function CourseDetails({
@@ -281,6 +388,13 @@ export default function CourseDetails({
   isCertificateDownloading = false,
   onEnrollCourse,
   isEnrolling = false,
+  activeSectionProgress,
+  onRefreshProgress,
+  onRefreshAnswers,
+  onNonScormOpened,
+  onNonScormCompleted,
+  onNonScormProgressUpdate,
+  onNonScormStartOver,
 }: CourseDetailsProps) {
   const { colorMode } = useColorMode();
   const theme = useTheme();
@@ -320,6 +434,12 @@ export default function CourseDetails({
     useState<Record<string, boolean>>({});
   const [sectionErrorByModule, setSectionErrorByModule] =
     useState<Record<string, string | null>>({});
+  const [selectedLaunchSection, setSelectedLaunchSection] =
+    useState<CourseLaunchSection | null>(null);
+  const [
+    isMobileCurriculumOpen,
+    setIsMobileCurriculumOpen,
+  ] = useState(false);
 
   const modules = moduleRecords;
 
@@ -376,6 +496,8 @@ export default function CourseDetails({
     setSectionLoadingByModule({});
     setSectionLoadedByModule({});
     setSectionErrorByModule({});
+    setSelectedLaunchSection(null);
+    setIsMobileCurriculumOpen(false);
 
     if (!courseId) {
       return () => {
@@ -733,15 +855,15 @@ export default function CourseDetails({
     () => getInstructor(course),
     [course]
   );
-  const learningOutcomes:any = useMemo(
+  const learningOutcomes = useMemo(
     () => getLearningOutcomes(courseWithLoadedModules),
     [courseWithLoadedModules]
   );
-  const materialGroups:any = useMemo(
+  const materialGroups = useMemo(
     () => buildCourseMaterialGroups(courseWithLoadedModules),
     [courseWithLoadedModules]
   );
-  const totalMaterialCount:any = useMemo(
+  const totalMaterialCount = useMemo(
     () => countCourseMaterials(materialGroups),
     [materialGroups]
   );
@@ -753,14 +875,6 @@ export default function CourseDetails({
     course?.curriculum?.totalSections ||
       sectionSummary.total ||
       0
-  );
-  const ratingLabel = Number.isFinite(
-    Number(course?.metrics?.averageRating)
-  )
-    ? Number(course.metrics.averageRating).toFixed(1)
-    : "0.0";
-  const reviewCountLabel = formatCompactNumber(
-    course?.metrics?.reviewCount
   );
   const learnersLabel = formatCompactNumber(
     course?.metrics?.totalEnrollments
@@ -775,20 +889,6 @@ export default function CourseDetails({
     course?.progress
   );
   const priceLabel = getPriceLabel(course);
-  const categories = Array.isArray(
-    course?.taxonomy?.categories
-  )
-    ? course.taxonomy.categories
-    : [];
-  const levelLabel = String(
-    course?.taxonomy?.level || "Beginner"
-  );
-  const visibilityLabel =
-    course?.visibility?.type === "public"
-      ? "Public Course"
-      : course?.visibility?.type
-        ? "Private Course"
-        : "";
 
   const answerSummary = useMemo(
     () => summarizeAnswerSections(learnerAnswers),
@@ -801,6 +901,76 @@ export default function CourseDetails({
   );
   const previewLaunchSection =
     firstPlayableLaunchSection || nextLaunchSection;
+
+  const playableSections = useMemo(
+    () =>
+      buildPlayableSections(
+        modules,
+        unlockedSectionIds,
+        enforceSequentialProgress
+      ),
+    [
+      enforceSequentialProgress,
+      modules,
+      unlockedSectionIds,
+    ]
+  );
+
+  useEffect(() => {
+    if (!selectedLaunchSection) {
+      return;
+    }
+
+    const stillExists = playableSections.some(
+      ({ launchSection }) =>
+        launchSection.sectionId ===
+        selectedLaunchSection.sectionId
+    );
+
+    if (!stillExists) {
+      setSelectedLaunchSection(null);
+    }
+  }, [playableSections, selectedLaunchSection]);
+
+  const activeLaunchSection = selectedLaunchSection;
+  const activeSectionTracking =
+    activeSectionProgress ||
+    (activeLaunchSection
+      ? sectionProgressMap.get(activeLaunchSection.sectionId)
+      : null);
+
+  const activeSectionIndex = useMemo(
+    () =>
+      activeLaunchSection
+        ? playableSections.findIndex(
+            ({ launchSection }) =>
+              launchSection.sectionId ===
+              activeLaunchSection.sectionId
+          )
+        : -1,
+    [activeLaunchSection, playableSections]
+  );
+
+  const previousLaunchSection =
+    activeSectionIndex > 0
+      ? playableSections[activeSectionIndex - 1]
+          ?.launchSection
+      : null;
+  const followingLaunchSection =
+    activeSectionIndex >= 0 &&
+    activeSectionIndex < playableSections.length - 1
+      ? playableSections[activeSectionIndex + 1]
+          ?.launchSection
+      : null;
+
+  const currentLaunchSection =
+    activeLaunchSection || nextLaunchSection;
+
+  const currentModuleLabel =
+    currentLaunchSection?.moduleTitle || "Ready to learn";
+  const currentSectionLabel =
+    currentLaunchSection?.sectionTitle ||
+    "Choose a lesson to begin";
 
   const courseThemeStyle = useMemo(() => {
     const brandScale = (theme.colors?.brand || {}) as Record<
@@ -882,86 +1052,97 @@ export default function CourseDetails({
           void loadSectionsForModule(moduleId);
         }
       });
-    }, [loadSectionsForModule, modules]
+    },
+    [loadSectionsForModule, modules]
   );
+
+  const handleSelectSection = useCallback(
+    (launchSection: CourseLaunchSection) => {
+      setSelectedLaunchSection(launchSection);
+      setIsMobileCurriculumOpen(false);
+      warmLaunchSection(launchSection);
+      onLaunchSection(launchSection);
+    },
+    [onLaunchSection, warmLaunchSection]
+  );
+
+  const handlePrimaryAction = useCallback(() => {
+    if (canSelfEnroll) {
+      onEnrollCourse?.();
+      return;
+    }
+
+    if (currentLaunchSection) {
+      handleSelectSection(currentLaunchSection);
+    }
+  }, [
+    canSelfEnroll,
+    currentLaunchSection,
+    handleSelectSection,
+    onEnrollCourse,
+  ]);
 
   const courseDetailTabs = useMemo<CourseDetailsTab[]>(
     () => [
       {
-        id: "overview",
-        label: "Overview",
-        mobileLabel: "Overview",
+        id: "about",
+        label: "About",
+        mobileLabel: "About",
         description:
-          "Outcomes and important course information",
+          "Description, outcomes, instructor and course details",
         icon: BookOpen,
         badge: learningOutcomes.length || undefined,
         content: (
-          <CourseOverviewSection
-            course={course}
-            learningOutcomes={learningOutcomes}
-            instructor={instructor}
-            isAssignedCourseView={isAssignedCourseView}
-            totalModuleCount={totalModuleCount}
-            totalLessonCount={totalLessonCount}
-            totalMaterialCount={totalMaterialCount}
-            durationLabel={durationLabel}
-            progressPercent={progressLabel}
-            sectionsCompleted={sectionsCompleted}
-            courseId={courseId}
-            canDownloadCertificate={
-              canDownloadCertificate
-            }
-            certificateReason={certificateReason}
-            isCertificateDownloading={
-              isCertificateDownloading
-            }
-            onDownloadCertificate={
-              onDownloadCertificate
-            }
-          />
-        ),
-      },
-      {
-        id: "content",
-        label: "Course Content",
-        mobileLabel: "Content",
-        description: `${totalModuleCount} modules and ${totalLessonCount} lessons`,
-        icon: Layers3,
-        badge: totalLessonCount || undefined,
-        content: (
-          <CourseContentSection
-            modules={modules}
-            courseQuizzes={courseQuizzes}
-            isAssignedCourseView={
-              isAssignedCourseView
-            }
-            canSelfEnroll={canSelfEnroll}
-            isLoadingModules={isLoadingModules}
-            hasMoreModules={hasMoreModules}
-            moduleProgressMap={moduleProgressMap}
-            sectionProgressMap={sectionProgressMap}
-            unlockedSectionIds={unlockedSectionIds}
-            sectionLoadingByModule={
-              sectionLoadingByModule
-            }
-            sectionErrorByModule={
-              sectionErrorByModule
-            }
-            totalModuleCount={totalModuleCount}
-            totalLessonCount={totalLessonCount}
-            durationLabel={durationLabel}
-            onLoadSections={loadSectionsForModule}
-            onLoadMoreModules={loadMoreModules}
-            onLaunchSection={onLaunchSection}
-            onWarmLaunchSection={warmLaunchSection}
-            onEnrollCourse={onEnrollCourse}
-            onTakeQuiz={onTakeQuiz}
-          />
+          <div className="space-y-4 p-3 sm:p-5">
+            <section className="overflow-hidden rounded-[1.35rem] border border-border bg-background/75">
+              <header className="border-b border-border/75 bg-gradient-to-r from-primary/[0.07] to-transparent px-4 py-4">
+                <h3 className="text-sm font-semibold text-foreground sm:text-base">
+                  Course description
+                </h3>
+                <p className="mt-1 text-[11px] text-muted-foreground sm:text-xs">
+                  The complete overview is kept here so the player layout stays compact.
+                </p>
+              </header>
+              <div
+                className="prose prose-sm max-w-none px-4 py-4 text-foreground prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-a:text-primary dark:prose-invert"
+                dangerouslySetInnerHTML={{
+                  __html:
+                    course?.description?.html ||
+                    course?.description?.text ||
+                    "<p>No course description has been provided.</p>",
+                }}
+              />
+            </section>
+
+            <CourseOverviewSection
+              course={course}
+              learningOutcomes={learningOutcomes}
+              instructor={instructor}
+              isAssignedCourseView={isAssignedCourseView}
+              totalModuleCount={totalModuleCount}
+              totalLessonCount={totalLessonCount}
+              totalMaterialCount={totalMaterialCount}
+              durationLabel={durationLabel}
+              progressPercent={progressLabel}
+              sectionsCompleted={sectionsCompleted}
+              courseId={courseId}
+              canDownloadCertificate={
+                canDownloadCertificate
+              }
+              certificateReason={certificateReason}
+              isCertificateDownloading={
+                isCertificateDownloading
+              }
+              onDownloadCertificate={
+                onDownloadCertificate
+              }
+            />
+          </div>
         ),
       },
       {
         id: "materials",
-        label: "Study Materials",
+        label: "Materials",
         mobileLabel: "Materials",
         description:
           "Files and resources grouped by lesson",
@@ -979,7 +1160,7 @@ export default function CourseDetails({
         label: "Quiz Review",
         mobileLabel: "Quiz",
         description:
-          "Quiz attempts, submitted answers and results",
+          "Attempts, scores and submitted answers",
         icon: Award,
         badge:
           answerSummary.totalQuestions ||
@@ -1008,97 +1189,496 @@ export default function CourseDetails({
     [
       answerSummary.totalQuestions,
       canDownloadCertificate,
-      canSelfEnroll,
       certificateReason,
       course,
       courseId,
       courseQuizzes,
       durationLabel,
-      hasMoreModules,
       instructor,
       isAssignedCourseView,
       isCertificateDownloading,
       isCourseQuizzesLoading,
       isLearnerAnswersLoading,
-      isLoadingModules,
       learnerAnswers,
       learningOutcomes,
-      loadMoreModules,
-      loadSectionsForModule,
       materialGroups,
-      moduleProgressMap,
-      modules,
       onDownloadCertificate,
-      onEnrollCourse,
-      onLaunchSection,
       onTakeQuiz,
-      sectionErrorByModule,
-      sectionLoadingByModule,
-      sectionProgressMap,
+      progressLabel,
       sectionsCompleted,
       showQuizReview,
-      totalLessonCount,
       totalMaterialCount,
       totalModuleCount,
+      totalLessonCount,
       totalSections,
-      unlockedSectionIds,
-      warmLaunchSection,
-      progressLabel,
     ]
   );
 
   return (
     <div
-      className="min-h-screen px-8 w-full max-w-full overflow-x-hidden bg-background text-foreground"
+      className="min-h-screen w-full max-w-full overflow-x-hidden bg-background text-foreground"
       data-theme={colorMode}
       style={courseThemeStyle}
     >
-      <CourseHeroSection
-        course={course}
-        instructor={instructor}
-        isAssignedCourseView={isAssignedCourseView}
-        canSelfEnroll={canSelfEnroll}
-        isEnrolling={isEnrolling}
-        nextLaunchSection={nextLaunchSection}
-        previewLaunchSection={previewLaunchSection}
-        progressPercent={progressLabel}
-        sectionsCompleted={sectionsCompleted}
-        totalSections={sectionSummary.total}
-        totalModuleCount={totalModuleCount}
-        totalLessonCount={totalLessonCount}
-        totalMaterialCount={totalMaterialCount}
-        durationLabel={durationLabel}
-        priceLabel={priceLabel}
-        ratingLabel={ratingLabel}
-        reviewCountLabel={reviewCountLabel}
-        learnersLabel={learnersLabel}
-        levelLabel={levelLabel}
-        categories={categories}
-        visibilityLabel={visibilityLabel}
-        primaryActionLabel={
-          isAssignedCourseView
-            ? nextLaunchLabel
-            : getStartLearningLabel(
-                firstPlayableLaunchSection,
-                course?.scormFilePath
-              )
-        }
-        onBack={onBack}
-        onEditCourse={onEditCourse}
-        onAssignCourse={onAssignCourse}
-        onLaunchSection={onLaunchSection}
-        onWarmLaunchSection={warmLaunchSection}
-        onEnrollCourse={onEnrollCourse}
-      />
+      <main className="mx-auto w-full max-w-8xl px-3 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-4 sm:pb-20 sm:pt-2 lg:px-6">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
+          <div className="min-w-0 flex-1">
+            {/* <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button> */}
 
-      <main className="mx-auto w-full max-w-8xl px-1 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-4 sm:pb-20 lg:px-6">
-        <CourseDetailsTabs
-          tabs={courseDetailTabs}
-          defaultTab="content"
-          stickyOnMobile
-          onTabChange={handleTabChange}
-        />
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+                Learning workspace
+              </span>
+              <span className="rounded-full border border-border bg-card px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+                {totalModuleCount} modules
+              </span>
+              <span className="rounded-full border border-border bg-card px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+                {totalLessonCount} lessons
+              </span>
+              <span className="rounded-full border border-border bg-card px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+                {canSelfEnroll ? priceLabel : `${progressLabel}% complete`}
+              </span>
+            </div>
+
+            <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              {course?.title || "Untitled course"}
+            </h1>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              <div className="flex min-w-0 items-center gap-2">
+                {instructor.avatarUrl ? (
+                  <img
+                    src={instructor.avatarUrl}
+                    alt={instructor.name}
+                    className="h-9 w-9 rounded-full object-cover ring-1 ring-border"
+                  />
+                ) : (
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                    {getInstructorInitials(instructor.name)}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {instructor.name}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {instructor.designation ||
+                      instructor.companyName ||
+                      "Instructor"}
+                  </p>
+                </div>
+              </div>
+
+              <span className="hidden h-4 w-px bg-border sm:block" />
+              <span>{learnersLabel} learners</span>
+              <span className="hidden h-4 w-px bg-border sm:block" />
+              <span>{durationLabel}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {onEditCourse ? (
+              <button
+                type="button"
+                onClick={() => onEditCourse(course)}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-primary/20 bg-card px-4 text-sm font-semibold text-primary transition hover:bg-primary/5"
+              >
+                Edit
+              </button>
+            ) : null}
+
+            {onAssignCourse ? (
+              <button
+                type="button"
+                onClick={() => onAssignCourse(course)}
+                className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+              >
+                Assign
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.75fr)_minmax(320px,0.9fr)]">
+          <div className="min-w-0 space-y-5">
+            <section className="overflow-hidden rounded-[1.8rem] border border-border bg-card shadow-sm">
+              <div className="border-b border-border/75 px-4 py-4 sm:px-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                      {currentModuleLabel}
+                    </p>
+                    <h2 className="mt-1 text-lg font-semibold text-foreground sm:text-xl">
+                      {currentSectionLabel}
+                    </h2>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      {currentLaunchSection ? (
+                        <>
+                          <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
+                            {String(
+                              currentLaunchSection.contentKind ||
+                                "lesson"
+                            ).toUpperCase()}
+                          </span>
+                          <span>
+                            {Math.round(
+                              Number(
+                                activeSectionTracking?.progress || 0
+                              )
+                            )}
+                            % lesson progress
+                          </span>
+                        </>
+                      ) : (
+                        <span>
+                          Choose a lesson from the curriculum or continue from your recommended lesson.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handlePrimaryAction}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                    >
+                      <PlayCircle className="h-4 w-4" />
+                      {canSelfEnroll
+                        ? isEnrolling
+                          ? "Enrolling..."
+                          : "Enroll Now"
+                        : currentLaunchSection
+                          ? activeLaunchSection
+                            ? "Playing now"
+                            : getSectionActionLabel(
+                                currentLaunchSection,
+                                activeSectionTracking?.lessonStatus,
+                                activeSectionTracking?.progress
+                              )
+                          : getStartLearningLabel(
+                              firstPlayableLaunchSection,
+                              course?.scormFilePath
+                            )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setIsMobileCurriculumOpen(true)
+                      }
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted lg:hidden"
+                    >
+                      <PanelRightOpen className="h-4 w-4" />
+                      Curriculum
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b border-border/75 bg-muted/25 p-3 sm:p-4">
+                <div className="overflow-hidden rounded-[1.4rem] border border-border bg-background shadow-inner">
+                  <div className="aspect-video w-full">
+                    {!activeLaunchSection ? (
+                      <div className="relative flex h-full flex-col items-center justify-center overflow-hidden px-6 text-center">
+                        {course?.thumbnailUrl ? (
+                          <img
+                            src={course.thumbnailUrl}
+                            alt={String(course?.title || "Course")}
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
+                        )}
+                        <div className="absolute inset-0 bg-slate-950/50" />
+                        <div className="relative z-10 max-w-xl">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
+                            Ready when you are
+                          </p>
+                          <h3 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
+                            {course?.title || "Start your course"}
+                          </h3>
+                          <p className="mt-3 text-sm leading-6 text-white/80">
+                            Pick a lesson from the curriculum or continue directly from your next recommended section.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handlePrimaryAction}
+                            className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-slate-900 transition hover:bg-white/90"
+                          >
+                            <PlayCircle className="h-4 w-4" />
+                            {canSelfEnroll
+                              ? isEnrolling
+                                ? "Enrolling..."
+                                : "Enroll to Start"
+                              : nextLaunchLabel}
+                          </button>
+                        </div>
+                      </div>
+                    ) : isScormLaunchSection(
+                        activeLaunchSection
+                      ) ? (
+                      <CoursePlayer
+                        key={activeLaunchSection.sectionId}
+                        displayMode="inline"
+                        showCloseButton={false}
+                        courseId={courseId}
+                        userId={user?._id}
+                        learnerName={
+                          user?.name ||
+                          user?.username ||
+                          user?.email ||
+                          "Learner"
+                        }
+                        courseTitle={
+                          activeLaunchSection.sectionTitle
+                        }
+                        courseUrl={buildCourseAssetUrl(
+                          activeLaunchSection.assetPath
+                        )}
+                        moduleId={
+                          activeLaunchSection.moduleId
+                        }
+                        sectionId={
+                          activeLaunchSection.sectionId
+                        }
+                        initialProgress={
+                          activeSectionProgress
+                        }
+                        answerSections={learnerAnswers}
+                        isAnswerSectionsLoading={
+                          isLearnerAnswersLoading
+                        }
+                        onRefreshAnswerSections={
+                          onRefreshAnswers
+                        }
+                        onRefreshProgress={onRefreshProgress}
+                        onBack={() => undefined}
+                      />
+                    ) : (
+                      <CourseAssetModal
+                        key={activeLaunchSection.sectionId}
+                        displayMode="inline"
+                        showCloseButton={false}
+                        assetKind={
+                          activeLaunchSection.contentKind
+                        }
+                        assetUrl={buildCourseAssetUrl(
+                          activeLaunchSection.assetPath
+                        )}
+                        title={
+                          activeLaunchSection.sectionTitle
+                        }
+                        initialTime={resolveSectionResumeTime(
+                          activeSectionTracking
+                        )}
+                        initialProgress={Number(
+                          activeSectionTracking?.progress || 0
+                        )}
+                        onOpened={
+                          activeLaunchSection.contentKind ===
+                          "video"
+                            ? onNonScormOpened
+                            : undefined
+                        }
+                        onProgressUpdate={
+                          onNonScormProgressUpdate
+                        }
+                        onCompleted={
+                          onNonScormCompleted
+                        }
+                        onStartOver={
+                          onNonScormStartOver
+                        }
+                        onBack={() => undefined}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                    Current lesson
+                  </p>
+                  <div className="mt-1 flex min-w-0 items-center gap-2 text-sm">
+                    <span className="truncate font-semibold text-foreground">
+                      {currentSectionLabel}
+                    </span>
+                    {currentLaunchSection ? (
+                      <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
+                        {currentModuleLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!previousLaunchSection}
+                    onClick={() => {
+                      if (previousLaunchSection) {
+                        handleSelectSection(
+                          previousLaunchSection
+                        );
+                      }
+                    }}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!followingLaunchSection}
+                    onClick={() => {
+                      if (followingLaunchSection) {
+                        handleSelectSection(
+                          followingLaunchSection
+                        );
+                      }
+                    }}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <CourseDetailsTabs
+              tabs={courseDetailTabs}
+              defaultTab="about"
+              stickyOnMobile
+              onTabChange={handleTabChange}
+            />
+          </div>
+
+          <div className="hidden lg:sticky lg:top-4 lg:block lg:h-[calc(100dvh-2rem)] lg:self-start">
+            <CourseCurriculumPanel
+              courseTitle={
+                String(course?.title || "Course")
+              }
+              overallProgress={progressLabel}
+              modules={modules}
+              courseQuizzes={courseQuizzes}
+              isAssignedCourseView={isAssignedCourseView}
+              canSelfEnroll={canSelfEnroll}
+              isLoadingModules={isLoadingModules}
+              hasMoreModules={hasMoreModules}
+              moduleProgressMap={moduleProgressMap}
+              sectionProgressMap={sectionProgressMap}
+              unlockedSectionIds={unlockedSectionIds}
+              sectionLoadingByModule={
+                sectionLoadingByModule
+              }
+              sectionErrorByModule={
+                sectionErrorByModule
+              }
+              activeSectionId={
+                activeLaunchSection?.sectionId || null
+              }
+              totalModuleCount={totalModuleCount}
+              totalLessonCount={totalLessonCount}
+              onLoadSections={loadSectionsForModule}
+              onLoadMoreModules={loadMoreModules}
+              onSelectSection={handleSelectSection}
+              onTakeQuiz={onTakeQuiz}
+            />
+          </div>
+        </div>
       </main>
+
+      <button
+        type="button"
+        onClick={() => setIsMobileCurriculumOpen(true)}
+        className="fixed bottom-4 right-4 z-40 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg transition hover:opacity-90 lg:hidden"
+      >
+        <PanelRightOpen className="h-4 w-4" />
+        Curriculum
+      </button>
+
+      {isMobileCurriculumOpen ? (
+        <div className="fixed inset-0 z-50 bg-black/45 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close curriculum"
+            onClick={() => setIsMobileCurriculumOpen(false)}
+            className="absolute inset-0"
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[1.8rem] border border-border bg-background px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl">
+            <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-border" />
+            <div className="mb-3 flex items-center justify-between gap-3 px-1">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  Course curriculum
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Select a lesson without leaving the player.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileCurriculumOpen(false)}
+                className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground"
+              >
+                Close
+              </button>
+            </div>
+            <div className="h-[calc(85vh-4.75rem)] overflow-hidden">
+              <CourseCurriculumPanel
+                courseTitle={
+                  String(course?.title || "Course")
+                }
+                overallProgress={progressLabel}
+                modules={modules}
+                courseQuizzes={courseQuizzes}
+                isAssignedCourseView={isAssignedCourseView}
+                canSelfEnroll={canSelfEnroll}
+                isLoadingModules={isLoadingModules}
+                hasMoreModules={hasMoreModules}
+                moduleProgressMap={moduleProgressMap}
+                sectionProgressMap={sectionProgressMap}
+                unlockedSectionIds={unlockedSectionIds}
+                sectionLoadingByModule={
+                  sectionLoadingByModule
+                }
+                sectionErrorByModule={
+                  sectionErrorByModule
+                }
+                activeSectionId={
+                  activeLaunchSection?.sectionId || null
+                }
+                totalModuleCount={totalModuleCount}
+                totalLessonCount={totalLessonCount}
+                onLoadSections={loadSectionsForModule}
+                onLoadMoreModules={loadMoreModules}
+                onSelectSection={handleSelectSection}
+                onTakeQuiz={onTakeQuiz}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <style jsx global>{`
+        @media (prefers-reduced-motion: reduce) {
+          html:focus-within {
+            scroll-behavior: auto;
+          }
+        }
+      `}</style>
     </div>
   );
 }

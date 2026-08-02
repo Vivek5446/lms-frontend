@@ -2,23 +2,23 @@
 
 import ScormQuizReviewContent from "@/app/dashboard/course/scorm/ScormQuizReviewContent";
 import {
-  ScormAnswerSectionRecord,
-  summarizeAnswerSections,
+    ScormAnswerSectionRecord,
+    summarizeAnswerSections,
 } from "@/app/dashboard/course/scorm/quizReviewTypes";
 import { CourseQuizForLearner } from "@/app/store/courseStore/courseStore";
 import {
-  Award,
-  CheckCircle2,
-  ChevronRight,
-  CircleHelp,
-  ClipboardCheck,
-  Clock,
-  FileQuestion,
-  Layers,
-  LoaderCircle,
-  Lock,
-  PlayCircle,
-  Trophy,
+    Award,
+    CheckCircle2,
+    ChevronRight,
+    CircleHelp,
+    ClipboardCheck,
+    Clock,
+    FileQuestion,
+    Layers,
+    LoaderCircle,
+    Lock,
+    PlayCircle,
+    Trophy,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 

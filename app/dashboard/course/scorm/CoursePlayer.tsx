@@ -27,6 +27,8 @@ interface CoursePlayerProps {
   courseUrl: string;
   courseTitle: string;
   onBack: () => void;
+  displayMode?: "modal" | "inline";
+  showCloseButton?: boolean;
   courseId?: string;
   moduleId?: string;
   sectionId?: string;
@@ -74,6 +76,8 @@ export default function CoursePlayer({
   courseUrl,
   courseTitle,
   onBack,
+  displayMode = "modal",
+  showCloseButton = true,
   courseId,
   moduleId,
   sectionId,
@@ -123,6 +127,10 @@ export default function CoursePlayer({
   }, [answerSections, sectionId]);
 
   useEffect(() => {
+    if (displayMode !== "modal") {
+      return;
+    }
+
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
@@ -132,7 +140,7 @@ export default function CoursePlayer({
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
-  }, []);
+  }, [displayMode]);
 
   const attachApiToWindow = (targetWindow: Window | null | undefined) => {
     if (!targetWindow || !apiRef.current) {
@@ -571,43 +579,69 @@ export default function CoursePlayer({
   };
 
   const showOverlay = isBootstrapping || isFrameLoading || Boolean(playerError);
+  const isInline = displayMode === "inline";
 
   return (
     <>
       <style>{`
-        body, html { overflow: hidden !important; }
         @keyframes scorm-spin { to { transform: rotate(360deg); } }
         .scorm-spinner { animation: scorm-spin 0.9s linear infinite; }
       `}</style>
 
       <div
-        className="fixed inset-0 z-[1400] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        className={
+          isInline
+            ? "h-full"
+            : "fixed inset-0 z-[1400] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        }
         onClick={(event) => {
-          if (event.target === event.currentTarget) {
+          if (!isInline && event.target === event.currentTarget) {
             handleClosePlayer();
           }
         }}
       >
         <motion.div
           ref={modalRef}
-          initial={{ opacity: 0, scale: 0.97, y: 8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.97, y: 8 }}
+          initial={isInline ? false : { opacity: 0, scale: 0.97, y: 8 }}
+          animate={isInline ? undefined : { opacity: 1, scale: 1, y: 0 }}
+          exit={isInline ? undefined : { opacity: 0, scale: 0.97, y: 8 }}
           transition={{ duration: 0.2 }}
           onClick={(event) => event.stopPropagation()}
           className={`
             flex flex-col overflow-hidden bg-white dark:bg-[#0F0F0F]
             shadow-[0_24px_80px_rgba(0,0,0,0.5)]
-            ${isFullscreen ? "w-screen h-screen rounded-none" : "h-[100dvh] w-screen rounded-none sm:h-[92dvh] sm:w-[96vw] sm:rounded-2xl lg:h-[88dvh] lg:w-[88vw] xl:w-[78vw]"}
+            ${
+              isInline
+                ? "h-full min-h-[320px] w-full rounded-[1.5rem] border border-border bg-card shadow-none"
+                : isFullscreen
+                  ? "h-screen w-screen rounded-none"
+                  : "h-[100dvh] w-screen rounded-none sm:h-[92dvh] sm:w-[96vw] sm:rounded-2xl lg:h-[88dvh] lg:w-[88vw] xl:w-[78vw]"
+            }
           `}
         >
           <div
-            className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#0F0F0F] px-6"
+            className={`flex flex-shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-6 ${
+              isInline
+                ? "border-border bg-background"
+                : "border-white/10 bg-[#0F0F0F]"
+            }`}
             style={{ height: `${HEADER_H}px`, minHeight: `${HEADER_H}px`, flexShrink: 0 }}
           >
             <div className="min-w-0 flex-1 flex flex-col justify-center">
-              <span className="truncate text-sm font-bold text-white tracking-wide uppercase leading-tight block">{courseTitle}</span>
-              <span className="text-[9px] text-slate-400 font-medium tracking-wider uppercase mt-1 leading-none block">SCORM Package Player</span>
+              <span
+                className={`block truncate text-sm font-bold tracking-wide uppercase leading-tight ${
+                  isInline ? "text-foreground" : "text-white"
+                }`}
+              >
+                {courseTitle}
+              </span>
+              <span
+                className={`mt-1 block text-[9px] font-medium tracking-wider uppercase leading-none ${
+                  isInline ? "text-muted-foreground" : "text-slate-400"
+                }`}
+              >
+                SCORM Package Player
+              </span>
             </div>
 
             <div className="flex flex-shrink-0 items-center gap-2">
@@ -619,9 +653,15 @@ export default function CoursePlayer({
                 isDisabled={isBootstrapping}
                 h="36px"
                 borderRadius="full"
-                borderColor="white/10"
-                color="slate.200"
-                _hover={{ bg: "white/5", color: "white", borderColor: "white/20" }}
+                borderColor={isInline ? "var(--chakra-colors-gray-200)" : "whiteAlpha.200"}
+                color={isInline ? "gray.700" : "slate.200"}
+                _hover={{
+                  bg: isInline ? "blackAlpha.50" : "whiteAlpha.100",
+                  color: isInline ? "black" : "white",
+                  borderColor: isInline
+                    ? "var(--chakra-colors-gray-300)"
+                    : "whiteAlpha.300",
+                }}
                 _active={{ scale: 0.95 }}
                 fontSize="xs"
                 px={4}
@@ -631,28 +671,46 @@ export default function CoursePlayer({
               <button
                 type="button"
                 onClick={() => void toggleFullscreen()}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/5 border border-white/10 text-slate-300 transition hover:bg-white/10 hover:text-white hover:border-white/20 active:scale-95"
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${
+                  isInline
+                    ? "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white/10 hover:text-white"
+                }`}
                 aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               >
                 {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  handleClosePlayer();
-                }}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/5 border border-white/10 text-slate-300 transition hover:bg-red-500 hover:text-white hover:border-red-500 active:scale-95"
-                aria-label="Close player"
-              >
-                <FiX size={18} />
-              </button>
+              {showCloseButton ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleClosePlayer();
+                  }}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${
+                    isInline
+                      ? "border-border bg-background text-muted-foreground hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-900 dark:hover:bg-red-950/30"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:border-red-500 hover:bg-red-500 hover:text-white"
+                  }`}
+                  aria-label="Close player"
+                >
+                  <FiX size={18} />
+                </button>
+              ) : null}
             </div>
           </div>
 
-          <div className="relative flex-1 bg-[#0B0B0B]">
+          <div
+            className={`relative flex-1 ${
+              isInline ? "bg-muted/25" : "bg-[#0B0B0B]"
+            }`}
+          >
             {showOverlay ? (
               <div
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6 text-center text-white"
+                className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 px-6 text-center ${
+                  isInline
+                    ? "bg-background text-foreground"
+                    : "bg-[#0B0B0B] text-white"
+                }`}
                 role="status"
                 aria-live="polite"
               >
@@ -663,23 +721,41 @@ export default function CoursePlayer({
                     </div>
                     <div className="max-w-md">
                       <p className="text-sm font-semibold">Lesson launch interrupted</p>
-                      <p className="mt-2 text-xs leading-5 text-white/70">{playerError}</p>
+                      <p
+                        className={`mt-2 text-xs leading-5 ${
+                          isInline
+                            ? "text-muted-foreground"
+                            : "text-white/70"
+                        }`}
+                      >
+                        {playerError}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={handleRetry}
-                        className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/90"
+                        className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                          isInline
+                            ? "bg-primary text-primary-foreground hover:opacity-90"
+                            : "bg-white text-black hover:bg-white/90"
+                        }`}
                       >
                         Retry lesson
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleClosePlayer}
-                        className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-                      >
-                        Close
-                      </button>
+                      {showCloseButton ? (
+                        <button
+                          type="button"
+                          onClick={handleClosePlayer}
+                          className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
+                            isInline
+                              ? "border-border text-foreground hover:bg-muted"
+                              : "border-white/20 text-white hover:bg-white/10"
+                          }`}
+                        >
+                          Close
+                        </button>
+                      ) : null}
                     </div>
                   </>
                 ) : (
@@ -689,15 +765,37 @@ export default function CoursePlayer({
                       <p className="text-sm font-semibold">
                         {isBootstrapping ? "Restoring your lesson progress..." : "Starting the lesson..."}
                       </p>
-                      <p className="mt-2 text-xs leading-5 text-white/60">
+                      <p
+                        className={`mt-2 text-xs leading-5 ${
+                          isInline
+                            ? "text-muted-foreground"
+                            : "text-white/60"
+                        }`}
+                      >
                         Course assets are being prepared in the background.
                       </p>
                     </div>
-                    <div className="h-1 w-48 overflow-hidden rounded-full bg-white/10">
-                      <div className="h-full w-2/3 animate-pulse rounded-full bg-cyan-400/80" />
+                    <div
+                      className={`h-1 w-48 overflow-hidden rounded-full ${
+                        isInline ? "bg-muted" : "bg-white/10"
+                      }`}
+                    >
+                      <div
+                        className={`h-full w-2/3 animate-pulse rounded-full ${
+                          isInline
+                            ? "bg-primary"
+                            : "bg-cyan-400/80"
+                        }`}
+                      />
                     </div>
                     {hasSlowLoad ? (
-                      <p className="text-xs text-white/70">
+                      <p
+                        className={`text-xs ${
+                          isInline
+                            ? "text-muted-foreground"
+                            : "text-white/70"
+                        }`}
+                      >
                         This package is larger than usual, but it is still loading.
                       </p>
                     ) : null}
@@ -715,7 +813,7 @@ export default function CoursePlayer({
           </div>
 
           {syncError ? (
-            <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+            <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
               {syncError}
             </div>
           ) : null}

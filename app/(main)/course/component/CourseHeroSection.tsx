@@ -1,18 +1,18 @@
 "use client";
 
 import {
-  ArrowLeft,
-  BookOpen,
-  CheckCircle2,
-  Clock3,
-  Edit3,
-  GraduationCap,
-  MoreHorizontal,
-  Play,
-  Rocket,
-  Star,
-  UserPlus,
-  UsersRound,
+    ArrowLeft,
+    BookOpen,
+    CheckCircle2,
+    Clock3,
+    Edit3,
+    GraduationCap,
+    MoreHorizontal,
+    Play,
+    Rocket,
+    Star,
+    UserPlus,
+    UsersRound,
 } from "lucide-react";
 import { useState } from "react";
 

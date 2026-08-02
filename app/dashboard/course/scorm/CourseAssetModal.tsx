@@ -9,6 +9,8 @@ interface CourseAssetModalProps {
   assetUrl: string;
   assetKind: LaunchContentKind;
   title: string;
+  displayMode?: "modal" | "inline";
+  showCloseButton?: boolean;
   initialTime?: number;
   initialProgress?: number;
   onBack: () => void;
@@ -22,6 +24,8 @@ export default function CourseAssetModal({
   assetUrl,
   assetKind,
   title,
+  displayMode = "modal",
+  showCloseButton = true,
   initialTime = 0,
   initialProgress = 0,
   onBack,
@@ -39,6 +43,7 @@ export default function CourseAssetModal({
   const onCompletedRef = useRef(onCompleted);
   const onProgressUpdateRef = useRef(onProgressUpdate);
   const [showStartOver, setShowStartOver] = useState(initialProgress >= 100);
+  const isInline = displayMode === "inline";
 
   useEffect(() => {
     onOpenedRef.current = onOpened;
@@ -55,6 +60,28 @@ export default function CourseAssetModal({
   }, [assetUrl, initialProgress]);
 
   useEffect(() => {
+    if (displayMode !== "modal") {
+      if (!hasTrackedOpenRef.current) {
+        hasTrackedOpenRef.current = true;
+        void Promise.resolve(onOpenedRef.current?.()).catch(() => undefined);
+      }
+
+      return () => {
+        if (assetKind === "video" && videoRef.current) {
+          const video = videoRef.current;
+          if (video.currentTime > 0 && !hasTrackedCompletionRef.current) {
+            const progress = video.duration > 0 ? (video.currentTime / video.duration) * 100 : 0;
+            onProgressUpdateRef.current?.({
+              currentTime: video.currentTime,
+              duration: video.duration,
+              progress: Math.min(progress, 99),
+              reason: "exit",
+            });
+          }
+        }
+      };
+    }
+
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
@@ -83,7 +110,7 @@ export default function CourseAssetModal({
         }
       }
     };
-  }, [assetKind]);
+  }, [assetKind, displayMode]);
 
   const seekToInitialTime = useCallback(() => {
     if (assetKind !== "video" || !videoRef.current || initialTime <= 0) {
@@ -176,14 +203,13 @@ export default function CourseAssetModal({
   const renderContent = () => {
     if (assetKind === "video") {
       return (
-        <div className="relative w-full flex-1 sm:aspect-video bg-black flex items-center justify-center overflow-hidden">
+        <div className="relative flex-1 overflow-hidden bg-black">
           <video
             ref={videoRef}
             src={assetUrl}
             controls
             autoPlay
-            className="w-full max-h-full object-contain mx-auto"
-            style={{ width: "100%", maxHeight: "100%" }}
+            className="h-full w-full object-contain"
             onLoadedMetadata={handleLoadedMetadata}
             onTimeUpdate={handleTimeUpdate}
             onPause={handlePause}
@@ -216,7 +242,13 @@ export default function CourseAssetModal({
     }
 
     if (assetKind === "document") {
-      return <iframe src={assetUrl} title={title} className="h-full w-full bg-white" />;
+      return (
+        <iframe
+          src={assetUrl}
+          title={title}
+          className="h-full w-full bg-white"
+        />
+      );
     }
 
     return (
@@ -257,9 +289,13 @@ export default function CourseAssetModal({
 
   return (
     <div
-      className="fixed inset-0 z-[1400] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className={
+        isInline
+          ? "h-full"
+          : "fixed inset-0 z-[1400] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      }
       onClick={(event) => {
-        if (event.target === event.currentTarget) {
+        if (!isInline && event.target === event.currentTarget) {
           onBack();
         }
       }}
@@ -270,19 +306,49 @@ export default function CourseAssetModal({
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
-        className="flex h-[100dvh] w-screen flex-col overflow-hidden rounded-none bg-slate-950 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.8)] border border-white/5 sm:h-auto sm:max-w-5xl sm:w-full sm:rounded-xl"
+        className={`flex flex-col overflow-hidden ${
+          isInline
+            ? "h-full w-full rounded-[1.5rem] border border-border bg-background shadow-none"
+            : "h-[100dvh] w-screen rounded-none border border-white/5 bg-slate-950 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.8)] sm:h-auto sm:max-w-5xl sm:w-full sm:rounded-xl"
+        }`}
       >
         <div
-          className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-slate-900/80 backdrop-blur-md"
+          className={`flex flex-shrink-0 items-center justify-between gap-3 border-b backdrop-blur-md ${
+            isInline
+              ? "border-border bg-background"
+              : "border-white/10 bg-slate-900/80"
+          }`}
           style={{ height: "64px", paddingLeft: "24px", paddingRight: "24px", flexShrink: 0 }}
         >
-          <div className="flex min-w-0 items-center gap-3 text-slate-200">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <div
+            className={`flex min-w-0 items-center gap-3 ${
+              isInline ? "text-foreground" : "text-slate-200"
+            }`}
+          >
+            <div
+              className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border ${
+                isInline
+                  ? "border-primary/20 bg-primary/10 text-primary"
+                  : "border-blue-500/20 bg-blue-500/10 text-blue-400"
+              }`}
+            >
               {assetKind === "video" ? <Video className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
             </div>
             <div className="min-w-0 flex flex-col justify-center">
-              <span className="truncate text-xs font-bold text-white tracking-wide uppercase leading-tight block">{title}</span>
-              <span className="text-[8px] text-slate-400 font-medium tracking-wider uppercase mt-0.5 leading-none block">Lesson Viewer</span>
+              <span
+                className={`block truncate text-xs font-bold tracking-wide uppercase leading-tight ${
+                  isInline ? "text-foreground" : "text-white"
+                }`}
+              >
+                {title}
+              </span>
+              <span
+                className={`mt-0.5 block text-[8px] font-medium tracking-wider uppercase leading-none ${
+                  isInline ? "text-muted-foreground" : "text-slate-400"
+                }`}
+              >
+                Lesson Viewer
+              </span>
             </div>
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
@@ -290,7 +356,11 @@ export default function CourseAssetModal({
               href={assetUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3.5 py-1.5 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white hover:border-white/20 active:scale-95"
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
+                isInline
+                  ? "border-border bg-background text-foreground hover:bg-muted"
+                  : "border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
+              }`}
             >
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Open</span>
@@ -298,23 +368,39 @@ export default function CourseAssetModal({
             <a
               href={assetUrl}
               download
-              className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3.5 py-1.5 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white hover:border-white/20 active:scale-95"
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
+                isInline
+                  ? "border-border bg-background text-foreground hover:bg-muted"
+                  : "border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
+              }`}
             >
               <Download className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Download</span>
             </a>
-            <button
-              type="button"
-              onClick={onBack}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 border border-white/10 text-slate-300 transition hover:bg-red-500 hover:text-white hover:border-red-500 active:scale-95"
-              aria-label="Close asset viewer"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            {showCloseButton ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition active:scale-95 ${
+                  isInline
+                    ? "border-border bg-background text-muted-foreground hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-900 dark:hover:bg-red-950/30"
+                    : "border-white/10 bg-white/5 text-slate-300 hover:border-red-500 hover:bg-red-500 hover:text-white"
+                }`}
+                aria-label="Close asset viewer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <div className="relative flex-1 bg-slate-950 overflow-hidden flex flex-col">{renderContent()}</div>
+        <div
+          className={`relative flex flex-1 flex-col overflow-hidden ${
+            isInline ? "bg-background" : "bg-slate-950"
+          }`}
+        >
+          {renderContent()}
+        </div>
       </motion.div>
     </div>
   );
