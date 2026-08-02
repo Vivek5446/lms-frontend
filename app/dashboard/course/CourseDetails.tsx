@@ -1104,7 +1104,7 @@ export default function CourseDetails({
                 </p>
               </header>
               <div
-                className="prose prose-sm max-w-none px-4 py-4 text-foreground prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-a:text-primary dark:prose-invert"
+                className="prose prose-sm max-w-none break-words px-4 py-4 text-foreground prose-headings:break-words prose-headings:text-foreground prose-p:break-words prose-p:text-muted-foreground prose-strong:text-foreground prose-a:break-all prose-a:text-primary prose-li:break-words dark:prose-invert [&_*]:max-w-full [&_*]:break-words"
                 dangerouslySetInnerHTML={{
                   __html:
                     course?.description?.html ||
@@ -1113,7 +1113,19 @@ export default function CourseDetails({
                 }}
               />
             </section>
-
+          </div>
+        ),
+      },
+      {
+        id: "overview",
+        label: "Overview",
+        mobileLabel: "Overview",
+        description:
+          "Course progress, learning outcomes, instructor and course details",
+        icon: BookOpen,
+        badge: learningOutcomes.length || undefined,
+        content: (
+          <div>
             <CourseOverviewSection
               course={course}
               learningOutcomes={learningOutcomes}
@@ -1220,19 +1232,10 @@ export default function CourseDetails({
       data-theme={colorMode}
       style={courseThemeStyle}
     >
-      <main className="mx-auto w-full max-w-8xl px-3 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-4 sm:pb-20 sm:pt-2 lg:px-6">
+      <main className="w-full pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-4 sm:pb-20 sm:pt-2 lg:px-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
           <div className="min-w-0 flex-1">
-            {/* <button
-              type="button"
-              onClick={onBack}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </button> */}
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-6 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
                 Learning workspace
               </span>
@@ -1309,7 +1312,7 @@ export default function CourseDetails({
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.75fr)_minmax(320px,0.9fr)]">
           <div className="min-w-0 space-y-5">
             <section className="overflow-hidden rounded-[1.8rem] border border-border bg-card shadow-sm">
-              <div className="border-b border-border/75 px-4 py-4 sm:px-5">
+              <div className="border-b border-border/75 px-3 py-3 sm:px-5 sm:py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
@@ -1348,9 +1351,9 @@ export default function CourseDetails({
                     <button
                       type="button"
                       onClick={handlePrimaryAction}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground transition hover:opacity-90 sm:h-10 sm:gap-2 sm:px-4 sm:text-sm"
                     >
-                      <PlayCircle className="h-4 w-4" />
+                      <PlayCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       {canSelfEnroll
                         ? isEnrolling
                           ? "Enrolling..."
@@ -1374,9 +1377,9 @@ export default function CourseDetails({
                       onClick={() =>
                         setIsMobileCurriculumOpen(true)
                       }
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted lg:hidden"
+                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold text-foreground transition hover:bg-muted sm:h-10 sm:gap-2 sm:px-4 sm:text-sm lg:hidden"
                     >
-                      <PanelRightOpen className="h-4 w-4" />
+                      <PanelRightOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       Curriculum
                     </button>
                   </div>
@@ -1402,18 +1405,18 @@ export default function CourseDetails({
                           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
                             Ready when you are
                           </p>
-                          <h3 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
+                          <h3 className="mt-3 text-xl font-bold text-white sm:text-3xl">
                             {course?.title || "Start your course"}
                           </h3>
-                          <p className="mt-3 text-sm leading-6 text-white/80">
+                          {/* <p className="mt-3 text-sm leading-6 text-white/80">
                             Pick a lesson from the curriculum or continue directly from your next recommended section.
-                          </p>
+                          </p> */}
                           <button
                             type="button"
                             onClick={handlePrimaryAction}
-                            className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-slate-900 transition hover:bg-white/90"
+                            className="mt-5 inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-white px-4 text-xs font-semibold text-slate-900 transition hover:bg-white/90 sm:mt-6 sm:h-12 sm:gap-2 sm:px-6 sm:text-sm"
                           >
-                            <PlayCircle className="h-4 w-4" />
+                            <PlayCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             {canSelfEnroll
                               ? isEnrolling
                                 ? "Enrolling..."
@@ -1504,7 +1507,7 @@ export default function CourseDetails({
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 sm:px-5 sm:py-4">
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                     Current lesson
@@ -1532,9 +1535,9 @@ export default function CourseDetails({
                         );
                       }
                     }}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-8 items-center justify-center gap-1 rounded-full border border-border bg-card px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:gap-2 sm:px-4 sm:text-sm"
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Previous
                   </button>
 
@@ -1548,10 +1551,10 @@ export default function CourseDetails({
                         );
                       }
                     }}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:gap-2 sm:px-4 sm:text-sm"
                   >
                     Next
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 </div>
               </div>

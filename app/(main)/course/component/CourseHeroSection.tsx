@@ -251,7 +251,6 @@ export default function CourseHeroSection({
         />
 
         <div className="mx-auto w-full max-w-8xl px-2 pb-5 pt-3 sm:px-4 sm:pb-8 sm:pt-6 lg:px-6 lg:pb-10">
-          {/* Top navigation */}
           <div className="mb-3 flex items-center justify-between gap-3 sm:mb-5">
             <button
               type="button"
@@ -338,7 +337,6 @@ export default function CourseHeroSection({
           </div>
 
           <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.8fr)] lg:items-start lg:gap-8">
-            {/* Media appears first on mobile */}
             <div className="order-1 min-w-0 lg:order-2">
               <div className="group relative overflow-hidden rounded-[1.4rem] border border-border bg-muted shadow-lg shadow-black/5 sm:rounded-[1.8rem] dark:shadow-black/25">
                 <div className="aspect-video w-full">

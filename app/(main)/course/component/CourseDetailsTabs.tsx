@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 
 export type CourseDetailsTabId =
   | "about"
+  | "overview"
   | "materials"
   | "quiz-review";
 
@@ -170,7 +171,7 @@ export default function CourseDetailsTabs({
                     handleKeyDown(event, index)
                   }
                   className={joinClasses(
-                    "group relative flex min-h-12 min-w-[132px] snap-center items-center gap-2 rounded-[1rem] px-3 py-2.5 text-left outline-none transition-all duration-200",
+                    "group relative flex min-h-[3.25rem] min-w-[152px] snap-center items-center gap-2 rounded-[1rem] px-3 py-2 text-left outline-none transition-all duration-200",
                     "sm:min-w-0 sm:rounded-[1.2rem] sm:px-3.5",
                     "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     isActive
@@ -193,7 +194,7 @@ export default function CourseDetailsTabs({
                   </span>
 
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-semibold sm:text-[13px]">
+                    <span className="block text-xs font-semibold leading-4 sm:text-[13px]">
                       <span className="sm:hidden">
                         {tab.mobileLabel || tab.label}
                       </span>
