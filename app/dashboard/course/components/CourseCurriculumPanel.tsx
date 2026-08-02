@@ -26,6 +26,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface CourseCurriculumPanelProps {
+  className?: string;
   courseTitle: string;
   overallProgress: number;
   modules: any[];
@@ -175,6 +176,7 @@ function CurriculumQuizRow({
 }
 
 export default function CourseCurriculumPanel({
+  className,
   courseTitle,
   overallProgress,
   modules,
@@ -289,7 +291,12 @@ export default function CourseCurriculumPanel({
   };
 
   return (
-    <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.75rem] border border-border bg-card/95 shadow-sm">
+    <aside
+      className={joinClasses(
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-[1.75rem] border border-border bg-card/95 shadow-sm",
+        className
+      )}
+    >
       <div className="border-b border-border/75 px-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

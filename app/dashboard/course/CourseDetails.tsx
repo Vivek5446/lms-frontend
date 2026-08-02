@@ -10,6 +10,7 @@ import CourseMaterialsSection, {
 } from "@/app/(main)/course/component/CourseMaterialSection";
 import CourseOverviewSection from "@/app/(main)/course/component/CourseOverviewSection";
 import CourseQuizReviewSection from "@/app/(main)/course/component/CourseQuizReviewSection";
+import ResponsiveDrawer from "@/app/component/common/Drawer/ResponsiveDrawer";
 import CourseCurriculumPanel from "@/app/dashboard/course/components/CourseCurriculumPanel";
 import CourseAssetModal from "@/app/dashboard/course/scorm/CourseAssetModal";
 import CoursePlayer from "@/app/dashboard/course/scorm/CoursePlayer";
@@ -1066,6 +1067,14 @@ export default function CourseDetails({
     [onLaunchSection, warmLaunchSection]
   );
 
+  const handleMobileTakeQuiz = useCallback(
+    (quiz: CourseQuizForLearner) => {
+      setIsMobileCurriculumOpen(false);
+      onTakeQuiz?.(quiz);
+    },
+    [onTakeQuiz]
+  );
+
   const handlePrimaryAction = useCallback(() => {
     if (canSelfEnroll) {
       onEnrollCourse?.();
@@ -1228,7 +1237,7 @@ export default function CourseDetails({
 
   return (
     <div
-      className="min-h-screen w-full max-w-full overflow-x-hidden bg-background text-foreground"
+      className="min-h-screen w-full max-w-full bg-background text-foreground"
       data-theme={colorMode}
       style={courseThemeStyle}
     >
@@ -1309,7 +1318,7 @@ export default function CourseDetails({
           </div>
         </div>
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.75fr)_minmax(320px,0.9fr)]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.75fr)_minmax(320px,0.9fr)]">
           <div className="min-w-0 space-y-5">
             <section className="overflow-hidden rounded-[1.8rem] border border-border bg-card shadow-sm">
               <div className="border-b border-border/75 px-3 py-3 sm:px-5 sm:py-4">
@@ -1570,78 +1579,8 @@ export default function CourseDetails({
             />
           </div>
 
-          <div className="hidden lg:sticky lg:top-4 lg:block lg:h-[calc(100dvh-2rem)] lg:self-start">
-            <CourseCurriculumPanel
-              courseTitle={
-                String(course?.title || "Course")
-              }
-              overallProgress={progressLabel}
-              modules={modules}
-              courseQuizzes={courseQuizzes}
-              isAssignedCourseView={isAssignedCourseView}
-              canSelfEnroll={canSelfEnroll}
-              isLoadingModules={isLoadingModules}
-              hasMoreModules={hasMoreModules}
-              moduleProgressMap={moduleProgressMap}
-              sectionProgressMap={sectionProgressMap}
-              unlockedSectionIds={unlockedSectionIds}
-              sectionLoadingByModule={
-                sectionLoadingByModule
-              }
-              sectionErrorByModule={
-                sectionErrorByModule
-              }
-              activeSectionId={
-                activeLaunchSection?.sectionId || null
-              }
-              totalModuleCount={totalModuleCount}
-              totalLessonCount={totalLessonCount}
-              onLoadSections={loadSectionsForModule}
-              onLoadMoreModules={loadMoreModules}
-              onSelectSection={handleSelectSection}
-              onTakeQuiz={onTakeQuiz}
-            />
-          </div>
-        </div>
-      </main>
-
-      <button
-        type="button"
-        onClick={() => setIsMobileCurriculumOpen(true)}
-        className="fixed bottom-4 right-4 z-40 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg transition hover:opacity-90 lg:hidden"
-      >
-        <PanelRightOpen className="h-4 w-4" />
-        Curriculum
-      </button>
-
-      {isMobileCurriculumOpen ? (
-        <div className="fixed inset-0 z-50 bg-black/45 lg:hidden">
-          <button
-            type="button"
-            aria-label="Close curriculum"
-            onClick={() => setIsMobileCurriculumOpen(false)}
-            className="absolute inset-0"
-          />
-          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[1.8rem] border border-border bg-background px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-2xl">
-            <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-border" />
-            <div className="mb-3 flex items-center justify-between gap-3 px-1">
-              <div>
-                <p className="text-sm font-semibold text-foreground">
-                  Course curriculum
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Select a lesson without leaving the player.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsMobileCurriculumOpen(false)}
-                className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground"
-              >
-                Close
-              </button>
-            </div>
-            <div className="h-[calc(85vh-4.75rem)] overflow-hidden">
+          <div className="hidden lg:block">
+            <div className="sticky top-20 max-h-[calc(100dvh-6rem)] flex flex-col">
               <CourseCurriculumPanel
                 courseTitle={
                   String(course?.title || "Course")
@@ -1675,7 +1614,57 @@ export default function CourseDetails({
             </div>
           </div>
         </div>
-      ) : null}
+      </main>
+
+      <button
+        type="button"
+        onClick={() => setIsMobileCurriculumOpen(true)}
+        className="fixed bottom-4 right-4 z-40 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg transition hover:opacity-90 lg:hidden"
+      >
+        <PanelRightOpen className="h-4 w-4" />
+        Curriculum
+      </button>
+
+      <ResponsiveDrawer
+        open={isMobileCurriculumOpen}
+        onClose={() => setIsMobileCurriculumOpen(false)}
+        title={
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">
+              Course curriculum
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              Select a lesson without leaving the player.
+            </p>
+          </div>
+        }
+        desktopWidth="min(420px, 100vw)"
+        bodyClassName="overflow-hidden p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+      >
+        <CourseCurriculumPanel
+          className="h-full rounded-none border-0 shadow-none"
+          courseTitle={String(course?.title || "Course")}
+          overallProgress={progressLabel}
+          modules={modules}
+          courseQuizzes={courseQuizzes}
+          isAssignedCourseView={isAssignedCourseView}
+          canSelfEnroll={canSelfEnroll}
+          isLoadingModules={isLoadingModules}
+          hasMoreModules={hasMoreModules}
+          moduleProgressMap={moduleProgressMap}
+          sectionProgressMap={sectionProgressMap}
+          unlockedSectionIds={unlockedSectionIds}
+          sectionLoadingByModule={sectionLoadingByModule}
+          sectionErrorByModule={sectionErrorByModule}
+          activeSectionId={activeLaunchSection?.sectionId || null}
+          totalModuleCount={totalModuleCount}
+          totalLessonCount={totalLessonCount}
+          onLoadSections={loadSectionsForModule}
+          onLoadMoreModules={loadMoreModules}
+          onSelectSection={handleSelectSection}
+          onTakeQuiz={handleMobileTakeQuiz}
+        />
+      </ResponsiveDrawer>
 
       <style jsx global>{`
         .course-description-richtext {

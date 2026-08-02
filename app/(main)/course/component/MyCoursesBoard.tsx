@@ -1,6 +1,7 @@
 "use client";
 
 import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
+import ResponsiveDrawer from "@/app/component/common/Drawer/ResponsiveDrawer";
 import CourseDetails from "@/app/dashboard/course/CourseDetails";
 import CourseQuizPlayer from "@/app/dashboard/course/quiz/CourseQuizPlayer";
 import {
@@ -30,7 +31,6 @@ import {
   useToast,
   VStack,
 } from "@chakra-ui/react";
-import { AnimatePresence, motion } from "framer-motion";
 import { observer } from "mobx-react-lite";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -75,7 +75,6 @@ type MyCoursesBoardProps = {
   basePath?: string;
 };
 
-const MotionBox = motion(Box);
 const VIDEO_PROGRESS_MIN_SECONDS_DELTA = 15;
 const VIDEO_PROGRESS_MIN_PERCENT_DELTA = 2;
 
@@ -607,10 +606,17 @@ const MyCoursesBoard = observer(
             }
           />
 
-          <AnimatePresence>
+          <ResponsiveDrawer
+            open={Boolean(activeQuiz)}
+            onClose={() => setActiveQuiz(null)}
+            title={activeQuiz?.title || "Course quiz"}
+            desktopWidth="min(940px, 100vw)"
+            bodyClassName="overflow-hidden"
+          >
             {activeQuiz ? (
               <CourseQuizPlayer
                 quiz={activeQuiz}
+                displayMode="drawer"
                 isSubmitting={courseStore.isQuizSubmitting}
                 onClose={() => setActiveQuiz(null)}
                 onSubmit={async (answers) => {
@@ -635,7 +641,7 @@ const MyCoursesBoard = observer(
                 }}
               />
             ) : null}
-          </AnimatePresence>
+          </ResponsiveDrawer>
         </>
       );
     }

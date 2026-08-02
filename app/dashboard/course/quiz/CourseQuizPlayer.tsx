@@ -33,6 +33,7 @@ import { useEffect, useMemo, useState } from "react";
 interface CourseQuizPlayerProps {
   quiz: CourseQuizForLearner;
   isSubmitting?: boolean;
+  displayMode?: "modal" | "drawer";
   onClose: () => void;
   onSubmit: (
     answers: Array<{ questionId: string; selectedOptionId: string }>,
@@ -44,6 +45,7 @@ const MotionBox = motion(Box);
 export default function CourseQuizPlayer({
   quiz,
   isSubmitting = false,
+  displayMode = "modal",
   onClose,
   onSubmit,
 }: CourseQuizPlayerProps) {
@@ -159,34 +161,63 @@ export default function CourseQuizPlayer({
 
   return (
     <Box
-      position="fixed"
-      inset={0}
-      zIndex={1500}
+      position={displayMode === "modal" ? "fixed" : "relative"}
+      inset={displayMode === "modal" ? 0 : undefined}
+      zIndex={displayMode === "modal" ? 1500 : undefined}
       display="flex"
       alignItems="center"
       justifyContent="center"
-      p={{ base: 2, sm: 3, md: 5 }}
-      bg={overlayBg}
+      w={displayMode === "drawer" ? "full" : undefined}
+      h={displayMode === "drawer" ? "full" : undefined}
+      p={displayMode === "modal" ? { base: 2, sm: 3, md: 5 } : 0}
+      bg={displayMode === "modal" ? overlayBg : "transparent"}
       sx={{ overscrollBehavior: "contain" }}
     >
       <MotionBox
-        initial={{ opacity: 0, scale: 0.97, y: 14 }}
+        initial={
+          displayMode === "modal"
+            ? { opacity: 0, scale: 0.97, y: 14 }
+            : false
+        }
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97, y: 14 }}
+        exit={
+          displayMode === "modal"
+            ? { opacity: 0, scale: 0.97, y: 14 }
+            : { opacity: 1 }
+        }
         transition={{ duration: 0.2, ease: "easeOut" }}
         position="relative"
         display="grid"
         gridTemplateRows="auto minmax(0, 1fr) auto"
         w="full"
-        maxW="920px"
-        h={{ base: "calc(100dvh - 16px)", md: "min(780px, calc(100dvh - 40px))" }}
-        maxH="calc(100dvh - 16px)"
+        maxW={displayMode === "modal" ? "920px" : "none"}
+        h={
+          displayMode === "modal"
+            ? {
+                base: "calc(100dvh - 16px)",
+                md: "min(780px, calc(100dvh - 40px))",
+              }
+            : "100%"
+        }
+        maxH={
+          displayMode === "modal"
+            ? "calc(100dvh - 16px)"
+            : "none"
+        }
         overflow="hidden"
         bg={shellBg}
-        borderWidth="1px"
+        borderWidth={displayMode === "modal" ? "1px" : 0}
         borderColor={borderColor}
-        borderRadius={{ base: "20px", md: "28px" }}
-        boxShadow="0 28px 90px rgba(15, 23, 42, 0.38)"
+        borderRadius={
+          displayMode === "modal"
+            ? { base: "20px", md: "28px" }
+            : 0
+        }
+        boxShadow={
+          displayMode === "modal"
+            ? "0 28px 90px rgba(15, 23, 42, 0.38)"
+            : "none"
+        }
         backdropFilter="blur(18px)"
       >
         <Box
@@ -247,18 +278,20 @@ export default function CourseQuizPlayer({
               </Text>
             </Box>
 
-            <Button
-              onClick={onClose}
-              aria-label="Close quiz"
-              variant="ghost"
-              size="sm"
-              minW="36px"
-              h="36px"
-              p={0}
-              borderRadius="full"
-            >
-              <X size={18} />
-            </Button>
+            {displayMode === "modal" ? (
+              <Button
+                onClick={onClose}
+                aria-label="Close quiz"
+                variant="ghost"
+                size="sm"
+                minW="36px"
+                h="36px"
+                p={0}
+                borderRadius="full"
+              >
+                <X size={18} />
+              </Button>
+            ) : null}
           </Flex>
 
           <Flex mt={3} align="center" gap={3}>
