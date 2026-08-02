@@ -1104,7 +1104,7 @@ export default function CourseDetails({
                 </p>
               </header>
               <div
-                className="prose prose-sm max-w-none break-words px-4 py-4 text-foreground prose-headings:break-words prose-headings:text-foreground prose-p:break-words prose-p:text-muted-foreground prose-strong:text-foreground prose-a:break-all prose-a:text-primary prose-li:break-words dark:prose-invert [&_*]:max-w-full [&_*]:break-words"
+                className="course-description-richtext prose max-w-none break-words px-4 py-4 text-[12px] text-foreground prose-headings:break-words prose-headings:text-foreground prose-p:break-words prose-p:text-muted-foreground prose-strong:text-foreground prose-a:break-all prose-a:text-primary prose-li:break-words dark:prose-invert sm:prose-sm sm:text-base [&_*]:max-w-full [&_*]:break-words"
                 dangerouslySetInnerHTML={{
                   __html:
                     course?.description?.html ||
@@ -1676,6 +1676,34 @@ export default function CourseDetails({
       ) : null}
 
       <style jsx global>{`
+        .course-description-richtext {
+          color: hsl(var(--foreground));
+        }
+
+        [data-theme="dark"] .course-description-richtext :is(
+            p,
+            span,
+            div,
+            li,
+            ul,
+            ol,
+            strong,
+            em,
+            blockquote,
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6
+          ) {
+          color: hsl(var(--foreground)) !important;
+        }
+
+        [data-theme="dark"] .course-description-richtext a {
+          color: hsl(var(--primary)) !important;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           html:focus-within {
             scroll-behavior: auto;
