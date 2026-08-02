@@ -1386,7 +1386,7 @@ export default function CourseDetails({
                 </div>
               </div>
 
-              <div className="border-b border-border/75 bg-muted/25 p-3 sm:p-4">
+              <div className="border-b border-border/75 bg-muted/25 sm:p-4">
                 <div className="overflow-hidden rounded-[1.4rem] border border-border bg-background shadow-inner">
                   <div className="aspect-video w-full">
                     {!activeLaunchSection ? (
@@ -1431,6 +1431,7 @@ export default function CourseDetails({
                       <CoursePlayer
                         key={activeLaunchSection.sectionId}
                         displayMode="inline"
+                        showHeader={false}
                         showCloseButton={false}
                         courseId={courseId}
                         userId={user?._id}
@@ -1469,6 +1470,7 @@ export default function CourseDetails({
                       <CourseAssetModal
                         key={activeLaunchSection.sectionId}
                         displayMode="inline"
+                        showHeader={false}
                         showCloseButton={false}
                         assetKind={
                           activeLaunchSection.contentKind

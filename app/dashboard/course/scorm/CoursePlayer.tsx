@@ -28,6 +28,7 @@ interface CoursePlayerProps {
   courseTitle: string;
   onBack: () => void;
   displayMode?: "modal" | "inline";
+  showHeader?: boolean;
   showCloseButton?: boolean;
   courseId?: string;
   moduleId?: string;
@@ -77,6 +78,7 @@ export default function CoursePlayer({
   courseTitle,
   onBack,
   displayMode = "modal",
+  showHeader = true,
   showCloseButton = true,
   courseId,
   moduleId,
@@ -619,85 +621,87 @@ export default function CoursePlayer({
             }
           `}
         >
-          <div
-            className={`flex flex-shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-6 ${
-              isInline
-                ? "border-border bg-background"
-                : "border-white/10 bg-[#0F0F0F]"
-            }`}
-            style={{ height: `${HEADER_H}px`, minHeight: `${HEADER_H}px`, flexShrink: 0 }}
-          >
-            <div className="min-w-0 flex-1 flex flex-col justify-center">
-              <span
-                className={`block truncate text-sm font-bold tracking-wide uppercase leading-tight ${
-                  isInline ? "text-foreground" : "text-white"
-                }`}
-              >
-                {courseTitle}
-              </span>
-              <span
-                className={`mt-1 block text-[9px] font-medium tracking-wider uppercase leading-none ${
-                  isInline ? "text-muted-foreground" : "text-slate-400"
-                }`}
-              >
-                SCORM Package Player
-              </span>
-            </div>
+          {showHeader ? (
+            <div
+              className={`flex flex-shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-6 ${
+                isInline
+                  ? "border-border bg-background"
+                  : "border-white/10 bg-[#0F0F0F]"
+              }`}
+              style={{ height: `${HEADER_H}px`, minHeight: `${HEADER_H}px`, flexShrink: 0 }}
+            >
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <span
+                  className={`block truncate text-sm font-bold tracking-wide uppercase leading-tight ${
+                    isInline ? "text-foreground" : "text-white"
+                  }`}
+                >
+                  {courseTitle}
+                </span>
+                <span
+                  className={`mt-1 block text-[9px] font-medium tracking-wider uppercase leading-none ${
+                    isInline ? "text-muted-foreground" : "text-slate-400"
+                  }`}
+                >
+                  SCORM Package Player
+                </span>
+              </div>
 
-            <div className="flex flex-shrink-0 items-center gap-2">
-              <Button
-                size="sm"
-                colorScheme="blue"
-                variant="outline"
-                onClick={() => setIsQuizReviewOpen(true)}
-                isDisabled={isBootstrapping}
-                h="36px"
-                borderRadius="full"
-                borderColor={isInline ? "var(--chakra-colors-gray-200)" : "whiteAlpha.200"}
-                color={isInline ? "gray.700" : "slate.200"}
-                _hover={{
-                  bg: isInline ? "blackAlpha.50" : "whiteAlpha.100",
-                  color: isInline ? "black" : "white",
-                  borderColor: isInline
-                    ? "var(--chakra-colors-gray-300)"
-                    : "whiteAlpha.300",
-                }}
-                _active={{ scale: 0.95 }}
-                fontSize="xs"
-                px={4}
-              >
-                Quiz Review
-              </Button>
-              <button
-                type="button"
-                onClick={() => void toggleFullscreen()}
-                className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${
-                  isInline
-                    ? "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
-                    : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white/10 hover:text-white"
-                }`}
-                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              >
-                {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
-              </button>
-              {showCloseButton ? (
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <Button
+                  size="sm"
+                  colorScheme="blue"
+                  variant="outline"
+                  onClick={() => setIsQuizReviewOpen(true)}
+                  isDisabled={isBootstrapping}
+                  h="36px"
+                  borderRadius="full"
+                  borderColor={isInline ? "var(--chakra-colors-gray-200)" : "whiteAlpha.200"}
+                  color={isInline ? "gray.700" : "slate.200"}
+                  _hover={{
+                    bg: isInline ? "blackAlpha.50" : "whiteAlpha.100",
+                    color: isInline ? "black" : "white",
+                    borderColor: isInline
+                      ? "var(--chakra-colors-gray-300)"
+                      : "whiteAlpha.300",
+                  }}
+                  _active={{ scale: 0.95 }}
+                  fontSize="xs"
+                  px={4}
+                >
+                  Quiz Review
+                </Button>
                 <button
                   type="button"
-                  onClick={() => {
-                    handleClosePlayer();
-                  }}
+                  onClick={() => void toggleFullscreen()}
                   className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${
                     isInline
-                      ? "border-border bg-background text-muted-foreground hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-900 dark:hover:bg-red-950/30"
-                      : "border-white/10 bg-white/5 text-slate-300 hover:border-red-500 hover:bg-red-500 hover:text-white"
+                      ? "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white/10 hover:text-white"
                   }`}
-                  aria-label="Close player"
+                  aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                 >
-                  <FiX size={18} />
+                  {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
                 </button>
-              ) : null}
+                {showCloseButton ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleClosePlayer();
+                    }}
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${
+                      isInline
+                        ? "border-border bg-background text-muted-foreground hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-900 dark:hover:bg-red-950/30"
+                        : "border-white/10 bg-white/5 text-slate-300 hover:border-red-500 hover:bg-red-500 hover:text-white"
+                    }`}
+                    aria-label="Close player"
+                  >
+                    <FiX size={18} />
+                  </button>
+                ) : null}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div
             className={`relative flex-1 ${

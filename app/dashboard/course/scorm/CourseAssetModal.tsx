@@ -10,6 +10,7 @@ interface CourseAssetModalProps {
   assetKind: LaunchContentKind;
   title: string;
   displayMode?: "modal" | "inline";
+  showHeader?: boolean;
   showCloseButton?: boolean;
   initialTime?: number;
   initialProgress?: number;
@@ -25,6 +26,7 @@ export default function CourseAssetModal({
   assetKind,
   title,
   displayMode = "modal",
+  showHeader = true,
   showCloseButton = true,
   initialTime = 0,
   initialProgress = 0,
@@ -312,87 +314,89 @@ export default function CourseAssetModal({
             : "h-[100dvh] w-screen rounded-none border border-white/5 bg-slate-950 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.8)] sm:h-auto sm:max-w-5xl sm:w-full sm:rounded-xl"
         }`}
       >
-        <div
-          className={`flex flex-shrink-0 items-center justify-between gap-3 border-b backdrop-blur-md ${
-            isInline
-              ? "border-border bg-background"
-              : "border-white/10 bg-slate-900/80"
-          }`}
-          style={{ height: "64px", paddingLeft: "24px", paddingRight: "24px", flexShrink: 0 }}
-        >
+        {showHeader ? (
           <div
-            className={`flex min-w-0 items-center gap-3 ${
-              isInline ? "text-foreground" : "text-slate-200"
+            className={`flex flex-shrink-0 items-center justify-between gap-3 border-b backdrop-blur-md ${
+              isInline
+                ? "border-border bg-background"
+                : "border-white/10 bg-slate-900/80"
             }`}
+            style={{ height: "64px", paddingLeft: "24px", paddingRight: "24px", flexShrink: 0 }}
           >
             <div
-              className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border ${
-                isInline
-                  ? "border-primary/20 bg-primary/10 text-primary"
-                  : "border-blue-500/20 bg-blue-500/10 text-blue-400"
+              className={`flex min-w-0 items-center gap-3 ${
+                isInline ? "text-foreground" : "text-slate-200"
               }`}
             >
-              {assetKind === "video" ? <Video className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-            </div>
-            <div className="min-w-0 flex flex-col justify-center">
-              <span
-                className={`block truncate text-xs font-bold tracking-wide uppercase leading-tight ${
-                  isInline ? "text-foreground" : "text-white"
-                }`}
-              >
-                {title}
-              </span>
-              <span
-                className={`mt-0.5 block text-[8px] font-medium tracking-wider uppercase leading-none ${
-                  isInline ? "text-muted-foreground" : "text-slate-400"
-                }`}
-              >
-                Lesson Viewer
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-shrink-0 items-center gap-2">
-            <a
-              href={assetUrl}
-              target="_blank"
-              rel="noreferrer"
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
-                isInline
-                  ? "border-border bg-background text-foreground hover:bg-muted"
-                  : "border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Open</span>
-            </a>
-            <a
-              href={assetUrl}
-              download
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
-                isInline
-                  ? "border-border bg-background text-foreground hover:bg-muted"
-                  : "border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Download</span>
-            </a>
-            {showCloseButton ? (
-              <button
-                type="button"
-                onClick={onBack}
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition active:scale-95 ${
+              <div
+                className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border ${
                   isInline
-                    ? "border-border bg-background text-muted-foreground hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-900 dark:hover:bg-red-950/30"
-                    : "border-white/10 bg-white/5 text-slate-300 hover:border-red-500 hover:bg-red-500 hover:text-white"
+                    ? "border-primary/20 bg-primary/10 text-primary"
+                    : "border-blue-500/20 bg-blue-500/10 text-blue-400"
                 }`}
-                aria-label="Close asset viewer"
               >
-                <X className="h-4 w-4" />
-              </button>
-            ) : null}
+                {assetKind === "video" ? <Video className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+              </div>
+              <div className="min-w-0 flex flex-col justify-center">
+                <span
+                  className={`block truncate text-xs font-bold tracking-wide uppercase leading-tight ${
+                    isInline ? "text-foreground" : "text-white"
+                  }`}
+                >
+                  {title}
+                </span>
+                <span
+                  className={`mt-0.5 block text-[8px] font-medium tracking-wider uppercase leading-none ${
+                    isInline ? "text-muted-foreground" : "text-slate-400"
+                  }`}
+                >
+                  Lesson Viewer
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <a
+                href={assetUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
+                  isInline
+                    ? "border-border bg-background text-foreground hover:bg-muted"
+                    : "border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Open</span>
+              </a>
+              <a
+                href={assetUrl}
+                download
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
+                  isInline
+                    ? "border-border bg-background text-foreground hover:bg-muted"
+                    : "border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Download</span>
+              </a>
+              {showCloseButton ? (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition active:scale-95 ${
+                    isInline
+                      ? "border-border bg-background text-muted-foreground hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-900 dark:hover:bg-red-950/30"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:border-red-500 hover:bg-red-500 hover:text-white"
+                  }`}
+                  aria-label="Close asset viewer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div
           className={`relative flex flex-1 flex-col overflow-hidden ${
