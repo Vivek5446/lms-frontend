@@ -79,11 +79,7 @@ export function SuperadminDashboard({
   error,
   onRefresh,
 }: SuperadminDashboardProps) {
-  const pageBg = useColorModeValue("gray.50", "gray.900");
-  const heroBg = useColorModeValue(
-    "linear-gradient(135deg, #312E81 0%, #6D28D9 55%, #0F766E 125%)",
-    "linear-gradient(135deg, #111827 0%, #312E81 60%, #134E4A 125%)"
-  );
+  
   const panelBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const [filters, setFilters] = useState<DashboardFiltersValue>(() => ({

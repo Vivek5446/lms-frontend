@@ -1,5 +1,7 @@
 "use client";
 
+import StatCard, { StatCardProps } from "@/app/component/common/StatCard/StatCard";
+import stores from "@/app/store/stores";
 import {
   Alert,
   AlertDescription,
@@ -15,11 +17,8 @@ import {
   SimpleGrid,
   Skeleton,
   Stack,
-  Stat,
-  StatLabel,
-  StatNumber,
   Text,
-  useColorModeValue,
+  useColorModeValue
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
@@ -37,17 +36,15 @@ import {
   FiTrendingUp,
   FiUsers,
 } from "react-icons/fi";
-import stores from "@/app/store/stores";
-import { SuperadminDashboard } from "./components/superadmin-dashboard/SuperadminDashboard";
-import { SuperadminDashboardSummary } from "./components/superadmin-dashboard/types";
 import { DashboardCharts } from "./components/scoped-dashboard/DashboardCharts";
 import { DashboardFilters } from "./components/scoped-dashboard/DashboardFilters";
-import StatCard, { StatCardProps } from "@/app/component/common/StatCard/StatCard";
 import {
   EMPTY_SCOPED_FILTERS,
   ScopedDashboardFilters,
   ScopedDashboardSummary,
 } from "./components/scoped-dashboard/types";
+import { SuperadminDashboard } from "./components/superadmin-dashboard/SuperadminDashboard";
+import { SuperadminDashboardSummary } from "./components/superadmin-dashboard/types";
 
 
 function DashboardSkeleton() {

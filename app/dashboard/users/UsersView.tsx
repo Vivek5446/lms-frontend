@@ -93,7 +93,7 @@ const normalizeRole = (value: unknown) =>
 const normalizeEmail = (value: unknown) => String(value || "").trim().toLowerCase();
 const emptyManager = (level: number): ManagerRow => ({ level, selectedManager: null });
 
-const getCompanyManagerLevels = (company: any) => Math.max(1, Number(company?.managerLevels) || 3);
+const getCompanyManagerLevels = (company: any) => Math.max(0, Number(company?.managerLevels) || 0);
 
 const formatRoleLabel = (role: string) => {
   if (!role) {
@@ -124,7 +124,7 @@ const parseManagerLevel = (role: string) => {
 };
 
 const getBulkUploadRoleOptions = (managerLevels: number) => {
-  const totalLevels = Math.max(1, Number(managerLevels) || 3);
+  const totalLevels = Math.max(0, Number(managerLevels) || 0);
   const options = [];
 
   for (let level = totalLevels; level >= 1; level -= 1) {
@@ -146,7 +146,10 @@ const getBulkUploadRoleOptions = (managerLevels: number) => {
   options.push({
     value: "user",
     label: "Employees / Users",
-    description: `Optionally assign L1 to L${totalLevels} manager phone numbers.`,
+    description:
+      totalLevels > 0
+        ? `Optionally assign L1 to L${totalLevels} manager phone numbers.`
+        : "Create employees without manager assignment.",
   });
 
   return options;
@@ -224,10 +227,10 @@ const initialForm = (): UserFormState => ({
   role: "user",
   companyId: "",
   companyName: "",
-  companyManagerLevels: 3,
+  companyManagerLevels: 0,
   createCompany: false,
   resendSetupEmail: true,
-  managers: reconcileManagersForRole("user", [], 3),
+  managers: [],
 });
 
 const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = false }: UsersViewProps) => {
@@ -244,11 +247,12 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   const [deleteDialog, setDeleteDialog] = useState<any | null>(null);
   const [uploadResults, setUploadResults] = useState<any | null>(null);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+  const [adminCompanySettings, setAdminCompanySettings] = useState<any | null>(null);
   const [userForm, setUserForm] = useState<UserFormState>(initialForm());
   const [bulkForm, setBulkForm] = useState<BulkFormState>({
     companyId: "",
     companyName: "",
-    companyManagerLevels: 3,
+    companyManagerLevels: 0,
     createCompany: false,
     uploadRole: "",
   });
@@ -279,38 +283,44 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   const isDepartmentHead = role === "departmenthead";
   const scopedCompanyId = scopedCompanyIdProp || companyStore.getActiveCompanyId();
   const managedCompanies = companyStore.companies.data || [];
+  const accountCompany =
+    adminCompanySettings ||
+    auth.user?.companyDetails ||
+    managedCompanies.find((company: any) => company?._id === auth.company) ||
+    null;
   const currentCompanyName =
-    auth.user?.companyDetails?.company_name ||
-    managedCompanies.find((company: any) => company?._id === auth.company)?.company_name ||
+    accountCompany?.company_name ||
     "Current company";
   const scopedCompany =
     isSuperadmin
       ? managedCompanies.find((company: any) => company?._id === scopedCompanyId) || null
-      : auth.user?.companyDetails || managedCompanies.find((company: any) => company?._id === auth.company) || null;
+      : accountCompany;
   const isManagementBlocked = Boolean(scopedCompany && scopedCompany.is_active === false);
   const managementBlockedMessage = scopedCompany?.company_name
     ? `${scopedCompany.company_name} is inactive. New user creation, bulk uploads, and other management actions are unavailable until the company is reactivated.`
     : "This company is inactive. New user creation, bulk uploads, and other management actions are unavailable until the company is reactivated.";
   const currentCompanyManagerLevels = getCompanyManagerLevels(
-    auth.user?.companyDetails ||
-      managedCompanies.find((company: any) => company?._id === auth.company)
+    accountCompany
   );
+  const activeCompanyManagerLevels = getCompanyManagerLevels(
+    scopedCompany || { managerLevels: currentCompanyManagerLevels }
+  );
+  const isManagerHierarchyEnabled = activeCompanyManagerLevels > 0;
   const currentCompanyDepartments =
-    auth.user?.companyDetails?.departments ||
-    managedCompanies.find((company: any) => company?._id === auth.company)?.departments ||
+    accountCompany?.departments ||
     [];
   const managerCompanyId = isSuperadmin ? userForm.companyId : auth.company;
   const selectedUserCompany = isSuperadmin
     ? managedCompanies.find((company: any) => company?._id === userForm.companyId)
-    : auth.user?.companyDetails;
+    : accountCompany;
   const selectedBulkCompany = isSuperadmin
     ? managedCompanies.find((company: any) => company?._id === bulkForm.companyId)
-    : auth.user?.companyDetails;
+    : accountCompany;
   const selectedUserManagerLevels = userForm.createCompany
-    ? Math.max(1, Number(userForm.companyManagerLevels) || 3)
+    ? Math.max(0, Number(userForm.companyManagerLevels) || 0)
     : getCompanyManagerLevels(selectedUserCompany || { managerLevels: currentCompanyManagerLevels });
   const selectedBulkManagerLevels = bulkForm.createCompany
-    ? Math.max(1, Number(bulkForm.companyManagerLevels) || 3)
+    ? Math.max(0, Number(bulkForm.companyManagerLevels) || 0)
     : getCompanyManagerLevels(selectedBulkCompany || { managerLevels: currentCompanyManagerLevels });
   const bulkUploadRoleOptions = useMemo(
     () => getBulkUploadRoleOptions(selectedBulkManagerLevels),
@@ -321,7 +331,7 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
     const companyLevels = isSuperadmin
       ? managedCompanies.map((company: any) => getCompanyManagerLevels(company))
       : [currentCompanyManagerLevels];
-    const maxConfiguredLevel = Math.max(1, ...companyLevels, selectedUserManagerLevels, selectedBulkManagerLevels);
+    const maxConfiguredLevel = Math.max(0, ...companyLevels, selectedUserManagerLevels, selectedBulkManagerLevels);
     return Array.from({ length: maxConfiguredLevel }, (_, index) => index + 1);
   }, [
     currentCompanyManagerLevels,
@@ -353,12 +363,21 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   const listTabs = useMemo(() => {
     const tabs = [{ label: "Users", value: "user" }];
 
+    if (isManagerHierarchyEnabled) {
+      Array.from({ length: activeCompanyManagerLevels }, (_, index) => index + 1).forEach((level) => {
+        tabs.push({
+          label: `L${level} Managers`,
+          value: `l${level}-manager`,
+        });
+      });
+    }
+
     if (isSuperadmin) {
       tabs.push({ label: "Admins", value: "admin" });
     }
 
     return tabs;
-  }, [isSuperadmin]);
+  }, [activeCompanyManagerLevels, isManagerHierarchyEnabled, isSuperadmin]);
 
   const activeTabIndex = Math.max(0, listTabs.findIndex((item) => item.value === listTab));
 
@@ -390,6 +409,17 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       companyStore.getManagedCompanies().catch(() => undefined);
     }
   }, [companyStore, isSuperadmin]);
+
+  useEffect(() => {
+    if (isSuperadmin || !auth.company) {
+      return;
+    }
+
+    userStore
+      .getAdminCompanySettings()
+      .then((response: any) => setAdminCompanySettings(response?.data || null))
+      .catch(() => undefined);
+  }, [auth.company, isSuperadmin, userStore]);
 
   useEffect(() => {
     setBulkForm((prev) =>
@@ -472,8 +502,8 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
     setUserForm({
       ...initialForm(),
       companyId: isSuperadmin ? scopedCompanyId : auth.company || "",
-      companyManagerLevels: isSuperadmin ? 3 : currentCompanyManagerLevels,
-      managers: reconcileManagersForRole("user", [], isSuperadmin ? 3 : currentCompanyManagerLevels),
+      companyManagerLevels: isSuperadmin ? 0 : currentCompanyManagerLevels,
+      managers: reconcileManagersForRole("user", [], isSuperadmin ? 0 : currentCompanyManagerLevels),
     });
 
   const resetBulkUploadState = useCallback(() => {
@@ -585,7 +615,7 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       role: roleValue,
       companyId: user.companyId || user.company?._id || "",
       companyName: user.company?.name || user.company?.company_name || "",
-      companyManagerLevels: user.company?.managerLevels || selectedUserManagerLevels,
+      companyManagerLevels: user.company?.managerLevels ?? selectedUserManagerLevels,
       createCompany: false,
       resendSetupEmail: false,
       managers: reconcileManagersForRole(roleValue, mappedManagers, roleMaxLevel),
@@ -1010,7 +1040,7 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       setBulkForm({
         companyId: scopedCompanyId,
         companyName: "",
-        companyManagerLevels: 3,
+        companyManagerLevels: 0,
         createCompany: false,
         uploadRole: "",
       });
@@ -1194,6 +1224,7 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   onOpenCreate={openCreate}
   canOpenBulk={canOpenBulk}
   canOpenCreate={canOpenCreate}
+  showManagerHierarchy={isManagerHierarchyEnabled}
 />
       
       </VStack>

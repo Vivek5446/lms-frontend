@@ -117,10 +117,10 @@ const createMemberForm = (companyId: string, role = "admin") => ({
   role,
   companyId,
   companyName: "",
-  companyManagerLevels: 3,
+  companyManagerLevels: 0,
   createCompany: false,
   resendSetupEmail: false,
-  managers: reconcileManagersForRole(role, [], 3),
+  managers: [],
 });
 const isRealFile = (value: unknown): value is File => typeof File !== "undefined" && value instanceof File;
 type CompanyStatusScope = "company_admin" | "all_users";
@@ -339,7 +339,7 @@ const CompanyAdminWorkspace = ({
         ...(prev.data || createMemberForm(company._id, nextRole)),
         role: nextRole,
         resendSetupEmail: nextRole !== "admin" && nextRole !== "departmenthead",
-        managers: reconcileManagersForRole(nextRole, prev.data?.managers || [], 3),
+        managers: reconcileManagersForRole(nextRole, prev.data?.managers || [], 0),
       },
     }));
   };
@@ -710,7 +710,7 @@ const CompanyAdminWorkspace = ({
             />
             <StatCard
               label="MANAGER LEVELS"
-              value={company?.managerLevels || 3}
+              value={Number(company?.managerLevels) > 0 ? company.managerLevels : "Disabled"}
               icon={FiShield}
               colorScheme="teal"
             />

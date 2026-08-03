@@ -90,6 +90,7 @@ type Props = {
   onOpenCreate?: () => void;
   canOpenBulk?: boolean;
   canOpenCreate?: boolean;
+  showManagerHierarchy?: boolean;
 };
 
 const getUserStatusMeta = (user: any) => {
@@ -149,6 +150,7 @@ const UsersTable = ({
   onOpenCreate,
   canOpenBulk = false,
   canOpenCreate = false,
+  showManagerHierarchy = true,
 }: Props) => {
   // Statistics calculations
   const stats = {
@@ -447,6 +449,9 @@ const UsersTable = ({
       },
     },
   ];
+  const tableColumns = showManagerHierarchy
+    ? columns
+    : columns.filter((column) => column.key !== "managers");
 
   return (
     <VStack spacing={{ base: 4, md: 6 }} align="stretch">
@@ -680,7 +685,7 @@ const UsersTable = ({
           <CustomTable
             title=""
             data={users}
-            columns={columns}
+            columns={tableColumns}
             loading={loading}
             actions={{
               actionBtn: {

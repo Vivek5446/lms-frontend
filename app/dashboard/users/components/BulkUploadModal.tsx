@@ -133,6 +133,8 @@ const BulkUploadModal = ({
     ...expectedManagerLevels.map((level) => `L${level} Manager Phone Number (Name)`),
   ];
   const companyReady = Boolean(bulkForm.companyId);
+  const showManagerColumns = selectedBulkManagerLevels > 0;
+  const previewColumnCount = showManagerColumns ? 12 : 11;
   const getUniqueManagers = (managers: any[] = []) => {
     const seen = new Set<string>();
     return managers.filter((manager) => {
@@ -305,7 +307,7 @@ const BulkUploadModal = ({
                         <Th>State</Th>
                         <Th>Role</Th>
                         <Th>Company Status</Th>
-                        <Th>Managers</Th>
+                        {showManagerColumns ? <Th>Managers</Th> : null}
                         <Th>Action</Th>
                         <Th>Errors</Th>
                       </Tr>
@@ -314,7 +316,7 @@ const BulkUploadModal = ({
                     <Tbody>
                       {loading ? (
                         <Tr>
-                          <Td colSpan={12} textAlign="center" py={6}>
+                          <Td colSpan={previewColumnCount} textAlign="center" py={6}>
                             Loading preview...
                           </Td>
                         </Tr>
@@ -344,15 +346,17 @@ const BulkUploadModal = ({
                               </Badge>
                             </Td>
 
-                            <Td>
-                              <VStack align="start" spacing={0}>
-                                {getUniqueManagers(row.managers || []).map((m: any) => (
-                                  <Text key={`${m.level}-${m.managerEmail}`} fontSize="xs">
-                                    L{m.level}: {m.managerEmail}
-                                  </Text>
-                                ))}
-                              </VStack>
-                            </Td>
+                            {showManagerColumns ? (
+                              <Td>
+                                <VStack align="start" spacing={0}>
+                                  {getUniqueManagers(row.managers || []).map((m: any) => (
+                                    <Text key={`${m.level}-${m.managerEmail}`} fontSize="xs">
+                                      L{m.level}: {m.managerEmail}
+                                    </Text>
+                                  ))}
+                                </VStack>
+                              </Td>
+                            ) : null}
 
                             <Td>
                               <Badge

@@ -7,11 +7,14 @@ import {
   Checkbox,
   Divider,
   Flex,
+  FormControl,
+  FormLabel,
   Grid,
   GridItem,
   HStack,
   Icon,
   SimpleGrid,
+  Switch,
   Text,
   useColorModeValue,
   useToast,
@@ -283,6 +286,7 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
           DEFAULT_LEARNER_PRIMARY_COLOR
         );
         const previewTextColor = getContrastTextColor(resolvedThemeColor);
+        const isManagerHierarchyEnabled = Number(values.managerLevels) > 0;
 
         const fieldError = (path: string) => getIn(errors, path);
         const showFieldError = (path: string) =>
@@ -346,23 +350,43 @@ const CompanyForm = ({ onSubmit, onClose, isLoading, initialValues, submitLabel 
                     error={fieldError("customDomain")}
                     showError={showFieldError("customDomain")}
                   />
-                  <CustomInput
-                    label="Manager Levels"
-                    name="managerLevels"
-                    type="number"
-                    placeholder="Enter number of manager levels"
-                    value={values.managerLevels}
-                    onBlur={handleBlur}
-                    onChange={handleChange}
-                    error={fieldError("managerLevels")}
-                    showError={showFieldError("managerLevels")}
-                  />
+                  <FormControl display="flex" alignItems="center" gap={3} minH="64px">
+                    <Switch
+                      id="managerHierarchyEnabled"
+                      colorScheme="blue"
+                      isChecked={isManagerHierarchyEnabled}
+                      onChange={(event) =>
+                        setFieldValue(
+                          "managerLevels",
+                          event.target.checked ? Math.max(1, Number(values.managerLevels) || 3) : 0
+                        )
+                      }
+                    />
+                    <FormLabel htmlFor="managerHierarchyEnabled" mb={0} fontWeight="600">
+                      Use manager hierarchy
+                    </FormLabel>
+                  </FormControl>
+                  {isManagerHierarchyEnabled ? (
+                    <CustomInput
+                      label="Manager Levels"
+                      name="managerLevels"
+                      type="number"
+                      placeholder="Enter number of manager levels"
+                      value={values.managerLevels}
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      error={fieldError("managerLevels")}
+                      showError={showFieldError("managerLevels")}
+                    />
+                  ) : null}
                 </SimpleGrid>
 
                 <Flex mt={4} gap={3} align="center" wrap="wrap">
                   <Text fontSize="sm">Preview:</Text>
-                  <Badge colorScheme="purple" wordBreak="break-all" whiteSpace="normal">{previewUrl || "—"}</Badge>
-                  <Badge colorScheme="blue" flexShrink={0}>{values.managerLevels || 3} levels</Badge>
+                  <Badge colorScheme="purple" wordBreak="break-all" whiteSpace="normal">{previewUrl || "--"}</Badge>
+                  <Badge colorScheme={isManagerHierarchyEnabled ? "blue" : "gray"} flexShrink={0}>
+                    {isManagerHierarchyEnabled ? `${values.managerLevels} levels` : "Managers disabled"}
+                  </Badge>
                 </Flex>
               </SectionCard>
 
