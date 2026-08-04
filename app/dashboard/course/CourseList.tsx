@@ -22,12 +22,12 @@ interface CourseListProps {
   mode?: "create" | "edit";
   courseId?: string;
   initialCourse?: any;
-  initialCategory?: string;
+  initialFolderId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-function CourseList({ mode = "create", courseId, initialCourse, initialCategory, onSuccess, onCancel }: CourseListProps) {
+function CourseList({ mode = "create", courseId, initialCourse, initialFolderId, onSuccess, onCancel }: CourseListProps) {
   const isCompact = useBreakpointValue({ base: true, md: false }) ?? false;
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -36,14 +36,7 @@ function CourseList({ mode = "create", courseId, initialCourse, initialCategory,
     if (mode === "edit" && initialCourse) {
       return courseToFormState(initialCourse);
     }
-    const state = { ...initialCourseFormState };
-    if (initialCategory) {
-      state.basicInfo = {
-        ...state.basicInfo,
-        categories: [initialCategory],
-      };
-    }
-    return state;
+    return initialCourseFormState;
   });
   const [finalAction, setFinalAction] = useState<"draft" | "publish">("publish");
   const router = useRouter();
@@ -181,7 +174,10 @@ function CourseList({ mode = "create", courseId, initialCourse, initialCategory,
 
     let wasSuccessful = false;
     const uploadFiles = collectCourseUploadFiles(courseForm);
-    const payload = buildCoursePayload(courseForm, action);
+    const payload: any = buildCoursePayload(courseForm, action);
+    if (!isEditMode && initialFolderId) {
+      payload.courseLibraryFolderId = initialFolderId;
+    }
 
     try {
       const input = {

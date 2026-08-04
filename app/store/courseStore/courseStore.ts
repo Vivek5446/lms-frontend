@@ -78,6 +78,28 @@ export interface CourseCategoryItem {
   createdAt?: string;
 }
 
+export interface CourseLibraryFolderItem {
+  _id: string;
+  name: string;
+  normalizedName: string;
+  description?: string;
+  owner?: string;
+  company?: string | null;
+  courseCount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CourseFolderAssignmentItem {
+  _id: string;
+  course: string;
+  folder: string;
+  owner?: string;
+  company?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface CourseListItem {
   _id: string;
   courseCode?: string;
@@ -669,7 +691,10 @@ class CourseStoreClass {
   courses: CourseListItem[] = [];
   categories: CourseCategoryItem[] = [];
   masterCategories: CourseCategoryItem[] = [];
+  courseLibraryFolders: CourseLibraryFolderItem[] = [];
+  courseFolderAssignments: CourseFolderAssignmentItem[] = [];
   isCategoriesLoading: boolean = false;
+  isCourseFoldersLoading: boolean = false;
   publicCourses: PublicCourseItem[] = [];
   publicCoursesMeta: PublicCourseCatalogMeta = {
     total: 0,
@@ -772,6 +797,73 @@ class CourseStoreClass {
     } catch (err: any) {
       console.error("Failed to fetch master categories", err);
       return [];
+    }
+  };
+
+  fetchCourseLibraryFolders = async () => {
+    this.isCourseFoldersLoading = true;
+    try {
+      const { data } = await axios.get("/course/folders");
+      runInAction(() => {
+        this.courseLibraryFolders = data.data || [];
+        this.courseFolderAssignments = data.assignments || [];
+      });
+      return data.data || [];
+    } catch (err: any) {
+      console.error("Failed to fetch course folders", err);
+      return [];
+    } finally {
+      runInAction(() => {
+        this.isCourseFoldersLoading = false;
+      });
+    }
+  };
+
+  createCourseLibraryFolder = async (payload: { name: string; description?: string }) => {
+    try {
+      const { data } = await axios.post("/course/folders", payload);
+      const folder = data.data;
+      runInAction(() => {
+        if (folder) {
+          this.courseLibraryFolders.push(folder);
+          this.courseLibraryFolders.sort((a, b) => a.name.localeCompare(b.name));
+        }
+      });
+      return folder;
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || "Failed to create folder";
+      throw new Error(msg);
+    }
+  };
+
+  updateCourseLibraryFolder = async (id: string, payload: { name?: string; description?: string }) => {
+    try {
+      const { data } = await axios.put(`/course/folders/${id}`, payload);
+      const folder = data.data;
+      runInAction(() => {
+        if (folder) {
+          this.courseLibraryFolders = this.courseLibraryFolders
+            .map((item) => (item._id === id ? { ...item, ...folder } : item))
+            .sort((a, b) => a.name.localeCompare(b.name));
+        }
+      });
+      return folder;
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || "Failed to update folder";
+      throw new Error(msg);
+    }
+  };
+
+  deleteCourseLibraryFolder = async (id: string) => {
+    try {
+      await axios.delete(`/course/folders/${id}`);
+      runInAction(() => {
+        this.courseLibraryFolders = this.courseLibraryFolders.filter((folder) => folder._id !== id);
+        this.courseFolderAssignments = this.courseFolderAssignments.filter((assignment) => assignment.folder !== id);
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || "Failed to delete folder";
+      throw new Error(msg);
     }
   };
 

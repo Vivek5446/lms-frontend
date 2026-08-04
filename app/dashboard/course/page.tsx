@@ -109,6 +109,7 @@ function CoursePage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [sortBy, setSortBy] = useState<CatalogSort>("latest");
+  const [selectedFolderForCreation, setSelectedFolderForCreation] = useState<string | undefined>(undefined);
 
   const pageBg = useColorModeValue("#F8FAFC", "#0F172A");
   const cardBg = useColorModeValue("#FFFFFF", "#111827");
@@ -130,6 +131,7 @@ function CoursePage() {
   const canEditCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.EDIT_COURSES);
   const canDeleteCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.DELETE_COURSES);
   const canAssignCourses = hasPermission(stores.auth.user, PERMISSION_KEYS.ASSIGN_COURSES);
+  const canManageFolders = hasAnyCourseViewPermission(stores.auth.user);
   const canViewUsers = hasPermission(stores.auth.user, PERMISSION_KEYS.VIEW_USERS) && (role === "admin" || role === "superadmin");
   const compactActionWidth = isCompact ? (canCreateCourses ? "calc(50% - 6px)" : "100%") : "auto";
   const scopeBadgeLabel =
@@ -147,8 +149,6 @@ function CoursePage() {
         ? "Review and manage the course catalog available to your company, including assigned and company-created courses."
         : "Review the courses available to your department and manage the items your role is allowed to maintain.";
 
-  const [selectedCategoryForCreation, setSelectedCategoryForCreation] = useState<string | undefined>(undefined);
-
   useEffect(() => {
     if (isLearner) {
       router.replace("/course");
@@ -159,17 +159,21 @@ function CoursePage() {
       courseStore.fetchCourses().catch(() => undefined);
       courseStore.fetchCategories().catch(() => undefined);
       courseStore.fetchMasterCategories().catch(() => undefined);
+      if (isFolderExplorerUser) {
+        courseStore.fetchCourseLibraryFolders().catch(() => undefined);
+      }
     }
-  }, [canViewCourses, isLearner, router]);
+  }, [canViewCourses, isFolderExplorerUser, isLearner, router]);
 
   const handleCreateSuccess = () => {
     courseStore.fetchCourses().catch(() => undefined);
+    courseStore.fetchCourseLibraryFolders().catch(() => undefined);
     setView("gallery");
   };
 
-  const handleOpenCreate = (categoryName?: string) => {
+  const handleOpenCreate = (folderId?: string) => {
     courseStore.error = null;
-    setSelectedCategoryForCreation(categoryName);
+    setSelectedFolderForCreation(folderId);
     setView("create");
   };
 
@@ -323,13 +327,13 @@ function CoursePage() {
   if (view === "create") {
     return (
       <CourseList
-        initialCategory={selectedCategoryForCreation}
+        initialFolderId={selectedFolderForCreation}
         onSuccess={() => {
-          setSelectedCategoryForCreation(undefined);
+          setSelectedFolderForCreation(undefined);
           handleCreateSuccess();
         }}
         onCancel={() => {
-          setSelectedCategoryForCreation(undefined);
+          setSelectedFolderForCreation(undefined);
           setView("gallery");
         }}
       />
@@ -1002,17 +1006,17 @@ function CoursePage() {
 
           {isFolderExplorerUser ? (
             <FolderExplorer
-              categories={courseStore.categories}
+              folders={courseStore.courseLibraryFolders}
+              assignments={courseStore.courseFolderAssignments}
               courses={courseStore.courses}
               canCreateCourses={canCreateCourses}
               canEditCourses={canEditCourses}
               canDeleteCourses={canDeleteCourses}
+              canManageFolders={canManageFolders}
               canViewUsers={canViewUsers}
               onOpenDetails={handleOpenDetails}
               onOpenEdit={handleOpenEdit}
-              onCreateCourseInCategory={(categoryName) => {
-                handleOpenCreate(categoryName);
-              }}
+              onCreateCourse={handleOpenCreate}
               onDeleteCourse={async (courseId) => {
                 if (window.confirm("Are you sure you want to delete this course?")) {
                   try {

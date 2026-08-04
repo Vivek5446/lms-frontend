@@ -1,11 +1,13 @@
-import stores from "@/app/store/stores";
+"use client";
+
 import {
   Box,
   Button,
+  Flex,
   FormControl,
-  FormHelperText,
   FormLabel,
   HStack,
+  Icon,
   Input,
   Modal,
   ModalBody,
@@ -14,521 +16,219 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Select,
   Text,
   Textarea,
   useColorModeValue,
   useToast,
   VStack,
 } from "@chakra-ui/react";
-import { observer } from "mobx-react-lite";
-import React, {
-  FormEvent,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { FormEvent, useState } from "react";
+import { FiFolderPlus } from "react-icons/fi";
 
 interface CreateCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (
-    name: string,
-    description: string,
-    options?: {
-      parentCategory?: string;
-    }
-  ) => Promise<void>;
-  onCreated?: (categoryName: string) => void;
+  onCreate: (name: string, description: string) => Promise<void>;
+  onCreated?: (folderName: string) => void;
+  initialName?: string;
+  initialDescription?: string;
+  title?: string;
+  submitLabel?: string;
 }
 
-const MAX_NAME_LENGTH = 60;
 const MAX_DESCRIPTION_LENGTH = 180;
 
-const CreateCategoryModal: React.FC<CreateCategoryModalProps> = observer(
-  ({ isOpen, onClose, onCreate, onCreated }) => {
-    const toast = useToast();
-    const initialFocusRef = useRef<HTMLInputElement>(null);
+const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
+  isOpen,
+  onClose,
+  onCreate,
+  onCreated,
+  initialName = "",
+  initialDescription = "",
+  title = "Add Folder",
+  submitLabel = "Save Folder",
+}) => {
+  const toast = useToast();
+  const [folderName, setFolderName] = useState(initialName);
+  const [description, setDescription] = useState(initialDescription);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const borderColor = useColorModeValue(
-      "gray.200",
-      "whiteAlpha.200"
-    );
-    const mutedTextColor = useColorModeValue(
-      "gray.500",
-      "gray.400"
-    );
-    const fieldBackground = useColorModeValue(
-      "gray.50",
-      "whiteAlpha.50"
-    );
-    const footerBackground = useColorModeValue(
-      "gray.50",
-      "whiteAlpha.50"
-    );
+  const modalBackground = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200");
+  const mutedTextColor = useColorModeValue("gray.500", "gray.400");
+  const headingColor = useColorModeValue("gray.900", "white");
+  const fieldBackground = useColorModeValue("gray.50", "whiteAlpha.50");
+  const footerBackground = useColorModeValue("gray.50", "whiteAlpha.50");
+  const iconBackground = useColorModeValue("blue.50", "rgba(59, 130, 246, 0.15)");
+  const iconColor = useColorModeValue("blue.600", "blue.300");
 
-    const [selectedMasterId, setSelectedMasterId] = useState("");
-    const [masterSearch, setMasterSearch] = useState("");
-    const [customName, setCustomName] = useState("");
-    const [categoryDescription, setCategoryDescription] =
-      useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isLoadingCategories, setIsLoadingCategories] =
-      useState(false);
+  const resetForm = () => {
+    setFolderName(initialName);
+    setDescription(initialDescription);
+  };
 
-    const masterCategories =
-      stores.courseStore.masterCategories || [];
-    const filteredMasterCategories = useMemo(() => {
-      const query = masterSearch.trim().toLowerCase();
-      if (!query) return masterCategories;
+  React.useEffect(() => {
+    if (isOpen) {
+      setFolderName(initialName);
+      setDescription(initialDescription);
+    }
+  }, [initialDescription, initialName, isOpen]);
 
-      return masterCategories.filter((category) => {
-        const nameMatch = category.name.toLowerCase().includes(query);
-        const descriptionMatch = (category.description || "")
-          .toLowerCase()
-          .includes(query);
-        return nameMatch || descriptionMatch;
+  const handleClose = () => {
+    if (isSubmitting) return;
+    resetForm();
+    onClose();
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = folderName.trim();
+    if (!name) {
+      toast({
+        title: "Folder name required",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+        position: "top-right",
       });
-    }, [masterCategories, masterSearch]);
+      return;
+    }
 
-    useEffect(() => {
-      if (!isOpen) return;
-
-      let isMounted = true;
-
-      const loadMasterCategories = async () => {
-        setIsLoadingCategories(true);
-
-        try {
-          await stores.courseStore.fetchMasterCategories();
-        } catch {
-          toast({
-            title: "Unable to load categories",
-            description:
-              "The master category list could not be loaded.",
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-            position: "top-right",
-          });
-        } finally {
-          if (isMounted) {
-            setIsLoadingCategories(false);
-          }
-        }
-      };
-
-      loadMasterCategories();
-
-      return () => {
-        isMounted = false;
-      };
-    }, [isOpen, toast]);
-
-    const resetForm = () => {
-      setSelectedMasterId("");
-      setMasterSearch("");
-      setCustomName("");
-      setCategoryDescription("");
-    };
-
-    const handleClose = () => {
-      if (isSubmitting) return;
-
+    setIsSubmitting(true);
+    try {
+      await onCreate(name, description.trim());
+      toast({
+        title: title === "Edit Folder" ? "Folder updated" : "Folder created",
+        description: `"${name}" was saved successfully.`,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "top-right",
+      });
+      onCreated?.(name);
       resetForm();
       onClose();
-    };
+    } catch (error: unknown) {
+      toast({
+        title: "Unable to create folder",
+        description: error instanceof Error ? error.message : "Failed to create folder",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+        position: "top-right",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    const handleMasterSelectChange = (
-      event: React.ChangeEvent<HTMLSelectElement>
-    ) => {
-      const selectedId = event.target.value;
-
-      setSelectedMasterId(selectedId);
-
-      const selectedMaster = masterCategories.find(
-        (category) =>
-          category._id === selectedId ||
-          category.name === selectedId
-      );
-
-      setCustomName(selectedMaster?.name || "");
-    };
-
-    const handleSubmit = async (
-      event: FormEvent<HTMLFormElement>
-    ) => {
-      event.preventDefault();
-
-      const selectedMaster = masterCategories.find(
-        (category) =>
-          category._id === selectedMasterId ||
-          category.name === selectedMasterId
-      );
-
-      const finalName = (
-        customName ||
-        selectedMaster?.name ||
-        ""
-      ).trim();
-
-      const trimmedDescription =
-        categoryDescription.trim();
-
-      if (!selectedMasterId) {
-        toast({
-          title: "Select a category",
-          description:
-            "Please select a category from the master list.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-          position: "top-right",
-        });
-        return;
-      }
-
-      if (!finalName) {
-        toast({
-          title: "Folder name required",
-          description:
-            "Please enter a display name for the folder.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-          position: "top-right",
-        });
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      try {
-        await onCreate(finalName, trimmedDescription, {
-          parentCategory: selectedMaster?._id || undefined,
-        });
-
-        toast({
-          title: "Category folder created",
-          description: `"${finalName}" is ready for storing courses.`,
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-          position: "top-right",
-        });
-
-        onCreated?.(finalName);
-        resetForm();
-        onClose();
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Failed to create category folder";
-
-        toast({
-          title: "Unable to create folder",
-          description: message,
-          status: "error",
-          duration: 4000,
-          isClosable: true,
-          position: "top-right",
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-
-    return (
-      <Modal
-        isOpen={isOpen}
-        onClose={handleClose}
-        initialFocusRef={initialFocusRef}
-        isCentered
-        size="md"
-        motionPreset="slideInBottom"
-        closeOnEsc={!isSubmitting}
-        closeOnOverlayClick={!isSubmitting}
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      isCentered
+      size="md"
+      motionPreset="slideInBottom"
+      closeOnEsc={!isSubmitting}
+      closeOnOverlayClick={!isSubmitting}
+    >
+      <ModalOverlay bg="blackAlpha.400" backdropFilter="blur(5px)" />
+      <ModalContent
+        mx={4}
+        maxW="460px"
+        bg={modalBackground}
+        borderRadius={{ base: "16px", sm: "20px" }}
+        borderWidth="1px"
+        borderColor={borderColor}
+        overflow="hidden"
+        boxShadow={useColorModeValue(
+          "0 12px 35px rgba(15, 23, 42, 0.12)",
+          "0 12px 35px rgba(0, 0, 0, 0.25)"
+        )}
       >
-        <ModalOverlay
-          bg="blackAlpha.400"
-          backdropFilter="blur(5px)"
-        />
-
-        <ModalContent
-          mx={4}
-          maxW="460px"
-          borderRadius="18px"
-          borderWidth="1px"
-          borderColor={borderColor}
-          overflow="hidden"
-          boxShadow="xl"
-        >
-          <ModalHeader
-            px={{ base: 5, sm: 6 }}
-            pt={5}
-            pb={4}
-            borderBottomWidth="1px"
-            borderColor={borderColor}
-          >
-            <Box pr={8}>
-              <Text
-                fontSize="md"
-                fontWeight="700"
-                lineHeight="short"
-              >
-                Create Category Folder
+        <ModalHeader px={{ base: 5, sm: 6 }} pt={5} pb={4} borderBottomWidth="1px" borderColor={borderColor}>
+          <HStack spacing={3} pr={8} align="flex-start">
+            <Flex align="center" justify="center" w="40px" h="40px" flexShrink={0} borderRadius="xl" bg={iconBackground} color={iconColor}>
+              <Icon as={FiFolderPlus} boxSize={4.5} />
+            </Flex>
+            <Box minW={0}>
+              <Text color={headingColor} fontSize="md" fontWeight="700" lineHeight="short">
+                {title}
               </Text>
-
-              <Text
-                mt={1}
-                fontSize="xs"
-                fontWeight="400"
-                color={mutedTextColor}
-                lineHeight="tall"
-              >
-                Select a master category and create a folder
-                for organizing courses.
+              <Text mt={1} color={mutedTextColor} fontSize="xs" fontWeight="400" lineHeight="tall">
+                Set the folder name and description.
               </Text>
             </Box>
-          </ModalHeader>
+          </HStack>
+        </ModalHeader>
 
-          <ModalCloseButton
-            top={4}
-            right={4}
-            size="sm"
-            borderRadius="md"
-            isDisabled={isSubmitting}
-          />
+        <ModalCloseButton top={4} right={4} size="sm" borderRadius="full" isDisabled={isSubmitting} />
 
-          <form onSubmit={handleSubmit}>
-            <ModalBody
-              px={{ base: 5, sm: 6 }}
-              py={5}
-            >
-              <VStack
-                spacing={4}
-                align="stretch"
-              >
-                <FormControl isRequired>
-                  <FormLabel
-                    mb={1.5}
-                    fontSize="sm"
-                    fontWeight="600"
-                  >
-                    Master Category
-                  </FormLabel>
-
-                  <Input
-                    ref={initialFocusRef}
-                    value={masterSearch}
-                    onChange={(event) =>
-                      setMasterSearch(event.target.value)
-                    }
-                    placeholder="Search master categories"
-                    isDisabled={
-                      isSubmitting || isLoadingCategories
-                    }
-                    bg={fieldBackground}
-                    borderRadius="10px"
-                    fontSize="sm"
-                    h="40px"
-                    mb={2}
-                    _focusVisible={{
-                      boxShadow: "outline",
-                    }}
-                  />
-
-                  <Select
-                    value={selectedMasterId}
-                    onChange={handleMasterSelectChange}
-                    placeholder={
-                      isLoadingCategories
-                        ? "Loading categories..."
-                        : "Select a category"
-                    }
-                    isDisabled={
-                      isSubmitting || isLoadingCategories
-                    }
-                    bg={fieldBackground}
-                    borderRadius="10px"
-                    fontSize="sm"
-                    h="42px"
-                    _focusVisible={{
-                      boxShadow: "outline",
-                    }}
-                  >
-                    {filteredMasterCategories.map((category) => (
-                      <option
-                        key={category._id || category.name}
-                        value={category._id || category.name}
-                      >
-                        {category.name}
-                      </option>
-                    ))}
-                    {!isLoadingCategories &&
-                      masterCategories.length > 0 &&
-                      filteredMasterCategories.length === 0 && (
-                        <option disabled value="">
-                          No matching categories
-                        </option>
-                      )}
-                  </Select>
-
-                  <FormHelperText
-                    mt={1.5}
-                    fontSize="xs"
-                    color={mutedTextColor}
-                    lineHeight="normal"
-                  >
-                    Categories are managed through the
-                    Superadmin Master List.
-                  </FormHelperText>
-                </FormControl>
-
-                <FormControl isRequired>
-                  <HStack
-                    mb={1.5}
-                    justify="space-between"
-                    align="center"
-                  >
-                    <FormLabel
-                      m={0}
-                      fontSize="sm"
-                      fontWeight="600"
-                    >
-                      Folder Display Name
-                    </FormLabel>
-
-                    <Text
-                      fontSize="10px"
-                      color={mutedTextColor}
-                      fontWeight="500"
-                    >
-                      {customName.length}/{MAX_NAME_LENGTH}
-                    </Text>
-                  </HStack>
-
-                  <Input
-                    value={customName}
-                    onChange={(event) =>
-                      setCustomName(event.target.value)
-                    }
-                    placeholder="Folder name"
-                    maxLength={MAX_NAME_LENGTH}
-                    isDisabled={isSubmitting}
-                    bg={fieldBackground}
-                    borderRadius="10px"
-                    fontSize="sm"
-                    h="42px"
-                    _focusVisible={{
-                      boxShadow: "outline",
-                    }}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <HStack
-                    mb={1.5}
-                    justify="space-between"
-                    align="center"
-                  >
-                    <FormLabel
-                      m={0}
-                      fontSize="sm"
-                      fontWeight="600"
-                    >
-                      Description
-                      <Text
-                        as="span"
-                        ml={1}
-                        fontSize="xs"
-                        fontWeight="400"
-                        color={mutedTextColor}
-                      >
-                        Optional
-                      </Text>
-                    </FormLabel>
-
-                    <Text
-                      fontSize="10px"
-                      color={mutedTextColor}
-                      fontWeight="500"
-                    >
-                      {categoryDescription.length}/
-                      {MAX_DESCRIPTION_LENGTH}
-                    </Text>
-                  </HStack>
-
-                  <Textarea
-                    value={categoryDescription}
-                    onChange={(event) =>
-                      setCategoryDescription(
-                        event.target.value
-                      )
-                    }
-                    placeholder="Briefly describe the courses in this folder"
-                    maxLength={MAX_DESCRIPTION_LENGTH}
-                    isDisabled={isSubmitting}
-                    bg={fieldBackground}
-                    borderRadius="10px"
-                    fontSize="sm"
-                    minH="76px"
-                    maxH="100px"
-                    py={2.5}
-                    resize="none"
-                    _focusVisible={{
-                      boxShadow: "outline",
-                    }}
-                  />
-                </FormControl>
-              </VStack>
-            </ModalBody>
-
-            <ModalFooter
-              px={{ base: 5, sm: 6 }}
-              py={3.5}
-              bg={footerBackground}
-              borderTopWidth="1px"
-              borderColor={borderColor}
-            >
-              <HStack
-                w="full"
-                justify="flex-end"
-                spacing={2.5}
-              >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClose}
+        <form onSubmit={handleSubmit}>
+          <ModalBody px={{ base: 5, sm: 6 }} py={{ base: 5, sm: 6 }}>
+            <VStack spacing={5} align="stretch">
+              <FormControl isRequired>
+                <FormLabel mb={1.5} color={headingColor} fontSize="sm" fontWeight="600">
+                  Folder name
+                </FormLabel>
+                <Input
+                  value={folderName}
+                  onChange={(event) => setFolderName(event.target.value)}
+                  placeholder="e.g., Onboarding"
                   isDisabled={isSubmitting}
-                  borderRadius="9px"
-                  px={4}
-                >
-                  Cancel
-                </Button>
+                  bg={fieldBackground}
+                  borderColor={borderColor}
+                  borderRadius="10px"
+                  fontSize="sm"
+                />
+              </FormControl>
 
-                <Button
-                  type="submit"
-                  colorScheme="blue"
-                  size="sm"
-                  isLoading={isSubmitting}
-                  loadingText="Creating"
-                  borderRadius="9px"
-                  px={5}
-                >
-                  Create Folder
-                </Button>
-              </HStack>
-            </ModalFooter>
-          </form>
-        </ModalContent>
-      </Modal>
-    );
-  }
-);
+              <FormControl>
+                <HStack mb={1.5} justify="space-between" align="center">
+                  <FormLabel m={0} color={headingColor} fontSize="sm" fontWeight="600">
+                    Description
+                    <Text as="span" ml={1} color={mutedTextColor} fontSize="xs" fontWeight="400">
+                      Optional
+                    </Text>
+                  </FormLabel>
+                  <Text color={mutedTextColor} fontSize="10px" fontWeight="500">
+                    {description.length}/{MAX_DESCRIPTION_LENGTH}
+                  </Text>
+                </HStack>
+                <Textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Add a short description for this folder"
+                  maxLength={MAX_DESCRIPTION_LENGTH}
+                  isDisabled={isSubmitting}
+                  bg={fieldBackground}
+                  borderColor={borderColor}
+                  borderRadius="10px"
+                  fontSize="sm"
+                  minH="90px"
+                  maxH="130px"
+                  py={3}
+                  resize="vertical"
+                />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter px={{ base: 5, sm: 6 }} py={4} bg={footerBackground} borderTopWidth="1px" borderColor={borderColor}>
+            <Flex w="full" direction={{ base: "column-reverse", sm: "row" }} justify="flex-end" gap={2.5}>
+              <Button type="button" variant="ghost" size="sm" w={{ base: "full", sm: "auto" }} h="40px" px={5} borderRadius="10px" onClick={handleClose} isDisabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" w={{ base: "full", sm: "auto" }} h="40px" px={6} colorScheme="blue" borderRadius="10px" fontWeight="700" isLoading={isSubmitting} loadingText="Saving" isDisabled={!folderName.trim()}>
+                {submitLabel}
+              </Button>
+            </Flex>
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
+  );
+};
 
 CreateCategoryModal.displayName = "CreateCategoryModal";
 

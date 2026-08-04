@@ -25,6 +25,8 @@ import {
   FiTarget,
 } from 'react-icons/fi';
 import type { ReactNode } from 'react';
+import { toJS } from 'mobx';
+import { LEVELS } from '@/app/dashboard/course/courseForm';
 
 const MotionBox = motion(Box);
 
@@ -73,8 +75,8 @@ export const CourseCard = ({
   course,
   enrolled,
   onClick,
-  primaryBadgeLabel = 'Public',
-  secondaryBadgeLabel = course?.courseType === 'scorm' ? 'SCORM' : 'Standard',
+  // primaryBadgeLabel = 'Public',
+  // secondaryBadgeLabel = course?.courseType === 'scorm' ? 'SCORM' : 'Standard',
   topRightBadge,
 }: CourseCardProps) => {
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -86,6 +88,11 @@ export const CourseCard = ({
   const tagColor = useColorModeValue('blue.700', 'blue.200');
 
   const theme = getCardTheme(course?.title);
+
+  const level = course?.taxonomy?.level || 'Beginner';
+  const category = (course?.taxonomy?.categories[0] || [])[0] || '';
+
+  console.log('course',toJS(course))
 
   return (
     <MotionBox
@@ -162,9 +169,9 @@ export const CourseCard = ({
             textTransform="uppercase"
             boxShadow="0 1px 3px rgba(0,0,0,0.08)"
           >
-            {primaryBadgeLabel}
+            {level}
           </Badge>
-          {secondaryBadgeLabel ? (
+          {/* {category ? (
             <Badge
               bg="rgba(255,255,255,0.95)"
               color="gray.700"
@@ -176,9 +183,9 @@ export const CourseCard = ({
               textTransform="uppercase"
               boxShadow="0 1px 3px rgba(0,0,0,0.08)"
             >
-              {secondaryBadgeLabel}
+              {category}
             </Badge>
-          ) : null}
+          ) : null} */}
         </HStack>
 
         {topRightBadge ? (

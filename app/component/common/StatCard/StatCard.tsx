@@ -183,7 +183,7 @@ export default function StatCard({
         >
           <Icon
             as={icon}
-            boxSize={{ base: 4.5, md: 5 }}
+            boxSize={{ base: 4, md: 5 }}
           />
         </Flex>
       </Flex>

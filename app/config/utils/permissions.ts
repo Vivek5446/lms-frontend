@@ -15,6 +15,7 @@ export const PERMISSION_KEYS = {
   EDIT_COURSES: "edit_courses",
   DELETE_COURSES: "delete_courses",
   ASSIGN_COURSES: "assign_courses",
+  MANAGE_COURSE_CATEGORIES: "manage_course_categories",
   VIEW_BATCHES: "view_batches",
   MANAGE_BATCHES: "manage_batches",
   VIEW_LEARNER_PROGRESS_RESULTS: "view_learner_progress_results",
@@ -31,6 +32,7 @@ const LEGACY_PERMISSION_ALIASES: Record<string, string[]> = {
     PERMISSION_KEYS.CREATE_COURSES,
     PERMISSION_KEYS.EDIT_COURSES,
     PERMISSION_KEYS.DELETE_COURSES,
+    PERMISSION_KEYS.MANAGE_COURSE_CATEGORIES,
     PERMISSION_KEYS.VIEW_ASSIGNED_COURSES,
   ],
 };

@@ -54,12 +54,14 @@ import { observer } from "mobx-react-lite";
 import stores from "@/app/store/stores";
 import { CourseCategoryItem } from "@/app/store/courseStore/courseStore";
 import { useRouter } from "next/navigation";
+import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
 
 const MotionBox = motion(Box);
 
 const CourseCategoryPage = observer(() => {
   const toast = useToast();
   const router = useRouter();
+  const canManageCategories = hasPermission(stores.auth.user, PERMISSION_KEYS.MANAGE_COURSE_CATEGORIES);
 
   const sectionBg = useColorModeValue("white", "gray.800");
   const headerBg = useColorModeValue("gray.50", "gray.700");
@@ -110,6 +112,20 @@ const CourseCategoryPage = observer(() => {
 
   const totalMasterCount = categories.length;
   const totalCoursesMapped = categories.reduce((sum, c) => sum + (c.courseCount || 0), 0);
+
+  if (!canManageCategories) {
+    return (
+      <Box p={{ base: 4, md: 8 }}>
+        <Button leftIcon={<ArrowLeft size={16} />} variant="ghost" mb={4} onClick={() => router.push("/dashboard/course")}>
+          Back to courses
+        </Button>
+        <Box bg={sectionBg} border="1px solid" borderColor={borderColor} borderRadius="xl" p={6}>
+          <Text fontWeight="700" fontSize="lg">Access denied</Text>
+          <Text mt={2} color={textSecondary}>You do not have permission to manage course categories.</Text>
+        </Box>
+      </Box>
+    );
+  }
 
   const handleOpenCreate = () => {
     setFormName("");

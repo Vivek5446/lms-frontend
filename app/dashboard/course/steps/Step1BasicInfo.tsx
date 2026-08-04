@@ -7,13 +7,13 @@ import stores from "@/app/store/stores";
 import RichTextEditor from "../richTextEditor/RichTextEditor";
 import { StepWrapper } from "./component/StepWrapper";
 import {
-  CATEGORIES,
   CourseBasicInfo,
   LANGUAGES,
   LEVELS,
   createCourseSlug,
   createStoredFile,
   extractPlainTextFromHtml,
+  normalizeTaxonomyValue,
 } from "../courseForm";
 
 interface Step1Props {
@@ -71,6 +71,12 @@ export default function Step1BasicInfo({
 
     onProgressChange?.(Math.round((filled / 9) * 100));
   }, [value, onProgressChange]);
+
+  React.useEffect(() => {
+    if (!stores.courseStore.masterCategories?.length) {
+      stores.courseStore.fetchMasterCategories().catch(() => undefined);
+    }
+  }, []);
 
   const onDrop = useCallback(
     (files: File[]) => {
@@ -489,7 +495,8 @@ export default function Step1BasicInfo({
             <label style={labelStyle}>Languages</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {LANGUAGES.map((language) => {
-                const active = value.languages.includes(language);
+                const languageValue = normalizeTaxonomyValue(language);
+                const active = value.languages.map(normalizeTaxonomyValue).includes(languageValue);
 
                 return (
                   <button
@@ -497,8 +504,8 @@ export default function Step1BasicInfo({
                     onClick={() =>
                       updateBasicInfo({
                         languages: active
-                          ? value.languages.filter((item) => item !== language)
-                          : [...value.languages, language],
+                          ? value.languages.filter((item) => normalizeTaxonomyValue(item) !== languageValue)
+                          : [...value.languages, languageValue],
                       })
                     }
                     style={{
@@ -521,36 +528,80 @@ export default function Step1BasicInfo({
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Category</label>
+            <label style={labelStyle}>Categories</label>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {(stores.courseStore.masterCategories || []).map((cat) => {
+                  const categoryValue = normalizeTaxonomyValue(cat.name);
+                  const active = value.categories.map(normalizeTaxonomyValue).includes(categoryValue);
+
+                  return (
+                    <button
+                      key={cat._id || cat.name}
+                      type="button"
+                      onClick={() =>
+                        updateBasicInfo({
+                          categories: active
+                            ? value.categories.filter((item) => normalizeTaxonomyValue(item) !== categoryValue)
+                            : [...value.categories, categoryValue],
+                        })
+                      }
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        border: active ? "1.5px solid #2563EB" : "1.5px solid #BFDBFE",
+                        background: active ? "#2563EB" : "#EFF6FF",
+                        color: active ? "#FFFFFF" : "#1D4ED8",
+                        fontFamily: "inherit",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {cat.name}
+                    </button>
+                  );
+                })}
+                {stores.courseStore.masterCategories.length === 0 && (
+                  <span style={{ fontSize: 13, color: "#9CA3AF" }}>
+                    No master categories configured yet.
+                  </span>
+                )}
+              </div>
               <select
-                value={value.categories[0] || ""}
+                multiple
+                value={value.categories.map(normalizeTaxonomyValue)}
                 onChange={(e) => {
-                  const selected = e.target.value;
+                  const selected = Array.from(e.target.selectedOptions).map((option) =>
+                    normalizeTaxonomyValue(option.value)
+                  );
                   updateBasicInfo({
-                    categories: selected ? [selected] : [],
+                    categories: selected,
                   });
                 }}
                 style={{
                   width: "100%",
+                  minHeight: 112,
                   padding: "10px 14px",
                   borderRadius: 10,
                   border: "1.5px solid #E5E7EB",
                   fontSize: 14,
                   background: "#FFFFFF",
                   fontFamily: "inherit",
+                  display: "none",
                 }}
               >
-                <option value="">-- Select Category --</option>
+                <option value="" disabled>-- Select Categories --</option>
                 <optgroup label="Master Categories List">
-                  {((stores.courseStore.masterCategories?.length ? stores.courseStore.masterCategories : stores.courseStore.categories) || [])
+                  {(stores.courseStore.masterCategories || [])
                     .map((cat) => (
-                      <option key={cat._id || cat.name} value={cat.name}>
+                      <option key={cat._id || cat.name} value={normalizeTaxonomyValue(cat.name)}>
                         📁 {cat.name}
                       </option>
                     ))}
                 </optgroup>
-                {(stores.courseStore.categories || []).some((c) => !c.isMaster && c.company) && (
+                {false && (
                   <optgroup label="My Company Folders">
                     {(stores.courseStore.categories || [])
                       .filter((c) => !c.isMaster && c.company)
@@ -562,7 +613,7 @@ export default function Step1BasicInfo({
                   </optgroup>
                 )}
                 <optgroup label="General Topics">
-                  {CATEGORIES.map((cat) => (
+                  {([] as string[]).map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
                     </option>
@@ -592,7 +643,7 @@ export default function Step1BasicInfo({
                     </span>
                   ))
                 ) : (
-                  <span style={{ fontSize: 13, color: "#9CA3AF" }}>General</span>
+                  <span style={{ fontSize: 13, color: "#9CA3AF" }}>No category selected</span>
                 )}
               </div>
             </div>
@@ -618,12 +669,13 @@ export default function Step1BasicInfo({
             }}
           >
             {LEVELS.map((level) => {
-              const active = value.level === level;
+              const levelValue = normalizeTaxonomyValue(level);
+              const active = normalizeTaxonomyValue(value.level) === levelValue;
 
               return (
                 <button
                   key={level}
-                  onClick={() => updateBasicInfo({ level })}
+                  onClick={() => updateBasicInfo({ level: levelValue })}
                   style={{
                     padding: "12px",
                     borderRadius: 12,

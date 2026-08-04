@@ -138,6 +138,38 @@ export function extractPlainTextFromHtml(html: string) {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+export function normalizeTaxonomyValue(value: unknown) {
+  return String(value || "").trim().toLowerCase();
+}
+
+export function normalizeTaxonomyList(values: unknown) {
+  const input = Array.isArray(values) ? values : values ? [values] : [];
+  const seen = new Set<string>();
+
+  return input
+    .map((value) => normalizeTaxonomyValue(value))
+    .filter((value) => {
+      if (!value || seen.has(value)) {
+        return false;
+      }
+      seen.add(value);
+      return true;
+    });
+}
+
+export function formatTaxonomyLabel(value: unknown) {
+  const label = String(value || "").trim();
+  if (!label) {
+    return "";
+  }
+
+  if (label.toUpperCase() === label && label.length <= 6) {
+    return label;
+  }
+
+  return label.replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
 export function inferModuleUploadKind(file: File): StoredFileKind {
   const extension = getFileExtension(file.name);
   const normalizedName = file.name.toLowerCase();
@@ -285,9 +317,9 @@ export const initialCourseFormState: CourseFormState = {
     instructorName: "",
     instructorDesignation: "",
     thumbnail: null,
-    languages: ["English"],
+    languages: ["english"],
     categories: [],
-    level: "Beginner",
+    level: "beginner",
     visibilityType: "private",
   },
   structure: {
@@ -543,10 +575,10 @@ export function courseToFormState(course: any): CourseFormState {
           )
         : null,
       languages: Array.isArray(course?.taxonomy?.languages) && course.taxonomy.languages.length
-        ? course.taxonomy.languages
-        : ["English"],
-      categories: Array.isArray(course?.taxonomy?.categories) ? course.taxonomy.categories : [],
-      level: String(course?.taxonomy?.level || "Beginner"),
+        ? normalizeTaxonomyList(course.taxonomy.languages)
+        : ["english"],
+      categories: normalizeTaxonomyList(course?.taxonomy?.categories),
+      level: normalizeTaxonomyValue(course?.taxonomy?.level) || "beginner",
       visibilityType: course?.visibility?.type === "public" ? "public" : "private",
     },
     structure: {
@@ -617,9 +649,9 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
         designation: courseForm.basicInfo.instructorDesignation.trim(),
       },
       taxonomy: {
-        languages: courseForm.basicInfo.languages,
-        categories: courseForm.basicInfo.categories,
-        level: courseForm.basicInfo.level,
+        languages: normalizeTaxonomyList(courseForm.basicInfo.languages),
+        categories: normalizeTaxonomyList(courseForm.basicInfo.categories),
+        level: normalizeTaxonomyValue(courseForm.basicInfo.level) || "beginner",
       },
       visibility: {
         type: courseForm.basicInfo.visibilityType,
