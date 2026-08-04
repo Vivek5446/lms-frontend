@@ -1,19 +1,19 @@
 "use client";
 
 import {
-    Award,
-    BookOpen,
-    CalendarDays,
-    CheckCircle2,
-    Clock3,
-    Download,
-    FileText,
-    GraduationCap,
-    Layers3,
-    ShieldCheck,
-    Sparkles,
-    UserRound,
-    UsersRound,
+  Award,
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Download,
+  FileText,
+  GraduationCap,
+  Layers3,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+  UsersRound,
 } from "lucide-react";
 
 export interface CourseOverviewInstructor {
@@ -293,7 +293,82 @@ export default function CourseOverviewSection({
 
       <div className="mt-3 grid min-w-0 grid-cols-1 gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)] lg:gap-4">
         <div className="min-w-0 space-y-3 lg:space-y-4">
+         
+           <section className="rounded-[1.35rem] border border-border bg-background/75 p-4 sm:rounded-[1.6rem] sm:p-5">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-9 w-9 place-items-center rounded-2xl bg-primary/10 text-primary">
+                <BookOpen className="h-4 w-4" />
+              </span>
+
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Course information
+                </h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Key details at a glance
+                </p>
+              </div>
+            </div>
+
+            <dl className="mt-4 divide-y divide-border/65">
+              <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0">
+                <dt className="text-xs text-muted-foreground">
+                  Level
+                </dt>
+                <dd className="text-right text-xs font-medium text-foreground">
+                  {levelLabel}
+                </dd>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 py-2.5">
+                <dt className="text-xs text-muted-foreground">
+                  Language
+                </dt>
+                <dd className="text-right text-xs font-medium text-foreground">
+                  {languageLabel}
+                </dd>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 py-2.5">
+                <dt className="text-xs text-muted-foreground">
+                  Learning mode
+                </dt>
+                <dd className="text-right text-xs font-medium text-foreground">
+                  Self-paced
+                </dd>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 py-2.5 last:pb-0">
+                <dt className="text-xs text-muted-foreground">
+                  Learners
+                </dt>
+                <dd className="inline-flex items-center gap-1.5 text-right text-xs font-medium text-foreground">
+                  <UsersRound className="h-3.5 w-3.5 text-muted-foreground" />
+                  {Number(
+                    course?.metrics?.totalEnrollments || 0
+                  ).toLocaleString()}
+                </dd>
+              </div>
+            </dl>
+
+            {categories.length ? (
+              <div className="mt-4 flex flex-wrap gap-1.5 border-t border-border/65 pt-4">
+                {categories.slice(0, 4).map(
+                  (category: string, index: number) => (
+                    <span
+                      key={`${category}-${index}`}
+                      className="max-w-full truncate rounded-full bg-muted px-2.5 py-1 text-[10px] font-medium text-muted-foreground"
+                    >
+                      {category}
+                    </span>
+                  )
+                )}
+              </div>
+            ) : null}
+          </section>
+         
           {/* Learning outcomes */}
+         
           <section className="overflow-hidden rounded-[1.35rem] border border-border bg-background/75 sm:rounded-[1.6rem]">
             <header className="flex items-start gap-3 border-b border-border/75 bg-gradient-to-r from-primary/[0.07] to-transparent px-3.5 py-3.5 sm:px-5 sm:py-4">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
@@ -349,6 +424,8 @@ export default function CourseOverviewSection({
               )}
             </div>
           </section>
+
+           
 
           {/* About the instructor */}
           <section className="rounded-[1.35rem] border border-border bg-background/75 p-3.5 sm:rounded-[1.6rem] sm:p-5">
@@ -437,7 +514,7 @@ export default function CourseOverviewSection({
           ) : null}
 
           {/* Course information */}
-          <section className="rounded-[1.35rem] border border-border bg-background/75 p-4 sm:rounded-[1.6rem] sm:p-5">
+          {/* <section className="rounded-[1.35rem] border border-border bg-background/75 p-4 sm:rounded-[1.6rem] sm:p-5">
             <div className="flex items-center gap-2.5">
               <span className="grid h-9 w-9 place-items-center rounded-2xl bg-primary/10 text-primary">
                 <BookOpen className="h-4 w-4" />
@@ -508,7 +585,7 @@ export default function CourseOverviewSection({
                 )}
               </div>
             ) : null}
-          </section>
+          </section> */}
 
           {/* Included with course */}
           <section className="rounded-[1.35rem] border border-border bg-background/75 p-4 sm:rounded-[1.6rem] sm:p-5">
