@@ -158,6 +158,7 @@ function CoursePage() {
     if (canViewCourses) {
       courseStore.fetchCourses().catch(() => undefined);
       courseStore.fetchCategories().catch(() => undefined);
+      courseStore.fetchMasterCategories().catch(() => undefined);
     }
   }, [canViewCourses, isLearner, router]);
 

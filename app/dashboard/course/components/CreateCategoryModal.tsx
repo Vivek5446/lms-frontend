@@ -25,6 +25,7 @@ import { observer } from "mobx-react-lite";
 import React, {
   FormEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -48,7 +49,7 @@ const MAX_DESCRIPTION_LENGTH = 180;
 const CreateCategoryModal: React.FC<CreateCategoryModalProps> = observer(
   ({ isOpen, onClose, onCreate, onCreated }) => {
     const toast = useToast();
-    const initialFocusRef = useRef<HTMLSelectElement>(null);
+    const initialFocusRef = useRef<HTMLInputElement>(null);
 
     const borderColor = useColorModeValue(
       "gray.200",
@@ -68,6 +69,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = observer(
     );
 
     const [selectedMasterId, setSelectedMasterId] = useState("");
+    const [masterSearch, setMasterSearch] = useState("");
     const [customName, setCustomName] = useState("");
     const [categoryDescription, setCategoryDescription] =
       useState("");
@@ -77,6 +79,18 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = observer(
 
     const masterCategories =
       stores.courseStore.masterCategories || [];
+    const filteredMasterCategories = useMemo(() => {
+      const query = masterSearch.trim().toLowerCase();
+      if (!query) return masterCategories;
+
+      return masterCategories.filter((category) => {
+        const nameMatch = category.name.toLowerCase().includes(query);
+        const descriptionMatch = (category.description || "")
+          .toLowerCase()
+          .includes(query);
+        return nameMatch || descriptionMatch;
+      });
+    }, [masterCategories, masterSearch]);
 
     useEffect(() => {
       if (!isOpen) return;
@@ -114,6 +128,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = observer(
 
     const resetForm = () => {
       setSelectedMasterId("");
+      setMasterSearch("");
       setCustomName("");
       setCategoryDescription("");
     };
@@ -305,8 +320,27 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = observer(
                     Master Category
                   </FormLabel>
 
-                  <Select
+                  <Input
                     ref={initialFocusRef}
+                    value={masterSearch}
+                    onChange={(event) =>
+                      setMasterSearch(event.target.value)
+                    }
+                    placeholder="Search master categories"
+                    isDisabled={
+                      isSubmitting || isLoadingCategories
+                    }
+                    bg={fieldBackground}
+                    borderRadius="10px"
+                    fontSize="sm"
+                    h="40px"
+                    mb={2}
+                    _focusVisible={{
+                      boxShadow: "outline",
+                    }}
+                  />
+
+                  <Select
                     value={selectedMasterId}
                     onChange={handleMasterSelectChange}
                     placeholder={
@@ -325,7 +359,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = observer(
                       boxShadow: "outline",
                     }}
                   >
-                    {masterCategories.map((category) => (
+                    {filteredMasterCategories.map((category) => (
                       <option
                         key={category._id || category.name}
                         value={category._id || category.name}
@@ -333,6 +367,13 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = observer(
                         {category.name}
                       </option>
                     ))}
+                    {!isLoadingCategories &&
+                      masterCategories.length > 0 &&
+                      filteredMasterCategories.length === 0 && (
+                        <option disabled value="">
+                          No matching categories
+                        </option>
+                      )}
                   </Select>
 
                   <FormHelperText

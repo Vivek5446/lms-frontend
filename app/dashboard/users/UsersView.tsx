@@ -2,13 +2,13 @@
 
 import {
   Alert,
+  AlertDescription,
   AlertDialog,
   AlertDialogBody,
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
-  AlertDescription,
   AlertIcon,
   AlertTitle,
   Box,
@@ -20,20 +20,20 @@ import {
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import ConfirmationModal from "../../component/common/ConfirmationModal/ConfirmationModal";
+import PermissionGate from "../../component/common/PermissionGate";
 import useDebounce from "../../component/config/component/customHooks/useDebounce";
 import { getApiErrorMessage } from "../../config/utils/apiError";
-import { readFileAsBase64 } from "../../config/utils/utils";
-import stores from "../../store/stores";
-import PermissionGate from "../../component/common/PermissionGate";
-import ConfirmationModal from "../../component/common/ConfirmationModal/ConfirmationModal";
 import { PERMISSION_KEYS, hasPermission } from "../../config/utils/permissions";
-import BulkUploadResultModal from "./components/BulkUploadResultModal";
+import { readFileAsBase64 } from "../../config/utils/utils";
+import { departmentStore } from "../../store/departmentStore/departmentStore";
+import stores from "../../store/stores";
 import BulkUploadModal from "./components/BulkUploadModal";
+import BulkUploadResultModal from "./components/BulkUploadResultModal";
 import UserDetailsModal from "./components/UserDetailsModal";
 import UserDrawer from "./components/UserDrawer";
 import UsersHeader from "./components/UsersHeader";
 import UsersTable from "./components/UsersTable";
-import { departmentStore } from "../../store/departmentStore/departmentStore";
 
 type UsersViewProps = {
   scopedCompanyId?: string;
@@ -327,19 +327,19 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
     [selectedBulkManagerLevels]
   );
 
-  const visibleManagerLevels = useMemo(() => {
-    const companyLevels = isSuperadmin
-      ? managedCompanies.map((company: any) => getCompanyManagerLevels(company))
-      : [currentCompanyManagerLevels];
-    const maxConfiguredLevel = Math.max(0, ...companyLevels, selectedUserManagerLevels, selectedBulkManagerLevels);
-    return Array.from({ length: maxConfiguredLevel }, (_, index) => index + 1);
-  }, [
-    currentCompanyManagerLevels,
-    isSuperadmin,
-    managedCompanies,
-    selectedBulkManagerLevels,
-    selectedUserManagerLevels,
-  ]);
+  // const visibleManagerLevels = useMemo(() => {
+  //   const companyLevels = isSuperadmin
+  //     ? managedCompanies.map((company: any) => getCompanyManagerLevels(company))
+  //     : [currentCompanyManagerLevels];
+  //   const maxConfiguredLevel = Math.max(0, ...companyLevels, selectedUserManagerLevels, selectedBulkManagerLevels);
+  //   return Array.from({ length: maxConfiguredLevel }, (_, index) => index + 1);
+  // }, [
+  //   currentCompanyManagerLevels,
+  //   isSuperadmin,
+  //   managedCompanies,
+  //   selectedBulkManagerLevels,
+  //   selectedUserManagerLevels,
+  // ]);
 
   const roleOptions = useMemo(() => {
     const baseRoles = [

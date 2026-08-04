@@ -91,7 +91,7 @@ const CourseCategoryPage = observer(() => {
   const loadCategories = async () => {
     setIsLoading(true);
     try {
-      await stores.courseStore.fetchCategories();
+      await stores.courseStore.fetchMasterCategories();
     } catch (err) {
       console.error("Failed to load categories", err);
     } finally {
@@ -99,7 +99,7 @@ const CourseCategoryPage = observer(() => {
     }
   };
 
-  const categories = stores.courseStore.categories || [];
+  const categories = stores.courseStore.masterCategories || [];
 
   const filteredCategories = categories.filter((cat) => {
     return (

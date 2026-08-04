@@ -262,75 +262,213 @@ const ScopedDashboard = observer(() => {
   const titleRest = titleWords.slice(1).join(" ");
 
   return (
-    <Box bg="transparent" p={{ base: 3, md: 0 }}>
-      <Stack spacing={4}>
-        <Box bg={useColorModeValue("white", "gray.800")} borderWidth="1px" borderColor={heroBorder} rounded={{ base: "xl", md: "2xl" }} px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }} shadow="sm">
-          <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} gap={4}>
-            <HStack spacing={{ base: 3, md: 4 }} align="flex-start">
-              <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
-                <Icon as={isAdmin ? FiBriefcase : FiLayers} boxSize={{ base: 4, md: 5 }} color="white" />
-              </Box>
-              <Box>
-                <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2" textTransform="uppercase">
-                  <Box as="span" color={useColorModeValue("gray.900", "white")}>
-                    {titleFirstWord}{titleRest ? " " : ""}
-                  </Box>
-                  {titleRest && (
-                    <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
-                      {titleRest}
-                    </Box>
-                  )}
-                </Heading>
-                <Text mt={1} fontSize={{ base: "2xs", md: "xs" }} fontWeight="700" color={useColorModeValue("gray.500", "gray.400")} letterSpacing="0.1em" textTransform="uppercase" noOfLines={1}>
-                  {isAdmin
-                    ? "Company learning health, people activity, and course performance."
-                    : `Learning progress and engagement inside ${scope.companyName || "your company"}.`}
-                </Text>
-              </Box>
-            </HStack>
-            <Badge bg={useColorModeValue("blue.50", "rgba(98,105,255,0.15)")} color="#6269FF" borderRadius="full" px={4} py={2} fontSize="xs" fontWeight="800">
-              <Flex align="center" gap={1.5}>
-                <Icon as={FiTarget} boxSize={3.5} />
-                {isAdmin ? "COMPANY SCOPE" : "DEPARTMENT SCOPE"}
-              </Flex>
-            </Badge>
+<Box
+  bg="transparent"
+  px={{ base: 3, md: 0 }}
+  py={{ base: 2, md: 0 }}
+>
+  <Stack spacing={{ base: 4, md: 5 }}>
+    <Box
+      position="relative"
+      overflow="hidden"
+      bg={useColorModeValue("white", "gray.800")}
+      borderWidth="1px"
+      borderColor={heroBorder}
+      borderRadius={{ base: "2xl", md: "24px" }}
+      px={{ base: 4, md: 6 }}
+      py={{ base: 4, md: 5 }}
+      boxShadow={useColorModeValue(
+        "0 6px 24px rgba(15, 23, 42, 0.06)",
+        "0 6px 24px rgba(0, 0, 0, 0.22)"
+      )}
+      _before={{
+        content: '""',
+        position: "absolute",
+        top: "-70px",
+        right: "-50px",
+        w: "180px",
+        h: "180px",
+        borderRadius: "full",
+        bgGradient: "linear(to-br, purple.100, blue.100)",
+        opacity: useColorModeValue(0.5, 0.06),
+        pointerEvents: "none",
+      }}
+    >
+      <Flex
+        position="relative"
+        zIndex={1}
+        direction={{ base: "column", md: "row" }}
+        justify="space-between"
+        align={{ base: "stretch", md: "center" }}
+        gap={{ base: 4, md: 5 }}
+      >
+        <HStack
+          spacing={{ base: 3, md: 4 }}
+          align="center"
+          minW={0}
+        >
+          <Flex
+            w={{ base: "42px", md: "48px" }}
+            h={{ base: "42px", md: "48px" }}
+            flexShrink={0}
+            align="center"
+            justify="center"
+            bgGradient="linear(to-br, #6269FF, #8A2BE2)"
+            borderRadius={{ base: "xl", md: "2xl" }}
+            boxShadow="0 8px 20px rgba(98, 105, 255, 0.28)"
+          >
+            <Icon
+              as={isAdmin ? FiBriefcase : FiLayers}
+              boxSize={{ base: 4.5, md: 5 }}
+              color="white"
+            />
           </Flex>
-        </Box>
 
-        <Flex justify="flex-end" w={'100%'}>
+          <Box minW={0}>
+            <Heading
+              fontSize={{ base: "lg", md: "2xl" }}
+              fontWeight="800"
+              letterSpacing="-0.03em"
+              lineHeight="1.15"
+            >
+              <Box
+                as="span"
+                color={useColorModeValue("gray.900", "white")}
+              >
+                {titleFirstWord}
+                {titleRest ? " " : ""}
+              </Box>
+
+              {titleRest && (
+                <Box
+                  as="span"
+                  bgGradient={useColorModeValue(
+                    "linear(to-r, #6269FF, #8A2BE2)",
+                    "linear(to-r, purple.300, blue.300)"
+                  )}
+                  bgClip="text"
+                >
+                  {titleRest}
+                </Box>
+              )}
+            </Heading>
+
+            <Text
+              mt={1}
+              maxW="650px"
+              fontSize={{ base: "xs", md: "sm" }}
+              fontWeight="500"
+              lineHeight="1.5"
+              color={useColorModeValue(
+                "gray.500",
+                "gray.400"
+              )}
+            >
+              {isAdmin
+                ? "Monitor learning activity, people engagement and course performance."
+                : `Track learning progress and engagement inside ${
+                    scope.companyName || "your company"
+                  }.`}
+            </Text>
+          </Box>
+        </HStack>
+
+        <Flex
+          align="center"
+          justify={{
+            base: "space-between",
+            md: "flex-end",
+          }}
+          gap={2.5}
+          w={{ base: "100%", md: "auto" }}
+          flexShrink={0}
+        >
+          <Badge
+            display="inline-flex"
+            alignItems="center"
+            px={3}
+            h="36px"
+            borderRadius="full"
+            bg={useColorModeValue(
+              "purple.50",
+              "rgba(98, 105, 255, 0.12)"
+            )}
+            color={useColorModeValue(
+              "purple.600",
+              "purple.300"
+            )}
+            borderWidth="1px"
+            borderColor={useColorModeValue(
+              "purple.100",
+              "whiteAlpha.100"
+            )}
+            fontSize="10px"
+            fontWeight="800"
+            letterSpacing="0.04em"
+          >
+            <HStack spacing={1.5}>
+              <Icon as={FiTarget} boxSize={3.5} />
+
+              <Text>
+                {isAdmin ? "Company" : "Department"}
+              </Text>
+            </HStack>
+          </Badge>
+
           <DashboardFilters
             role={role as "admin" | "departmenthead"}
             value={draftFilters}
             options={scoped.filterOptions}
             isLoading={scopedSummaryLoading}
             onChange={setDraftFilters}
-            onApply={() => setAppliedFilters(draftFilters)}
+            onApply={() =>
+              setAppliedFilters(draftFilters)
+            }
             onClear={() => {
               setDraftFilters(EMPTY_SCOPED_FILTERS);
               setAppliedFilters(EMPTY_SCOPED_FILTERS);
             }}
           />
         </Flex>
-
-        {scopedSummaryError ? (
-          <Alert status="warning" borderRadius="xl" py={2}>
-            <AlertIcon />
-            <Text fontSize="sm">{scopedSummaryError}. Showing the last available result.</Text>
-          </Alert>
-        ) : null}
-
-        <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={4}>
-          {statCards.map((card) => (
-            <StatCard key={card.label} {...card} />
-          ))}
-        </SimpleGrid>
-
-        <DashboardCharts
-          role={role as "admin" | "departmenthead"}
-          charts={scoped.charts}
-        />
-      </Stack>
+      </Flex>
     </Box>
+
+    {scopedSummaryError ? (
+      <Alert
+        status="warning"
+        variant="subtle"
+        borderRadius="xl"
+        py={2.5}
+        px={4}
+      >
+        <AlertIcon boxSize={4} />
+
+        <Text fontSize="sm" fontWeight="500">
+          {scopedSummaryError}. Showing the last available
+          result.
+        </Text>
+      </Alert>
+    ) : null}
+
+    <SimpleGrid
+      columns={{
+        base: 1,
+        sm: 2,
+        xl: 4,
+      }}
+      spacing={{ base: 3, md: 4 }}
+    >
+      {statCards.map((card) => (
+        <StatCard key={card.label} {...card} />
+      ))}
+    </SimpleGrid>
+
+    <DashboardCharts
+      role={role as "admin" | "departmenthead"}
+      charts={scoped.charts}
+    />
+  </Stack>
+</Box>
   );
 });
 
