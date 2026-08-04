@@ -3,6 +3,7 @@
 import GlassSearchInput from "@/app/component/common/GlassSearch/GlassSearchInput";
 import ResponsiveDrawer from "@/app/component/common/Drawer/ResponsiveDrawer";
 import CourseDetails from "@/app/dashboard/course/CourseDetails";
+import CourseDetailsSkeleton from "@/app/dashboard/course/components/CourseDetailsSkeleton";
 import CourseQuizPlayer from "@/app/dashboard/course/quiz/CourseQuizPlayer";
 import {
   CourseLaunchSection,
@@ -524,12 +525,7 @@ const MyCoursesBoard = observer(
         (!isCourseEnrolled && (courseStore.isPublicCoursesLoading || courseStore.isLoading));
 
       if (isLoadingCourse) {
-        return (
-          <HStack justify="center" minH="60vh">
-            <Spinner />
-            <Text color={subduedText}>Loading course...</Text>
-          </HStack>
-        );
+        return <CourseDetailsSkeleton />;
       }
 
       if (!activeCourse) {

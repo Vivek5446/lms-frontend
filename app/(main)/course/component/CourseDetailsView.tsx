@@ -2,6 +2,7 @@
 
 import { isLearnerRole } from "@/app/config/utils/roleAccess";
 import stores from "@/app/store/stores";
+import CourseDetailsSkeleton from "@/app/dashboard/course/components/CourseDetailsSkeleton";
 import {
   Badge,
   Box,
@@ -169,16 +170,7 @@ export const CourseDetailsView = observer(({ courseId, onBack }: CourseDetailsVi
     !isCourseLoaded && (stores.courseStore.isPublicCoursesLoading || stores.courseStore.isLoading);
 
   if (isLoading) {
-    return (
-      <Flex minH="60vh" align="center" justify="center">
-        <VStack spacing={4}>
-          <Spinner size="xl" color="brand.500" thickness="4px" />
-          <Text color={textSecondary} fontWeight="medium">
-            Loading course details...
-          </Text>
-        </VStack>
-      </Flex>
-    );
+    return <CourseDetailsSkeleton />;
   }
 
   if (!course) {

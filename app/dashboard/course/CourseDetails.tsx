@@ -13,6 +13,7 @@ import CourseQuizReviewSection from "@/app/(main)/course/component/CourseQuizRev
 import ResponsiveDrawer from "@/app/component/common/Drawer/ResponsiveDrawer";
 import BackButton from "@/app/dashboard/course/components/BackButton";
 import CourseCurriculumPanel from "@/app/dashboard/course/components/CourseCurriculumPanel";
+import CourseDetailsSkeleton from "./components/CourseDetailsSkeleton";
 import CourseAssetModal from "@/app/dashboard/course/scorm/CourseAssetModal";
 import CoursePlayer from "@/app/dashboard/course/scorm/CoursePlayer";
 import {
@@ -406,6 +407,10 @@ export default function CourseDetails({
     themeStore: { themeConfig },
     courseStore,
   } = stores;
+
+  if (!course || courseStore.isMyCourseDetailLoading) {
+    return <CourseDetailsSkeleton />;
+  }
 
   const isAssignedCourseView = Array.isArray(course?.sources);
   const canSelfEnroll = Boolean(
