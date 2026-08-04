@@ -207,7 +207,13 @@ const MyCoursesBoard = observer(
       );
 
       if (enrolled) {
-        return courseStore.currentCourse;
+        const currentCourseId = String(
+          courseStore.currentCourse?._id || courseStore.currentCourse?.courseId || ""
+        ).trim();
+        if (currentCourseId === String(requestedCourseId).trim()) {
+          return courseStore.currentCourse;
+        }
+        return null;
       }
 
       const pubCourse = (courseStore.publicCourses || []).find(
@@ -508,9 +514,14 @@ const MyCoursesBoard = observer(
     }, [activeCourse, isCourseEnrolled, playerSection, shouldPersistVideoProgress]);
 
     if (requestedCourseId) {
+      const isCurrentCourseLoaded =
+        Boolean(activeCourse) &&
+        String((activeCourse as any)?.courseId || activeCourse?._id || "").trim() === String(requestedCourseId).trim();
+
       const isLoadingCourse =
-        (isCourseEnrolled && courseStore.isMyCourseDetailLoading && !activeCourse) ||
-        (!isCourseEnrolled && (courseStore.isPublicCoursesLoading || courseStore.isLoading) && !activeCourse);
+        !isCurrentCourseLoaded ||
+        (isCourseEnrolled && courseStore.isMyCourseDetailLoading) ||
+        (!isCourseEnrolled && (courseStore.isPublicCoursesLoading || courseStore.isLoading));
 
       if (isLoadingCourse) {
         return (
@@ -540,6 +551,7 @@ const MyCoursesBoard = observer(
       return (
         <>
           <CourseDetails
+            key={String((activeCourse as any)?.courseId || activeCourse?._id || requestedCourseId)}
             course={activeCourse}
             onBack={() => {
               setPlayerSection(null);

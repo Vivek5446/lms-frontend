@@ -161,7 +161,14 @@ export const CourseDetailsView = observer(({ courseId, onBack }: CourseDetailsVi
   const textPrimary = useColorModeValue("gray.800", "whiteAlpha.900");
   const textSecondary = useColorModeValue("gray.600", "gray.400");
 
-  if (stores.courseStore.isPublicCoursesLoading && !course) {
+  const isCourseLoaded =
+    Boolean(course) &&
+    String((course as any)?.courseId || course?._id || "").trim() === String(courseId).trim();
+
+  const isLoading =
+    !isCourseLoaded && (stores.courseStore.isPublicCoursesLoading || stores.courseStore.isLoading);
+
+  if (isLoading) {
     return (
       <Flex minH="60vh" align="center" justify="center">
         <VStack spacing={4}>

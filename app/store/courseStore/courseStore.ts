@@ -935,8 +935,16 @@ class CourseStoreClass {
   };
 
   fetchCourse = async (id: string, options: { includeCurriculum?: boolean } = {}) => {
-    this.isLoading = true;
-    this.error = null;
+    runInAction(() => {
+      this.isLoading = true;
+      this.error = null;
+      const normalizedTargetId = String(id || "").trim();
+      const currentId = String(this.currentCourse?._id || this.currentCourse?.courseId || "").trim();
+      if (normalizedTargetId && currentId !== normalizedTargetId) {
+        this.currentCourse = null;
+        this.modules = [];
+      }
+    });
     try {
       const { data } = await axios.get(`/course/${id}`, {
         params: options.includeCurriculum ? { includeCurriculum: true } : undefined,
@@ -1279,8 +1287,15 @@ class CourseStoreClass {
   };
 
   fetchMyCourseDetail = async (courseId: string) => {
-    this.isMyCourseDetailLoading = true;
-    this.accessError = null;
+    runInAction(() => {
+      this.isMyCourseDetailLoading = true;
+      this.accessError = null;
+      const normalizedTargetId = String(courseId || "").trim();
+      const currentId = String(this.currentCourse?._id || this.currentCourse?.courseId || "").trim();
+      if (normalizedTargetId && currentId !== normalizedTargetId) {
+        this.currentCourse = null;
+      }
+    });
     try {
       const { data } = await axios.get(`/my-courses/${courseId}`);
       runInAction(() => {

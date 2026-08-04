@@ -356,6 +356,7 @@ function CoursePage() {
     return (
       <>
         <CourseDetails
+          key={String((activeCourse as any)?.courseId || activeCourse._id || "")}
           course={activeCourse}
           onBack={() => setView("gallery")}
           onLaunchSection={(launchSection) => setPlayerSection(launchSection)}

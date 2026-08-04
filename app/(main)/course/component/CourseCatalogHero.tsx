@@ -1,32 +1,32 @@
 // components/course/CourseCatalogHero.tsx
 
 import {
-    Badge,
-    Box,
-    Button,
-    Grid,
-    Heading,
-    HStack,
-    Icon,
-    Image,
-    SimpleGrid,
-    Stack,
-    Text,
-    useColorModeValue,
-    usePrefersReducedMotion,
-    VStack,
+  Badge,
+  Box,
+  Button,
+  Grid,
+  Heading,
+  HStack,
+  Icon,
+  Image,
+  SimpleGrid,
+  Stack,
+  Text,
+  useColorModeValue,
+  usePrefersReducedMotion,
+  VStack,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import React from "react";
 import {
-    FiArrowRight,
-    FiBookOpen,
-    FiCheckCircle,
-    FiCompass,
-    FiPlay,
-    FiStar,
-    FiTrendingUp,
-    FiZap,
+  FiArrowRight,
+  FiBookOpen,
+  FiCheckCircle,
+  FiCompass,
+  FiPlay,
+  FiStar,
+  FiTrendingUp,
+  FiZap,
 } from "react-icons/fi";
 
 interface CourseCatalogHeroProps {
@@ -103,7 +103,7 @@ const CourseCatalogHero: React.FC<CourseCatalogHeroProps> = ({
   const mutedText = useColorModeValue("gray.600", "gray.300");
   const subtleText = useColorModeValue("gray.500", "gray.400");
   const imageOverlay = useColorModeValue(
-    "linear(to-r, rgba(255,255,255,0.80) 0%, rgba(255,255,255,0.66) 42%, rgba(255,255,255,0.25) 72%, rgba(255,255,255,0.18) 100%)",
+    "linear(to-r, rgba(255,255,255,0.70) 0%, rgba(255,255,255,0.40) 42%, rgba(255,255,255,0.20) 72%, rgba(255,255,255,0.10) 100%)",
     "linear(to-r, rgba(17,24,39,0.89) 0%, rgba(17,24,39,0.76) 42%, rgba(17,24,39,0.58) 72%, rgba(17,24,39,0.28) 100%)",
   );
 
@@ -124,7 +124,8 @@ const CourseCatalogHero: React.FC<CourseCatalogHeroProps> = ({
     >
       {/* Background image */}
       <Image
-        src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1800&q=85"
+        // src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1800&q=85"
+        src="/images/course-hero.webp"
         alt=""
         aria-hidden="true"
         position="absolute"
@@ -236,7 +237,7 @@ const CourseCatalogHero: React.FC<CourseCatalogHeroProps> = ({
               color="brand.700"
               letterSpacing="0.01em"
             >
-              Explore the learning catalog
+              Explore the catalog
             </Text>
 
             <Badge
@@ -608,11 +609,11 @@ const CourseCatalogHero: React.FC<CourseCatalogHeroProps> = ({
             p={3}
             w="190px"
             borderRadius="2xl"
-            bg={cardBackground}
-            borderWidth="1px"
-            borderColor={borderColor}
+            bg={"blackAlpha.600"}
+            // borderWidth="1px"
+            // borderColor={"transparent"}
             boxShadow="0 20px 45px rgba(15, 23, 42, 0.16)"
-            backdropFilter="blur(18px)"
+            backdropFilter="blur(4px)"
             animation={
               prefersReducedMotion
                 ? undefined
@@ -632,10 +633,10 @@ const CourseCatalogHero: React.FC<CourseCatalogHeroProps> = ({
               <Icon as={FiTrendingUp} />
             </Box>
             <Box>
-              <Text fontSize="sm" fontWeight="900">
+              <Text fontSize="sm" fontWeight="700" color="white">
                 Keep growing
               </Text>
-              <Text fontSize="xs" color={subtleText}>
+              <Text fontSize="xs" color={'gray.100'}>
                 One lesson at a time
               </Text>
             </Box>
