@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useCallback } from "react";
-import { FileText, ImagePlus, Images, Plus, Sparkles, Trash2, UserRound, X } from "lucide-react";
-import { useDropzone } from "react-dropzone";
 import stores from "@/app/store/stores";
-import RichTextEditor from "../richTextEditor/RichTextEditor";
-import { StepWrapper } from "./component/StepWrapper";
+import { ChevronDown, FileText, ImagePlus, Images, Plus, Sparkles, Trash2, UserRound, X } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import {
   CourseBasicInfo,
   LANGUAGES,
@@ -15,6 +13,8 @@ import {
   extractPlainTextFromHtml,
   normalizeTaxonomyValue,
 } from "../courseForm";
+import RichTextEditor from "../richTextEditor/RichTextEditor";
+import { StepWrapper } from "./component/StepWrapper";
 
 interface Step1Props {
   value: CourseBasicInfo;
@@ -31,6 +31,10 @@ export default function Step1BasicInfo({
   companies = [],
   isCompanySelectionDisabled = false,
 }: Step1Props) {
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+
   const updateBasicInfo = (patch: Partial<CourseBasicInfo>) => {
     onChange({ ...value, ...patch });
   };
@@ -56,7 +60,17 @@ export default function Step1BasicInfo({
     });
   };
 
-  React.useEffect(() => {
+  const toggleCategory = (categoryName: string) => {
+    const categoryValue = normalizeTaxonomyValue(categoryName);
+    const active = value.categories.map(normalizeTaxonomyValue).includes(categoryValue);
+    updateBasicInfo({
+      categories: active
+        ? value.categories.filter((item) => normalizeTaxonomyValue(item) !== categoryValue)
+        : [...value.categories, categoryValue],
+    });
+  };
+
+  useEffect(() => {
     let filled = 0;
 
     if (value.courseName.trim()) filled++;
@@ -72,10 +86,21 @@ export default function Step1BasicInfo({
     onProgressChange?.(Math.round((filled / 9) * 100));
   }, [value, onProgressChange]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!stores.courseStore.masterCategories?.length) {
       stores.courseStore.fetchMasterCategories().catch(() => undefined);
     }
+  }, []);
+
+  // Handle clicking outside the category dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const onDrop = useCallback(
@@ -128,6 +153,11 @@ export default function Step1BasicInfo({
     boxSizing: "border-box",
     fontFamily: "inherit",
   };
+
+  const masterCategories = stores.courseStore.masterCategories || [];
+  const filteredCategories = masterCategories.filter((cat) =>
+    cat.name.toLowerCase().includes(categorySearch.toLowerCase())
+  );
 
   return (
     <StepWrapper
@@ -527,125 +557,142 @@ export default function Step1BasicInfo({
               })}
             </div>
           </div>
+
           <div>
             <label style={labelStyle}>Categories</label>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {(stores.courseStore.masterCategories || []).map((cat) => {
-                  const categoryValue = normalizeTaxonomyValue(cat.name);
-                  const active = value.categories.map(normalizeTaxonomyValue).includes(categoryValue);
-
-                  return (
-                    <button
-                      key={cat._id || cat.name}
-                      type="button"
-                      onClick={() =>
-                        updateBasicInfo({
-                          categories: active
-                            ? value.categories.filter((item) => normalizeTaxonomyValue(item) !== categoryValue)
-                            : [...value.categories, categoryValue],
-                        })
-                      }
-                      style={{
-                        padding: "8px 14px",
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        border: active ? "1.5px solid #2563EB" : "1.5px solid #BFDBFE",
-                        background: active ? "#2563EB" : "#EFF6FF",
-                        color: active ? "#FFFFFF" : "#1D4ED8",
-                        fontFamily: "inherit",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {cat.name}
-                    </button>
-                  );
-                })}
-                {stores.courseStore.masterCategories.length === 0 && (
-                  <span style={{ fontSize: 13, color: "#9CA3AF" }}>
-                    No master categories configured yet.
-                  </span>
-                )}
-              </div>
-              <select
-                multiple
-                value={value.categories.map(normalizeTaxonomyValue)}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map((option) =>
-                    normalizeTaxonomyValue(option.value)
-                  );
-                  updateBasicInfo({
-                    categories: selected,
-                  });
-                }}
+            <div style={{ position: "relative" }} ref={categoryDropdownRef}>
+              <div
                 style={{
-                  width: "100%",
-                  minHeight: 112,
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  border: "1.5px solid #E5E7EB",
-                  fontSize: 14,
-                  background: "#FFFFFF",
-                  fontFamily: "inherit",
-                  display: "none",
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
                 }}
               >
-                <option value="" disabled>-- Select Categories --</option>
-                <optgroup label="Master Categories List">
-                  {(stores.courseStore.masterCategories || [])
-                    .map((cat) => (
-                      <option key={cat._id || cat.name} value={normalizeTaxonomyValue(cat.name)}>
-                        📁 {cat.name}
-                      </option>
-                    ))}
-                </optgroup>
-                {false && (
-                  <optgroup label="My Company Folders">
-                    {(stores.courseStore.categories || [])
-                      .filter((c) => !c.isMaster && c.company)
-                      .map((cat) => (
-                        <option key={cat._id || cat.name} value={cat.name}>
-                          🏢 {cat.name}
-                        </option>
-                      ))}
-                  </optgroup>
-                )}
-                <optgroup label="General Topics">
-                  {([] as string[]).map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
-                {value.categories.length > 0 ? (
-                  value.categories.map((category) => (
-                    <span
-                      key={category}
-                      style={{
-                        padding: "6px 16px",
-                        borderRadius: 999,
-                        fontSize: 13,
-                        fontWeight: 700,
-                        background: "#EFF6FF",
-                        color: "#2563EB",
-                        border: "1px solid #BFDBFE",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      📁 {category}
-                    </span>
-                  ))
-                ) : (
-                  <span style={{ fontSize: 13, color: "#9CA3AF" }}>No category selected</span>
-                )}
+                <input
+                  type="text"
+                  placeholder="Search and select categories..."
+                  value={categorySearch}
+                  onChange={(e) => {
+                    setCategorySearch(e.target.value);
+                    setIsCategoryDropdownOpen(true);
+                  }}
+                  onFocus={() => setIsCategoryDropdownOpen(true)}
+                  style={{ ...inputStyle, paddingRight: 36 }}
+                />
+                <ChevronDown
+                  size={18}
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    color: "#9CA3AF",
+                    pointerEvents: "none",
+                  }}
+                />
               </div>
+
+              {isCategoryDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    marginTop: 4,
+                    background: "#FFFFFF",
+                    border: "1.5px solid #E5E7EB",
+                    borderRadius: 10,
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                    maxHeight: 220,
+                    overflowY: "auto",
+                    zIndex: 10,
+                  }}
+                >
+                  {filteredCategories.length > 0 ? (
+                    filteredCategories.map((cat) => {
+                      const categoryValue = normalizeTaxonomyValue(cat.name);
+                      const active = value.categories.map(normalizeTaxonomyValue).includes(categoryValue);
+
+                      return (
+                        <div
+                          key={cat._id || cat.name}
+                          onClick={() => toggleCategory(cat.name)}
+                          style={{
+                            padding: "10px 14px",
+                            cursor: "pointer",
+                            background: active ? "#EFF6FF" : "#FFFFFF",
+                            color: active ? "#1D4ED8" : "#374151",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            fontSize: 14,
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={(e) => !active && (e.currentTarget.style.background = "#F9FAFB")}
+                          onMouseLeave={(e) => !active && (e.currentTarget.style.background = "#FFFFFF")}
+                        >
+                          <span style={{ fontWeight: active ? 600 : 400 }}>📁 {cat.name}</span>
+                          {active && (
+                            <span style={{ color: "#2563EB", fontSize: 14, fontWeight: "bold" }}>
+                              ✓
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ padding: "12px 14px", color: "#9CA3AF", fontSize: 13, textAlign: "center" }}>
+                      {masterCategories.length === 0
+                        ? "No master categories configured yet."
+                        : "No matching categories found."}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+              {value.categories.length > 0 ? (
+                value.categories.map((category) => (
+                  <span
+                    key={category}
+                    style={{
+                      padding: "6px 10px 6px 14px",
+                      borderRadius: 999,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      background: "#EFF6FF",
+                      color: "#2563EB",
+                      border: "1px solid #BFDBFE",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    📁 {category}
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(category)}
+                      style={{
+                        background: "rgba(37, 99, 235, 0.1)",
+                        border: "none",
+                        color: "#1D4ED8",
+                        cursor: "pointer",
+                        padding: 4,
+                        display: "flex",
+                        alignItems: "center",
+                        borderRadius: "50%",
+                        transition: "background 0.2s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(37, 99, 235, 0.2)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(37, 99, 235, 0.1)")}
+                    >
+                      <X size={12} strokeWidth={3} />
+                    </button>
+                  </span>
+                ))
+              ) : (
+                <span style={{ fontSize: 13, color: "#9CA3AF" }}>No category selected</span>
+              )}
             </div>
           </div>
         </div>
