@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, FileText, FolderTree, Layers, Plus, Rocket, Trash2, Upload, Video } from "lucide-react";
-import { StepWrapper } from "./component/StepWrapper";
-import { FormField } from "./component/FormField";
-import CourseQuizBuilder from "../components/CourseQuizBuilder";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, ChevronUp, FileText, FolderTree, Layers, Plus, Rocket, Trash2, Upload, Video } from "lucide-react";
+import { useEffect, useState } from "react";
+import CourseQuizBuilder from "../components/CourseQuizBuilder";
 import {
   CourseModuleInput,
   CourseModuleSectionInput,
@@ -22,6 +20,8 @@ import {
   getFileKindLabel,
   inferModuleUploadKind,
 } from "../courseForm";
+import { FormField } from "./component/FormField";
+import { StepWrapper } from "./component/StepWrapper";
 
 interface Step2StructureProps {
   value: CourseStructureState;
