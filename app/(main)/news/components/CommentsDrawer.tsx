@@ -410,9 +410,9 @@ export const CommentsDrawer = observer(({
   // Backend now returns ONLY top-level comments — no client-side filtering needed
 
   return (
-    <Drawer isOpen={isOpen} placement="right" onClose={onClose} size={{ base: "full", md: "md" }}>
-      <DrawerOverlay />
-      <DrawerContent bg={bg}>
+    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose} size="full">
+      <DrawerOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+      <DrawerContent h="100vh" bg={bg} borderTopRadius="none">
         <DrawerCloseButton display="none" />
 
         {/* ── Premium Header ── */}

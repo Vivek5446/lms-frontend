@@ -90,9 +90,9 @@ export const ReactionsDrawer = observer(({
   };
 
   return (
-    <Drawer isOpen={isOpen} placement="right" onClose={onClose} size={{ base: "full", md: "md" }}>
-      <DrawerOverlay />
-      <DrawerContent bg={bg}>
+    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose} size="full">
+      <DrawerOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+      <DrawerContent h="100vh" bg={bg} borderTopRadius="none">
         <DrawerCloseButton display="none" />
 
         {/* ── Premium Header ── */}
@@ -233,7 +233,7 @@ export const ReactionsDrawer = observer(({
                       </Text>
                       {/* Placeholder until headline available */}
                       <Text fontSize="12px" color={useColorModeValue('gray.500', 'gray.400')} isTruncated>
-                         Employee
+                        Employee
                       </Text>
                     </Box>
                   </HStack>
