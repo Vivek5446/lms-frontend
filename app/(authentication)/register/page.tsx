@@ -39,7 +39,7 @@ const hasGoogleMapsKey = Boolean(GOOGLE_MAPS_API_KEY.trim());
 const GOOGLE_MAP_LIBRARIES: ("places")[] = ["places"];
 
 type AccountType = "learner" | "admin";
-type Step = "phone" | "otp" | "profile" | "company" | "location" | "review";
+type Step = "phone" | "otp" | "gender" | "profile" | "company" | "location" | "review";
 
 type SignupLocation = {
   address: string;
@@ -58,6 +58,7 @@ type SignupValues = {
   name: string;
   email: string;
   phone: string;
+  gender: string;
   companyName: string;
   companyEmail: string;
   location: SignupLocation;
@@ -156,6 +157,7 @@ const Register = observer(() => {
       name: "",
       email: "",
       phone: "",
+      gender: "",
       companyName: "",
       companyEmail: "",
       location: emptyLocation,
@@ -170,6 +172,7 @@ const Register = observer(() => {
         accountType: Yup.mixed<AccountType>().oneOf(["learner", "admin"]).required(),
         name: Yup.string().trim().min(2, "Enter your full name").max(80, "Name is too long").required("Full name is required"),
         email: Yup.string().trim().lowercase().email("Enter a valid email address"),
+        gender: Yup.number().nullable().optional(),
         companyName: Yup.string().when("accountType", {
           is: "admin",
           then: (schema) => schema.trim().min(2, "Enter your company name").max(120, "Company name is too long").required("Company name is required"),
@@ -258,6 +261,7 @@ const Register = observer(() => {
               name: values.name.trim(),
               phone: normalizedPhone,
               email: values.email.trim().toLowerCase() || undefined,
+              gender: values.gender ? Number(values.gender) : undefined,
               verificationToken,
               companyName: values.companyName.trim(),
               companyEmail: values.companyEmail.trim().toLowerCase() || undefined,
@@ -267,6 +271,7 @@ const Register = observer(() => {
               name: values.name.trim(),
               phone: normalizedPhone,
               email: values.email.trim().toLowerCase() || undefined,
+              gender: values.gender ? Number(values.gender) : undefined,
               verificationToken,
               location,
             });
@@ -370,6 +375,7 @@ const Register = observer(() => {
   const stepTitles: Record<Step, { eyebrow: string; title: string; sub: string }> = {
     phone: { eyebrow: "Step 1", title: "ACCOUNT SETUP", sub: "ENTER YOUR PHONE NUMBER" },
     otp: { eyebrow: "Step 2", title: "VERIFY PHONE", sub: `CODE SENT TO +91 ${phone}` },
+    gender: { eyebrow: "Identity", title: "YOUR GENDER", sub: "HOW DO YOU IDENTIFY?" },
     profile: { eyebrow: "About you", title: "YOUR DETAILS", sub: "PERSONAL INFORMATION" },
     company: { eyebrow: "Company", title: "WORKSPACE", sub: "COMPANY INFORMATION" },
     location: { eyebrow: "Location", title: "LOCATION", sub: "WHERE ARE YOU BASED?" },
@@ -382,8 +388,8 @@ const Register = observer(() => {
         const { values, errors, touched, setFieldValue, handleChange, handleBlur, isSubmitting } = formik;
         const isAdmin = values.accountType === "admin";
         const stepsForType: Step[] = isAdmin
-          ? ["phone", "otp", "profile", "company", "location", "review"]
-          : ["phone", "otp", "profile", "location", "review"];
+          ? ["phone", "otp", "profile", "gender", "company", "location", "review"]
+          : ["phone", "otp", "profile", "gender", "location", "review"];
         const currentIdx = stepsForType.indexOf(step);
 
         const next = async () => {
@@ -516,9 +522,49 @@ const Register = observer(() => {
                 </div>
               );
             }
+            case "gender":
+              return (
+                <div key="gender" className="space-y-6">
+                  <div>
+                    <div className="grid grid-cols-2 gap-3 mt-1">
+                      {[
+                        { label: "Male", value: "1", icon: "👨" },
+                        { label: "Female", value: "2", icon: "👩" },
+                        { label: "Other", value: "3", icon: "👤" },
+                        { label: "Skip", value: "4", icon: "🔒" }
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setFieldValue("gender", values.gender === opt.value ? "" : opt.value)}
+                          className={cn(
+                            "relative flex flex-col items-center justify-center py-4 px-2 rounded-2xl text-[10px] font-[900] uppercase tracking-[0.15em] transition-all duration-300 overflow-hidden group",
+                            values.gender === opt.value
+                              ? "bg-gradient-to-b from-primary to-[#ff4d6d] text-white shadow-lg shadow-primary/20 scale-[1.02]"
+                              : "bg-black/5 dark:bg-white/5 text-black/50 dark:text-white/50 hover:bg-black/10 dark:hover:bg-white/10"
+                          )}
+                        >
+                          {values.gender === opt.value && (
+                            <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />
+                          )}
+                          <span className={cn(
+                            "text-xl mb-1.5 transition-transform duration-300",
+                            values.gender === opt.value 
+                              ? "scale-110 drop-shadow-sm" 
+                              : "grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110"
+                          )}>
+                            {opt.icon}
+                          </span>
+                          <span className="relative z-10 text-center">{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
             case "profile":
               return (
-                <div key="profile" className="space-y-5">
+                <div key="profile" className="space-y-6">
                   <Field icon={User} name="name" label="Full name" placeholder="Ada Lovelace" value={values.name} onChange={handleChange} onBlur={handleBlur} error={touched.name ? errors.name : undefined} autoFocus required />
                   <Field icon={Mail} name="email" label="Email" type="email" placeholder="you@example.com" value={values.email} onChange={handleChange} onBlur={handleBlur} error={touched.email ? errors.email : undefined} />
                 </div>
@@ -621,6 +667,7 @@ const Register = observer(() => {
             case "otp":
               return <PrimaryButton loading={busy} disabled={otpValue.length !== 6} onClick={() => handleVerifyOtp(otpValue)}>Verify <CheckCircle2 className="h-4 w-4" /></PrimaryButton>;
             case "profile":
+            case "gender":
             case "company":
               return <PrimaryButton loading={busy} onClick={next}>Continue <ArrowRight className="h-4 w-4" /></PrimaryButton>;
             case "location":
@@ -630,7 +677,7 @@ const Register = observer(() => {
                 </div>
               );
             case "review":
-              return <PrimaryButton loading={isSubmitting || busy} disabled={isSubmitting || busy} onClick={() => formik.handleSubmit()}>{isSubmitting || busy ? "Creating account..." : "Complete Registration"}</PrimaryButton>;
+              return <PrimaryButton loading={isSubmitting || busy} disabled={isSubmitting || busy} onClick={() => formik.handleSubmit()} className="!mt-0">{isSubmitting || busy ? "Creating account..." : "Complete Registration"}</PrimaryButton>;
             default:
               return null;
           }
@@ -691,7 +738,7 @@ const Register = observer(() => {
                 {renderStep()}
               </motion.div>
 
-              <div className="hidden sm:block mt-8">
+              <div className={cn("hidden sm:block", step === "review" ? "mt-2" : "mt-4")}>
                 {renderActionButton()}
               </div>
 
@@ -806,6 +853,11 @@ function ReviewCard({ form, phone }: { form: SignupValues; phone: string }) {
     ["Email", form.email],
     ["Phone", `+91 ${phone}`],
   ];
+
+  if (form.gender) {
+    const genderMap: Record<string, string> = { "1": "Male", "2": "Female", "3": "Other", "4": "Prefer not to say" };
+    rows.push(["Gender", genderMap[form.gender] || "—"]);
+  }
   if (form.accountType === "admin") {
     rows.push(
       ["Company", form.companyName],
@@ -821,11 +873,11 @@ function ReviewCard({ form, phone }: { form: SignupValues; phone: string }) {
     rows.push(["Location", locationString]);
   }
   return (
-    <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-transparent p-4 space-y-2">
+    <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-transparent p-4 space-y-1">
       {rows.map(([k, v]) => (
-        <div key={k} className="grid grid-cols-[100px_minmax(0,1fr)] gap-3 text-sm">
-          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-black/40 dark:text-white/40 pt-0.5">{k}</div>
-          <div className="font-semibold text-black dark:text-white break-words" title={v}>{v ? truncate(v, 30) : "—"}</div>
+        <div key={k} className="grid grid-cols-[100px_minmax(0,1fr)] gap-2 text-[13px] items-center">
+          <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-black/40 dark:text-white/40">{k}</div>
+          <div className="font-semibold text-black/90 dark:text-white truncate" title={v}>{v ? v : "—"}</div>
         </div>
       ))}
     </div>

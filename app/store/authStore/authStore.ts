@@ -18,6 +18,7 @@ interface Notification {
 export interface LearnerRegistrationPayload {
   name: string;
   phone: string;
+  gender?: number;
   email?: string;
   verificationToken: string;
   invitationToken?: string;
@@ -28,6 +29,7 @@ export interface LearnerRegistrationPayload {
 export interface AdminRegistrationPayload {
   name: string;
   phone: string;
+  gender?: number;
   email?: string;
   verificationToken: string;
   companyName: string;
