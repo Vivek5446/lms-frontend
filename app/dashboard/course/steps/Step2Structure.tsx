@@ -570,19 +570,28 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
           </AnimatePresence>
         </div>
 
-        {value.modules.length === 0 ? (
-          <div className="text-center py-12 bg-card rounded-2xl border border-dashed border-border">
-            <Rocket className="w-10 h-10 text-step-2 mx-auto mb-3" />
-            <p className="font-medium text-foreground mb-1">No modules yet</p>
-            <p className="text-sm text-muted-foreground mb-4">Create a module, then add as many sections under it as you need.</p>
-            <Button onClick={addModule} className="rounded-xl bg-step-2 hover:bg-step-2/90 text-primary-foreground">
-              <Plus className="w-4 h-4 mr-2" /> Add First Module
-            </Button>
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/75 p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-600/10 flex items-center justify-center shrink-0 text-blue-600 font-bold text-base">
+              ℹ️
+            </div>
+            <div>
+              <h4 className="font-semibold text-blue-950 dark:text-blue-200 text-sm">Post-Creation Module Upload</h4>
+              <p className="text-xs text-blue-800 dark:text-blue-300 mt-1 leading-relaxed">
+                Modules are added after the course is created to ensure fast processing and stability. Please complete the basic course details to finish setup, then use <strong>"Add Modules"</strong> on your dashboard to upload module content.
+              </p>
+            </div>
           </div>
-        ) : (
-          <Button onClick={addModule} variant="outline" className="w-full rounded-xl border-dashed border-2 h-12 hover:bg-step-2/5 hover:border-step-2/30">
-            <Plus className="w-4 h-4 mr-2" /> Add Module
-          </Button>
+        </div>
+
+        {value.modules.length === 0 && (
+          <div className="text-center py-10 bg-card rounded-2xl border border-dashed border-border p-6">
+            <Rocket className="w-10 h-10 text-step-2 mx-auto mb-3" />
+            <p className="font-semibold text-foreground mb-1">Course Setup In Progress</p>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Finish setting up pricing and visibility in the next steps. Once created, open your course card and click <strong>"Add Modules"</strong> to upload SCORM, video lessons, PDF materials, and quizzes.
+            </p>
+          </div>
         )}
       </div>
     </StepWrapper>

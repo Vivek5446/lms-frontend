@@ -29,9 +29,12 @@ import {
   FiEdit3,
   FiEye,
   FiFolder,
+  FiFolderPlus,
+  FiPackage,
   FiPlus,
+  FiTrash2,
+  FiUsers,
   FiSearch,
-  FiTrash2
 } from "react-icons/fi";
 import { getCategoryIconMeta } from "../utils/folderIconUtils";
 import CreateCategoryModal from "./CreateCategoryModal";
@@ -47,6 +50,7 @@ interface FolderExplorerProps {
   canViewUsers: boolean;
   onOpenDetails: (course: CourseListItem) => void;
   onOpenEdit: (course: CourseListItem) => void;
+  onOpenModulesDrawer?: (course: CourseListItem) => void;
   onCreateCourse: (folderId?: string) => void;
   onDeleteCourse?: (courseId: string) => void;
   onViewCourseUsers?: (course: CourseListItem) => void;
@@ -66,6 +70,7 @@ export const FolderExplorer = observer(function FolderExplorer({
   canViewUsers,
   onOpenDetails,
   onOpenEdit,
+  onOpenModulesDrawer,
   onCreateCourse,
   onDeleteCourse,
   onViewCourseUsers,
@@ -420,11 +425,352 @@ export const FolderExplorer = observer(function FolderExplorer({
         </Box>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))", gap: 20 }}>
+
           {filteredCoursesInFolder.map((course) => {
+  const amount = course.commerce?.amountInRupees;
+  const isFree = !amount || amount <= 0;
+  const priceText = isFree ? "Free" : `Rs ${amount}`;
+
+  const totalModules = course.curriculum?.totalModules || 0;
+  const totalSections = course.curriculum?.totalSections || 0;
+  const isDraft = course.status === "draft";
+
+  const stopCardClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+  };
+
+  return (
+    <motion.div
+      key={course._id}
+      whileHover={{ y: -5 }}
+      whileTap={{ scale: 0.995 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      onClick={() => onOpenDetails(course)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpenDetails(course);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      style={{
+        background: cardBg,
+        borderRadius: 20,
+        border: `1px solid ${borderColor}`,
+        overflow: "hidden",
+        boxShadow: "0 8px 28px rgba(15, 23, 42, 0.06)",
+        display: "flex",
+        flexDirection: "column",
+        cursor: "pointer",
+        position: "relative",
+        outline: "none",
+      }}
+    >
+      {/* Course thumbnail */}
+      <Box
+        position="relative"
+        height={{ base: "170px", md: "180px" }}
+        bg="#1E293B"
+        overflow="hidden"
+      >
+        {course.thumbnailUrl ? (
+          <Box
+            as="img"
+            src={course.thumbnailUrl}
+            alt={course.title}
+            width="100%"
+            height="100%"
+            objectFit="cover"
+            transition="transform 0.35s ease"
+            _groupHover={{ transform: "scale(1.04)" }}
+          />
+        ) : (
+          <Flex
+            width="100%"
+            height="100%"
+            align="center"
+            justify="center"
+            direction="column"
+            gap={2}
+            bg="linear-gradient(135deg, #1E293B 0%, #334155 100%)"
+          >
+            <Flex
+              width="60px"
+              height="60px"
+              align="center"
+              justify="center"
+              borderRadius="2xl"
+              bg="whiteAlpha.100"
+              border="1px solid"
+              borderColor="whiteAlpha.200"
+            >
+              <FiBookOpen size={28} color="#94A3B8" />
+            </Flex>
+
+            <Text
+              fontSize="xs"
+              color="whiteAlpha.600"
+              fontWeight="600"
+            >
+              No thumbnail
+            </Text>
+          </Flex>
+        )}
+
+        {/* Image readability overlay */}
+        <Box
+          position="absolute"
+          inset={0}
+          pointerEvents="none"
+          bg="linear-gradient(
+            180deg,
+            rgba(15, 23, 42, 0.18) 0%,
+            rgba(15, 23, 42, 0) 45%,
+            rgba(15, 23, 42, 0.72) 100%
+          )"
+        />
+
+        {/* Course status */}
+        <Badge
+          position="absolute"
+          top={3}
+          left={3}
+          px={2.5}
+          py={1}
+          borderRadius="full"
+          colorScheme={isDraft ? "orange" : "green"}
+          textTransform="capitalize"
+          fontSize="10px"
+          fontWeight="700"
+          boxShadow="sm"
+        >
+          {course.status}
+        </Badge>
+
+        {/* Price */}
+        <Badge
+          position="absolute"
+          right={3}
+          bottom={3}
+          px={3}
+          py={1.5}
+          borderRadius="full"
+          bg={isFree ? "green.500" : "rgba(15, 23, 42, 0.88)"}
+          color="white"
+          fontSize="xs"
+          fontWeight="800"
+          boxShadow="0 4px 12px rgba(15, 23, 42, 0.25)"
+        >
+          {priceText}
+        </Badge>
+      </Box>
+
+      {/* Course details */}
+      <Box
+        p={{ base: 4, md: 5 }}
+        flex={1}
+        display="flex"
+        flexDirection="column"
+      >
+        <Flex align="center" justify="space-between" gap={3} mb={2}>
+          <Text
+            fontSize="10px"
+            fontWeight="800"
+            color="#2563EB"
+            textTransform="uppercase"
+            letterSpacing="0.1em"
+            noOfLines={1}
+          >
+            {course.courseCode || "COURSE"}
+          </Text>
+
+          <Text
+            fontSize="10px"
+            fontWeight="700"
+            color={mutedColor}
+            whiteSpace="nowrap"
+          >
+            View details →
+          </Text>
+        </Flex>
+
+        <Text
+          fontSize={{ base: "15px", md: "16px" }}
+          fontWeight="750"
+          color={titleColor}
+          lineHeight="1.4"
+          noOfLines={2}
+          minHeight="45px"
+        >
+          {course.title}
+        </Text>
+
+        {/* Course statistics */}
+        <Flex
+          mt={4}
+          gap={2}
+          align="center"
+          flexWrap="wrap"
+        >
+          <Flex
+            align="center"
+            gap={2}
+            px={3}
+            py={2}
+            borderRadius="xl"
+            bg={courseFooterBg}
+            border={`1px solid ${borderColor}`}
+          >
+            <Flex
+              width="26px"
+              height="26px"
+              align="center"
+              justify="center"
+              borderRadius="lg"
+              bg="blue.50"
+              color="#2563EB"
+            >
+              <FiPackage size={13} />
+            </Flex>
+
+            <Box>
+              <Text
+                fontSize="11px"
+                fontWeight="800"
+                color={titleColor}
+                lineHeight="1"
+              >
+                {totalModules}
+              </Text>
+              <Text
+                fontSize="9px"
+                color={mutedColor}
+                mt={1}
+                lineHeight="1"
+              >
+                Modules
+              </Text>
+            </Box>
+          </Flex>
+
+          <Flex
+            align="center"
+            gap={2}
+            px={3}
+            py={2}
+            borderRadius="xl"
+            bg={courseFooterBg}
+            border={`1px solid ${borderColor}`}
+          >
+            <Flex
+              width="26px"
+              height="26px"
+              align="center"
+              justify="center"
+              borderRadius="lg"
+              bg="blue.50"
+              color="#2563EB"
+            >
+              <FiBookOpen size={13} />
+            </Flex>
+
+            <Box>
+              <Text
+                fontSize="11px"
+                fontWeight="800"
+                color={titleColor}
+                lineHeight="1"
+              >
+                {totalSections}
+              </Text>
+              <Text
+                fontSize="9px"
+                color={mutedColor}
+                mt={1}
+                lineHeight="1"
+              >
+                Lessons
+              </Text>
+            </Box>
+          </Flex>
+        </Flex>
+      </Box>
+
+      {/* Course actions */}
+      {(canEditCourses || canDeleteCourses) && (
+        <Flex
+          p={{ base: "12px 14px", md: "14px 18px" }}
+          borderTop={`1px solid ${borderColor}`}
+          bg={courseFooterBg}
+          align="center"
+          gap={2}
+          onClick={stopCardClick}
+        >
+          {canEditCourses && onOpenModulesDrawer && (
+            <Button
+              flex={1}
+              size="sm"
+              minW={0}
+              leftIcon={<FiPackage />}
+              colorScheme="blue"
+              borderRadius="xl"
+              fontSize="xs"
+              boxShadow="0 4px 10px rgba(37, 99, 235, 0.16)"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenModulesDrawer(course);
+              }}
+            >
+              Add Modules
+            </Button>
+          )}
+
+          {canEditCourses && (
+            <Button
+              size="sm"
+              px={3}
+              leftIcon={<FiEdit3 />}
+              variant="ghost"
+              colorScheme="blue"
+              borderRadius="xl"
+              fontSize="xs"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenEdit(course);
+              }}
+            >
+              Edit
+            </Button>
+          )}
+
+          {canDeleteCourses && onDeleteCourse && (
+            <Button
+              size="sm"
+              px={3}
+              leftIcon={<FiTrash2 />}
+              variant="ghost"
+              colorScheme="red"
+              borderRadius="xl"
+              fontSize="xs"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDeleteCourse(course._id);
+              }}
+            >
+              Delete
+            </Button>
+          )}
+        </Flex>
+      )}
+    </motion.div>
+  );
+})}
+          {/* {filteredCoursesInFolder.map((course) => {
             const amount = course.commerce?.amountInRupees;
             const priceText = !amount || amount <= 0 ? "Free" : `Rs ${amount}`;
             return (
-              <motion.div key={course._id} whileHover={{ y: -3 }} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${borderColor}`, overflow: "hidden", boxShadow: "0 4px 18px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <motion.div key={course._id} whileHover={{ y: -3 }}  onClick={() => onOpenDetails(course)} style={{ background: cardBg, borderRadius: 16, border: `1px solid ${borderColor}`, overflow: "hidden", boxShadow: "0 4px 18px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                 <div style={{ position: "relative", height: 160, background: "#1E293B" }}>
                   {course.thumbnailUrl ? <img src={course.thumbnailUrl} alt={course.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Flex w="100%" h="100%" align="center" justify="center"><FiBookOpen size={44} color="#475569" /></Flex>}
                   <Badge position="absolute" top={3} right={3} colorScheme={course.status === "draft" ? "orange" : "green"} textTransform="uppercase">{course.status}</Badge>
@@ -435,17 +781,17 @@ export const FolderExplorer = observer(function FolderExplorer({
                   <Text fontSize="16px" fontWeight="700" color={titleColor} noOfLines={2}>{course.title}</Text>
                   <Text fontSize="12px" color={mutedColor} mt={2}>{course.curriculum?.totalModules || 0} Modules | {course.curriculum?.totalSections || 0} Lessons</Text>
                 </Box>
-                <Flex p="12px 18px" borderTop={`1px solid ${borderColor}`} bg={courseFooterBg} align="center" justify="space-between" gap={2}>
-                  <Button size="xs" leftIcon={<FiEye />} variant="ghost" onClick={() => onOpenDetails(course)}>View</Button>
+                <Flex p="12px 18px" borderTop={`1px solid ${borderColor}`} bg={courseFooterBg} align="center" justify="space-between" gap={2} flexWrap="wrap">
+                  {canEditCourses && onOpenModulesDrawer && <Button size="xs" leftIcon={<FiPackage />} colorScheme="blue" variant="solid" onClick={() => onOpenModulesDrawer(course)}>Add Modules</Button>}
                   {canEditCourses && <Button size="xs" leftIcon={<FiEdit3 />} variant="ghost" colorScheme="blue" onClick={() => onOpenEdit(course)}>Edit</Button>}
-                  {canViewUsers && onViewCourseUsers && <Button size="xs" variant="ghost" onClick={() => onViewCourseUsers(course)}>Users</Button>}
                   {canDeleteCourses && onDeleteCourse && <Button size="xs" leftIcon={<FiTrash2 />} variant="ghost" colorScheme="red" onClick={() => onDeleteCourse(course._id)}>Delete</Button>}
                 </Flex>
               </motion.div>
             );
-          })}
+          })} */}
         </div>
       )}
+      {/* {canViewUsers && onViewCourseUsers && <Button size="xs" variant="ghost" onClick={() => onViewCourseUsers(course)}>Users</Button>} */}
       <CreateCategoryModal
         isOpen={Boolean(editingFolder)}
         onClose={() => setEditingFolder(null)}

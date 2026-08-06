@@ -2320,6 +2320,59 @@ class CourseStoreClass {
     }
   };
 
+  addSingleModule = async (courseId: string, formData: FormData, onProgress?: (progress: number) => void) => {
+    this.isSubmitting = true;
+    this.submissionProgress = 10;
+    this.submissionStage = "Uploading module content";
+    this.error = null;
+
+    try {
+      const { data } = await axios.post(`/course/${courseId}/modules/single`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+            onProgress?.(progress);
+            runInAction(() => {
+              this.submissionProgress = Math.min(95, Math.max(10, progress));
+              this.submissionStage = progress >= 100 ? "Processing asset & saving module" : "Uploading content file";
+            });
+          }
+        },
+      });
+
+      runInAction(() => {
+        this.submissionProgress = 100;
+        this.submissionStage = "Module saved";
+      });
+
+      return data.data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err?.response?.data?.error || err?.message || "Failed to save module";
+      });
+      throw err;
+    } finally {
+      runInAction(() => {
+        this.isSubmitting = false;
+      });
+    }
+  };
+
+  updateModuleFreePreview = async (courseId: string, moduleId: string, isFreePreview: boolean) => {
+    try {
+      const { data } = await axios.put(`/course/${courseId}/modules/${moduleId}`, {
+        isFreePreview,
+      });
+      return data.data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err?.response?.data?.error || "Failed to update module preview setting";
+      });
+      throw err;
+    }
+  };
+
   deleteCourse = async (id: string) => {
     try {
       await axios.delete(`/course/${id}`);
@@ -2328,6 +2381,18 @@ class CourseStoreClass {
       });
     } catch (err: any) {
       return Promise.reject(err?.response?.data || err);
+    }
+  };
+
+  deleteCourseModule = async (courseId: string, moduleId: string) => {
+    try {
+      await axios.delete(`/course/${courseId}/modules/${moduleId}`);
+      runInAction(() => {
+        this.modules = this.modules.filter((m) => m._id !== moduleId);
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || "Failed to delete module";
+      return Promise.reject(new Error(msg));
     }
   };
 }

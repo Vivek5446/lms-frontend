@@ -510,6 +510,11 @@ export default function CourseContentSection({
                         {moduleProgressMeta.label}
                       </span>
                     ) : null}
+                    {moduleRecord?.isFreePreview ? (
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 sm:text-[10px]">
+                        Free Preview Demo
+                      </span>
+                    ) : null}
                   </span>
 
                   <span className="mt-1 block line-clamp-2 text-xs font-semibold leading-5 text-foreground sm:text-sm">
@@ -632,8 +637,11 @@ export default function CourseContentSection({
                           Boolean(launchSection)
                         );
 
+                        const isModuleFreeDemo = Boolean(moduleRecord?.isFreePreview);
                         const actionLabel = isSectionLocked
                           ? "Complete the previous lesson"
+                          : canSelfEnroll && !isModuleFreeDemo
+                          ? "Enroll to unlock"
                           : getSectionActionLabel(
                               launchSection,
                               sectionTracking?.lessonStatus,
@@ -652,7 +660,7 @@ export default function CourseContentSection({
                             onClick={() => {
                               if (isSectionLocked) return;
 
-                              if (canSelfEnroll) {
+                              if (canSelfEnroll && !isModuleFreeDemo) {
                                 onEnrollCourse?.();
                                 return;
                               }

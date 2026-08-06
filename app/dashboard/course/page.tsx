@@ -18,6 +18,7 @@ import {
   FiGrid,
   FiLoader,
   FiLock,
+  FiPackage,
   FiPlus,
   FiSearch,
   FiSettings,
@@ -30,6 +31,7 @@ import CourseDetails from "./CourseDetails";
 import AssignCourseModal from "./components/AssignCourseModal";
 import CourseUsersModal from "./components/CourseUsersModal";
 import FolderExplorer from "./components/FolderExplorer";
+import ModuleManagementDrawer from "./components/ModuleManagementDrawer";
 import {
   CourseLaunchSection,
   getCourseSectionProgress,
@@ -110,6 +112,7 @@ function CoursePage() {
   const [languageFilter, setLanguageFilter] = useState("all");
   const [sortBy, setSortBy] = useState<CatalogSort>("latest");
   const [selectedFolderForCreation, setSelectedFolderForCreation] = useState<string | undefined>(undefined);
+  const [drawerCourse, setDrawerCourse] = useState<CourseListItem | null>(null);
 
   const pageBg = useColorModeValue("#F8FAFC", "#0F172A");
   const cardBg = useColorModeValue("#FFFFFF", "#111827");
@@ -773,6 +776,30 @@ function CoursePage() {
                             <MotionButton
                               whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.98 }}
+                              onClick={() => setDrawerCourse(course)}
+                              style={{
+                                borderRadius: 12,
+                                border: "1px solid #BFDBFE",
+                                background: "#EFF6FF",
+                                color: "#2563EB",
+                                padding: "8px 12px",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <FiPackage size={12} />
+                              Add Modules
+                            </MotionButton>
+                          ) : null}
+
+                          {canEditCourses ? (
+                            <MotionButton
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.98 }}
                               onClick={() => handleOpenEdit(course)}
                               style={{
                                 borderRadius: 12,
@@ -1017,6 +1044,7 @@ function CoursePage() {
               canViewUsers={canViewUsers}
               onOpenDetails={handleOpenDetails}
               onOpenEdit={handleOpenEdit}
+              onOpenModulesDrawer={(course) => setDrawerCourse(course)}
               onCreateCourse={handleOpenCreate}
               onDeleteCourse={async (courseId) => {
                 if (window.confirm("Are you sure you want to delete this course?")) {
@@ -1043,6 +1071,15 @@ function CoursePage() {
           onClose={() => setCourseUsersModal(null)}
           courseId={courseUsersModal.courseId}
           courseTitle={courseUsersModal.courseTitle}
+        />
+      )}
+
+      {drawerCourse && (
+        <ModuleManagementDrawer
+          isOpen={!!drawerCourse}
+          onClose={() => setDrawerCourse(null)}
+          course={drawerCourse}
+          onModulesUpdated={() => courseStore.fetchCourses()}
         />
       )}
     </PermissionGate>
