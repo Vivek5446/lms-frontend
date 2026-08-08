@@ -588,29 +588,6 @@ export default function ModuleManagementDrawer({
 
 
 <Box>
-  {/* <Flex align="center" justify="space-between" mb={2}>
-    <Box>
-      <Text fontSize="xs" fontWeight="semibold" color={textColor}>
-        Learner Access
-      </Text>
-      <Text fontSize="10px" color={mutedText} mt={0.5}>
-        Choose whether learners can preview this module for free.
-      </Text>
-    </Box>
-
-    <Badge
-      colorScheme={formState.isFreePreview ? "green" : "yellow"}
-      variant="subtle"
-      borderRadius="full"
-      px={2.5}
-      py={1}
-      fontSize="10px"
-      textTransform="none"
-    >
-      {formState.isFreePreview ? "Free Preview" : "Paid & Locked"}
-    </Badge>
-  </Flex> */}
-
   <Flex
     align="center"
     justify="space-between"
@@ -685,44 +662,7 @@ export default function ModuleManagementDrawer({
     </HStack>
   )}
 </Box>
-              {/* <Box>
-                <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={1.5}>
-                  Learner Access
-                </Text>
-                <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={2.5}>
-                  <Button
-                    h="46px"
-                    justifyContent="flex-start"
-                    leftIcon={<FiLock />}
-                    colorScheme={!formState.isFreePreview ? "yellow" : "gray"}
-                    variant={!formState.isFreePreview ? "solid" : "outline"}
-                    isDisabled={isCourseFree}
-                    onClick={() => updateModuleForm(key, { isFreePreview: false })}
-                    borderRadius="xl"
-                    fontSize="xs"
-                  >
-                    Paid & Locked
-                  </Button>
-                  <Button
-                    h="46px"
-                    justifyContent="flex-start"
-                    leftIcon={<FiUnlock />}
-                    colorScheme={formState.isFreePreview ? "green" : "gray"}
-                    variant={formState.isFreePreview ? "solid" : "outline"}
-                    isDisabled={isCourseFree}
-                    onClick={() => updateModuleForm(key, { isFreePreview: true })}
-                    borderRadius="xl"
-                    fontSize="xs"
-                  >
-                    Free Preview
-                  </Button>
-                </SimpleGrid>
-                {isCourseFree && (
-                  <Text fontSize="10px" color={mutedText} mt={1.5}>
-                    This is a free course, so learners can access every module.
-                  </Text>
-                )}
-              </Box> */}
+              
             </SimpleGrid>
 
             <Box mt={5}>

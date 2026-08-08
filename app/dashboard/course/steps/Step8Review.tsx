@@ -21,6 +21,7 @@ interface Step8ReviewProps {
   onSubmitActionChange: (action: "draft" | "publish") => void;
   onSubmit: () => void;
   isSubmitting?: boolean;
+  allowPublish?: boolean;
 }
 
 export default function Step8Review({
@@ -30,6 +31,7 @@ export default function Step8Review({
   onSubmitActionChange,
   onSubmit,
   isSubmitting = false,
+  allowPublish = true,
 }: Step8ReviewProps) {
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
   const learningOutcomeCount = courseForm.basicInfo.learningOutcomes.filter((item) => item.trim()).length;
@@ -122,7 +124,7 @@ export default function Step8Review({
   return (
     <StepWrapper
       stepKey={6}
-      title="Review & Publish"
+      title={allowPublish ? "Review & Publish" : "Review & Save Draft"}
       subtitle={
         <span className="inline-flex items-center gap-1.5">
           Almost there! Let&apos;s review everything
@@ -160,7 +162,7 @@ export default function Step8Review({
             <div>
               <p className="text-sm font-semibold text-foreground">Final submission</p>
               <p className="text-xs text-muted-foreground">
-                Pick the status first, then submit once.
+                {allowPublish ? "Pick the status first, then submit once." : "New courses start as drafts until the modules are ready."}
               </p>
             </div>
             <div className="inline-flex rounded-2xl bg-muted p-1">
@@ -174,20 +176,22 @@ export default function Step8Review({
                 onClick={() => onSubmitActionChange("draft")}
                 disabled={isSubmitting}
               >
-                Save draft
+                Save as Draft
               </button>
-              <button
-                type="button"
-                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                  submitAction === "publish"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground"
-                }`}
-                onClick={() => onSubmitActionChange("publish")}
-                disabled={isSubmitting}
-              >
-                Publish
-              </button>
+              {allowPublish ? (
+                <button
+                  type="button"
+                  className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+                    submitAction === "publish"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground"
+                  }`}
+                  onClick={() => onSubmitActionChange("publish")}
+                  disabled={isSubmitting}
+                >
+                  Publish
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -203,9 +207,9 @@ export default function Step8Review({
                 ? submitAction === "publish"
                   ? "Publishing Course..."
                   : "Saving Draft..."
-                : submitAction === "publish"
+                : submitAction === "publish" && allowPublish
                 ? "Publish Course"
-                : "Save Draft"}
+                : "Save as Draft"}
             </Button>
           </div>
         </div>

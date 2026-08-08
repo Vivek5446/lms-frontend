@@ -404,7 +404,6 @@ export default function CourseDetails({
 
   const {
     auth: { user },
-    themeStore: { themeConfig },
     courseStore,
   } = stores;
 
@@ -415,6 +414,21 @@ export default function CourseDetails({
   const isAssignedCourseView = Array.isArray(course?.sources);
   const canSelfEnroll = Boolean(
     !isAssignedCourseView && onEnrollCourse
+  );
+  const isSelfEnrolledCourseView = Boolean(
+    Array.isArray(course?.sources) &&
+      course.sources.some(
+        (source: any) =>
+          String(source?.type || "")
+            .trim()
+            .toLowerCase() === "self"
+      )
+  );
+  const isSelfSignupLearner = !Boolean(user?.createdBy);
+  const shouldUseDefaultLearnerTheme = Boolean(
+    canSelfEnroll ||
+      isSelfEnrolledCourseView ||
+      isSelfSignupLearner
   );
   const courseId = String(
     course?._id || course?.courseId || ""
@@ -999,11 +1013,12 @@ export default function CourseDetails({
     >;
     const isDark = colorMode === "dark";
 
-    const companyPrimaryColor = normalizeHexColor(
-      user?.companyDetails?.primaryThemeColor ||
-        themeConfig?.colors?.custom?.light?.primary,
-      DEFAULT_LEARNER_PRIMARY_COLOR
-    );
+    const companyPrimaryColor = shouldUseDefaultLearnerTheme
+      ? DEFAULT_LEARNER_PRIMARY_COLOR
+      : normalizeHexColor(
+          user?.companyDetails?.primaryThemeColor,
+          DEFAULT_LEARNER_PRIMARY_COLOR
+        );
 
     const primary =
       companyPrimaryColor ||
@@ -1049,9 +1064,12 @@ export default function CourseDetails({
       "--ring": hexToHslTriplet(primary),
     } as CSSProperties;
   }, [
+    canSelfEnroll,
     colorMode,
+    isSelfEnrolledCourseView,
+    isSelfSignupLearner,
+    shouldUseDefaultLearnerTheme,
     theme,
-    themeConfig?.colors?.custom?.light?.primary,
     user?.companyDetails?.primaryThemeColor,
   ]);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -113,6 +113,7 @@ function CoursePage() {
   const [sortBy, setSortBy] = useState<CatalogSort>("latest");
   const [selectedFolderForCreation, setSelectedFolderForCreation] = useState<string | undefined>(undefined);
   const [drawerCourse, setDrawerCourse] = useState<CourseListItem | null>(null);
+  const folderExplorerReloadRef = useRef<(() => void) | null>(null);
 
   const pageBg = useColorModeValue("#F8FAFC", "#0F172A");
   const cardBg = useColorModeValue("#FFFFFF", "#111827");
@@ -159,7 +160,9 @@ function CoursePage() {
     }
 
     if (canViewCourses) {
-      courseStore.fetchCourses().catch(() => undefined);
+      if (!isFolderExplorerUser) {
+        courseStore.fetchCourses().catch(() => undefined);
+      }
       courseStore.fetchCategories().catch(() => undefined);
       courseStore.fetchMasterCategories().catch(() => undefined);
       if (isFolderExplorerUser) {
@@ -169,7 +172,9 @@ function CoursePage() {
   }, [canViewCourses, isFolderExplorerUser, isLearner, router]);
 
   const handleCreateSuccess = () => {
-    courseStore.fetchCourses().catch(() => undefined);
+    if (!isFolderExplorerUser) {
+      courseStore.fetchCourses().catch(() => undefined);
+    }
     courseStore.fetchCourseLibraryFolders().catch(() => undefined);
     setView("gallery");
   };
@@ -297,6 +302,10 @@ function CoursePage() {
   ]);
 
   const summary = useMemo(() => {
+    if (isFolderExplorerUser) {
+      return courseStore.courseSummary;
+    }
+
     const allCourses = courseStore.courses || [];
     const published = allCourses.filter((course) => course.status === "published").length;
     const privateCount = allCourses.filter((course) => (course.visibility?.type || "private") === "private").length;
@@ -310,7 +319,7 @@ function CoursePage() {
       publicCount,
       paidCount,
     };
-  }, [courseStore.courses]);
+  }, [courseStore.courseSummary, courseStore.courses, isFolderExplorerUser]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1050,7 +1059,6 @@ function CoursePage() {
                 if (window.confirm("Are you sure you want to delete this course?")) {
                   try {
                     await courseStore.deleteCourse(courseId);
-                    courseStore.fetchCourses();
                   } catch (err: any) {
                     alert(err.message || "Failed to delete course");
                   }
@@ -1058,6 +1066,9 @@ function CoursePage() {
               }}
               onViewCourseUsers={(course) => {
                 setCourseUsersModal({ courseId: course._id, courseTitle: course.title });
+              }}
+              onRegisterReload={(reload) => {
+                folderExplorerReloadRef.current = reload;
               }}
             />
           ) : (
@@ -1079,7 +1090,13 @@ function CoursePage() {
           isOpen={!!drawerCourse}
           onClose={() => setDrawerCourse(null)}
           course={drawerCourse}
-          onModulesUpdated={() => courseStore.fetchCourses()}
+          onModulesUpdated={() => {
+            if (isFolderExplorerUser) {
+              folderExplorerReloadRef.current?.();
+            } else {
+              courseStore.fetchCourses().catch(() => undefined);
+            }
+          }}
         />
       )}
     </PermissionGate>
