@@ -149,17 +149,10 @@ const UserDrawer = ({
   setUserForm,
   roleOptions,
   isSuperadmin,
-  filteredCompanies,
   availableDepartments = [],
-  borderColor,
-  muted,
-  currentCompanyName,
-  managerCompanyId,
   updateRole,
-  setManagerSelection,
   onSubmit,
-  loading,
-  canAssignManagers = true,
+  loading
 }: any) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -226,8 +219,8 @@ const UserDrawer = ({
       <DrawerContent maxW={{ base: "100%", md: "85%" }} w={{ base: "100%", md: "85%" }} h="100vh" overflow="hidden" bg={useColorModeValue("white", "gray.900")} borderTopRadius={{ base: "2xl", md: "none" }}>
 
         {/* BODY */}
-        <DrawerBody 
-          p={0} 
+        <DrawerBody
+          p={0}
           overflowY="auto"
           sx={{
             "&::-webkit-scrollbar": { width: "4px" },
@@ -236,7 +229,7 @@ const UserDrawer = ({
           }}
         >
           <Box w="100%" px={{ base: 5, md: 8 }} pt={{ base: 4, md: 5 }} pb="130px">
-            
+
             {/* HEADER */}
             <HStack mb={{ base: 4, md: 5 }} spacing={4} align="center" justify="space-between">
               <HStack spacing={4}>
@@ -354,14 +347,6 @@ const UserDrawer = ({
                   onChange={(e: any) =>
                     setUserForm((p: any) => ({ ...p, code: e.target.value }))
                   }
-                />
-                <CustomInput
-                  label="Profile ID"
-                  name="profileId"
-                  placeholder="Generated automatically after creation"
-                  value={userForm.profileId || ""}
-                  disabled
-                  readOnly
                 />
                 <CustomInput
                   label="Full Name"
@@ -544,8 +529,8 @@ const UserDrawer = ({
         <Box
           position="absolute" bottom={0} left={0} right={0}
           bg={useColorModeValue("linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 30%)", "linear-gradient(180deg, rgba(23,25,35,0) 0%, rgba(23,25,35,1) 30%)")}
-          px={{ base: 5, md: 8 }} 
-          pb={{ base: "calc(env(safe-area-inset-bottom, 20px) + 32px)", md: 8 }} 
+          px={{ base: 5, md: 8 }}
+          pb={{ base: "calc(env(safe-area-inset-bottom, 20px) + 32px)", md: 8 }}
           pt={8}
           zIndex={10}
         >
@@ -559,7 +544,7 @@ const UserDrawer = ({
               _hover={{ transform: "translateY(-2px)", boxShadow: "0 10px 30px rgba(98,105,255,0.5)", bgGradient: "linear(to-r, #4F46E5, #6269FF)" }}
               _active={{ transform: "translateY(0)" }}
               transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
-              onClick={handleValidatedSubmit} 
+              onClick={handleValidatedSubmit}
               isLoading={loading}
               border="1px solid"
               borderColor="rgba(255,255,255,0.1)"
