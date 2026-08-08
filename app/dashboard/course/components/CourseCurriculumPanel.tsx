@@ -255,13 +255,6 @@ export default function CourseCurriculumPanel({
 
   const toggleModule = (moduleId: string) => {
     const willOpen = !openModuleIds.has(moduleId);
-    const moduleRecord = modules.find(
-      (record: any) => deriveModuleId(record) === moduleId
-    );
-    const canLoadSections =
-      isAssignedCourseView ||
-      !canSelfEnroll ||
-      Boolean(moduleRecord?.isFreePreview);
 
     setOpenModuleIds((current) => {
       const next = new Set(current);
@@ -275,7 +268,7 @@ export default function CourseCurriculumPanel({
       return next;
     });
 
-    if (willOpen && canLoadSections) {
+    if (willOpen) {
       void onLoadSections(moduleId);
     }
   };
@@ -466,12 +459,6 @@ export default function CourseCurriculumPanel({
                       </div>
                     ) : null}
 
-                    {canSelfEnroll && !moduleRecord?.isFreePreview ? (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
-                        Enroll to unlock this module.
-                      </div>
-                    ) : null}
-
                     {sectionLoadingByModule[moduleId] &&
                     moduleSections.length === 0 ? (
                       <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 py-4 text-[11px] text-muted-foreground">
@@ -503,6 +490,7 @@ export default function CourseCurriculumPanel({
                         const previewLocked = Boolean(
                           canSelfEnroll && !moduleRecord?.isFreePreview
                         );
+                        const sectionLocked = locked || previewLocked;
                         const kind = String(
                           sectionRecord?.content?.kind || ""
                         )
@@ -526,14 +514,12 @@ export default function CourseCurriculumPanel({
                             type="button"
                             disabled={
                               !launchSection ||
-                              locked ||
-                              previewLocked
+                              sectionLocked
                             }
                             onClick={() => {
                               if (
                                 !launchSection ||
-                                locked ||
-                                previewLocked
+                                sectionLocked
                               ) {
                                 return;
                               }
@@ -547,7 +533,7 @@ export default function CourseCurriculumPanel({
                                 "border-primary bg-primary/[0.08] shadow-sm",
                               !isActive &&
                                 "border-border bg-background hover:border-primary/25 hover:bg-primary/[0.03]",
-                              locked &&
+                              sectionLocked &&
                                 "cursor-not-allowed border-slate-200 bg-slate-50 opacity-75 dark:border-slate-800 dark:bg-slate-900/30",
                               (!launchSection || previewLocked) &&
                                 "cursor-not-allowed opacity-70"
@@ -566,11 +552,11 @@ export default function CourseCurriculumPanel({
                                   progressMeta.state !==
                                     "completed" &&
                                   "bg-muted text-muted-foreground",
-                                locked &&
+                                sectionLocked &&
                                   "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-300"
                               )}
                             >
-                              {locked ? (
+                              {sectionLocked ? (
                                 <Lock className="h-4 w-4" />
                               ) : (
                                 <SectionIcon className="h-4 w-4" />
@@ -588,23 +574,23 @@ export default function CourseCurriculumPanel({
                                 <span
                                   className={joinClasses(
                                     "rounded-full px-2 py-0.5 text-[9px] font-semibold",
-                                    locked &&
+                                    sectionLocked &&
                                       "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-                                    !locked &&
+                                    !sectionLocked &&
                                       progressMeta.state ===
                                         "completed" &&
                                       "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
-                                    !locked &&
+                                    !sectionLocked &&
                                       progressMeta.state ===
                                         "in_progress" &&
                                       "bg-primary/10 text-primary",
-                                    !locked &&
+                                    !sectionLocked &&
                                       progressMeta.state ===
                                         "not_started" &&
                                       "bg-muted text-muted-foreground"
                                   )}
                                 >
-                                  {locked
+                                  {sectionLocked
                                     ? "Locked"
                                     : progressMeta.label}
                                 </span>
