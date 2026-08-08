@@ -30,7 +30,10 @@ import {
   useBreakpointValue,
   useColorModeValue,
   useDisclosure,
+  IconButton,
+  Collapse,
 } from "@chakra-ui/react";
+import { Filter, RotateCcw, SlidersHorizontal, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 import {
   FiChevronDown,
   FiFilter,
@@ -115,7 +118,8 @@ export function DashboardFilters({
   onApply,
   onClear,
 }: DashboardFiltersProps) {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isMobileOpen, onOpen: onMobileOpen, onClose: onMobileClose } = useDisclosure();
+  const { isOpen: isDesktopOpen, onToggle: onDesktopToggle } = useDisclosure({ defaultIsOpen: false });
 
   const isMobile =
     useBreakpointValue({
@@ -146,95 +150,12 @@ export function DashboardFilters({
 
   const handleApply = () => {
     onApply();
-    onClose();
+    onMobileClose();
   };
 
   const handleClear = () => {
     onClear();
   };
-
-  const triggerButton = (
-    <Button
-      size="sm"
-      h="38px"
-      px={3.5}
-      leftIcon={<FiFilter />}
-      rightIcon={<FiChevronDown />}
-      onClick={onOpen}
-      variant="outline"
-      borderRadius="full"
-      borderColor={borderColor}
-      bg={triggerBg}
-      color={headingColor}
-      fontSize="sm"
-      fontWeight="700"
-      boxShadow="0 1px 2px rgba(0, 0, 0, 0.04)"
-      transition="all 0.2s ease"
-      _hover={{
-        bg: triggerHoverBg,
-        borderColor: "purple.300",
-        transform: "translateY(-1px)",
-        boxShadow: "0 5px 14px rgba(98, 105, 255, 0.12)",
-      }}
-      _active={{
-        transform: "translateY(0)",
-      }}
-    >
-      <HStack spacing={2}>
-        <Text>Filters</Text>
-
-        {activeCount > 0 && (
-          <Badge
-            minW="20px"
-            h="20px"
-            px={1.5}
-            display="inline-flex"
-            alignItems="center"
-            justifyContent="center"
-            borderRadius="full"
-            bgGradient="linear(to-r, #6269FF, #8A2BE2)"
-            color="white"
-            fontSize="10px"
-            fontWeight="800"
-          >
-            {activeCount}
-          </Badge>
-        )}
-      </HStack>
-    </Button>
-  );
-
-  const panelHeading = (
-    <HStack spacing={3}>
-      <Flex
-        w="38px"
-        h="38px"
-        align="center"
-        justify="center"
-        flexShrink={0}
-        borderRadius="xl"
-        bgGradient="linear(to-br, #6269FF, #8A2BE2)"
-        boxShadow="0 6px 16px rgba(98, 105, 255, 0.25)"
-      >
-        <Icon as={FiFilter} color="white" boxSize={4} />
-      </Flex>
-
-      <Box>
-        <Text
-          color={headingColor}
-          fontSize="sm"
-          fontWeight="800"
-          lineHeight="1.2"
-        >
-          Dashboard filters
-        </Text>
-
-        <Text mt={0.5} color={mutedColor} fontSize="xs">
-          Refine the dashboard information
-        </Text>
-      </Box>
-    </HStack>
-  );
 
   const fields = (
     <Grid
@@ -343,183 +264,146 @@ export function DashboardFilters({
   );
 
   const actions = (
-    <Flex
-      w="100%"
-      align="center"
-      justify="space-between"
-      gap={3}
-    >
-      <Button
-        size="sm"
-        h="40px"
-        px={4}
-        leftIcon={<FiX />}
-        variant="ghost"
-        borderRadius="lg"
-        color={mutedColor}
-        fontWeight="700"
-        onClick={handleClear}
-        isDisabled={!activeCount || isLoading}
-        _hover={{
-          bg: softBg,
-          color: headingColor,
-        }}
-      >
+    <HStack w="100%" spacing={3} justify={{ base: "space-between", md: "flex-end" }}>
+      <Button flex={{ base: 1, md: "none" }} variant="outline" size={{ base: "lg", md: "md" }} borderRadius="xl" onClick={handleClear} isDisabled={!activeCount || isLoading} leftIcon={<RotateCcw size={18} />}>
         Clear
       </Button>
-
       <Button
-        size="sm"
-        h="40px"
-        minW={{ base: "150px", md: "130px" }}
-        px={5}
-        leftIcon={<FiRefreshCw />}
-        borderRadius="lg"
-        bgGradient="linear(to-r, #6269FF, #8A2BE2)"
-        color="white"
-        fontWeight="800"
-        onClick={handleApply}
+        flex={{ base: 1, md: "none" }}
+        colorScheme="purple"
+        size={{ base: "lg", md: "md" }}
+        borderRadius="xl"
         isLoading={isLoading}
         loadingText="Applying"
-        boxShadow="0 6px 16px rgba(98, 105, 255, 0.22)"
-        transition="all 0.2s ease"
-        _hover={{
-          bgGradient: "linear(to-r, #555CEB, #7828C8)",
-          transform: "translateY(-1px)",
-          boxShadow: "0 8px 20px rgba(98, 105, 255, 0.3)",
-        }}
-        _active={{
-          transform: "translateY(0)",
-        }}
+        onClick={handleApply}
+        boxShadow="0 4px 14px 0 rgba(98, 105, 255, 0.39)"
+        _hover={{ transform: "translateY(-1px)", boxShadow: "0 6px 20px rgba(98, 105, 255, 0.23)" }}
       >
         Apply filters
       </Button>
-    </Flex>
+    </HStack>
   );
 
-  if (isMobile) {
-    return (
-      <>
-        {triggerButton}
-
-        <Drawer
-          isOpen={isOpen}
-          placement="bottom"
-          onClose={onClose}
-        >
-          <DrawerOverlay
-            bg="blackAlpha.500"
-            backdropFilter="blur(5px)"
-          />
-
-          <DrawerContent
-            maxH="88dvh"
-            bg={panelBg}
-            borderTopRadius="24px"
-            overflow="hidden"
-          >
-            <DrawerCloseButton
-              top={4}
-              right={4}
-              borderRadius="full"
-            />
-
-            <DrawerHeader
-              px={5}
-              pt={5}
-              pb={4}
-              borderBottomWidth="1px"
-              borderColor={borderColor}
-            >
-              {panelHeading}
-            </DrawerHeader>
-
-            <DrawerBody
-              px={5}
-              py={5}
-              overflowY="auto"
-            >
-              {fields}
-            </DrawerBody>
-
-            <DrawerFooter
-              px={5}
-              py={4}
-              bg={footerBg}
-              borderTopWidth="1px"
-              borderColor={borderColor}
-            >
-              {actions}
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      </>
-    );
-  }
-
   return (
-    <Popover
-      isOpen={isOpen}
-      onOpen={onOpen}
-      onClose={onClose}
-      placement="bottom-end"
-      closeOnBlur
-      gutter={10}
-    >
-      <PopoverTrigger>{triggerButton}</PopoverTrigger>
-
-      <Portal>
-        <PopoverContent
-          w="520px"
-          maxW="calc(100vw - 32px)"
-          bg={panelBg}
-          borderColor={borderColor}
-          borderRadius="2xl"
-          overflow="hidden"
-          boxShadow="0 18px 50px rgba(15, 23, 42, 0.16)"
-          _focusVisible={{
-            boxShadow:
-              "0 18px 50px rgba(15, 23, 42, 0.16)",
-          }}
-        >
-          <PopoverArrow bg={panelBg} />
-          <PopoverCloseButton
-            top={4}
-            right={4}
-            borderRadius="full"
-          />
-
-          <PopoverHeader
-            px={5}
-            py={4}
-            border="none"
+    <>
+      <Box
+        bg={panelBg}
+        borderWidth="1px"
+        borderColor={borderColor}
+        borderRadius="2xl"
+        p={4}
+        boxShadow="sm"
+      >
+        <HStack justify="space-between" cursor="pointer" onClick={onDesktopToggle} userSelect="none">
+          <HStack spacing={2}>
+            <Icon as={SlidersHorizontal} color="purple.500" boxSize={4} />
+            <Text fontSize="sm" fontWeight="semibold" color={headingColor}>
+              Dashboard filters
+            </Text>
+            {activeCount > 0 && (
+              <Badge ml={2} colorScheme="purple" borderRadius="full">
+                {activeCount}
+              </Badge>
+            )}
+          </HStack>
+          
+          <Button
+            display={{ base: "inline-flex", xl: "none" }}
+            size="sm"
+            variant="outline"
+            leftIcon={<Filter size={15} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMobileOpen();
+            }}
           >
-            {panelHeading}
-          </PopoverHeader>
+            Filters
+            {activeCount > 0 && (
+              <Badge ml={2} colorScheme="purple" borderRadius="full">
+                {activeCount}
+              </Badge>
+            )}
+          </Button>
+          
+          <Box display={{ base: "none", xl: "block" }}>
+            <Icon as={isDesktopOpen ? ChevronUp : ChevronDown} color="gray.500" boxSize={5} />
+          </Box>
+        </HStack>
 
-          <Divider borderColor={borderColor} />
+        <Box display={{ base: "none", xl: "block" }}>
+          <Collapse in={isDesktopOpen} animateOpacity>
+            <Box mt={4} pt={4} borderTopWidth="1px" borderColor={borderColor}>
+              {fields}
+              <HStack justify="flex-end" mt={3}>
+                {actions}
+              </HStack>
+            </Box>
+          </Collapse>
+        </Box>
+      </Box>
 
-          <PopoverBody
-            px={5}
-            py={4}
-            maxH="60vh"
-            overflowY="auto"
+      <Drawer isOpen={isMobileOpen} placement="bottom" onClose={onMobileClose} size="full">
+        <DrawerOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+        <DrawerContent borderTopRadius="none" h="100vh" position="relative" bg={panelBg}>
+          <Box
+            position="sticky"
+            top={0}
+            zIndex={10}
+            bg={panelBg}
+            borderBottomWidth="1px"
+            borderColor={borderColor}
+            px={{ base: 5, md: 8 }}
+            pt={{ base: 6, md: 10 }}
+            pb={{ base: 4, md: 6 }}
           >
-            {fields}
-          </PopoverBody>
+            <HStack spacing={4} align="center">
+              <IconButton
+                aria-label="Close"
+                icon={<ArrowLeft size={17} />}
+                onClick={onMobileClose}
+                variant="solid"
+                borderRadius="full"
+                w={{ base: "36px", md: "42px" }} h={{ base: "36px", md: "42px" }}
+                bg={useColorModeValue("gray.100", "gray.750")}
+                color={useColorModeValue("gray.700", "gray.200")}
+                border="1px solid"
+                borderColor={useColorModeValue("gray.200", "gray.600")}
+                boxShadow="sm"
+                _hover={{ bg: useColorModeValue("gray.200", "gray.700"), transform: "scale(1.05)" }}
+              />
+              <Box>
+                <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="800" color={headingColor}>
+                  Filters
+                </Text>
+                <Text fontSize={{ base: "xs", md: "sm" }} color={mutedColor} fontWeight="600" mt={0.5}>
+                  Refine the dashboard information
+                </Text>
+              </Box>
+            </HStack>
+          </Box>
 
-          <PopoverFooter
-            px={5}
-            py={4}
-            bg={footerBg}
-            border="none"
+          <DrawerBody px={{ base: 5, md: 8 }} py={{ base: 6, md: 8 }}>
+            <Box maxW="800px" mx="auto">
+              {fields}
+            </Box>
+          </DrawerBody>
+
+          <Box
+            position="sticky"
+            bottom={0}
+            zIndex={10}
+            bg={panelBg}
             borderTopWidth="1px"
             borderColor={borderColor}
+            px={{ base: 5, md: 8 }}
+            py={{ base: 4, md: 6 }}
           >
-            {actions}
-          </PopoverFooter>
-        </PopoverContent>
-      </Portal>
-    </Popover>
+            <Box maxW="800px" mx="auto">
+              {actions}
+            </Box>
+          </Box>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }

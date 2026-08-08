@@ -415,23 +415,23 @@ const ScopedDashboard = observer(() => {
             </HStack>
           </Badge>
 
-          <DashboardFilters
-            role={role as "admin" | "departmenthead"}
-            value={draftFilters}
-            options={scoped.filterOptions}
-            isLoading={scopedSummaryLoading}
-            onChange={setDraftFilters}
-            onApply={() =>
-              setAppliedFilters(draftFilters)
-            }
-            onClear={() => {
-              setDraftFilters(EMPTY_SCOPED_FILTERS);
-              setAppliedFilters(EMPTY_SCOPED_FILTERS);
-            }}
-          />
+
         </Flex>
       </Flex>
     </Box>
+
+    <DashboardFilters
+      role={role as "admin" | "departmenthead"}
+      value={draftFilters}
+      options={scoped.filterOptions}
+      isLoading={scopedSummaryLoading}
+      onChange={setDraftFilters}
+      onApply={() => setAppliedFilters(draftFilters)}
+      onClear={() => {
+        setDraftFilters(EMPTY_SCOPED_FILTERS);
+        setAppliedFilters(EMPTY_SCOPED_FILTERS);
+      }}
+    />
 
     {scopedSummaryError ? (
       <Alert
