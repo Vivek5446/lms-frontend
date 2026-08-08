@@ -80,6 +80,7 @@ const Header: React.FC = observer(() => {
   const navLinks: NavLink[] = useMemo(() => ([
     { href: '/', label: 'Home' },
     { href: '/course', label: 'Courses' },
+    { href: '/quiz', label: 'Quiz' },
     ...(isLearner ? [{ href: '/batches', label: 'Batches' }] : []),
     ...(isManagerUser ? [{ href: '/manager', label: 'Learners' }] : []),
     { href: '/chat', label: 'Community' },

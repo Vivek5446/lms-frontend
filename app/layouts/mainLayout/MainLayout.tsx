@@ -54,7 +54,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {children}
       </Box>
 
-      {!pathname.startsWith("/chat") && <Footer />}
+      {!pathname.startsWith("/chat") && !pathname.startsWith("/quiz/take") && <Footer />}
     </Box>
   );
 };

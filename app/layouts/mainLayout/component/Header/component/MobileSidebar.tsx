@@ -55,6 +55,7 @@ export const MobileSidebar = observer(({ isOpen, onClose, onProfileClick }: Mobi
   const sidebarNavLinks = React.useMemo(() => ([
     { href: '/', label: 'Home' },
     { href: '/course', label: 'Courses' },
+    { href: '/quiz', label: 'Quiz' },
     ...(isLearner ? [{ href: '/batches', label: 'Batches' }] : []),
     ...(isManagerUser ? [{ href: '/manager', label: 'Learners' }] : []),
     { href: '/chat', label: 'Community' },
