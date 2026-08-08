@@ -11,12 +11,6 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalHeader,
-  ModalOverlay,
   Spinner,
   Stack,
   Tag,
@@ -27,6 +21,7 @@ import {
 } from "@chakra-ui/react";
 import { useCallback, useEffect, useState } from "react";
 import { FiMail, FiPhone, FiSearch, FiUser, FiUsers } from "react-icons/fi";
+import ResponsiveDrawer from "../../../component/common/Drawer/ResponsiveDrawer";
 import useDebounce from "../../../component/config/component/customHooks/useDebounce";
 import { getApiErrorMessage } from "../../../config/utils/apiError";
 import stores from "../../../store/stores";
@@ -84,7 +79,7 @@ const CourseUsersModal = ({ isOpen, onClose, courseId, courseTitle }: CourseUser
         page,
         limit: 15,
       });
-      setData(res?.data || null);
+      setData(res || null);
     } catch (err: any) {
       toast({
         title: "Unable to load course users",
@@ -116,34 +111,34 @@ const CourseUsersModal = ({ isOpen, onClose, courseId, courseTitle }: CourseUser
   const users = data?.users || [];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
-      <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-      <ModalContent borderRadius="2xl" overflow="hidden">
-        <ModalHeader pb={2}>
-          <HStack spacing={3}>
-            <Box
-              p={2}
-              borderRadius="xl"
-              bgGradient="linear(to-br, blue.400, purple.500)"
-            >
-              <Icon as={FiUsers} boxSize={5} color="white" />
-            </Box>
-            <VStack align="start" spacing={0}>
-              <Text fontWeight="bold" fontSize="lg">
-                Course Enrollments
+    <ResponsiveDrawer
+      open={isOpen}
+      onClose={onClose}
+      desktopWidth="min(760px, 100vw)"
+      title={
+        <HStack spacing={3}>
+          <Box
+            p={2}
+            borderRadius="xl"
+            bgGradient="linear(to-br, blue.400, purple.500)"
+          >
+            <Icon as={FiUsers} boxSize={5} color="white" />
+          </Box>
+          <VStack align="start" spacing={0}>
+            <Text fontWeight="bold" fontSize="lg">
+              Course Enrollments
+            </Text>
+            {courseTitle ? (
+              <Text fontSize="sm" color={muted} noOfLines={1}>
+                {courseTitle}
               </Text>
-              {courseTitle && (
-                <Text fontSize="sm" color={muted} noOfLines={1}>
-                  {courseTitle}
-                </Text>
-              )}
-            </VStack>
-          </HStack>
-        </ModalHeader>
-        <ModalCloseButton />
-
-        <ModalBody pb={6}>
-          <VStack align="stretch" spacing={4}>
+            ) : null}
+          </VStack>
+        </HStack>
+      }
+      bodyClassName="p-4 md:p-5"
+    >
+      <VStack align="stretch" spacing={4}>
             {/* Filter Tabs */}
             <Flex
               bg={filterBg}
@@ -335,10 +330,8 @@ const CourseUsersModal = ({ isOpen, onClose, courseId, courseTitle }: CourseUser
                 </Button>
               </Flex>
             )}
-          </VStack>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+      </VStack>
+    </ResponsiveDrawer>
   );
 };
 

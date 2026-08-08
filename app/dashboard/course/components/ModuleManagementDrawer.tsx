@@ -28,6 +28,7 @@ import {
   Textarea,
   VStack,
   useColorModeValue,
+  useToast,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import {
@@ -61,6 +62,8 @@ import {
   createStudyMaterialFiles,
   getFileKindLabel,
   inferModuleUploadKind,
+  mapExistingQuiz,
+  summarizeQuiz,
 } from "../courseForm";
 
 interface ModuleManagementDrawerProps {
@@ -105,6 +108,7 @@ export default function ModuleManagementDrawer({
   const [moduleForms, setModuleForms] = useState<Record<string, FullModuleFormState>>({});
 
   const courseId = course._id;
+  const toast = useToast();
 
   // Color Mode Theme Hooks
   const bg = useColorModeValue("gray.50", "gray.900");
@@ -169,13 +173,19 @@ export default function ModuleManagementDrawer({
         }))
       : [];
 
+    const moduleTitle = mod.title || "";
+    const mappedQuiz = mapExistingQuiz(
+      mod.assessments?.quiz,
+      `${moduleTitle || "Module"} quiz`,
+    );
+
     return {
       name: mod.title || "",
       description: mod.summary || "",
       isFreePreview: Boolean(mod.isFreePreview),
-      hasQuiz: Boolean(mod.assessments?.quizEnabled),
+      hasQuiz: Boolean(mod.assessments?.quizEnabled || mappedQuiz.questions.length > 0),
       hasTest: Boolean(mod.assessments?.testEnabled),
-      quiz: mod.assessments?.quiz || createEmptyQuiz("Module quiz"),
+      quiz: mappedQuiz,
       studyMaterials: mappedModuleStudyMaterials,
       sections: mappedSections,
     };
@@ -379,7 +389,7 @@ export default function ModuleManagementDrawer({
         isFreePreview: formState.isFreePreview,
         hasQuiz: formState.hasQuiz,
         hasTest: formState.hasTest,
-        quiz: formState.hasQuiz ? formState.quiz : null,
+        quiz: formState.hasQuiz ? summarizeQuiz(formState.quiz, `${formState.name || "Module"} quiz`) : null,
         studyMaterials: moduleStudyMaterialsPayload,
         sections: sectionsPayload,
       };
@@ -392,6 +402,14 @@ export default function ModuleManagementDrawer({
 
       const actionText = isNew ? "uploaded & saved" : "updated";
       setSuccessMessage(`Module "${formState.name}" ${actionText} successfully!`);
+      toast({
+        title: "Module updated",
+        description: `Module "${formState.name}" ${actionText} successfully.`,
+        status: "success",
+        duration: 3500,
+        isClosable: true,
+        position: "top-right",
+      });
       if (isNew) {
         setIsNewModuleFormOpen(false);
       }
@@ -399,7 +417,16 @@ export default function ModuleManagementDrawer({
       await loadModules();
       onModulesUpdated?.();
     } catch (err: any) {
-      setErrorMessage(err?.message || "Failed to save module");
+      const message = err?.message || "Failed to save module";
+      setErrorMessage(message);
+      toast({
+        title: "Unable to save module",
+        description: message,
+        status: "error",
+        duration: 4500,
+        isClosable: true,
+        position: "top-right",
+      });
     } finally {
       setSavingModuleId(null);
       setSaveProgress(0);
@@ -561,29 +588,6 @@ export default function ModuleManagementDrawer({
 
 
 <Box>
-  {/* <Flex align="center" justify="space-between" mb={2}>
-    <Box>
-      <Text fontSize="xs" fontWeight="semibold" color={textColor}>
-        Learner Access
-      </Text>
-      <Text fontSize="10px" color={mutedText} mt={0.5}>
-        Choose whether learners can preview this module for free.
-      </Text>
-    </Box>
-
-    <Badge
-      colorScheme={formState.isFreePreview ? "green" : "yellow"}
-      variant="subtle"
-      borderRadius="full"
-      px={2.5}
-      py={1}
-      fontSize="10px"
-      textTransform="none"
-    >
-      {formState.isFreePreview ? "Free Preview" : "Paid & Locked"}
-    </Badge>
-  </Flex> */}
-
   <Flex
     align="center"
     justify="space-between"
@@ -658,44 +662,7 @@ export default function ModuleManagementDrawer({
     </HStack>
   )}
 </Box>
-              {/* <Box>
-                <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={1.5}>
-                  Learner Access
-                </Text>
-                <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={2.5}>
-                  <Button
-                    h="46px"
-                    justifyContent="flex-start"
-                    leftIcon={<FiLock />}
-                    colorScheme={!formState.isFreePreview ? "yellow" : "gray"}
-                    variant={!formState.isFreePreview ? "solid" : "outline"}
-                    isDisabled={isCourseFree}
-                    onClick={() => updateModuleForm(key, { isFreePreview: false })}
-                    borderRadius="xl"
-                    fontSize="xs"
-                  >
-                    Paid & Locked
-                  </Button>
-                  <Button
-                    h="46px"
-                    justifyContent="flex-start"
-                    leftIcon={<FiUnlock />}
-                    colorScheme={formState.isFreePreview ? "green" : "gray"}
-                    variant={formState.isFreePreview ? "solid" : "outline"}
-                    isDisabled={isCourseFree}
-                    onClick={() => updateModuleForm(key, { isFreePreview: true })}
-                    borderRadius="xl"
-                    fontSize="xs"
-                  >
-                    Free Preview
-                  </Button>
-                </SimpleGrid>
-                {isCourseFree && (
-                  <Text fontSize="10px" color={mutedText} mt={1.5}>
-                    This is a free course, so learners can access every module.
-                  </Text>
-                )}
-              </Box> */}
+              
             </SimpleGrid>
 
             <Box mt={5}>
@@ -1287,6 +1254,11 @@ export default function ModuleManagementDrawer({
   );
 };
 
+const savingModuleTitle = savingModuleId
+  ? moduleForms[savingModuleId]?.name || "Module"
+  : "";
+const visibleSaveProgress = savingModuleId ? Math.max(saveProgress, 10) : 0;
+
 /* Replace your current Drawer JSX with this block. */
 
 return (
@@ -1368,6 +1340,62 @@ return (
           />
         </Flex>
       </DrawerHeader>
+
+      {savingModuleId && (
+        <Box
+          position="fixed"
+          top={{ base: "76px", md: "84px" }}
+          right={{ base: 4, md: 8 }}
+          zIndex={40}
+          w={{ base: "calc(100vw - 32px)", sm: "380px" }}
+          maxW="calc(90vw - 32px)"
+          p={4}
+          borderRadius="xl"
+          border="1px solid"
+          borderColor="blue.200"
+          bg={cardBg}
+          boxShadow="0 18px 45px rgba(15, 23, 42, 0.22)"
+        >
+          <Flex justify="space-between" align="flex-start" gap={4} mb={3}>
+            <HStack spacing={3} minW={0}>
+              <Flex
+                w={9}
+                h={9}
+                align="center"
+                justify="center"
+                borderRadius="lg"
+                bg="blue.50"
+                color="blue.600"
+                flexShrink={0}
+              >
+                <FiUploadCloud />
+              </Flex>
+              <Box minW={0}>
+                <Text fontSize="sm" fontWeight="bold" color={textColor}>
+                  Saving module changes
+                </Text>
+                <Text fontSize="xs" color={mutedText} mt={0.5} isTruncated>
+                  {savingModuleTitle}
+                </Text>
+              </Box>
+            </HStack>
+            <Text fontSize="xs" fontWeight="bold" color="blue.600">
+              {visibleSaveProgress}%
+            </Text>
+          </Flex>
+          <Progress
+            value={visibleSaveProgress}
+            size="sm"
+            colorScheme="blue"
+            borderRadius="full"
+            hasStripe
+            isAnimated
+          />
+          <Text fontSize="11px" color={mutedText} mt={2}>
+            Uploading content and updating quiz data. You can stay on this drawer.
+          </Text>
+        </Box>
+      )}
 
       {/* One-module-at-a-time guidance */}
     

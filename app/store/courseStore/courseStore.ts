@@ -146,6 +146,21 @@ export interface CourseListItem {
   updatedAt: string;
 }
 
+export interface CourseListPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface CourseListSummary {
+  total: number;
+  published: number;
+  privateCount: number;
+  publicCount: number;
+  paidCount: number;
+}
+
 export interface CourseAccessScopeSummary {
   _id: string;
   accessLevel: "company" | "department" | "user";
@@ -732,6 +747,7 @@ class CourseStoreClass {
   isQuizSubmitting: boolean = false;
   isCourseAssignmentAuditLoading: boolean = false;
   isSubmitting: boolean = false;
+  publishingCourseId: string | null = null;
   isAccessSubmitting: boolean = false;
   enrollmentCourseId: string | null = null;
   isAssignmentSubmitting: boolean = false;
@@ -745,6 +761,19 @@ class CourseStoreClass {
   currentPublicCourseParams: Record<string, unknown> = {};
   private publicCoursesRequestId: number = 0;
   private publicCoursesQueryKey: string = "";
+  coursePagination: CourseListPagination = {
+    page: 1,
+    limit: 8,
+    total: 0,
+    totalPages: 1,
+  };
+  courseSummary: CourseListSummary = {
+    total: 0,
+    published: 0,
+    privateCount: 0,
+    publicCount: 0,
+    paidCount: 0,
+  };
 
   constructor() {
     makeAutoObservable(this);
@@ -757,11 +786,42 @@ class CourseStoreClass {
       const { data } = await axios.get("/course", { params });
       runInAction(() => {
         this.courses = data.data || [];
+        const pagination = data?.meta?.pagination;
+        this.coursePagination = pagination
+          ? {
+              page: Number(pagination.page) || 1,
+              limit: Number(pagination.limit) || 8,
+              total: Number(pagination.total) || 0,
+              totalPages: Number(pagination.totalPages) || 1,
+            }
+          : {
+              page: 1,
+              limit: Math.max(1, Number(data?.data?.length || 0) || 1),
+              total: Array.isArray(data?.data) ? data.data.length : 0,
+              totalPages: 1,
+            };
+        this.courseSummary = data?.meta?.summary || {
+          total: Array.isArray(data?.data) ? data.data.length : 0,
+          published: Array.isArray(data?.data)
+            ? data.data.filter((course: CourseListItem) => course.status === "published").length
+            : 0,
+          privateCount: Array.isArray(data?.data)
+            ? data.data.filter((course: CourseListItem) => (course.visibility?.type || "private") === "private").length
+            : 0,
+          publicCount: Array.isArray(data?.data)
+            ? data.data.filter((course: CourseListItem) => course.visibility?.type === "public").length
+            : 0,
+          paidCount: Array.isArray(data?.data)
+            ? data.data.filter((course: CourseListItem) => course.commerce?.pricingModel === "paid").length
+            : 0,
+        };
       });
+      return data.data || [];
     } catch (err: any) {
       runInAction(() => {
         this.error = err?.response?.data?.error || "Failed to fetch courses";
       });
+      return Promise.reject(err?.response?.data || err);
     } finally {
       runInAction(() => {
         this.isLoading = false;
@@ -972,7 +1032,10 @@ class CourseStoreClass {
     }
   };
 
-  fetchCourseModules = async (courseId: string, options: { reset?: boolean; limit?: number } = {}) => {
+  fetchCourseModules = async (
+    courseId: string,
+    options: { reset?: boolean; limit?: number; includeSections?: boolean } = {}
+  ) => {
     if (this.loadingModules) {
       return this.modules;
     }
@@ -984,6 +1047,7 @@ class CourseStoreClass {
         params: {
           limit: options.limit || 5,
           cursor: shouldReset ? undefined : this.nextModuleCursor || undefined,
+          includeSections: options.includeSections === false ? false : undefined,
         },
       });
       const items: CourseModuleListItem[] = data?.data?.items || [];
@@ -995,9 +1059,16 @@ class CourseStoreClass {
           ])
         );
         items.forEach((moduleRecord) => {
+          const key = String(moduleRecord.moduleId || moduleRecord._id);
+          const cachedSections = this.sectionsByModule[key];
+          const incomingSections = Array.isArray(moduleRecord.sections)
+            ? moduleRecord.sections
+            : undefined;
+          const sections = cachedSections || incomingSections;
+
           existingById.set(String(moduleRecord.moduleId || moduleRecord._id), {
             ...moduleRecord,
-            sections: this.sectionsByModule[String(moduleRecord.moduleId || moduleRecord._id)] || moduleRecord.sections || [],
+            ...(sections ? { sections } : {}),
           });
         });
         this.modules = Array.from(existingById.values()).sort((left, right) => {
@@ -2381,6 +2452,25 @@ class CourseStoreClass {
       });
     } catch (err: any) {
       return Promise.reject(err?.response?.data || err);
+    }
+  };
+
+  publishCourse = async (id: string) => {
+    this.publishingCourseId = id;
+    try {
+      const { data } = await axios.post(`/course/${id}/publish`);
+      runInAction(() => {
+        this.courses = this.courses.map((course) =>
+          course._id === id ? { ...course, ...(data?.data || {}), status: "published" } : course
+        );
+      });
+      return data?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.publishingCourseId = null;
+      });
     }
   };
 

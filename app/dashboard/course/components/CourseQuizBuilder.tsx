@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -144,12 +143,12 @@ export default function CourseQuizBuilder({ quiz, onChange, title, helper }: Cou
   const incompleteCount = Math.max(quiz.questions.length - completedQuestionCount, 0);
   const primaryButtonLabel = quiz.questions.length > 0 ? "View or edit questions" : "Open quiz builder";
 
-  const drawer = typeof document !== "undefined"
-    ? createPortal(
+  const drawer = (
         <AnimatePresence>
           {isEditorOpen ? (
             <MotionDiv
-              className="fixed inset-0 z-[1300] flex justify-end bg-slate-950/55 backdrop-blur-sm"
+              className="fixed inset-0 flex justify-end bg-slate-950/55 backdrop-blur-sm"
+              style={{ zIndex: 2200 }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -338,10 +337,8 @@ export default function CourseQuizBuilder({ quiz, onChange, title, helper }: Cou
               </MotionDiv>
             </MotionDiv>
           ) : null}
-        </AnimatePresence>,
-        document.body,
-      )
-    : null;
+        </AnimatePresence>
+  );
 
   return (
     <>

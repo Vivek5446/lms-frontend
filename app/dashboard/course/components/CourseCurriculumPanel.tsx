@@ -198,29 +198,12 @@ export default function CourseCurriculumPanel({
   onSelectSection,
   onTakeQuiz,
 }: CourseCurriculumPanelProps) {
-  const firstModuleId = modules.length
-    ? deriveModuleId(modules[0])
-    : "";
   const activeRowRefs = useRef<
     Record<string, HTMLButtonElement | null>
   >({});
   const [openModuleIds, setOpenModuleIds] = useState<
     Set<string>
-  >(() => new Set(firstModuleId ? [firstModuleId] : []));
-
-  useEffect(() => {
-    if (!firstModuleId) {
-      return;
-    }
-
-    setOpenModuleIds((current) => {
-      if (current.size > 0) {
-        return current;
-      }
-
-      return new Set([firstModuleId]);
-    });
-  }, [firstModuleId]);
+  >(() => new Set());
 
   useEffect(() => {
     if (!activeSectionId) {
@@ -421,6 +404,11 @@ export default function CourseCurriculumPanel({
                         {sectionCount} lesson
                         {sectionCount === 1 ? "" : "s"}
                       </span>
+                      {moduleRecord?.isFreePreview ? (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                          Preview available
+                        </span>
+                      ) : null}
                       {moduleQuizzes.length > 0 ? (
                         <span>
                           {moduleQuizzes.length} quiz
@@ -499,6 +487,10 @@ export default function CourseCurriculumPanel({
                           isAssignedCourseView &&
                             !unlockedSectionIds.has(sectionId)
                         );
+                        const previewLocked = Boolean(
+                          canSelfEnroll && !moduleRecord?.isFreePreview
+                        );
+                        const sectionLocked = locked || previewLocked;
                         const kind = String(
                           sectionRecord?.content?.kind || ""
                         )
@@ -522,14 +514,12 @@ export default function CourseCurriculumPanel({
                             type="button"
                             disabled={
                               !launchSection ||
-                              locked ||
-                              canSelfEnroll
+                              sectionLocked
                             }
                             onClick={() => {
                               if (
                                 !launchSection ||
-                                locked ||
-                                canSelfEnroll
+                                sectionLocked
                               ) {
                                 return;
                               }
@@ -543,9 +533,9 @@ export default function CourseCurriculumPanel({
                                 "border-primary bg-primary/[0.08] shadow-sm",
                               !isActive &&
                                 "border-border bg-background hover:border-primary/25 hover:bg-primary/[0.03]",
-                              locked &&
+                              sectionLocked &&
                                 "cursor-not-allowed border-slate-200 bg-slate-50 opacity-75 dark:border-slate-800 dark:bg-slate-900/30",
-                              (!launchSection || canSelfEnroll) &&
+                              (!launchSection || previewLocked) &&
                                 "cursor-not-allowed opacity-70"
                             )}
                           >
@@ -562,11 +552,11 @@ export default function CourseCurriculumPanel({
                                   progressMeta.state !==
                                     "completed" &&
                                   "bg-muted text-muted-foreground",
-                                locked &&
+                                sectionLocked &&
                                   "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-300"
                               )}
                             >
-                              {locked ? (
+                              {sectionLocked ? (
                                 <Lock className="h-4 w-4" />
                               ) : (
                                 <SectionIcon className="h-4 w-4" />
@@ -584,23 +574,23 @@ export default function CourseCurriculumPanel({
                                 <span
                                   className={joinClasses(
                                     "rounded-full px-2 py-0.5 text-[9px] font-semibold",
-                                    locked &&
+                                    sectionLocked &&
                                       "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-                                    !locked &&
+                                    !sectionLocked &&
                                       progressMeta.state ===
                                         "completed" &&
                                       "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
-                                    !locked &&
+                                    !sectionLocked &&
                                       progressMeta.state ===
                                         "in_progress" &&
                                       "bg-primary/10 text-primary",
-                                    !locked &&
+                                    !sectionLocked &&
                                       progressMeta.state ===
                                         "not_started" &&
                                       "bg-muted text-muted-foreground"
                                   )}
                                 >
-                                  {locked
+                                  {sectionLocked
                                     ? "Locked"
                                     : progressMeta.label}
                                 </span>

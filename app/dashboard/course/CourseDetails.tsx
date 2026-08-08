@@ -404,7 +404,6 @@ export default function CourseDetails({
 
   const {
     auth: { user },
-    themeStore: { themeConfig },
     courseStore,
   } = stores;
 
@@ -415,6 +414,21 @@ export default function CourseDetails({
   const isAssignedCourseView = Array.isArray(course?.sources);
   const canSelfEnroll = Boolean(
     !isAssignedCourseView && onEnrollCourse
+  );
+  const isSelfEnrolledCourseView = Boolean(
+    Array.isArray(course?.sources) &&
+      course.sources.some(
+        (source: any) =>
+          String(source?.type || "")
+            .trim()
+            .toLowerCase() === "self"
+      )
+  );
+  const isSelfSignupLearner = !Boolean(user?.createdBy);
+  const shouldUseDefaultLearnerTheme = Boolean(
+    canSelfEnroll ||
+      isSelfEnrolledCourseView ||
+      isSelfSignupLearner
   );
   const courseId = String(
     course?._id || course?.courseId || ""
@@ -516,7 +530,7 @@ export default function CourseDetails({
     setSelectedLaunchSection(null);
     setIsMobileCurriculumOpen(false);
 
-    if (!courseId || !isAssignedCourseView) {
+    if (!courseId || (!isAssignedCourseView && (!canSelfEnroll || !user))) {
       return () => {
         isMounted = false;
       };
@@ -527,7 +541,8 @@ export default function CourseDetails({
     courseStore
       .fetchCourseModules(courseId, {
         reset: true,
-        limit: 5,
+        limit: Math.max(Number(course?.curriculum?.totalModules || 0), 5),
+        includeSections: false,
       })
       .then((loadedModules) => {
         if (!isMounted) {
@@ -547,7 +562,7 @@ export default function CourseDetails({
     return () => {
       isMounted = false;
     };
-  }, [courseId, courseStore, isAssignedCourseView]);
+  }, [canSelfEnroll, course?.curriculum?.totalModules, courseId, courseStore, isAssignedCourseView, user]);
 
   useEffect(() => {
     if (!courseId) {
@@ -580,6 +595,7 @@ export default function CourseDetails({
       const loadedModules =
         await courseStore.fetchCourseModules(courseId, {
           limit: 5,
+          includeSections: false,
         });
 
       setModuleRecords(loadedModules);
@@ -655,25 +671,6 @@ export default function CourseDetails({
       sectionLoadingByModule,
     ]
   );
-
-  useEffect(() => {
-    modules.slice(0, 2).forEach((moduleRecord: any) => {
-      const moduleId = deriveModuleId(moduleRecord);
-
-      if (
-        moduleId &&
-        !sectionLoadedByModule[moduleId] &&
-        !sectionLoadingByModule[moduleId]
-      ) {
-        void loadSectionsForModule(moduleId);
-      }
-    });
-  }, [
-    loadSectionsForModule,
-    modules,
-    sectionLoadedByModule,
-    sectionLoadingByModule,
-  ]);
 
   const warmLaunchSection = useCallback(
     (launchSection?: CourseLaunchSection | null) => {
@@ -1016,11 +1013,12 @@ export default function CourseDetails({
     >;
     const isDark = colorMode === "dark";
 
-    const companyPrimaryColor = normalizeHexColor(
-      user?.companyDetails?.primaryThemeColor ||
-        themeConfig?.colors?.custom?.light?.primary,
-      DEFAULT_LEARNER_PRIMARY_COLOR
-    );
+    const companyPrimaryColor = shouldUseDefaultLearnerTheme
+      ? DEFAULT_LEARNER_PRIMARY_COLOR
+      : normalizeHexColor(
+          user?.companyDetails?.primaryThemeColor,
+          DEFAULT_LEARNER_PRIMARY_COLOR
+        );
 
     const primary =
       companyPrimaryColor ||
@@ -1066,27 +1064,20 @@ export default function CourseDetails({
       "--ring": hexToHslTriplet(primary),
     } as CSSProperties;
   }, [
+    canSelfEnroll,
     colorMode,
+    isSelfEnrolledCourseView,
+    isSelfSignupLearner,
+    shouldUseDefaultLearnerTheme,
     theme,
-    themeConfig?.colors?.custom?.light?.primary,
     user?.companyDetails?.primaryThemeColor,
   ]);
 
   const handleTabChange = useCallback(
     (tabId: CourseDetailsTabId) => {
-      if (tabId !== "materials") {
-        return;
-      }
-
-      modules.forEach((moduleRecord: any) => {
-        const moduleId = deriveModuleId(moduleRecord);
-
-        if (moduleId) {
-          void loadSectionsForModule(moduleId);
-        }
-      });
+      void tabId;
     },
-    [loadSectionsForModule, modules]
+    []
   );
 
   const handleSelectSection = useCallback(

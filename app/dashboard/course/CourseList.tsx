@@ -38,7 +38,7 @@ function CourseList({ mode = "create", courseId, initialCourse, initialFolderId,
     }
     return initialCourseFormState;
   });
-  const [finalAction, setFinalAction] = useState<"draft" | "publish">("publish");
+  const [finalAction, setFinalAction] = useState<"draft" | "publish">(mode === "create" ? "draft" : "publish");
   const router = useRouter();
   const isEditMode = mode === "edit";
   const role = String(stores.auth.userType || stores.auth.user?.role || "").toLowerCase();
@@ -269,6 +269,7 @@ function CourseList({ mode = "create", courseId, initialCourse, initialFolderId,
             onSubmitActionChange={setFinalAction}
             onSubmit={() => handleSave(finalAction)}
             isSubmitting={courseStore.isSubmitting}
+            allowPublish={isEditMode}
           />
         );
       default:
@@ -424,7 +425,9 @@ function CourseList({ mode = "create", courseId, initialCourse, initialFolderId,
           <div style={{ display: "flex", alignItems: "center", gap: 10, width: isCompact ? "100%" : "auto" }}>
             <span style={{ fontSize: 13, color: "#64748B", display: isCompact ? "none" : "inline" }}>
               {currentStep === TOTAL_STEPS - 1
-                ? "Choose draft or publish once and submit from the final review."
+                ? isEditMode
+                  ? "Choose draft or publish once and submit from the final review."
+                  : "New courses are created as drafts first. Publish them from the course list after modules are ready."
                 : "Complete the course setup to unlock the final submit action."}
             </span>
           </div>

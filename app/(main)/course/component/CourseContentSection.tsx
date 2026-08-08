@@ -25,7 +25,7 @@ import {
   RotateCcw,
   Video,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 interface CourseContentSectionProps {
   modules: any[];
@@ -270,26 +270,9 @@ export default function CourseContentSection({
   onEnrollCourse,
   onTakeQuiz,
 }: CourseContentSectionProps) {
-  const firstModuleId = modules.length ? deriveModuleId(modules[0]) : "";
   const [openModuleIds, setOpenModuleIds] = useState<Set<string>>(
-    () => new Set(firstModuleId ? [firstModuleId] : [])
+    () => new Set()
   );
-  const onLoadSectionsRef = useRef(onLoadSections);
-
-  useEffect(() => {
-    onLoadSectionsRef.current = onLoadSections;
-  }, [onLoadSections]);
-
-  useEffect(() => {
-    if (!firstModuleId) return;
-
-    setOpenModuleIds((current) => {
-      if (current.size > 0) return current;
-      return new Set([firstModuleId]);
-    });
-
-    void onLoadSectionsRef.current(firstModuleId);
-  }, [firstModuleId]);
 
   const finalQuizzes = useMemo(
     () => courseQuizzes.filter((quiz) => quiz.scope === "final"),
@@ -512,7 +495,7 @@ export default function CourseContentSection({
                     ) : null}
                     {moduleRecord?.isFreePreview ? (
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 sm:text-[10px]">
-                        Free Preview Demo
+                        Preview available
                       </span>
                     ) : null}
                   </span>
@@ -617,6 +600,10 @@ export default function CourseContentSection({
                           isAssignedCourseView &&
                             !unlockedSectionIds.has(sectionId)
                         );
+                        const previewLocked = Boolean(
+                          canSelfEnroll && !moduleRecord?.isFreePreview
+                        );
+                        const sectionLocked = isSectionLocked || previewLocked;
                         const sectionTracking = sectionProgressMap.get(sectionId);
                         const sectionProgressMeta = getLearningStatusMeta(
                           sectionTracking?.lessonStatus,
@@ -637,11 +624,10 @@ export default function CourseContentSection({
                           Boolean(launchSection)
                         );
 
-                        const isModuleFreeDemo = Boolean(moduleRecord?.isFreePreview);
-                        const actionLabel = isSectionLocked
+                        const actionLabel = previewLocked
+                          ? "Locked"
+                          : isSectionLocked
                           ? "Complete the previous lesson"
-                          : canSelfEnroll && !isModuleFreeDemo
-                          ? "Enroll to unlock"
                           : getSectionActionLabel(
                               launchSection,
                               sectionTracking?.lessonStatus,
@@ -652,18 +638,13 @@ export default function CourseContentSection({
                           <button
                             key={sectionId || sectionIndex}
                             type="button"
-                            disabled={!launchSection || isSectionLocked}
+                            disabled={!launchSection || sectionLocked}
                             onMouseEnter={() =>
                               onWarmLaunchSection?.(launchSection)
                             }
                             onFocus={() => onWarmLaunchSection?.(launchSection)}
                             onClick={() => {
-                              if (isSectionLocked) return;
-
-                              if (canSelfEnroll && !isModuleFreeDemo) {
-                                onEnrollCourse?.();
-                                return;
-                              }
+                              if (sectionLocked) return;
 
                               if (launchSection) {
                                 onLaunchSection(launchSection);
@@ -672,12 +653,12 @@ export default function CourseContentSection({
                             className={joinClasses(
                               "group flex w-full min-w-0 items-start gap-2.5 rounded-2xl border p-2.5 text-left outline-none transition sm:gap-3 sm:p-3.5",
                               "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                              isSectionLocked &&
+                              sectionLocked &&
                                 "cursor-not-allowed border-slate-200 bg-slate-50/80 opacity-75 dark:border-slate-800 dark:bg-slate-900/30",
-                              !isSectionLocked &&
+                              !sectionLocked &&
                                 sectionProgressMeta.state === "completed" &&
                                 "border-emerald-200 bg-emerald-50/55 hover:bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20",
-                              !isSectionLocked &&
+                              !sectionLocked &&
                                 sectionProgressMeta.state !== "completed" &&
                                 "border-border bg-background hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm",
                               !launchSection && "cursor-not-allowed opacity-65"
@@ -686,17 +667,17 @@ export default function CourseContentSection({
                             <span
                               className={joinClasses(
                                 "grid h-9 w-9 shrink-0 place-items-center rounded-xl transition sm:h-10 sm:w-10",
-                                isSectionLocked &&
+                                sectionLocked &&
                                   "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-300",
-                                !isSectionLocked &&
+                                !sectionLocked &&
                                   sectionProgressMeta.state === "completed" &&
                                   "bg-emerald-500 text-white",
-                                !isSectionLocked &&
+                                !sectionLocked &&
                                   sectionProgressMeta.state !== "completed" &&
                                   "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
                               )}
                             >
-                              {isSectionLocked ? (
+                              {sectionLocked ? (
                                 <Lock className="h-4 w-4" />
                               ) : (
                                 <SectionIcon className="h-4 w-4" />
@@ -716,20 +697,20 @@ export default function CourseContentSection({
                                   <span
                                     className={joinClasses(
                                       "rounded-full px-2 py-0.5 text-[9px] font-semibold sm:text-[10px]",
-                                      isSectionLocked &&
+                                      sectionLocked &&
                                         "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-                                      !isSectionLocked &&
+                                      !sectionLocked &&
                                         sectionProgressMeta.state === "completed" &&
                                         "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
-                                      !isSectionLocked &&
+                                      !sectionLocked &&
                                         sectionProgressMeta.state === "in_progress" &&
                                         "bg-primary/10 text-primary",
-                                      !isSectionLocked &&
+                                      !sectionLocked &&
                                         sectionProgressMeta.state === "not_started" &&
                                         "bg-muted text-muted-foreground"
                                     )}
                                   >
-                                    {isSectionLocked
+                                    {sectionLocked
                                       ? "Locked"
                                       : sectionProgressMeta.label}
                                   </span>
@@ -763,7 +744,7 @@ export default function CourseContentSection({
                               </span>
                             </span>
 
-                            {isSectionLocked ? (
+                            {sectionLocked ? (
                               <Lock className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
                             ) : (
                               <PlayCircle className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />

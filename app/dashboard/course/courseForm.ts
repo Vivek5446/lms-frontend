@@ -361,11 +361,12 @@ function parseQuizMarks(value: string) {
   return parsedValue !== null && parsedValue >= 0 ? parsedValue : 1;
 }
 
-function summarizeQuiz(quiz: CourseQuizInput, fallbackTitle: string) {
+export function summarizeQuiz(quiz: CourseQuizInput, fallbackTitle: string) {
   const questions = quiz.questions
     .map((question, index) => {
       const options = [question.option1, question.option2, question.option3, question.option4].map((option) => option.trim());
       const isComplete = question.question.trim() && options.every(Boolean) && question.correctOption;
+      const correctOptionIndex = ["Option-1", "Option-2", "Option-3", "Option-4"].indexOf(question.correctOption);
 
       if (!isComplete) {
         return null;
@@ -381,6 +382,14 @@ function summarizeQuiz(quiz: CourseQuizInput, fallbackTitle: string) {
         option3: options[2],
         option4: options[3],
         correctOption: question.correctOption,
+        correctOptionId: `option-${correctOptionIndex >= 0 ? correctOptionIndex + 1 : 1}`,
+        correctOptionLabel: question.correctOption,
+        options: options.map((optionText, optionIndex) => ({
+          optionId: `option-${optionIndex + 1}`,
+          label: `Option-${optionIndex + 1}`,
+          text: optionText,
+          isCorrect: optionIndex === correctOptionIndex,
+        })),
         marks: 1,
         explanation: question.explanation.trim(),
       };
@@ -533,7 +542,7 @@ function mapExistingQuizQuestion(question: any, index: number): CourseQuizQuesti
   };
 }
 
-function mapExistingQuiz(quiz: any, fallbackTitle: string): CourseQuizInput {
+export function mapExistingQuiz(quiz: any, fallbackTitle: string): CourseQuizInput {
   return {
     id: String(quiz?.quizId || quiz?.id || createClientId()),
     title: String(quiz?.title || fallbackTitle),
