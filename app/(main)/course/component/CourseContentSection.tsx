@@ -25,7 +25,7 @@ import {
   RotateCcw,
   Video,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 interface CourseContentSectionProps {
   modules: any[];
@@ -270,26 +270,9 @@ export default function CourseContentSection({
   onEnrollCourse,
   onTakeQuiz,
 }: CourseContentSectionProps) {
-  const firstModuleId = modules.length ? deriveModuleId(modules[0]) : "";
   const [openModuleIds, setOpenModuleIds] = useState<Set<string>>(
-    () => new Set(firstModuleId ? [firstModuleId] : [])
+    () => new Set()
   );
-  const onLoadSectionsRef = useRef(onLoadSections);
-
-  useEffect(() => {
-    onLoadSectionsRef.current = onLoadSections;
-  }, [onLoadSections]);
-
-  useEffect(() => {
-    if (!firstModuleId) return;
-
-    setOpenModuleIds((current) => {
-      if (current.size > 0) return current;
-      return new Set([firstModuleId]);
-    });
-
-    void onLoadSectionsRef.current(firstModuleId);
-  }, [firstModuleId]);
 
   const finalQuizzes = useMemo(
     () => courseQuizzes.filter((quiz) => quiz.scope === "final"),
@@ -340,6 +323,13 @@ export default function CourseContentSection({
 
   const toggleModule = (moduleId: string) => {
     const willOpen = !openModuleIds.has(moduleId);
+    const moduleRecord = modules.find(
+      (record: any) => deriveModuleId(record) === moduleId
+    );
+    const canLoadSections =
+      isAssignedCourseView ||
+      !canSelfEnroll ||
+      Boolean(moduleRecord?.isFreePreview);
 
     setOpenModuleIds((current) => {
       const next = new Set(current);
@@ -353,7 +343,7 @@ export default function CourseContentSection({
       return next;
     });
 
-    if (willOpen) {
+    if (willOpen && canLoadSections) {
       void onLoadSections(moduleId);
     }
   };
@@ -512,7 +502,7 @@ export default function CourseContentSection({
                     ) : null}
                     {moduleRecord?.isFreePreview ? (
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 sm:text-[10px]">
-                        Free Preview Demo
+                        Preview available
                       </span>
                     ) : null}
                   </span>
@@ -599,6 +589,12 @@ export default function CourseContentSection({
                           Retry
                         </button>
                       </div>
+                    </div>
+                  ) : null}
+
+                  {canSelfEnroll && !moduleRecord?.isFreePreview ? (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
+                      Enroll to unlock this module.
                     </div>
                   ) : null}
 

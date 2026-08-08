@@ -198,29 +198,12 @@ export default function CourseCurriculumPanel({
   onSelectSection,
   onTakeQuiz,
 }: CourseCurriculumPanelProps) {
-  const firstModuleId = modules.length
-    ? deriveModuleId(modules[0])
-    : "";
   const activeRowRefs = useRef<
     Record<string, HTMLButtonElement | null>
   >({});
   const [openModuleIds, setOpenModuleIds] = useState<
     Set<string>
-  >(() => new Set(firstModuleId ? [firstModuleId] : []));
-
-  useEffect(() => {
-    if (!firstModuleId) {
-      return;
-    }
-
-    setOpenModuleIds((current) => {
-      if (current.size > 0) {
-        return current;
-      }
-
-      return new Set([firstModuleId]);
-    });
-  }, [firstModuleId]);
+  >(() => new Set());
 
   useEffect(() => {
     if (!activeSectionId) {
@@ -272,6 +255,13 @@ export default function CourseCurriculumPanel({
 
   const toggleModule = (moduleId: string) => {
     const willOpen = !openModuleIds.has(moduleId);
+    const moduleRecord = modules.find(
+      (record: any) => deriveModuleId(record) === moduleId
+    );
+    const canLoadSections =
+      isAssignedCourseView ||
+      !canSelfEnroll ||
+      Boolean(moduleRecord?.isFreePreview);
 
     setOpenModuleIds((current) => {
       const next = new Set(current);
@@ -285,7 +275,7 @@ export default function CourseCurriculumPanel({
       return next;
     });
 
-    if (willOpen) {
+    if (willOpen && canLoadSections) {
       void onLoadSections(moduleId);
     }
   };
@@ -421,6 +411,11 @@ export default function CourseCurriculumPanel({
                         {sectionCount} lesson
                         {sectionCount === 1 ? "" : "s"}
                       </span>
+                      {moduleRecord?.isFreePreview ? (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                          Preview available
+                        </span>
+                      ) : null}
                       {moduleQuizzes.length > 0 ? (
                         <span>
                           {moduleQuizzes.length} quiz
@@ -471,6 +466,12 @@ export default function CourseCurriculumPanel({
                       </div>
                     ) : null}
 
+                    {canSelfEnroll && !moduleRecord?.isFreePreview ? (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
+                        Enroll to unlock this module.
+                      </div>
+                    ) : null}
+
                     {sectionLoadingByModule[moduleId] &&
                     moduleSections.length === 0 ? (
                       <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 py-4 text-[11px] text-muted-foreground">
@@ -499,6 +500,9 @@ export default function CourseCurriculumPanel({
                           isAssignedCourseView &&
                             !unlockedSectionIds.has(sectionId)
                         );
+                        const previewLocked = Boolean(
+                          canSelfEnroll && !moduleRecord?.isFreePreview
+                        );
                         const kind = String(
                           sectionRecord?.content?.kind || ""
                         )
@@ -523,13 +527,13 @@ export default function CourseCurriculumPanel({
                             disabled={
                               !launchSection ||
                               locked ||
-                              canSelfEnroll
+                              previewLocked
                             }
                             onClick={() => {
                               if (
                                 !launchSection ||
                                 locked ||
-                                canSelfEnroll
+                                previewLocked
                               ) {
                                 return;
                               }
@@ -545,7 +549,7 @@ export default function CourseCurriculumPanel({
                                 "border-border bg-background hover:border-primary/25 hover:bg-primary/[0.03]",
                               locked &&
                                 "cursor-not-allowed border-slate-200 bg-slate-50 opacity-75 dark:border-slate-800 dark:bg-slate-900/30",
-                              (!launchSection || canSelfEnroll) &&
+                              (!launchSection || previewLocked) &&
                                 "cursor-not-allowed opacity-70"
                             )}
                           >

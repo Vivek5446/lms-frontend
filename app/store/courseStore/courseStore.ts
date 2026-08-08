@@ -972,7 +972,10 @@ class CourseStoreClass {
     }
   };
 
-  fetchCourseModules = async (courseId: string, options: { reset?: boolean; limit?: number } = {}) => {
+  fetchCourseModules = async (
+    courseId: string,
+    options: { reset?: boolean; limit?: number; includeSections?: boolean } = {}
+  ) => {
     if (this.loadingModules) {
       return this.modules;
     }
@@ -984,6 +987,7 @@ class CourseStoreClass {
         params: {
           limit: options.limit || 5,
           cursor: shouldReset ? undefined : this.nextModuleCursor || undefined,
+          includeSections: options.includeSections === false ? false : undefined,
         },
       });
       const items: CourseModuleListItem[] = data?.data?.items || [];
@@ -995,9 +999,16 @@ class CourseStoreClass {
           ])
         );
         items.forEach((moduleRecord) => {
+          const key = String(moduleRecord.moduleId || moduleRecord._id);
+          const cachedSections = this.sectionsByModule[key];
+          const incomingSections = Array.isArray(moduleRecord.sections)
+            ? moduleRecord.sections
+            : undefined;
+          const sections = cachedSections || incomingSections;
+
           existingById.set(String(moduleRecord.moduleId || moduleRecord._id), {
             ...moduleRecord,
-            sections: this.sectionsByModule[String(moduleRecord.moduleId || moduleRecord._id)] || moduleRecord.sections || [],
+            ...(sections ? { sections } : {}),
           });
         });
         this.modules = Array.from(existingById.values()).sort((left, right) => {
