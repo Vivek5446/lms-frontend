@@ -400,9 +400,23 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
     }
   }, [debouncedSearch, isSuperadmin, listTab, page, scopedCompanyId, toast, userStore]);
 
+  const fetchStats = useCallback(async () => {
+    try {
+      await userStore.fetchUserStats({
+        ...(isSuperadmin && scopedCompanyId ? { companyId: scopedCompanyId } : {}),
+      });
+    } catch (err: any) {
+      console.error("Failed to load user stats", err);
+    }
+  }, [isSuperadmin, scopedCompanyId, userStore]);
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   useEffect(() => {
     if (isSuperadmin) {
@@ -448,7 +462,6 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
     }
 
     setSelectedFile(null);
-    userStore.bulkPreview = [];
   }, [bulkForm.companyId, bulkForm.uploadRole, isBulkModalOpen, userStore]);
 
   useEffect(() => {
@@ -508,7 +521,6 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
 
   const resetBulkUploadState = useCallback(() => {
     setSelectedFile(null);
-    userStore.bulkPreview = [];
     setBulkForm((prev) => ({
       ...prev,
       companyId: isSuperadmin ? scopedCompanyId || prev.companyId : auth.company || prev.companyId,
@@ -963,7 +975,6 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       });
       setIsBulkModalOpen(false);
       setSelectedFile(null);
-      userStore.bulkPreview = [];
       setBulkForm({
         companyId: scopedCompanyId,
         companyName: "",
@@ -1114,6 +1125,7 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
 
 <UsersTable
   users={userStore.users}
+  stats={userStore.stats}
   loading={userStore.loading}
   pagination={userStore.pagination}
   search={search}
@@ -1185,7 +1197,6 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
   isDragActive={isDragActive}
   selectedFile={selectedFile}
   setSelectedFile={setSelectedFile}
-  preview={userStore.bulkPreview}
   loading={userStore.uploadLoading}
   onDownloadTemplate={handleDownloadTemplate}
   onUpload={handleBulkUpload}

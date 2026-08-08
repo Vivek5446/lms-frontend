@@ -58,6 +58,7 @@ const COLORS = ["blue", "purple", "orange", "green", "pink", "cyan", "teal", "re
 
 type Props = {
   users: any[];
+  stats: any;
   loading: boolean;
   pagination: any;
   search: string;
@@ -122,6 +123,7 @@ const getUserStatusMeta = (user: any) => {
 
 const UsersTable = ({
   users,
+  stats,
   loading,
   pagination,
   search,
@@ -152,14 +154,7 @@ const UsersTable = ({
   canOpenCreate = false,
   showManagerHierarchy = true,
 }: Props) => {
-  // Statistics calculations
-  const stats = {
-    total: pagination.total || 0,
-    active: users.filter((u: any) => getUserStatusMeta(u).label === "Active").length,
-    inactive: users.filter((u: any) => getUserStatusMeta(u).label === "Inactive").length,
-    pending: users.filter((u: any) => getUserStatusMeta(u).label === "Pending").length,
-    otpEnabled: users.filter((u: any) => u.authMethod === "PHONE_OTP").length,
-  };
+  // Statistics calculations handled by backend API
 
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColorLight = useColorModeValue("gray.100", "gray.700");
@@ -456,34 +451,27 @@ const UsersTable = ({
   return (
     <VStack spacing={{ base: 4, md: 6 }} align="stretch">
       {/* Statistics Cards */}
-      <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
+      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 3, md: 4 }}>
         <StatCard
           label="Total Users"
-          value={stats.total}
+          value={stats?.total || 0}
           helper="Across all roles"
           icon={FiTrendingUp}
           colorScheme="blue"
         />
         <StatCard
           label="Active Users"
-          value={stats.active}
-          helper={`${stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : "0"}% active rate`}
+          value={stats?.active || 0}
+          helper={`${stats?.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : "0"}% active rate`}
           icon={FiCheckCircle}
           colorScheme="green"
         />
         <StatCard
           label="Pending / Inactive"
-          value={stats.pending + stats.inactive}
-          helper={stats.inactive > 0 ? `${stats.inactive} deactivated, ${stats.pending} pending` : "Awaiting activation"}
+          value={(stats?.pending || 0) + (stats?.inactive || 0)}
+          helper={stats?.inactive > 0 ? `${stats.inactive} deactivated, ${stats.pending} pending` : "Awaiting activation"}
           icon={FiClock}
           colorScheme="orange"
-        />
-        <StatCard
-          label="Phone OTP Ready"
-          value={stats.otpEnabled}
-          helper={`${stats.total > 0 ? ((stats.otpEnabled / stats.total) * 100).toFixed(1) : "0"}% using OTP`}
-          icon={FiShield}
-          colorScheme="purple"
         />
       </SimpleGrid>
 

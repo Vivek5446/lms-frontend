@@ -14,7 +14,6 @@ class UserStore {
   uploadLoading: boolean = false;
   permissionLoading: boolean = false;
   permissionSaving: boolean = false;
-  bulkPreview: any[] = [];
   permissionConfig: any = {
     companyId: "",
     companyName: "",
@@ -31,6 +30,14 @@ class UserStore {
   userPreferences: any = {};
   isLoading: boolean = false;
   error: string | null = null;
+
+  stats: any = {
+    total: 0,
+    active: 0,
+    inactive: 0,
+    pending: 0,
+    otpEnabled: 0
+  };
 
   constructor() {
     makeAutoObservable(this);
@@ -180,6 +187,18 @@ class UserStore {
     }
   };
 
+  fetchUserStats = async (params: any = {}) => {
+    try {
+      const response: any = await axios.get("/admin/users/stats", { params });
+      if (response?.data?.data) {
+        this.stats = response.data.data;
+      }
+      return response?.data;
+    } catch (err: any) {
+      return Promise.reject(err?.response?.data || err.message);
+    }
+  };
+
   fetchUsers = async (params: any = {}) => {
     this.loading = true;
     try {
@@ -262,30 +281,6 @@ class UserStore {
     }
   };
 
-  previewUploadUsers = async (file: File, options: any = {}) => {
-    this.uploadLoading = true;
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("dryRun", "true");
-      Object.entries(options || {}).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && `${value}` !== "") {
-          formData.append(key, String(value));
-        }
-      });
-      const response = await axios.post("/admin/users/bulk", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      this.bulkPreview = response?.data?.data?.preview || [];
-      return response?.data;
-    } catch (err: any) {
-      return Promise.reject(err?.response?.data || err.message);
-    } finally {
-      this.uploadLoading = false;
-    }
-  };
 
   uploadUsers = async (file: File, options: any = {}) => {
     this.uploadLoading = true;

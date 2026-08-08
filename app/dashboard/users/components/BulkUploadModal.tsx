@@ -51,7 +51,6 @@ type Props = {
   selectedFile: File | null;
   setSelectedFile: (file: File | null) => void;
 
-  preview: any[];
   loading: boolean;
 
   onDownloadTemplate: () => void;
@@ -75,7 +74,6 @@ const BulkUploadModal = ({
   isDragActive,
   selectedFile,
   setSelectedFile,
-  preview,
   loading,
   onDownloadTemplate,
   onUpload,
