@@ -497,16 +497,26 @@ export default function CourseDetails({
     )
       ? course.curriculum.modules
       : [];
+    const initiallyLoadedSections = initialModules.reduce(
+      (loadedByModule: Record<string, boolean>, moduleRecord: any) => {
+        const moduleId = deriveModuleId(moduleRecord);
+        if (moduleId && Array.isArray(moduleRecord?.sections)) {
+          loadedByModule[moduleId] = true;
+        }
+        return loadedByModule;
+      },
+      {}
+    );
 
     setModuleRecords(initialModules);
     setHasMoreModules(false);
     setSectionLoadingByModule({});
-    setSectionLoadedByModule({});
+    setSectionLoadedByModule(initiallyLoadedSections);
     setSectionErrorByModule({});
     setSelectedLaunchSection(null);
     setIsMobileCurriculumOpen(false);
 
-    if (!courseId) {
+    if (!courseId || !isAssignedCourseView) {
       return () => {
         isMounted = false;
       };
@@ -537,7 +547,7 @@ export default function CourseDetails({
     return () => {
       isMounted = false;
     };
-  }, [courseId, courseStore]);
+  }, [courseId, courseStore, isAssignedCourseView]);
 
   useEffect(() => {
     if (!courseId) {

@@ -1,12 +1,12 @@
-import { PlusSquareIcon } from "@chakra-ui/icons";
-import { FaChartPie, FaCog, FaUserAstronaut, FaUsers, FaUserTie, FaClipboardList } from "react-icons/fa";
+import { hasPermission, PERMISSION_KEYS } from "@/app/config/utils/permissions";
 import { expandRoleAliases } from "@/app/config/utils/roleAccess";
-import { PERMISSION_KEYS, hasPermission } from "@/app/config/utils/permissions";
-import { FaPeopleGroup } from "react-icons/fa6";
-import { HiOutlineComputerDesktop } from "react-icons/hi2";
+import { PlusSquareIcon } from "@chakra-ui/icons";
 import { LucideBriefcaseBusiness } from "lucide-react";
 import { BiCategory } from "react-icons/bi";
+import { FaChartPie, FaClipboardList, FaCog, FaUsers } from "react-icons/fa";
+import { FaPeopleGroup } from "react-icons/fa6";
 import { FiBell, FiSettings, FiTrendingUp } from "react-icons/fi";
+import { HiOutlineComputerDesktop } from "react-icons/hi2";
 
 interface SidebarItem {
   id: number;
@@ -79,7 +79,7 @@ const sidebarDatas: SidebarItem[] = [
         url: "/dashboard/course",
         role: ["superadmin", "admin", "departmenthead"],
         permissionKey: PERMISSION_KEYS.VIEW_ASSIGNED_COURSES,
-      },
+      }, 
       {
         id: 172,
         name: "Assigned Courses",
@@ -101,7 +101,7 @@ const sidebarDatas: SidebarItem[] = [
         name: "Course Categories",
         icon: <PlusSquareIcon />,
         url: "/dashboard/course/categories",
-        role: ["superadmin", "admin", "departmenthead"],
+        role: ["superadmin"],
         permissionKey: PERMISSION_KEYS.MANAGE_COURSE_CATEGORIES,
       },
     ],
@@ -188,3 +188,4 @@ const getSidebarDataByRole = (role: string[] = ["admin"], user?: any): SidebarIt
 };
 
 export { getSidebarDataByRole, sidebarDatas };
+
