@@ -344,6 +344,7 @@ const UserDrawer = ({
                   value={userForm.code}
                   error={validationErrors.code}
                   showError={submitAttempted}
+                  disabled={!!userForm?.id}
                   onChange={(e: any) =>
                     setUserForm((p: any) => ({ ...p, code: e.target.value }))
                   }
