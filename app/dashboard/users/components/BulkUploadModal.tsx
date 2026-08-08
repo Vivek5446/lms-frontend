@@ -18,13 +18,13 @@ import {
   Tbody,
   Td,
   Text,
-  Th,
-  Thead,
-  Tr,
   VStack,
+  HStack,
+  Icon,
   useColorModeValue,
 } from "@chakra-ui/react";
 import ReactSelect from "react-select";
+import { FiDownload, FiUploadCloud, FiFileText } from "react-icons/fi";
 
 type Props = {
   isOpen: boolean;
@@ -187,206 +187,85 @@ const BulkUploadModal = ({
 
             <Box
               borderWidth="1px"
-              borderColor={borderColor}
-              p={4}
+              borderColor={useColorModeValue("blue.100", "blue.800")}
+              bg={useColorModeValue("blue.50", "blue.900")}
+              p={5}
               borderRadius="xl"
             >
-              <FormControl isRequired>
-                <FormLabel fontWeight="bold">Select User Type</FormLabel>
-                <ReactSelect
-                  placeholder="Select the user level you want to create..."
-                  options={uploadRoleOptions}
-                  value={
-                    selectedUploadOption
-                      ? {
-                          label: selectedUploadOption.label,
-                          value: selectedUploadOption.value,
-                        }
-                      : null
-                  }
-                  onChange={(opt: any) =>
-                    setBulkForm((prev: any) => ({
-                      ...prev,
-                      uploadRole: opt?.value || "",
-                    }))
-                  }
-                  styles={selectStyles}
-                />
-              </FormControl>
-
-              {selectedUploadOption && (
-                <VStack align="start" spacing={1} mt={3}>
-                  <Text fontSize="sm" fontWeight="semibold">
-                    {selectedUploadOption.label}
+              <HStack spacing={4} align="center" justify="space-between">
+                <VStack align="start" spacing={1}>
+                  <Text fontSize="md" fontWeight="bold" color={useColorModeValue("blue.800", "blue.200")}>
+                    Bulk Upload Template
                   </Text>
-                  <Text fontSize="sm" color={muted}>
-                    {selectedUploadOption.description}
+                  <Text fontSize="sm" color={useColorModeValue("blue.600", "blue.300")}>
+                    Start by downloading our standardized template. Fill in the user details and upload it below.
                   </Text>
-                  <Text fontSize="xs" color={muted}>
-                    Expected columns: {expectedColumns.join(", ")}
-                  </Text>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onDownloadTemplate}
-                    isDisabled={!companyReady || !bulkForm.uploadRole}
-                  >
-                    Download Dummy Template
-                  </Button>
                 </VStack>
-              )}
+                <Button
+                  colorScheme="blue"
+                  leftIcon={<Icon as={FiDownload} />}
+                  onClick={onDownloadTemplate}
+                  isDisabled={isSuperadmin && !companyReady}
+                  shadow="sm"
+                >
+                  Download Template
+                </Button>
+              </HStack>
             </Box>
 
             {/* ================= DROPZONE ================= */}            
-            {companyReady && bulkForm.uploadRole ? (
+            {(!isSuperadmin || companyReady) ? (
               <Box
                 {...getRootProps()}
                 borderWidth="2px"
                 borderStyle="dashed"
-                borderColor={isDragActive ? "blue.400" : borderColor}
-                borderRadius="2xl"
-                p={8}
+                borderColor={isDragActive ? "blue.400" : useColorModeValue("gray.300", "gray.600")}
+                borderRadius="xl"
+                p={10}
                 textAlign="center"
                 cursor="pointer"
-                bg={isDragActive ? "blue.50" : "transparent"}
-                _hover={{ bg: useColorModeValue("gray.50", "whiteAlpha.50") }}
+                bg={isDragActive ? useColorModeValue("blue.50", "blue.900") : useColorModeValue("gray.50", "gray.800")}
+                _hover={{ bg: useColorModeValue("gray.100", "gray.700"), borderColor: "blue.300" }}
                 transition="all 0.2s"
               >
                 <input {...getInputProps()} />
-
-                <Text fontWeight="bold">Drag & drop Excel file here</Text>
-
-                <Text fontSize="sm" color={muted} mt={2}>
-                  Upload `.xlsx` / `.xls` for <strong>{selectedUploadOption?.label || "the selected hierarchy level"}</strong>.
-                </Text>
-
-                {selectedFile && (
-                  <Text mt={3} color="blue.500" fontSize="sm" fontWeight="semibold">
-                    Selected: {selectedFile.name}
+                <VStack spacing={3}>
+                  <Icon 
+                    as={selectedFile ? FiFileText : FiUploadCloud} 
+                    w={10} 
+                    h={10} 
+                    color={selectedFile ? "blue.500" : "gray.400"} 
+                  />
+                  <Text fontWeight="bold" fontSize="lg">
+                    {selectedFile ? "File ready to upload" : "Drag & drop your Excel file here"}
                   </Text>
-                )}
+                  <Text fontSize="sm" color={muted}>
+                    {selectedFile ? "Click or drag a different file to replace it." : "Supports .xlsx and .xls formats"}
+                  </Text>
+                  
+                  {selectedFile && (
+                    <Badge colorScheme="blue" p={2} borderRadius="md" mt={2}>
+                      {selectedFile.name}
+                    </Badge>
+                  )}
+                </VStack>
               </Box>
             ) : (
               <Box
                 borderWidth="1px"
                 borderColor={borderColor}
-                p={8}
-                borderRadius="2xl"
-                bg={useColorModeValue("gray.50", "whiteAlpha.50")}
+                borderRadius="xl"
+                p={10}
                 textAlign="center"
+                bg={useColorModeValue("gray.50", "gray.900")}
               >
-                <Text color={muted} fontStyle="italic">
-                  Please select a company and the user type you want to create before uploading the Excel file.
+                <Text color={muted} fontSize="md">
+                  Please select a company above to unlock the upload area.
                 </Text>
               </Box>
             )}
 
-            {/* ================= PREVIEW ================= */}
-            {preview.length > 0 && (
-              <Box>
-                <Text fontWeight="bold" mb={3}>
-                  Preview ({preview.length} rows)
-                </Text>
 
-                <TableContainer
-                  borderWidth="1px"
-                  borderColor={borderColor}
-                  borderRadius="xl"
-                  maxH="400px"
-                  overflowY="auto"
-                >
-                  <Table size="sm">
-                    <Thead bg={tableHeadBg}>
-                      <Tr>
-                        <Th>Row</Th>
-                        <Th>Name</Th>
-                        <Th>Phone Number</Th>
-                        <Th>Email</Th>
-                        <Th>Department</Th>
-                        <Th>City</Th>
-                        <Th>State</Th>
-                        <Th>Role</Th>
-                        <Th>Company Status</Th>
-                        {showManagerColumns ? <Th>Managers</Th> : null}
-                        <Th>Action</Th>
-                        <Th>Errors</Th>
-                      </Tr>
-                    </Thead>
-
-                    <Tbody>
-                      {loading ? (
-                        <Tr>
-                          <Td colSpan={previewColumnCount} textAlign="center" py={6}>
-                            Loading preview...
-                          </Td>
-                        </Tr>
-                      ) : (
-                        preview.map((row: any) => (
-                          <Tr key={row.rowNumber}>
-                            <Td>{row.rowNumber}</Td>
-                            <Td fontWeight="medium">{row.name}</Td>
-                            <Td>{row.mobileNumber || "--"}</Td>
-                            <Td>{row.email}</Td>
-                            <Td>{row.department || "--"}</Td>
-                            <Td>{row.city || "--"}</Td>
-                            <Td>{row.state || "--"}</Td>
-                            <Td>
-                              <Badge variant="outline">{row.role}</Badge>
-                            </Td>
-
-                            <Td>
-                              <Badge
-                                colorScheme={
-                                  row.companyStatus === "EXISTS"
-                                    ? "green"
-                                    : "purple"
-                                }
-                              >
-                                {row.company}
-                              </Badge>
-                            </Td>
-
-                            {showManagerColumns ? (
-                              <Td>
-                                <VStack align="start" spacing={0}>
-                                  {getUniqueManagers(row.managers || []).map((m: any) => (
-                                    <Text key={`${m.level}-${m.managerEmail}`} fontSize="xs">
-                                      L{m.level}: {m.managerEmail}
-                                    </Text>
-                                  ))}
-                                </VStack>
-                              </Td>
-                            ) : null}
-
-                            <Td>
-                              <Badge
-                                colorScheme={
-                                  row.action === "CREATE" ? "blue" : "red"
-                                }
-                              >
-                                {row.action}
-                              </Badge>
-                            </Td>
-
-                            <Td>
-                              {row.errors?.length > 0 ? (
-                                <Text color="red.500" fontSize="xs">
-                                  {row.errors.join(", ")}
-                                </Text>
-                              ) : (
-                                <Text fontSize="xs" color={muted}>
-                                  Ready
-                                </Text>
-                              )}
-                            </Td>
-                          </Tr>
-                        ))
-                      )}
-                    </Tbody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            )}
           </VStack>
         </ModalBody>
 
@@ -402,10 +281,11 @@ const BulkUploadModal = ({
           </Button>
 
           <Button
-            colorScheme="purple"
+            colorScheme="blue"
             onClick={onUpload}
+            isDisabled={!selectedFile || (isSuperadmin && !companyReady)}
             isLoading={loading}
-            isDisabled={!selectedFile || !companyReady || !bulkForm.uploadRole}
+            loadingText="Uploading..."
             ml={3}
           >
             Upload Users

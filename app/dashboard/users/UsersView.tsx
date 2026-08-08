@@ -877,30 +877,10 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
         return;
       }
 
-      if (isSuperadmin && bulkForm.createCompany && !bulkForm.companyName.trim()) {
-        showToast({
-          title: "Company is required",
-          description: "Enter a company name before previewing the upload.",
-          status: "warning",
-          duration: 3000,
-        });
-        return;
-      }
-
       if (isSuperadmin && !bulkForm.createCompany && !bulkForm.companyId) {
         showToast({
           title: "Company is required",
-          description: "Select a company before previewing the upload.",
-          status: "warning",
-          duration: 3000,
-        });
-        return;
-      }
-
-      if (!bulkForm.uploadRole) {
-        showToast({
-          title: "Upload type is required",
-          description: "Choose which hierarchy level this Excel file belongs to.",
+          description: "Select a company before attaching the file.",
           status: "warning",
           duration: 3000,
         });
@@ -908,34 +888,6 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       }
 
       setSelectedFile(file);
-      try {
-        const bulkUploadOptions = isSuperadmin
-          ? bulkForm.createCompany
-            ? {
-                companyName: bulkForm.companyName.trim(),
-                companyManagerLevels: bulkForm.companyManagerLevels,
-                uploadRole: bulkForm.uploadRole,
-              }
-            : {
-                companyId: bulkForm.companyId,
-                companyManagerLevels: selectedBulkManagerLevels,
-                uploadRole: bulkForm.uploadRole,
-              }
-        : {
-            companyId: bulkForm.companyId,
-            companyManagerLevels: selectedBulkManagerLevels,
-            uploadRole: bulkForm.uploadRole,
-          };
-
-        await userStore.previewUploadUsers(file, bulkUploadOptions);
-      } catch (err: any) {
-        showToast({
-          title: "Preview failed",
-          description: getApiErrorMessage(err, "We could not read that Excel file."),
-          status: "error",
-          duration: 4000,
-        });
-      }
     },
     [
       bulkForm.companyId,
@@ -990,41 +942,16 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       return;
     }
 
-    if (!bulkForm.uploadRole) {
-      showToast({
-        title: "Upload type is required",
-        description: "Choose which hierarchy level this Excel file belongs to.",
-        status: "warning",
-        duration: 3000,
-      });
-      return;
-    }
-
     try {
       const bulkUploadOptions = isSuperadmin
           ? bulkForm.createCompany
-            ? {
-                companyName: bulkForm.companyName.trim(),
-                companyManagerLevels: bulkForm.companyManagerLevels,
-                uploadRole: bulkForm.uploadRole,
-              }
-            : {
-                companyId: bulkForm.companyId,
-                companyManagerLevels: selectedBulkManagerLevels,
-                uploadRole: bulkForm.uploadRole,
-              }
-          : {
-              companyId: bulkForm.companyId,
-              companyManagerLevels: selectedBulkManagerLevels,
-              uploadRole: bulkForm.uploadRole,
-            };
+            ? { companyName: bulkForm.companyName.trim() }
+            : { companyId: bulkForm.companyId }
+          : { companyId: bulkForm.companyId };
 
       const response = await userStore.uploadUsers(selectedFile, bulkUploadOptions);
       const createdCount = response?.data?.createdCount || 0;
       const failedCount = response?.data?.failedCount || 0;
-
-      setUploadResults(response?.data);
-      setIsResultModalOpen(true);
 
       showToast({
         title: failedCount > 0 ? "Partial success" : "Bulk upload complete",
@@ -1066,21 +993,11 @@ const UsersView = observer(({ scopedCompanyId: scopedCompanyIdProp, embedded = f
       return;
     }
 
-    if (!bulkForm.uploadRole) {
-      showToast({
-        title: "User type is required",
-        description: "Select the user type you want to create first.",
-        status: "warning",
-        duration: 3000,
-      });
-      return;
-    }
+
 
     try {
       await userStore.downloadBulkUploadTemplate({
         companyId: bulkForm.companyId,
-        companyManagerLevels: selectedBulkManagerLevels,
-        uploadRole: bulkForm.uploadRole,
       });
     } catch (err: any) {
       showToast({

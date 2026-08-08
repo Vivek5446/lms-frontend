@@ -297,11 +297,36 @@ class UserStore {
           formData.append(key, String(value));
         }
       });
-      const response = await axios.post("/admin/users/bulk", formData, {
+      const response = await axios.post("/admin/users/bulk-v2", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      const resData = response?.data;
+      if (resData?.data?.file) {
+        try {
+          const byteCharacters = atob(resData.data.file);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+          
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = downloadUrl;
+          link.download = resData.data.fileName || "Bulk_Upload_Results.xlsx";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(downloadUrl);
+        } catch (e) {
+          console.error("Failed to download results excel", e);
+        }
+      }
+
       return response?.data;
     } catch (err: any) {
       return Promise.reject(err?.response?.data || err.message);
@@ -312,7 +337,7 @@ class UserStore {
 
   downloadBulkUploadTemplate = async (options: any = {}) => {
     try {
-      const response = await axios.get("/admin/users/bulk/template", {
+      const response = await axios.get("/admin/users/bulk-v2/template", {
         params: options,
         responseType: "blob",
       });
