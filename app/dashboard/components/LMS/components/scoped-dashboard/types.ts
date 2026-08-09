@@ -37,6 +37,7 @@ export type ScopedDashboardSummary = {
     companyName?: string | null;
     departmentId?: string | null;
     departmentName?: string | null;
+    primaryThemeColor?: string | null;
   };
   appliedFilters?: Partial<ScopedDashboardFilters>;
   filterOptions?: {

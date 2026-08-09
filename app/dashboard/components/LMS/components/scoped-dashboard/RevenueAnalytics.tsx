@@ -61,6 +61,7 @@ ChartJS.register(
 export type RevenueAnalyticsProps = {
   summary: ScopedDashboardSummary;
   isLoading?: boolean;
+  primaryThemeColor?: string | null;
 };
 
 type ViewMode = "daily" | "monthly";
@@ -70,7 +71,13 @@ function formatRupees(amount: number | null | undefined): string {
   return `₹${value.toLocaleString("en-IN")}`;
 }
 
-export function RevenueAnalytics({ summary, isLoading = false }: RevenueAnalyticsProps) {
+export function RevenueAnalytics({
+  summary,
+  isLoading = false,
+  primaryThemeColor,
+}: RevenueAnalyticsProps) {
+  const themeColor =
+    primaryThemeColor || summary?.scope?.primaryThemeColor || "#6269FF";
   const [chartView, setChartView] = useState<ViewMode>("daily");
 
   const cardBg = useColorModeValue("white", "gray.800");
@@ -144,7 +151,7 @@ export function RevenueAnalytics({ summary, isLoading = false }: RevenueAnalytic
           backgroundColor: (context) => {
             const chart = context.chart;
             const { ctx, chartArea } = chart;
-            if (!chartArea) return "#10B981";
+            if (!chartArea) return themeColor;
             const gradient = ctx.createLinearGradient(
               0,
               chartArea.bottom,
@@ -155,19 +162,19 @@ export function RevenueAnalytics({ summary, isLoading = false }: RevenueAnalytic
               gradient.addColorStop(0, "rgba(16, 185, 129, 0.35)");
               gradient.addColorStop(1, "#10B981");
             } else {
-              gradient.addColorStop(0, "rgba(99, 102, 241, 0.35)");
-              gradient.addColorStop(1, "#6366F1");
+              gradient.addColorStop(0, `${themeColor}35`);
+              gradient.addColorStop(1, themeColor);
             }
             return gradient;
           },
-          borderColor: chartView === "daily" ? "#059669" : "#4F46E5",
+          borderColor: chartView === "daily" ? "#059669" : themeColor,
           borderWidth: 1.5,
           borderRadius: 6,
           maxBarThickness: 42,
         },
       ],
     };
-  }, [labels, currentChartEntries, chartView]);
+  }, [labels, currentChartEntries, chartView, themeColor]);
 
   const chartOptions = useMemo(
     () => ({

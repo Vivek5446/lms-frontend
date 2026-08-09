@@ -42,13 +42,16 @@ export type DailyRegistrationChartProps = {
   charts?: ScopedDashboardSummary["charts"];
   isLoading?: boolean;
   role?: "admin" | "departmenthead";
+  primaryThemeColor?: string | null;
 };
 
 export function DailyRegistrationChart({
   charts,
   isLoading = false,
   role = "admin",
+  primaryThemeColor,
 }: DailyRegistrationChartProps) {
+  const themeColor = primaryThemeColor || "#6269FF";
   // Theme colors
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -80,26 +83,26 @@ export function DailyRegistrationChart({
           backgroundColor: (context) => {
             const chart = context.chart;
             const { ctx, chartArea } = chart;
-            if (!chartArea) return "#7C3AED";
+            if (!chartArea) return themeColor;
             const gradient = ctx.createLinearGradient(
               0,
               chartArea.bottom,
               0,
               chartArea.top
             );
-            gradient.addColorStop(0, "rgba(99, 102, 241, 0.4)");
-            gradient.addColorStop(1, "#8B5CF6");
+            gradient.addColorStop(0, `${themeColor}35`);
+            gradient.addColorStop(1, themeColor);
             return gradient;
           },
-          borderColor: "#7C3AED",
+          borderColor: themeColor,
           borderWidth: 1.5,
           borderRadius: 6,
-          hoverBackgroundColor: "#6D28D9",
+          hoverBackgroundColor: themeColor,
           maxBarThickness: 42,
         },
       ],
     };
-  }, [labels, dailyEnrollments]);
+  }, [labels, dailyEnrollments, themeColor]);
 
   const chartOptions = useMemo(
     () => ({
@@ -205,9 +208,10 @@ export function DailyRegistrationChart({
               align="center"
               justify="center"
               borderRadius="xl"
-              bgGradient="linear(to-br, #6269FF, #8A2BE2)"
+              bg={themeColor}
+              // bgGradient={`linear(to-br, ${themeColor})`}
               color="white"
-              boxShadow="0 4px 12px rgba(98, 105, 255, 0.28)"
+              boxShadow={`0 4px 12px ${themeColor}44`}
               flexShrink={0}
             >
               <Icon as={FiBookOpen} boxSize={5} />

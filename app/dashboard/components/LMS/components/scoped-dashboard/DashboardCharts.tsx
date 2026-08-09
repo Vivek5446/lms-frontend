@@ -36,17 +36,17 @@ ChartJS.register(
   Tooltip
 );
 
-const COLORS = ["#7C3AED", "#2563EB", "#0D9488", "#EA580C", "#DB2777", "#64748B"];
-
 function ChartCard({
   title,
   subtitle,
   entries,
+  themeColor = "#6269FF",
   children,
 }: {
   title: string;
   subtitle: string;
   entries: DashboardChartEntry[];
+  themeColor?: string;
   children: React.ReactNode;
 }) {
   const bg = useColorModeValue("white", "gray.800");
@@ -63,8 +63,8 @@ function ChartCard({
       minW={0}
     >
       <HStack align="flex-start" mb={4}>
-        <Box color="purple.500" pt={1}>
-          <FiBarChart2 />
+        <Box color={themeColor} pt={1}>
+          <FiBarChart2 boxSize={4} />
         </Box>
         <Box minW={0}>
           <Heading size="sm">{title}</Heading>
@@ -105,10 +105,15 @@ function values(entries: DashboardChartEntry[]) {
 export function DashboardCharts({
   role,
   charts,
+  primaryThemeColor,
 }: {
   role: "admin" | "departmenthead";
   charts: ScopedDashboardSummary["charts"];
+  primaryThemeColor?: string | null;
 }) {
+  const themeColor = primaryThemeColor || "#6269FF";
+  const colors = [themeColor, "#2563EB", "#0D9488", "#EA580C", "#DB2777", "#64748B"];
+
   const textColor = useColorModeValue("#475569", "#CBD5E1");
   const gridColor = useColorModeValue("rgba(148,163,184,.16)", "rgba(148,163,184,.12)");
   const completion = charts?.enrollmentsByStatus || [];
@@ -150,6 +155,7 @@ export function DashboardCharts({
         title="Course completion"
         subtitle="Completed, in-progress, and not-started enrollments"
         entries={completion}
+        themeColor={themeColor}
       >
         <Doughnut
           data={{
@@ -157,7 +163,7 @@ export function DashboardCharts({
             datasets: [
               {
                 data: values(completion),
-                backgroundColor: ["#0D9488", "#7C3AED", "#CBD5E1"],
+                backgroundColor: ["#0D9488", themeColor, "#CBD5E1"],
                 borderWidth: 0,
                 hoverOffset: 6,
               },
@@ -171,6 +177,7 @@ export function DashboardCharts({
         title="Learner progress"
         subtitle="Distribution of progress across assigned learning"
         entries={progress}
+        themeColor={themeColor}
       >
         <Bar
           data={{
@@ -178,7 +185,22 @@ export function DashboardCharts({
             datasets: [
               {
                 data: values(progress),
-                backgroundColor: "#7C3AED",
+                backgroundColor: (context) => {
+                  const chart = context.chart;
+                  const { ctx, chartArea } = chart;
+                  if (!chartArea) return themeColor;
+                  const gradient = ctx.createLinearGradient(
+                    0,
+                    chartArea.bottom,
+                    0,
+                    chartArea.top
+                  );
+                  gradient.addColorStop(0, `${themeColor}55`);
+                  gradient.addColorStop(1, themeColor);
+                  return gradient;
+                },
+                borderColor: themeColor,
+                borderWidth: 1,
                 borderRadius: 8,
                 maxBarThickness: 42,
               },
@@ -192,6 +214,7 @@ export function DashboardCharts({
         title="Completion trend"
         subtitle="Course completions recorded over the last six months"
         entries={completionTrend}
+        themeColor={themeColor}
       >
         <Line
           data={{
@@ -199,12 +222,12 @@ export function DashboardCharts({
             datasets: [
               {
                 data: values(completionTrend),
-                borderColor: "#2563EB",
-                backgroundColor: "rgba(37,99,235,.12)",
+                borderColor: themeColor,
+                backgroundColor: `${themeColor}22`,
                 fill: true,
                 tension: 0.35,
-                pointRadius: 3,
-                pointBackgroundColor: "#2563EB",
+                pointRadius: 4,
+                pointBackgroundColor: themeColor,
               },
             ],
           }}
@@ -220,6 +243,7 @@ export function DashboardCharts({
             : "People distribution within the current scope"
         }
         entries={roleOrDepartment}
+        themeColor={themeColor}
       >
         <Bar
           data={{
@@ -228,7 +252,7 @@ export function DashboardCharts({
               {
                 data: values(roleOrDepartment),
                 backgroundColor: roleOrDepartment.map(
-                  (_, index) => COLORS[index % COLORS.length]
+                  (_, index) => colors[index % colors.length]
                 ),
                 borderRadius: 8,
                 maxBarThickness: 42,
@@ -255,6 +279,7 @@ export function DashboardCharts({
           title="Assessment performance"
           subtitle="Quiz attempts grouped into score bands"
           entries={quiz}
+          themeColor={themeColor}
         >
           <Bar
             data={{

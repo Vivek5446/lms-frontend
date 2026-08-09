@@ -264,6 +264,11 @@ const ScopedDashboard = observer(() => {
         },
       ];
 
+  const companyThemeColor =
+    scope.primaryThemeColor ||
+    stores.auth?.user?.companyDetails?.primaryThemeColor ||
+    "#6269FF";
+
   const dashboardTitle = isAdmin ? scope.companyName || "COMPANY DASHBOARD" : scope.departmentName || "DEPARTMENT DASHBOARD";
   const titleWords = dashboardTitle.split(" ");
   const titleFirstWord = titleWords[0] || "";
@@ -297,7 +302,7 @@ const ScopedDashboard = observer(() => {
         w: "180px",
         h: "180px",
         borderRadius: "full",
-        bgGradient: "linear(to-br, purple.100, blue.100)",
+        bgGradient: `linear(to-br, ${companyThemeColor}20, blue.100)`,
         opacity: useColorModeValue(0.5, 0.06),
         pointerEvents: "none",
       }}
@@ -321,9 +326,10 @@ const ScopedDashboard = observer(() => {
             flexShrink={0}
             align="center"
             justify="center"
-            bgGradient="linear(to-br, #6269FF, #8A2BE2)"
+            bg={companyThemeColor}
+            // bgGradient={`linear(to-br, ${companyThemeColor})`}
             borderRadius={{ base: "xl", md: "2xl" }}
-            boxShadow="0 8px 20px rgba(98, 105, 255, 0.28)"
+            boxShadow={`0 8px 20px ${companyThemeColor}44`}
           >
             <Icon
               as={isAdmin ? FiBriefcase : FiLayers}
@@ -350,10 +356,11 @@ const ScopedDashboard = observer(() => {
               {titleRest && (
                 <Box
                   as="span"
-                  bgGradient={useColorModeValue(
-                    "linear(to-r, #6269FF, #8A2BE2)",
-                    "linear(to-r, purple.300, blue.300)"
-                  )}
+                  bg={companyThemeColor}
+                  // bgGradient={useColorModeValue(
+                  //   `linear(to-r, ${companyThemeColor}, #8A2BE2)`,
+                  //   "linear(to-r, purple.300, blue.300)"
+                  // )}
                   bgClip="text"
                 >
                   {titleRest}
@@ -466,13 +473,25 @@ const ScopedDashboard = observer(() => {
           borderColor={heroBorder}
           gap={2}
         >
-          <Tab fontSize="xs" fontWeight="700" px={4} py={2}>
+          <Tab
+            fontSize="xs"
+            fontWeight="700"
+            px={4}
+            py={2}
+            _selected={{ bg: companyThemeColor, color: "white", boxShadow: "md" }}
+          >
             <HStack spacing={2}>
               <Icon as={FiActivity} boxSize={4} />
               <Text>Overview Analytics</Text>
             </HStack>
           </Tab>
-          <Tab fontSize="xs" fontWeight="700" px={4} py={2}>
+          <Tab
+            fontSize="xs"
+            fontWeight="700"
+            px={4}
+            py={2}
+            _selected={{ bg: companyThemeColor, color: "white", boxShadow: "md" }}
+          >
             <HStack spacing={2}>
               <Icon as={FiDollarSign} boxSize={4} />
               <Text>Revenue & Sales</Text>
@@ -500,11 +519,12 @@ const ScopedDashboard = observer(() => {
               <DashboardCharts
                 role={role as "admin" | "departmenthead"}
                 charts={scoped.charts}
-              />
+                />
               <DailyRegistrationChart
                 role={role as "admin" | "departmenthead"}
                 charts={scoped.charts}
                 isLoading={scopedSummaryLoading}
+                primaryThemeColor={companyThemeColor}
               />
             </Stack>
           </TabPanel>
@@ -513,6 +533,7 @@ const ScopedDashboard = observer(() => {
             <RevenueAnalytics
               summary={scoped}
               isLoading={scopedSummaryLoading}
+              primaryThemeColor={companyThemeColor}
             />
           </TabPanel>
         </TabPanels>
@@ -532,15 +553,16 @@ const ScopedDashboard = observer(() => {
           ))}
         </SimpleGrid>
 
-
-        <DashboardCharts
-          role={role as "admin" | "departmenthead"}
-          charts={scoped.charts}
-        />
         <DailyRegistrationChart
           role={role as "admin" | "departmenthead"}
           charts={scoped.charts}
           isLoading={scopedSummaryLoading}
+          primaryThemeColor={companyThemeColor}
+        />
+
+        <DashboardCharts
+          role={role as "admin" | "departmenthead"}
+          charts={scoped.charts}
         />
       </Stack>
     )}
