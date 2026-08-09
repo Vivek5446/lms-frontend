@@ -24,14 +24,30 @@ import {
   Collapse,
   Divider,
   Tooltip,
-  Spinner
+  Spinner,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { FaClipboardList, FaPlus, FaTrash, FaEdit, FaChevronDown, FaChevronUp, FaLightbulb, FaArrowUp, FaArrowDown, FaLink, FaMagic, FaRobot } from "react-icons/fa";
-import { FiCheckCircle, FiStar, FiImage, FiVideo, FiList, FiGrid } from "react-icons/fi";
+import { FiCheckCircle, FiStar, FiImage, FiVideo, FiList, FiGrid, FiArrowLeft } from "react-icons/fi";
 import axios from "axios";
 
-export default function QuestionBuilder({ quizId, initialQuestions = [] }: { quizId: string, initialQuestions?: any[] }) {
+export default function QuestionBuilder({ 
+  quizId, 
+  initialQuestions = [],
+  themeColor = "#0078D4",
+  quizTitle = "",
+  quizDescription = ""
+}: { 
+  quizId: string, 
+  initialQuestions?: any[],
+  themeColor?: string,
+  quizTitle?: string,
+  quizDescription?: string
+}) {
   const toast = useToast();
   const [questions, setQuestions] = useState<any[]>(initialQuestions);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
@@ -41,9 +57,15 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
 
   // Form State
   const [questionText, setQuestionText] = useState("");
-  const [questionType, setQuestionType] = useState("text"); 
+  const [subtitle, setSubtitle] = useState("");
+  const [questionType, setQuestionType] = useState("choice"); 
+  const [isRequired, setIsRequired] = useState(true);
+  const [isMultipleChoice, setIsMultipleChoice] = useState(false);
+  const [ratingConfig, setRatingConfig] = useState({ levels: 5, symbol: "Star" });
+  
   const [points, setPoints] = useState(1);
-  const [options, setOptions] = useState([{ answer: "", correct: false, sequenceOrder: 1, description: "" }, { answer: "", correct: false, sequenceOrder: 2, description: "" }]);
+  const [options, setOptions] = useState([{ answer: "", correct: false, sequenceOrder: 1, description: "", matrixMatchId: "" }, { answer: "", correct: false, sequenceOrder: 2, description: "", matrixMatchId: "" }]);
+  const [matrixColumns, setMatrixColumns] = useState([{ text: "Column 1" }, { text: "Column 2" }]);
   
   // Advanced Features State
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -52,10 +74,10 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
   const [allowPartialCredit, setAllowPartialCredit] = useState(false);
   const [explanation, setExplanation] = useState("");
 
-  const cardBg = useColorModeValue("rgba(255, 255, 255, 0.9)", "rgba(26, 32, 44, 0.9)");
+  const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
-  const headingColor = useColorModeValue("gray.900", "white");
-  const secondaryTextColor = useColorModeValue("gray.500", "gray.400");
+  const headingColor = useColorModeValue("gray.800", "white");
+  const secondaryTextColor = useColorModeValue("gray.600", "gray.400");
   
   const getDifficultyColor = (level: string) => {
     if (level === "Easy") return "green";
@@ -87,7 +109,7 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
 
   // Option Handlers
   const handleAddOption = () => {
-    setOptions([...options, { answer: "", correct: false, sequenceOrder: options.length + 1, description: "" }]);
+    setOptions([...options, { answer: "", correct: false, sequenceOrder: options.length + 1, description: "", matrixMatchId: "" }]);
   };
   
   const handleOptionChange = (index: number, field: string, value: any) => {
@@ -124,9 +146,14 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
   const handleEditQuestion = (q: any) => {
     setEditingQuestionId(q._id);
     setQuestionText(q.question);
-    setQuestionType(q.questionType || "text");
+    setSubtitle(q.subtitle || "");
+    setQuestionType(q.questionType || "choice");
+    setIsRequired(q.isRequired ?? true);
+    setIsMultipleChoice(q.isMultipleChoice || false);
+    setRatingConfig(q.ratingConfig || { levels: 5, symbol: "Star" });
     setPoints(q.points || 1);
-    setOptions(q.answers?.length > 0 ? q.answers : [{ answer: "", correct: false, sequenceOrder: 1, description: "" }]);
+    setOptions(q.answers?.length > 0 ? q.answers : [{ answer: "", correct: false, sequenceOrder: 1, description: "", matrixMatchId: "" }]);
+    setMatrixColumns(q.matrixColumns?.length > 0 ? q.matrixColumns : [{ text: "Column 1" }, { text: "Column 2" }]);
     
     setDifficultyLevel(q.difficultyLevel || "Medium");
     setNegativePoints(q.negativePoints || 0);
@@ -134,14 +161,19 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
     setExplanation(q.explanation || "");
     
     setIsAddingQuestion(true);
-    setShowAdvanced(!!q.explanation || q.negativePoints > 0 || q.allowPartialCredit);
+    setShowAdvanced(!!q.explanation || q.negativePoints > 0 || q.allowPartialCredit || q.difficultyLevel !== "Medium" || q.points !== 1);
   };
 
   const resetQuestionForm = () => {
     setQuestionText("");
-    setQuestionType("text");
+    setSubtitle("");
+    setQuestionType("choice");
+    setIsRequired(true);
+    setIsMultipleChoice(false);
+    setRatingConfig({ levels: 5, symbol: "Star" });
     setPoints(1);
-    setOptions([{ answer: "", correct: false, sequenceOrder: 1, description: "" }, { answer: "", correct: false, sequenceOrder: 2, description: "" }]);
+    setOptions([{ answer: "", correct: false, sequenceOrder: 1, description: "", matrixMatchId: "" }, { answer: "", correct: false, sequenceOrder: 2, description: "", matrixMatchId: "" }]);
+    setMatrixColumns([{ text: "Column 1" }, { text: "Column 2" }]);
     
     setDifficultyLevel("Medium");
     setNegativePoints(0);
@@ -163,9 +195,14 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
     try {
       const payload = {
         question: questionText,
+        subtitle,
         questionType,
+        isRequired,
+        isMultipleChoice,
+        ratingConfig,
         points,
         answers: options,
+        matrixColumns,
         difficultyLevel,
         negativePoints,
         allowPartialCredit,
@@ -201,185 +238,275 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
 
   return (
     <Box>
-      {/* AI Generator Bar */}
-      <Flex 
-        mb={8} 
-        p={6} 
-        bg="linear-gradient(135deg, #FF6B6B 0%, #845EC2 100%)" 
-        rounded="2xl" 
-        align="center" 
-        justify="space-between" 
-        shadow="lg"
-        transition="transform 0.2s"
-        _hover={{ transform: "translateY(-2px)", shadow: "xl" }}
-      >
-        <HStack color="white" spacing={4}>
-          <Box p={3} bg="whiteAlpha.300" rounded="full">
-            <Icon as={FaMagic} boxSize={6} />
-          </Box>
-          <VStack align="start" spacing={0}>
-            <Heading size="md" letterSpacing="tight">AI Quiz Architect</Heading>
-            <Text fontSize="sm" opacity={0.9}>Instantly generate perfect questions with AI</Text>
-          </VStack>
-        </HStack>
-        <Button 
-          size="lg" 
-          bg="white" 
-          color="#845EC2" 
-          leftIcon={isGenerating ? <Spinner size="sm"/> : <FaRobot />}
-          onClick={handleAIGenerate}
-          isLoading={isGenerating}
-          loadingText="Generating..."
-          shadow="md"
-          _hover={{ bg: "gray.100" }}
-        >
-          Auto-Generate
-        </Button>
-      </Flex>
+      {/* Sleek MS Forms Title Card */}
+      <Box bg={cardBg} rounded="xl" p={0} shadow="md" mb={6} overflow="hidden" borderWidth="1px" borderColor={borderColor}>
+        <Box h="8px" w="full" bgGradient={`linear(to-r, ${themeColor}, ${themeColor}80)`} />
+        <Box px={6} py={4}>
+          <HStack align="flex-start" spacing={4}>
+            {isAddingQuestion && (
+              <IconButton
+                aria-label="Back to Questions"
+                icon={<FiArrowLeft size={16} />}
+                variant="ghost"
+                color={secondaryTextColor}
+                bg={useColorModeValue("gray.100", "whiteAlpha.100")}
+                onClick={resetQuestionForm}
+                size="sm"
+                w="32px" h="32px"
+                rounded="full"
+                mt={0.5}
+                _hover={{ bg: useColorModeValue("gray.200", "whiteAlpha.200"), color: headingColor, transform: "translateX(-2px)" }}
+                transition="all 0.2s"
+              />
+            )}
+            <Box>
+              <Heading size="md" color={headingColor} fontWeight="700" letterSpacing="tight" mb={1}>{quizTitle || "Untitled Quiz"}</Heading>
+              <Text color={secondaryTextColor} fontSize="sm">{quizDescription || "No description provided."}</Text>
+            </Box>
+          </HStack>
+        </Box>
+      </Box>
 
-      {/* Saved Questions List - Premium Cards */}
+      {/* Saved Questions List */}
       {questions.length > 0 && !isAddingQuestion && (
         <VStack spacing={4} align="stretch" mb={8}>
-          <Heading size="md" color={headingColor} mb={2}>Saved Questions</Heading>
           {questions.map((q, idx) => (
             <Box 
               key={q._id || idx} 
-              p={5} 
+              p={6} 
               bg={cardBg} 
               borderWidth="1px" 
               borderColor={borderColor} 
-              rounded="xl" 
+              rounded="lg" 
               shadow="sm"
-              transition="all 0.2s"
-              _hover={{ shadow: "md", transform: "translateY(-2px)", borderColor: "blue.300" }}
-              backdropFilter="blur(10px)"
+              cursor="pointer"
+              _hover={{ bg: useColorModeValue("gray.50", "gray.700") }}
+              onClick={() => handleEditQuestion(q)}
             >
-              <Flex justify="space-between" align="flex-start">
-                <Box flex="1" mr={4}>
-                  <HStack mb={2} spacing={3}>
-                    <Badge colorScheme="blue" rounded="md" px={2} py={1}>Q{idx + 1}</Badge>
-                    <Badge colorScheme={getDifficultyColor(q.difficultyLevel)} variant="subtle" rounded="md">{q.difficultyLevel || "Medium"}</Badge>
-                    <Badge colorScheme="purple" variant="outline" rounded="md">{q.points} Points</Badge>
-                    <Badge colorScheme="gray" variant="solid" rounded="md"><Icon as={getQuestionTypeIcon(q.questionType)} mr={1} mb="-2px"/>{q.questionType}</Badge>
-                    {q.negativePoints > 0 && (
-                      <Badge colorScheme="red" variant="outline" rounded="md">-{q.negativePoints} Penalty</Badge>
-                    )}
-                  </HStack>
-                  <Text fontWeight="semibold" fontSize="lg" color={headingColor} noOfLines={2}>
-                    {q.questionType === "image" || q.questionType === "video" ? <><Icon as={FaLink} mr={2} color="blue.400"/> {q.question}</> : q.question}
+              <HStack align="flex-start" spacing={4}>
+                <Text fontWeight="600" color={headingColor} fontSize="md">{idx + 1}.</Text>
+                <Box flex="1">
+                  <Text fontWeight="600" fontSize="md" color={headingColor} mb={1}>
+                    {q.question}
                   </Text>
-                  {q.explanation && (
-                    <Text fontSize="sm" color={secondaryTextColor} mt={2} fontStyle="italic" noOfLines={1}>
-                      <Icon as={FaLightbulb} mr={1} color="yellow.400" /> {q.explanation}
-                    </Text>
-                  )}
+                  {q.subtitle && <Text fontSize="sm" color={secondaryTextColor} mb={4}>{q.subtitle}</Text>}
+                  
+                  {/* Read-only view of options */}
+                  <VStack align="start" spacing={2} mt={3}>
+                    {q.answers?.map((ans: any, aIdx: number) => (
+                      <HStack key={aIdx} spacing={3}>
+                        {q.questionType === "choice" || q.questionType === "text" ? (
+                          <Box w="16px" h="16px" rounded={q.isMultipleChoice ? "sm" : "full"} borderWidth="1px" borderColor={secondaryTextColor} />
+                        ) : null}
+                        <Text color={secondaryTextColor}>{ans.answer}</Text>
+                      </HStack>
+                    ))}
+                  </VStack>
                 </Box>
-                <HStack spacing={1}>
-                  <Tooltip label="Edit Question">
-                    <IconButton aria-label="Edit question" icon={<FaEdit />} colorScheme="blue" variant="ghost" onClick={() => handleEditQuestion(q)} />
-                  </Tooltip>
-                  <Tooltip label="Delete Question">
-                    <IconButton aria-label="Delete question" icon={<FaTrash />} colorScheme="red" variant="ghost" onClick={() => handleDeleteQuestion(q._id)} />
-                  </Tooltip>
-                </HStack>
-              </Flex>
+              </HStack>
             </Box>
           ))}
         </VStack>
       )}
 
-      {/* Empty State / Add Button */}
+      {/* Add Button Toolbar */}
       {!isAddingQuestion ? (
-        <Center 
-          flexDirection="column" 
-          py={12} 
-          textAlign="center" 
-          bg={cardBg}
-          borderWidth="2px" 
-          borderStyle="dashed" 
-          borderColor={borderColor} 
-          rounded="2xl"
-          cursor="pointer"
-          transition="all 0.2s"
-          _hover={{ bg: useColorModeValue("blue.50", "blue.900"), borderColor: "blue.400" }}
-          onClick={() => setIsAddingQuestion(true)}
-        >
-          <Icon as={FaPlus} boxSize={10} color="blue.400" mb={4} />
-          <Heading size="md" color={headingColor} mb={2}>
-            {questions.length === 0 ? "Start Building Your Assessment" : "Add Another Question"}
-          </Heading>
-          <Text color={secondaryTextColor} maxW="md">
-            Create powerful, dynamic questions using the premium builder.
-          </Text>
-        </Center>
-      ) : (
-        /* Premium Question Builder Form */
-        <Box bg={cardBg} borderWidth="1px" borderColor={borderColor} rounded="2xl" p={8} shadow="lg" backdropFilter="blur(10px)">
-          <VStack spacing={8} align="stretch">
-            <Flex justify="space-between" align="center">
-              <HStack>
-                <Icon as={FiStar} color="blue.500" boxSize={6} />
-                <Heading size="md" color={headingColor}>{editingQuestionId ? "Edit Advanced Question" : "Create Advanced Question"}</Heading>
-              </HStack>
-              <Button variant="ghost" colorScheme="red" onClick={resetQuestionForm}>Cancel</Button>
-            </Flex>
+        <Flex mt={8} mb={12} justify="center">
+          <Flex 
+            bg={useColorModeValue("white", "gray.800")} 
+            p={2} 
+            rounded="full" 
+            shadow="md" 
+            borderWidth="1px" 
+            borderColor={borderColor} 
+            alignItems="center" 
+            gap={1}
+            _hover={{ shadow: "lg", transform: "translateY(-1px)" }}
+            transition="all 0.3s"
+          >
+            <Button size="sm" rounded="full" leftIcon={<Icon as={FaPlus} />} variant="ghost" colorScheme="blue" fontWeight="600" onClick={() => { resetQuestionForm(); setQuestionType("choice"); setIsAddingQuestion(true); }}>Choice</Button>
+            <Button size="sm" rounded="full" leftIcon={<Icon as={FaEdit} />} variant="ghost" colorScheme="blue" fontWeight="600" onClick={() => { resetQuestionForm(); setQuestionType("text_input"); setIsAddingQuestion(true); }}>Text</Button>
+            <Button size="sm" rounded="full" leftIcon={<Icon as={FiStar} />} variant="ghost" colorScheme="blue" fontWeight="600" onClick={() => { resetQuestionForm(); setQuestionType("rating"); setIsAddingQuestion(true); }}>Rating</Button>
+            <Button size="sm" rounded="full" leftIcon={<Icon as={FaClipboardList} />} variant="ghost" colorScheme="blue" fontWeight="600" onClick={() => { resetQuestionForm(); setQuestionType("date"); setIsAddingQuestion(true); }}>Date</Button>
             
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-              <FormControl isRequired>
-                <FormLabel color={secondaryTextColor}>Question Engine Type</FormLabel>
-                <Select value={questionType} onChange={(e) => setQuestionType(e.target.value)} rounded="md" focusBorderColor="blue.400" bg="blue.50" color="blue.700" fontWeight="bold">
-                  <option value="text">Standard Multiple Choice</option>
-                  <option value="fill_in_blanks">Fill in the Blanks</option>
-                  <option value="sequence">Sequence (Drag & Drop Ordering)</option>
-                  <option value="matrix">Matrix (Match the Following)</option>
-                  <option value="image">Image Prompt</option>
-                  <option value="video">Video Prompt</option>
-                </Select>
-              </FormControl>
-              <FormControl>
-                <FormLabel color={secondaryTextColor}>Difficulty Level</FormLabel>
-                <Select value={difficultyLevel} onChange={(e) => setDifficultyLevel(e.target.value)} rounded="md" focusBorderColor="blue.400">
-                  <option value="Easy">Easy (Green)</option>
-                  <option value="Medium">Medium (Yellow)</option>
-                  <option value="Hard">Hard (Red)</option>
-                </Select>
-              </FormControl>
-              <FormControl>
-                <FormLabel color={secondaryTextColor}>Points</FormLabel>
-                <Input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))} rounded="md" focusBorderColor="blue.400" />
-              </FormControl>
-            </SimpleGrid>
-
+            <Box w="1px" h="20px" bg={borderColor} mx={1} />
+            
+            <Menu placement="bottom-end">
+              <MenuButton as={Button} size="sm" rounded="full" rightIcon={<FaChevronDown size={10} />} variant="ghost" colorScheme="gray" fontWeight="600">
+                More
+              </MenuButton>
+              <MenuList shadow="xl" rounded="xl" border="none" py={2} minW="180px">
+                <MenuItem icon={<FiList />} onClick={() => { resetQuestionForm(); setQuestionType("fill_in_blanks"); setIsAddingQuestion(true); }}>Fill in the Blanks</MenuItem>
+                <MenuItem icon={<FaLink />} onClick={() => { resetQuestionForm(); setQuestionType("matching"); setIsAddingQuestion(true); }}>Matching</MenuItem>
+                <MenuItem icon={<FiGrid />} onClick={() => { resetQuestionForm(); setQuestionType("matrix"); setIsAddingQuestion(true); }}>Matrix</MenuItem>
+                <MenuItem icon={<FaArrowUp />} onClick={() => { resetQuestionForm(); setQuestionType("sequence"); setIsAddingQuestion(true); }}>Sequence</MenuItem>
+                <MenuItem icon={<FiImage />} onClick={() => { resetQuestionForm(); setQuestionType("image"); setIsAddingQuestion(true); }}>Image Upload</MenuItem>
+                <MenuItem icon={<FiVideo />} onClick={() => { resetQuestionForm(); setQuestionType("video"); setIsAddingQuestion(true); }}>Video Response</MenuItem>
+              </MenuList>
+            </Menu>
+          </Flex>
+        </Flex>
+      ) : (
+        /* MS Forms Edit Mode */
+        <Box bg={cardBg} rounded="lg" p={6} shadow="md" mt={4} mb={8} borderLeftWidth="4px" borderLeftColor="blue.500">
+          <VStack spacing={4} align="stretch">
+            
             <FormControl isRequired>
-              <FormLabel color={secondaryTextColor} fontWeight="bold">
-                {questionType === "image" ? "Image URL" : questionType === "video" ? "Video URL" : "Question Prompt"}
-              </FormLabel>
-              <Textarea 
+              <Input 
                 value={questionText} 
                 onChange={(e) => setQuestionText(e.target.value)} 
-                placeholder={
-                  questionType === "fill_in_blanks" ? "Use [blank] to indicate where the student should fill in text. E.g. The capital of France is [blank]." 
-                  : questionType === "image" ? "https://example.com/image.png"
-                  : questionType === "video" ? "https://youtube.com/watch?v=..."
-                  : "Write your brilliant question here..."
-                }
-                rows={4} 
-                size="lg"
-                focusBorderColor="blue.400"
-                rounded="xl"
+                placeholder="Question" 
+                size="md"
+                variant="flushed"
+                fontSize="md"
+                fontWeight="600"
+                focusBorderColor="blue.500"
+                bg={useColorModeValue("gray.50", "gray.800")}
+                p={3}
+                rounded="sm"
               />
-              {questionType === "fill_in_blanks" && (
-                <Text fontSize="sm" color="blue.500" mt={2}><Icon as={FaLightbulb} mr={1}/> Hint: Add options below to represent the correct answers for each [blank] in order.</Text>
-              )}
+            </FormControl>
+            
+            <FormControl>
+              <Input 
+                value={subtitle} 
+                onChange={(e) => setSubtitle(e.target.value)} 
+                placeholder="Enter a subtitle (optional)" 
+                variant="flushed"
+                color={secondaryTextColor}
+                focusBorderColor="blue.400"
+              />
             </FormControl>
 
             {/* Dynamic Options Section based on Type */}
-            <Box borderWidth="1px" borderColor={borderColor} p={6} rounded="xl" bg={useColorModeValue("gray.50", "gray.800")}>
-              <Heading size="sm" mb={6} color={headingColor} textTransform="uppercase" letterSpacing="widest">
-                {questionType === "sequence" ? "Define Correct Order" : questionType === "matrix" ? "Define Matching Pairs" : "Answer Options"}
-              </Heading>
+            <Box mt={4}>
               
-              <VStack spacing={4} align="stretch">
+              {questionType === "text_input" && (
+                <Box>
+                  <Textarea placeholder="Users will type their answer here..." isDisabled rows={3} bg={useColorModeValue("gray.50", "gray.800")} rounded="md" mb={4} />
+                  <Box p={4} bg={useColorModeValue("gray.50", "gray.800")} rounded="lg" borderWidth="1px" borderColor={borderColor}>
+                    <FormLabel color={secondaryTextColor} fontWeight="semibold" fontSize="sm">Correct Answer(s) for Auto-grading</FormLabel>
+                    <Text fontSize="xs" color={secondaryTextColor} mb={4}>If provided, the system will auto-grade if the student's text matches any of these. If left empty, it requires manual grading.</Text>
+                    <VStack align="stretch" spacing={3}>
+                      {options.map((opt, idx) => (
+                         <HStack key={`txt-ans-${idx}`}>
+                           <Input 
+                             placeholder="Enter an accepted correct answer"
+                             value={opt.answer}
+                             onChange={(e) => {
+                               const newOptions = [...options];
+                               newOptions[idx].answer = e.target.value;
+                               newOptions[idx].correct = true;
+                               setOptions(newOptions);
+                             }}
+                             size="sm"
+                             rounded="md"
+                             bg={useColorModeValue("white", "gray.900")}
+                           />
+                           <IconButton aria-label="Remove" icon={<FaTrash />} size="sm" variant="ghost" colorScheme="red" onClick={() => {
+                             const newOptions = [...options];
+                             newOptions.splice(idx, 1);
+                             setOptions(newOptions);
+                           }} />
+                         </HStack>
+                      ))}
+                      <Button size="sm" colorScheme="blue" variant="ghost" onClick={() => setOptions([...options, { answer: "", correct: true, sequenceOrder: options.length + 1, description: "", matrixMatchId: "" }])} alignSelf="flex-start">
+                         + Add correct answer
+                      </Button>
+                    </VStack>
+                  </Box>
+                </Box>
+              )}
+              
+              {questionType === "rating" && (
+                <Flex align="center" gap={4} p={6} bg={useColorModeValue("gray.50", "gray.800")} rounded="xl" borderWidth="1px" borderColor={borderColor}>
+                  <FormControl w="auto">
+                    <FormLabel>Levels</FormLabel>
+                    <Select value={ratingConfig.levels} onChange={(e) => setRatingConfig({...ratingConfig, levels: Number(e.target.value)})}>
+                      {[2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
+                    </Select>
+                  </FormControl>
+                  <FormControl w="auto">
+                    <FormLabel>Symbol</FormLabel>
+                    <Select value={ratingConfig.symbol} onChange={(e) => setRatingConfig({...ratingConfig, symbol: e.target.value})}>
+                      <option value="Star">Star (⭐)</option>
+                      <option value="Number">Number (1, 2, 3)</option>
+                    </Select>
+                  </FormControl>
+                </Flex>
+              )}
+
+              {questionType === "date" && (
+                <Box>
+                  <Input type="date" isDisabled bg={useColorModeValue("gray.50", "gray.800")} rounded="md" maxW="300px" mb={4} />
+                  <Box p={4} bg={useColorModeValue("gray.50", "gray.800")} rounded="lg" borderWidth="1px" borderColor={borderColor}>
+                    <FormLabel color={secondaryTextColor} fontWeight="semibold" fontSize="sm">Correct Date for Auto-grading (Optional)</FormLabel>
+                    <Text fontSize="xs" color={secondaryTextColor} mb={4}>If provided, the system will auto-grade if the student selects this exact date. Leave empty for manual grading.</Text>
+                    <Input 
+                       type="date"
+                       maxW="300px"
+                       value={options.length > 0 ? options[0].answer : ""}
+                       onChange={(e) => {
+                         const newOptions = [...options];
+                         if (newOptions.length === 0) {
+                           newOptions.push({ answer: e.target.value, correct: true, sequenceOrder: 1, description: "", matrixMatchId: "" });
+                         } else {
+                           newOptions[0].answer = e.target.value;
+                           newOptions[0].correct = true;
+                         }
+                         setOptions(newOptions);
+                       }}
+                       size="md"
+                       rounded="md"
+                       bg={useColorModeValue("white", "gray.900")}
+                    />
+                  </Box>
+                </Box>
+              )}
+              
+              {questionType === "fill_in_blanks" && (
+                <Box bg="blue.50" p={4} rounded="md" borderLeftWidth="4px" borderLeftColor="blue.400">
+                  <Text fontSize="sm" color="blue.700">
+                    <strong>Instructions:</strong> Type your sentence in the Question box above and use brackets to specify the blanks. 
+                    For example: <em>The capital of France is [Paris]</em>.
+                  </Text>
+                </Box>
+              )}
+
+              {(questionType === "image" || questionType === "video") && (
+                <Box bg="blue.50" p={4} rounded="md" borderLeftWidth="4px" borderLeftColor="blue.400">
+                  <Text fontSize="sm" color="blue.700">
+                    <strong>Instructions:</strong> Write the prompt above. Students will see an upload button to submit their {questionType} response.
+                  </Text>
+                </Box>
+              )}
+
+              {((questionType as string) === "choice" || (questionType as string) === "text" || (questionType as string) === "sequence" || (questionType as string) === "matching" || (questionType as string) === "matrix") && (
+                <Box>
+                  {questionType === "matrix" && (
+                    <Box mb={6}>
+                      <FormLabel color={secondaryTextColor} fontWeight="semibold">Columns (Options)</FormLabel>
+                      <VStack align="stretch" spacing={2}>
+                        {matrixColumns.map((col, idx) => (
+                          <HStack key={`col-${idx}`}>
+                            <Input value={col.text} onChange={(e) => {
+                              const newCols = [...matrixColumns];
+                              newCols[idx].text = e.target.value;
+                              setMatrixColumns(newCols);
+                            }} placeholder={`Column ${idx + 1} (e.g. Strongly Agree)`} size="sm" rounded="md" />
+                            <IconButton aria-label="Remove" icon={<FaTrash />} size="sm" variant="ghost" colorScheme="red" onClick={() => {
+                              const newCols = [...matrixColumns];
+                              newCols.splice(idx, 1);
+                              setMatrixColumns(newCols);
+                            }} />
+                          </HStack>
+                        ))}
+                        <Button size="sm" leftIcon={<FaPlus />} variant="ghost" onClick={() => setMatrixColumns([...matrixColumns, { text: `Column ${matrixColumns.length + 1}` }])}>Add Column</Button>
+                      </VStack>
+                      <FormLabel color={secondaryTextColor} fontWeight="semibold" mt={4}>Rows (Statements)</FormLabel>
+                    </Box>
+                  )}
+                  <VStack spacing={3} align="stretch">
                 {options.map((opt, idx) => (
                   <HStack w="100%" key={idx} bg={cardBg} p={3} rounded="lg" shadow="sm" borderWidth="1px" borderColor={opt.correct && questionType === "text" ? "green.400" : borderColor}>
                     
@@ -392,7 +519,7 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
 
                     {/* Primary Input */}
                     <Input 
-                      placeholder={questionType === "matrix" ? `Prompt A${idx + 1} (Left Side)` : `Option ${idx + 1}`} 
+                      placeholder={questionType === "matching" ? `Prompt A${idx + 1} (Left Side)` : questionType === "matrix" ? `Row ${idx + 1}` : `Option ${idx + 1}`} 
                       value={opt.answer} 
                       onChange={(e) => handleOptionChange(idx, "answer", e.target.value)} 
                       variant="unstyled"
@@ -400,14 +527,14 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
                       fontWeight="medium"
                     />
 
-                    {/* Secondary Input for Matrix Match */}
-                    {questionType === "matrix" && (
+                    {/* Secondary Input for Matching */}
+                    {questionType === "matching" && (
                       <>
-                        <Icon as={FiCheckCircle} color="green.400" mx={2} />
+                        <Icon as={FaLink} color="blue.400" mx={2} />
                         <Input 
                           placeholder={`Match B${idx + 1} (Right Side)`} 
-                          value={opt.description} 
-                          onChange={(e) => handleOptionChange(idx, "description", e.target.value)} 
+                          value={opt.matrixMatchId} 
+                          onChange={(e) => handleOptionChange(idx, "matrixMatchId", e.target.value)} 
                           variant="unstyled"
                           px={2}
                           fontWeight="medium"
@@ -418,8 +545,8 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
                       </>
                     )}
 
-                    {/* Standard Text/Image/Video Options */}
-                    {(questionType === "text" || questionType === "image" || questionType === "video") && (
+                    {/* Standard Text/Choice Options */}
+                    {((questionType as string) === "choice" || (questionType as string) === "text" || (questionType as string) === "image" || (questionType as string) === "video") && (
                       <FormControl display="flex" alignItems="center" w="auto" mr={2}>
                         <FormLabel mb="0" whiteSpace="nowrap" color={opt.correct ? "green.500" : secondaryTextColor} fontSize="sm" fontWeight={opt.correct ? "bold" : "normal"}>
                           {opt.correct ? "Correct Answer" : "Mark Correct"}
@@ -436,23 +563,59 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
                       </HStack>
                     )}
 
-                    <IconButton aria-label="Remove" icon={<FaTrash />} colorScheme="red" variant="ghost" size="sm" onClick={() => handleRemoveOption(idx)} />
+                    <IconButton aria-label="Remove" icon={<FaTrash />} colorScheme="gray" color="gray.400" variant="ghost" size="sm" _hover={{ color: "red.500", bg: "gray.100" }} onClick={() => handleRemoveOption(idx)} />
                   </HStack>
                 ))}
-                <Button size="md" leftIcon={<FaPlus />} variant="outline" colorScheme="blue" alignSelf="center" mt={2} onClick={handleAddOption} borderStyle="dashed">
-                  {questionType === "matrix" ? "Add Pair" : questionType === "sequence" ? "Add Sequence Step" : "Add Another Option"}
-                </Button>
+                <Flex w="full">
+                  <Button 
+                    w="full"
+                    size="sm" 
+                    leftIcon={<FaPlus />} 
+                    variant="outline" 
+                    borderStyle="dashed"
+                    borderWidth="2px"
+                    colorScheme="blue" 
+                    mt={4} 
+                    onClick={handleAddOption}
+                  >
+                    {questionType === "matching" ? "Add Pair" : questionType === "matrix" ? "Add Row" : questionType === "sequence" ? "Add Sequence Step" : "Add Option"}
+                  </Button>
+                </Flex>
               </VStack>
+              </Box>
+              )}
             </Box>
 
+            {/* Toggles (Required, Multiple) */}
+            <Flex justify="flex-end" mb={4} mt={4}>
+              <HStack spacing={6}>
+                {(questionType === "choice" || questionType === "image") && (
+                  <FormControl display="flex" alignItems="center" w="auto">
+                    <FormLabel htmlFor="multiple-switch" mb="0" fontSize="sm" fontWeight="medium" color={secondaryTextColor} mr={3}>Multiple Answers</FormLabel>
+                    <Switch id="multiple-switch" colorScheme="blue" isChecked={isMultipleChoice} onChange={(e) => setIsMultipleChoice(e.target.checked)} />
+                  </FormControl>
+                )}
+                
+                <FormControl display="flex" alignItems="center" w="auto">
+                  <FormLabel htmlFor="required-switch" mb="0" fontSize="sm" fontWeight="medium" color={secondaryTextColor} mr={3}>Required</FormLabel>
+                  <Switch id="required-switch" colorScheme="blue" isChecked={isRequired} onChange={(e) => setIsRequired(e.target.checked)} />
+                </FormControl>
+              </HStack>
+            </Flex>
+
             {/* Advanced Settings Toggle */}
-            <Box>
+            <Box w="full" mt={2}>
               <Button 
+                w="full"
                 variant="ghost" 
                 colorScheme="blue" 
+                bg={useColorModeValue("blue.50", "whiteAlpha.100")}
                 rightIcon={showAdvanced ? <FaChevronUp /> : <FaChevronDown />} 
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 size="sm"
+                justifyContent="space-between"
+                px={4}
+                _hover={{ bg: useColorModeValue("blue.100", "whiteAlpha.200") }}
               >
                 {showAdvanced ? "Hide Advanced Scoring & Settings" : "Show Advanced Scoring & Settings"}
               </Button>
@@ -489,10 +652,15 @@ export default function QuestionBuilder({ quizId, initialQuestions = [] }: { qui
               </Collapse>
             </Box>
 
-            <Flex justify="flex-end" pt={6}>
-              <Button colorScheme="blue" size="lg" leftIcon={<FiCheckCircle />} onClick={handleSaveQuestion} isLoading={isSavingQuestion} shadow="md" _hover={{ transform: "translateY(-1px)", shadow: "lg" }}>
-                {editingQuestionId ? "Update Advanced Question" : "Save Advanced Question"}
-              </Button>
+            <Flex justify="flex-end" align="center" pt={6} mt={6} borderTopWidth="1px" borderColor={borderColor}>
+              <HStack spacing={3}>
+                <Button variant="ghost" onClick={resetQuestionForm} color={secondaryTextColor}>
+                  Cancel
+                </Button>
+                <Button bg="blue.500" color="white" size="md" onClick={handleSaveQuestion} isLoading={isSavingQuestion} shadow="sm" _hover={{ bg: "blue.600" }} px={8}>
+                  {editingQuestionId ? "Update" : "Save"}
+                </Button>
+              </HStack>
             </Flex>
           </VStack>
         </Box>

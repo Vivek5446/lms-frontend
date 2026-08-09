@@ -120,7 +120,7 @@ export default function QuizSettingsForm({ initialData = {}, onSaved }: { initia
         res = await axios.put(`/quiz/${initialData._id}`, payload);
         toast({ title: "Quiz updated successfully", status: "success" });
       } else {
-        res = await axios.post("/quiz", payload);
+        res = await axios.post("/quiz/create", payload);
         toast({ title: "Quiz created successfully", status: "success" });
       }
       
