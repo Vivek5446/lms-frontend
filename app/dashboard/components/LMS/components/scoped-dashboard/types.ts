@@ -3,6 +3,14 @@ export type DashboardChartEntry = {
   value: number;
   users?: number;
   completionRate?: number;
+  date?: string;
+};
+
+export type TopRevenueCourse = {
+  title: string;
+  price: number;
+  enrollments: number;
+  totalRevenue: number;
 };
 
 export type DashboardOption = {

@@ -17,6 +17,11 @@ import {
   SimpleGrid,
   Skeleton,
   Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
   Text,
   useColorModeValue
 } from "@chakra-ui/react";
@@ -29,6 +34,7 @@ import {
   FiBriefcase,
   FiCheckCircle,
   FiClock,
+  FiDollarSign,
   FiGrid,
   FiLayers,
   FiRefreshCw,
@@ -36,8 +42,10 @@ import {
   FiTrendingUp,
   FiUsers,
 } from "react-icons/fi";
+import { DailyRegistrationChart } from "./components/scoped-dashboard/DailyRegistrationChart";
 import { DashboardCharts } from "./components/scoped-dashboard/DashboardCharts";
 import { DashboardFilters } from "./components/scoped-dashboard/DashboardFilters";
+import { RevenueAnalytics } from "./components/scoped-dashboard/RevenueAnalytics";
 import {
   EMPTY_SCOPED_FILTERS,
   ScopedDashboardFilters,
@@ -319,7 +327,7 @@ const ScopedDashboard = observer(() => {
           >
             <Icon
               as={isAdmin ? FiBriefcase : FiLayers}
-              boxSize={{ base: 4.5, md: 5 }}
+              boxSize={{ base: 4, md: 5 }}
               color="white"
             />
           </Flex>
@@ -414,8 +422,6 @@ const ScopedDashboard = observer(() => {
               </Text>
             </HStack>
           </Badge>
-
-
         </Flex>
       </Flex>
     </Box>
@@ -450,23 +456,94 @@ const ScopedDashboard = observer(() => {
       </Alert>
     ) : null}
 
-    <SimpleGrid
-      columns={{
-        base: 1,
-        sm: 2,
-        xl: 4,
-      }}
-      spacing={{ base: 3, md: 4 }}
-    >
-      {statCards.map((card) => (
-        <StatCard key={card.label} {...card} />
-      ))}
-    </SimpleGrid>
+    {isAdmin ? (
+      <Tabs variant="soft-rounded" colorScheme="purple" lazyBehavior="unmount">
+        <TabList
+          bg={heroBg}
+          p={1.5}
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor={heroBorder}
+          gap={2}
+        >
+          <Tab fontSize="xs" fontWeight="700" px={4} py={2}>
+            <HStack spacing={2}>
+              <Icon as={FiActivity} boxSize={4} />
+              <Text>Overview Analytics</Text>
+            </HStack>
+          </Tab>
+          <Tab fontSize="xs" fontWeight="700" px={4} py={2}>
+            <HStack spacing={2}>
+              <Icon as={FiDollarSign} boxSize={4} />
+              <Text>Revenue & Sales</Text>
+            </HStack>
+          </Tab>
+        </TabList>
 
-    <DashboardCharts
-      role={role as "admin" | "departmenthead"}
-      charts={scoped.charts}
-    />
+        <TabPanels mt={4}>
+          <TabPanel p={0}>
+            <Stack spacing={{ base: 4, md: 5 }}>
+              <SimpleGrid
+                columns={{
+                  base: 1,
+                  sm: 2,
+                  xl: 4,
+                }}
+                spacing={{ base: 3, md: 4 }}
+              >
+                {statCards.map((card) => (
+                  <StatCard key={card.label} {...card} />
+                ))}
+              </SimpleGrid>
+
+
+              <DashboardCharts
+                role={role as "admin" | "departmenthead"}
+                charts={scoped.charts}
+              />
+              <DailyRegistrationChart
+                role={role as "admin" | "departmenthead"}
+                charts={scoped.charts}
+                isLoading={scopedSummaryLoading}
+              />
+            </Stack>
+          </TabPanel>
+
+          <TabPanel p={0}>
+            <RevenueAnalytics
+              summary={scoped}
+              isLoading={scopedSummaryLoading}
+            />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    ) : (
+      <Stack spacing={{ base: 4, md: 5 }}>
+        <SimpleGrid
+          columns={{
+            base: 1,
+            sm: 2,
+            xl: 4,
+          }}
+          spacing={{ base: 3, md: 4 }}
+        >
+          {statCards.map((card) => (
+            <StatCard key={card.label} {...card} />
+          ))}
+        </SimpleGrid>
+
+
+        <DashboardCharts
+          role={role as "admin" | "departmenthead"}
+          charts={scoped.charts}
+        />
+        <DailyRegistrationChart
+          role={role as "admin" | "departmenthead"}
+          charts={scoped.charts}
+          isLoading={scopedSummaryLoading}
+        />
+      </Stack>
+    )}
   </Stack>
 </Box>
   );
