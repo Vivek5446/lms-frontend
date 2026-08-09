@@ -1,5 +1,12 @@
 "use client";
 
+import CustomInput from "@/app/component/config/component/customInput/CustomInput";
+import ScormQuizReviewContent from "@/app/dashboard/course/scorm/ScormQuizReviewContent";
+import {
+  ScormAnswerSectionRecord,
+  ScormInteractionReview,
+} from "@/app/dashboard/course/scorm/quizReviewTypes";
+import stores from "@/app/store/stores";
 import {
   Accordion,
   AccordionButton,
@@ -21,10 +28,9 @@ import {
   DrawerOverlay,
   Flex,
   Grid,
-  Heading,
   HStack,
   Icon,
-  Input,
+  IconButton,
   Progress,
   Select,
   SimpleGrid,
@@ -40,31 +46,28 @@ import {
   Tr,
   useBreakpointValue,
   useColorModeValue,
-  useDisclosure,
+  useDisclosure
 } from "@chakra-ui/react";
 import {
+  ArrowLeft,
   BarChart3,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   ClipboardCheck,
   Eye,
   Filter,
   RefreshCw,
+  RotateCcw,
+  SlidersHorizontal,
   Target,
   Users,
   XCircle,
-  ShieldCheck,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
-import CustomInput from "@/app/component/config/component/customInput/CustomInput";
-import stores from "@/app/store/stores";
-import ScormQuizReviewContent from "@/app/dashboard/course/scorm/ScormQuizReviewContent";
-import {
-  ScormAnswerSectionRecord,
-  ScormInteractionReview,
-} from "@/app/dashboard/course/scorm/quizReviewTypes";
+import { useEffect, useMemo, useState } from "react";
 import {
   EMPTY_LEARNER_RESULTS_FILTERS,
   LearnerCourseDetail,
@@ -143,6 +146,321 @@ function FilterSelect({
       placeholder={placeholder}
       isClear={true}
     />
+  );
+}
+
+function LearnerResultsFiltersPanel({
+  role,
+  value,
+  options,
+  isLoading,
+  onChange,
+  onApply,
+  onClear,
+  onRefresh,
+}: {
+  role: "superadmin" | "admin" | "departmenthead";
+  value: LearnerResultsFilters;
+  options: {
+    companies?: LearnerResultOption[];
+    departments?: LearnerResultOption[];
+    courses?: LearnerResultOption[];
+    batches?: LearnerResultOption[];
+    users?: LearnerResultOption[];
+    
+  };
+  isLoading: boolean;
+  onChange: (next: LearnerResultsFilters) => void;
+  onApply: () => void;
+  onClear: () => void;
+  onRefresh: () => void;
+}) {
+  const { isOpen: isMobileOpen, onOpen: onMobileOpen, onClose: onMobileClose } = useDisclosure();
+  const { isOpen: isDesktopOpen, onToggle: onDesktopToggle } = useDisclosure({ defaultIsOpen: false });
+  const panelBg = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200");
+  const headingColor = useColorModeValue("gray.900", "white");
+  const mutedColor = useColorModeValue("gray.500", "gray.400");
+  const isMobile =
+    useBreakpointValue({
+      base: true,
+      xl: false,
+    }) ?? true;
+  const activeCount = Object.entries(value).filter(([key, filterValue]) => key !== "companyId" && Boolean(filterValue)).length;
+
+  const update = (key: keyof LearnerResultsFilters, nextValue: string) => {
+    onChange({
+      ...value,
+      [key]: nextValue,
+    });
+  };
+
+  const fields = (
+    <Grid
+      templateColumns={{
+        base: "1fr",
+        md: "repeat(3, minmax(0, 1fr))",
+      }}
+      gap={3}
+      sx={{
+        "& label": {
+          fontSize: "12px",
+          fontWeight: "700",
+        },
+      }}
+    >
+      <Box gridColumn={{ base: "auto", md: "1 / -1" }}>
+        <CustomInput
+          type="text"
+          name="search"
+          label="Search"
+          placeholder="Search learner, course, batch..."
+          value={value.search}
+          onChange={(event: any) => update("search", event.target.value)}
+        />
+      </Box>
+
+      {role !== "departmenthead" ? (
+        <FilterSelect
+          value={value.departmentId}
+          placeholder="All departments"
+          options={options.departments}
+          onChange={(nextValue) => update("departmentId", nextValue)}
+        />
+      ) : null}
+
+      <FilterSelect
+        value={value.courseId}
+        placeholder="All courses"
+        options={options.courses}
+        onChange={(nextValue) => update("courseId", nextValue)}
+      />
+
+      <FilterSelect
+        value={value.batchId}
+        placeholder="All batches"
+        options={options.batches}
+        onChange={(nextValue) => update("batchId", nextValue)}
+      />
+
+      <FilterSelect
+        value={value.userId}
+        placeholder="All learners"
+        options={options.users}
+        onChange={(nextValue) => update("userId", nextValue)}
+      />
+
+      <FilterSelect
+        value={value.completionStatus}
+        placeholder="Any completion"
+        options={[
+          { value: "completed", label: "Completed" },
+          { value: "in_progress", label: "In progress" },
+          { value: "not_started", label: "Not started" },
+        ]}
+        onChange={(nextValue) => update("completionStatus", nextValue)}
+      />
+
+      <FilterSelect
+        value={value.courseStatus}
+        placeholder="Any course status"
+        options={[
+          { value: "published", label: "Published" },
+          { value: "draft", label: "Draft" },
+        ]}
+        onChange={(nextValue) => update("courseStatus", nextValue)}
+      />
+
+      <FilterSelect
+        value={value.passFail}
+        placeholder="Any result"
+        options={[
+          { value: "passed", label: "Passed" },
+          { value: "failed", label: "Failed" },
+          { value: "not_available", label: "Not graded" },
+        ]}
+        onChange={(nextValue) => update("passFail", nextValue)}
+      />
+
+      <FilterSelect
+        value={value.activityStatus}
+        placeholder="Any activity"
+        options={[
+          { value: "active", label: "Active learners" },
+          { value: "inactive", label: "Inactive learners" },
+        ]}
+        onChange={(nextValue) => update("activityStatus", nextValue)}
+      />
+
+      <CustomInput
+        type="date"
+        name="from"
+        label="From date"
+        value={value.from}
+        onChange={(event: any) => update("from", event.target.value)}
+      />
+
+      <CustomInput
+        type="date"
+        name="to"
+        label="To date"
+        value={value.to}
+        onChange={(event: any) => update("to", event.target.value)}
+      />
+    </Grid>
+  );
+
+  const actions = (
+    <HStack w="100%" spacing={3} justify={{ base: "space-between", md: "flex-end" }}>
+      <Button
+        flex={{ base: 1, md: "none" }}
+        variant="outline"
+        size={{ base: "lg", md: "md" }}
+        borderRadius="xl"
+        onClick={onClear}
+        isDisabled={!activeCount || isLoading}
+        leftIcon={<RotateCcw size={18} />}
+      >
+        Clear
+      </Button>
+      <Button
+        flex={{ base: 1, md: "none" }}
+        colorScheme="purple"
+        size={{ base: "lg", md: "md" }}
+        borderRadius="xl"
+        isLoading={isLoading}
+        loadingText="Applying"
+        onClick={() => {
+          onApply();
+          onMobileClose();
+        }}
+      >
+        Apply filters
+      </Button>
+      <Button
+        flex={{ base: 1, md: "none" }}
+        size={{ base: "lg", md: "md" }}
+        variant="ghost"
+        leftIcon={<RefreshCw size={16} />}
+        isLoading={isLoading}
+        onClick={onRefresh}
+      >
+        Refresh
+      </Button>
+    </HStack>
+  );
+
+  return (
+    <>
+      <Box
+        bg={panelBg}
+        borderWidth="1px"
+        borderColor={borderColor}
+        borderRadius="2xl"
+        p={4}
+        boxShadow="sm"
+        mb={4}
+      >
+        <HStack justify="space-between" cursor="pointer" onClick={onDesktopToggle} userSelect="none">
+          <HStack spacing={2}>
+            <Icon as={SlidersHorizontal} color="purple.500" boxSize={4} />
+            <Text fontSize="sm" fontWeight="semibold" color={headingColor}>
+              Filters
+            </Text>
+            {activeCount > 0 ? (
+              <Badge colorScheme="purple" borderRadius="full">
+                {activeCount}
+              </Badge>
+            ) : null}
+          </HStack>
+
+          {isMobile ? (
+            <Button
+              size="sm"
+              variant="outline"
+              leftIcon={<Filter size={15} />}
+              onClick={(event) => {
+                event.stopPropagation();
+                onMobileOpen();
+              }}
+            >
+              Filters
+            </Button>
+          ) : (
+            <Icon as={isDesktopOpen ? ChevronUp : ChevronDown} color="gray.500" boxSize={5} />
+          )}
+        </HStack>
+
+        <Box display={{ base: "none", xl: "block" }}>
+          <Collapse in={isDesktopOpen} animateOpacity>
+            <Box mt={4} pt={4} borderTopWidth="1px" borderColor={borderColor}>
+              {fields}
+              <HStack justify="flex-end" mt={3}>
+                {actions}
+              </HStack>
+            </Box>
+          </Collapse>
+        </Box>
+      </Box>
+
+      <Drawer isOpen={isMobileOpen} placement="bottom" onClose={onMobileClose} size="full">
+        <DrawerOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+        <DrawerContent borderTopRadius="none" h="100vh" bg={panelBg}>
+          <Box
+            position="sticky"
+            top={0}
+            zIndex={10}
+            bg={panelBg}
+            borderBottomWidth="1px"
+            borderColor={borderColor}
+            px={{ base: 5, md: 8 }}
+            pt={{ base: 6, md: 10 }}
+            pb={{ base: 4, md: 6 }}
+          >
+            <HStack spacing={4} align="center">
+              <IconButton
+                aria-label="Close"
+                icon={<ArrowLeft size={17} />}
+                onClick={onMobileClose}
+                variant="solid"
+                borderRadius="full"
+                w={{ base: "36px", md: "42px" }}
+                h={{ base: "36px", md: "42px" }}
+              />
+              <Box>
+                <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="800" color={headingColor}>
+                  Filters
+                </Text>
+                <Text fontSize={{ base: "xs", md: "sm" }} color={mutedColor} fontWeight="600" mt={0.5}>
+                  Refine learner progress
+                </Text>
+              </Box>
+            </HStack>
+          </Box>
+
+          <DrawerBody px={{ base: 5, md: 8 }} py={{ base: 6, md: 8 }}>
+            <Box maxW="800px" mx="auto">
+              {fields}
+            </Box>
+          </DrawerBody>
+
+          <Box
+            position="sticky"
+            bottom={0}
+            zIndex={10}
+            bg={panelBg}
+            borderTopWidth="1px"
+            borderColor={borderColor}
+            px={{ base: 5, md: 8 }}
+            py={{ base: 4, md: 6 }}
+          >
+            <Box maxW="800px" mx="auto">
+              {actions}
+            </Box>
+          </Box>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }
 
@@ -408,9 +726,7 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
   const [pageSize, setPageSize] = useState(15);
   const [sortBy, setSortBy] = useState("lastActivity");
   const [sortOrder, setSortOrder] = useState("desc");
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const isMobile = useBreakpointValue({ base: true, md: false });
   const panelBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const mutedBg = useColorModeValue("gray.50", "gray.900");
@@ -443,11 +759,26 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
     }
   }, [companyStore, role]);
 
+  useEffect(() => {
+    if (role !== "superadmin") return;
+
+    const resetScopedFields = (current: LearnerResultsFilters) => ({
+      ...current,
+      departmentId: "",
+      courseId: "",
+      batchId: "",
+      userId: "",
+    });
+
+    setFilters((current) => resetScopedFields(current));
+    setAppliedFilters((current) => resetScopedFields(current));
+    setPage(1);
+  }, [role, scopedCompanyId]);
+
   const updateFilter = (key: keyof LearnerResultsFilters, value: string) => {
     setFilters((current) => ({
       ...current,
       [key]: value,
-      ...(key === "companyId" ? { departmentId: "", batchId: "", userId: "" } : {}),
     }));
   };
 
@@ -475,216 +806,66 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
   return (
     <Box
       bg={panelBg}
-      borderWidth="1px"
-      borderColor={borderColor}
-      borderRadius="2xl"
-      p={{ base: 3, md: 5 }}
-      boxShadow="sm"
+      p={{ base: 3, md: 2.5, xl: 4 }}
     >
-      <Flex justify="space-between" align="flex-start" gap={3} mb={4}>
-        {showHeader ? (
-          <Box>
-            <HStack spacing={2}>
-              <Icon as={ClipboardCheck} color="purple.500" />
-              <Heading size="sm">Learner progress & results</Heading>
-            </HStack>
-            <Text mt={1} fontSize="xs" color="gray.500">
-              Course completion, scores, attempts, and submitted answers within your allowed scope.
-            </Text>
-          </Box>
-        ) : <Box />}
+      <LearnerResultsFiltersPanel
+        role={role}
+        value={filters}
+        options={options}
+        isLoading={learnerResultsLoading}
+        onChange={setFilters}
+        onApply={() => {
+          setAppliedFilters(filters);
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilters(EMPTY_LEARNER_RESULTS_FILTERS);
+          setAppliedFilters(EMPTY_LEARNER_RESULTS_FILTERS);
+          setPage(1);
+        }}
+        onRefresh={() => {
+          fetchLearnerResults(params).catch(() => undefined);
+        }}
+      />
+
+      <Flex justify="space-between" align="center" mb={4} gap={2} wrap="wrap">
         <HStack>
-          <Button
-            display={{ base: "inline-flex", md: "none" }}
+          <Select
             size="xs"
-            variant="outline"
-            leftIcon={<Filter size={13} />}
-            onClick={() => setFiltersOpen((current) => !current)}
+            borderRadius="lg"
+            value={sortBy}
+            onChange={(event) => {
+              setSortBy(event.target.value);
+              setPage(1);
+            }}
+            bg={panelBg}
+            w="150px"
           >
-            Filters
-          </Button>
-          <Button
+            <option value="lastActivity">Last activity</option>
+            <option value="submissionDate">Submission date</option>
+            <option value="averageScore">Average score</option>
+            <option value="averageProgress">Average progress</option>
+            <option value="totalCourses">Total courses</option>
+            <option value="completedCourses">Completed courses</option>
+            <option value="completionDate">Completion date</option>
+            <option value="learnerName">Learner name</option>
+          </Select>
+          <Select
             size="xs"
-            variant="ghost"
-            leftIcon={<RefreshCw size={13} />}
-            isLoading={learnerResultsLoading}
-            onClick={() => fetchLearnerResults(params).catch(() => undefined)}
+            borderRadius="lg"
+            value={sortOrder}
+            onChange={(event) => {
+              setSortOrder(event.target.value);
+              setPage(1);
+            }}
+            bg={panelBg}
+            w="110px"
           >
-            Refresh
-          </Button>
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
+          </Select>
         </HStack>
       </Flex>
-
-      <Collapse in={!isMobile || filtersOpen} animateOpacity>
-        <Box bg={mutedBg} borderRadius="2xl" p={4} mb={6}>
-          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing={4}>
-            <CustomInput
-              type="text"
-              name="search"
-              label="Search learner, course, batch..."
-              placeholder="Search..."
-              value={filters.search}
-              onChange={(event: any) => updateFilter("search", event.target.value)}
-            />
-            {role !== "departmenthead" ? (
-              <FilterSelect
-                value={filters.departmentId}
-                placeholder="All departments"
-                options={options.departments}
-                onChange={(value) => updateFilter("departmentId", value)}
-              />
-            ) : null}
-            <FilterSelect
-              value={filters.courseId}
-              placeholder="All courses"
-              options={options.courses}
-              onChange={(value) => updateFilter("courseId", value)}
-            />
-            <FilterSelect
-              value={filters.batchId}
-              placeholder="All batches"
-              options={options.batches}
-              onChange={(value) => updateFilter("batchId", value)}
-            />
-            <FilterSelect
-              value={filters.userId}
-              placeholder="All learners"
-              options={options.users}
-              onChange={(value) => updateFilter("userId", value)}
-            />
-            <FilterSelect
-              value={filters.completionStatus}
-              placeholder="Any completion"
-              options={[
-                { value: "completed", label: "Completed" },
-                { value: "in_progress", label: "In progress" },
-                { value: "not_started", label: "Not started" },
-              ]}
-              onChange={(value) => updateFilter("completionStatus", value)}
-            />
-            <FilterSelect
-              value={filters.courseStatus}
-              placeholder="Any course status"
-              options={[
-                { value: "published", label: "Published" },
-                { value: "draft", label: "Draft" },
-              ]}
-              onChange={(value) => updateFilter("courseStatus", value)}
-            />
-            <FilterSelect
-              value={filters.passFail}
-              placeholder="Any result"
-              options={[
-                { value: "passed", label: "Passed" },
-                { value: "failed", label: "Failed" },
-                { value: "not_available", label: "Not graded" },
-              ]}
-              onChange={(value) => updateFilter("passFail", value)}
-            />
-            <FilterSelect
-              value={filters.activityStatus}
-              placeholder="Any activity"
-              options={[
-                { value: "active", label: "Active learners" },
-                { value: "inactive", label: "Inactive learners" },
-              ]}
-              onChange={(value) => updateFilter("activityStatus", value)}
-            />
-            <CustomInput
-              type="number"
-              name="scoreMin"
-              label="Min score"
-              placeholder="Min score"
-              value={filters.scoreMin}
-              onChange={(event: any) => updateFilter("scoreMin", event.target.value)}
-            />
-            <CustomInput
-              type="number"
-              name="scoreMax"
-              label="Max score"
-              placeholder="Max score"
-              value={filters.scoreMax}
-              onChange={(event: any) => updateFilter("scoreMax", event.target.value)}
-            />
-            <CustomInput
-              type="date"
-              name="from"
-              label="From date"
-              value={filters.from}
-              onChange={(event: any) => updateFilter("from", event.target.value)}
-            />
-            <CustomInput
-              type="date"
-              name="to"
-              label="To date"
-              value={filters.to}
-              onChange={(event: any) => updateFilter("to", event.target.value)}
-            />
-          </SimpleGrid>
-          <Flex justify="space-between" align="center" mt={3} gap={2} wrap="wrap">
-            <HStack>
-              <Select
-                size="xs"
-                borderRadius="lg"
-                value={sortBy}
-                onChange={(event) => {
-                  setSortBy(event.target.value);
-                  setPage(1);
-                }}
-                bg={panelBg}
-                w="150px"
-              >
-                <option value="lastActivity">Last activity</option>
-                <option value="submissionDate">Submission date</option>
-                <option value="averageScore">Average score</option>
-                <option value="averageProgress">Average progress</option>
-                <option value="totalCourses">Total courses</option>
-                <option value="completedCourses">Completed courses</option>
-                <option value="completionDate">Completion date</option>
-                <option value="learnerName">Learner name</option>
-              </Select>
-              <Select
-                size="xs"
-                borderRadius="lg"
-                value={sortOrder}
-                onChange={(event) => {
-                  setSortOrder(event.target.value);
-                  setPage(1);
-                }}
-                bg={panelBg}
-                w="110px"
-              >
-                <option value="desc">Descending</option>
-                <option value="asc">Ascending</option>
-              </Select>
-            </HStack>
-            <HStack>
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() => {
-                  setFilters(EMPTY_LEARNER_RESULTS_FILTERS);
-                  setAppliedFilters(EMPTY_LEARNER_RESULTS_FILTERS);
-                  setPage(1);
-                }}
-              >
-                Clear
-              </Button>
-              <Button
-                size="xs"
-                colorScheme="purple"
-                onClick={() => {
-                  setAppliedFilters(filters);
-                  setPage(1);
-                  setFiltersOpen(false);
-                }}
-              >
-                Apply filters
-              </Button>
-            </HStack>
-          </Flex>
-        </Box>
-      </Collapse>
 
       {learnerResultsError ? (
         <Alert status="error" borderRadius="xl" mb={4} py={2}>
@@ -768,66 +949,80 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
       ) : rows.length ? (
         <>
           <TableContainer display={{ base: "none", md: "block" }}>
-            <Table size="sm">
-              <Thead>
-                <Tr>
-                  <Th pl={0}>Learner</Th>
-                  {role === "superadmin" ? <Th>Company</Th> : null}
-                  <Th>Courses</Th>
-                  <Th pr={0} />
-                </Tr>
-              </Thead>
-              <Tbody>
-                {rows.map((row) => {
-                  return (
-                    <Tr key={row.userId}>
-                      <Td pl={0}>
-                        <HStack>
-                          <Avatar size="xs" name={row.learner.name} />
-                          <Box minW={0}>
-                            <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>
-                              {row.learner.name}
-                            </Text>
-                            <Text fontSize="xs" color="gray.500" noOfLines={1}>
-                              {row.learner.email || row.learner.mobileNumber || "No contact details"}
-                            </Text>
-                            <Text fontSize="xs" color="gray.400" noOfLines={1}>
-                              {row.learner.department}
-                            </Text>
-                          </Box>
-                        </HStack>
-                      </Td>
-                      {role === "superadmin" ? (
-                        <Td>
-                          <Text fontSize="sm" noOfLines={1}>{row.company.name}</Text>
-                        </Td>
-                      ) : null}
-                      <Td>
-                        <HStack spacing={1.5} flexWrap="wrap">
-                          <Badge colorScheme="purple" borderRadius="full">{row.totalCourses} total</Badge>
-                          <Badge colorScheme="green" borderRadius="full">{row.completedCourses} completed</Badge>
-                          <Badge colorScheme="blue" borderRadius="full">{row.inProgressCourses} in progress</Badge>
-                          <Badge colorScheme="gray" borderRadius="full">{row.notStartedCourses} not started</Badge>
-                        </HStack>
-                        {/*
-                          {row.batches.map((batch) => batch.name).join(", ") || "Direct assignment"} · {row.course.status}
-                        */}
-                      </Td>
-                      <Td pr={0} textAlign="right">
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          leftIcon={<Eye size={13} />}
-                          onClick={() => void openDetail(row)}
-                        >
-                          Review
-                        </Button>
-                      </Td>
-                    </Tr>
-                  );
-                })}
-              </Tbody>
-            </Table>
+        <Table size="sm">
+  <Thead>
+    <Tr>
+      <Th pl={0}>Learner</Th>
+      {role === "superadmin" ? <Th>Company</Th> : null}
+      <Th>Total</Th>
+      <Th>Completed</Th>
+      <Th>In Progress</Th>
+      <Th>Not Started</Th>
+      <Th pr={0} />
+    </Tr>
+  </Thead>
+  <Tbody>
+    {rows.map((row) => {
+      return (
+        <Tr key={row.userId}>
+          <Td pl={0}>
+            <HStack>
+              <Avatar size="xs" name={row.learner.name} />
+              <Box minW={0}>
+                <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>
+                  {row.learner.name}
+                </Text>
+                <Text fontSize="xs" color="gray.500" noOfLines={1}>
+                  {row.learner.email || row.learner.mobileNumber || "No contact details"}
+                </Text>
+                <Text fontSize="xs" color="gray.400" noOfLines={1}>
+                  {row.learner.department}
+                </Text>
+              </Box>
+            </HStack>
+          </Td>
+          {role === "superadmin" ? (
+            <Td>
+              <Text fontSize="sm" noOfLines={1}>
+                {row.company.name}
+              </Text>
+            </Td>
+          ) : null}
+          <Td>
+            <Badge colorScheme="purple" borderRadius="full">
+              {row.totalCourses} total
+            </Badge>
+          </Td>
+          <Td>
+            <Badge colorScheme="green" borderRadius="full">
+              {row.completedCourses} completed
+            </Badge>
+          </Td>
+          <Td>
+            <Badge colorScheme="blue" borderRadius="full">
+              {row.inProgressCourses} in progress
+            </Badge>
+          </Td>
+          <Td>
+            <Badge colorScheme="gray" borderRadius="full">
+              {row.notStartedCourses} not started
+            </Badge>
+          </Td>
+          <Td pr={0} textAlign="right">
+            <Button
+              size="xs"
+              variant="ghost"
+              leftIcon={<Eye size={13} />}
+              onClick={() => void openDetail(row)}
+            >
+              Review
+            </Button>
+          </Td>
+        </Tr>
+      );
+    })}
+  </Tbody>
+</Table>
           </TableContainer>
 
           <Stack display={{ base: "flex", md: "none" }} spacing={3}>
@@ -1195,271 +1390,6 @@ function LearnerUserDetailDrawer({
             <Alert status="error" borderRadius="xl">
               <AlertIcon />
               Unable to load this learner detail.
-            </Alert>
-          )}
-        </DrawerBody>
-      </DrawerContent>
-    </Drawer>
-  );
-}
-
-function ResultDetailDrawer({
-  detail,
-  isLoading,
-  isOpen,
-  onClose,
-}: {
-  detail: LearnerResultDetail | null;
-  isLoading: boolean;
-  isOpen: boolean;
-  onClose: () => void;
-}) {
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const mutedBg = useColorModeValue("gray.50", "gray.900");
-  const surfaceBg = useColorModeValue("white", "gray.800");
-  const result = detail ? statusMeta(detail.passStatus) : statusMeta("");
-  const manualAnswerSections = selectAnswerSections(detail?.answerSections || [], "manual");
-  const scormAnswerSections = selectAnswerSections(detail?.answerSections || [], "scorm");
-  const manualQuestionCount = manualAnswerSections.reduce(
-    (total, section) => total + section.interactions.length,
-    0
-  );
-  const scormQuestionCount = scormAnswerSections.reduce(
-    (total, section) => total + section.interactions.length,
-    0
-  );
-
-  return (
-    <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xl">
-      <DrawerOverlay />
-      <DrawerContent>
-        <DrawerCloseButton />
-        <DrawerHeader borderBottomWidth="1px" borderColor={borderColor} pr={12}>
-          <Text fontSize="md">Learner result detail</Text>
-          <Text fontSize="xs" color="gray.500" fontWeight="normal">
-            Progress, modules, attempts, and submitted answers
-          </Text>
-        </DrawerHeader>
-        <DrawerBody py={5}>
-          {isLoading && !detail ? (
-            <Stack spacing={4}>
-              <Skeleton height="100px" borderRadius="xl" />
-              <Skeleton height="180px" borderRadius="xl" />
-              <Skeleton height="280px" borderRadius="xl" />
-            </Stack>
-          ) : detail ? (
-            <Stack spacing={5}>
-              <Box bg={mutedBg} borderRadius="xl" p={4}>
-                <Flex justify="space-between" gap={4} wrap="wrap">
-                  <HStack>
-                    <Avatar name={detail.learner.name} />
-                    <Box>
-                      <Text fontWeight="bold">{detail.learner.name}</Text>
-                      <Text fontSize="xs" color="gray.500">{detail.learner.email}</Text>
-                      {detail.learner.mobileNumber ? (
-                        <Text fontSize="xs" color="gray.500">{detail.learner.mobileNumber}</Text>
-                      ) : null}
-                      <Text fontSize="xs" color="gray.500">
-                        {detail.company.name} · {detail.learner.department}
-                      </Text>
-                    </Box>
-                  </HStack>
-                  <Box textAlign={{ base: "left", sm: "right" }}>
-                    <Text fontSize="sm" fontWeight="semibold">{detail.course.title}</Text>
-                    <Text fontSize="xs" color="gray.500">
-                      {detail.batches.map((batch) => batch.name).join(", ") || "Direct assignment"} · {detail.course.status}
-                    </Text>
-                    <Badge mt={2} colorScheme={result.color} borderRadius="full">{result.label}</Badge>
-                  </Box>
-                </Flex>
-              </Box>
-
-              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={2.5}>
-                <SummaryCard label="Progress" value={`${Math.round(detail.progressPercent)}%`} helper={`${detail.completedSections}/${detail.totalSections} sections`} icon={BarChart3} color="blue" />
-                <SummaryCard label="Score" value={detail.score === null ? "N/A" : `${Math.round(detail.score)}%`} helper={detail.passThreshold === null ? "No pass threshold" : `Pass at ${Math.round(detail.passThreshold)}%`} icon={Target} color="pink" />
-                <SummaryCard label="Attempts" value={detail.attempts} helper={`${detail.quizAttempts} quiz · ${detail.scormAttempts} SCORM`} icon={ClipboardCheck} color="purple" />
-                <SummaryCard label="Time spent" value={detail.timeSpent || "00:00:00"} helper={`Submitted ${formatDate(detail.submissionDate)}`} icon={Users} color="teal" />
-              </SimpleGrid>
-
-              <Accordion allowMultiple defaultIndex={[0]}>
-                <Stack spacing={2.5}>
-                  <AccordionItem borderWidth="1px" borderColor={borderColor} borderRadius="xl" overflow="hidden">
-                    <AccordionButton px={3.5} py={3} _hover={{ bg: mutedBg }}>
-                      <Flex flex="1" justify="space-between" align="center" gap={3}>
-                        <Box textAlign="left">
-                          <Text fontSize="sm" fontWeight="bold">Course activity & completion</Text>
-                          <Text fontSize="xs" color="gray.500">
-                            Progress and time across {detail.modules?.length || 0} modules
-                          </Text>
-                        </Box>
-                        <HStack>
-                          <Badge colorScheme="blue" borderRadius="full">
-                            {detail.completedSections}/{detail.totalSections} sections
-                          </Badge>
-                          <AccordionIcon />
-                        </HStack>
-                      </Flex>
-                    </AccordionButton>
-                    <AccordionPanel px={3} pb={3} pt={0}>
-                      <Stack spacing={2}>
-                        {(detail.modules || []).length ? (
-                          detail.modules?.map((module) => (
-                            <Box key={module.moduleId} bg={mutedBg} borderRadius="lg" px={3} py={2.5}>
-                              <Flex justify="space-between" gap={3} align="flex-start">
-                                <Box minW={0} flex="1">
-                                  <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>{module.title}</Text>
-                                  <HStack mt={1} spacing={2} flexWrap="wrap">
-                                    <Badge colorScheme="blue" borderRadius="full">
-                                      {module.sectionsCompleted}/{module.sectionCount} sections
-                                    </Badge>
-                                    <Badge colorScheme="purple" borderRadius="full">
-                                      Score {formatPercent(module.score)}
-                                    </Badge>
-                                    <Badge colorScheme="gray" borderRadius="full">
-                                      {module.totalTime || "00:00:00"}
-                                    </Badge>
-                                  </HStack>
-                                </Box>
-                                <Text fontSize="xs" fontWeight="bold" flexShrink={0}>{Math.round(module.progress || 0)}%</Text>
-                              </Flex>
-                              <Progress mt={2} value={module.progress || 0} size="xs" colorScheme="blue" borderRadius="full" />
-                              {(module.sections || []).length ? (
-                                <Stack mt={2.5} spacing={2}>
-                                  {module.sections.map((section) => {
-                                    const sectionResult = statusMeta(section.lessonStatus);
-                                    return (
-                                      <Box key={section.sectionId} bg={surfaceBg} borderWidth="1px" borderColor={borderColor} borderRadius="md" px={2.5} py={2}>
-                                        <Flex justify="space-between" gap={3} align="flex-start">
-                                          <Box minW={0}>
-                                            <Text fontSize="xs" fontWeight="semibold" noOfLines={1}>
-                                              {section.title}
-                                            </Text>
-                                            <HStack mt={1} spacing={2} flexWrap="wrap">
-                                              <Badge colorScheme={sectionResult.color} borderRadius="full">
-                                                {sectionResult.label}
-                                              </Badge>
-                                              <Badge colorScheme="gray" borderRadius="full">
-                                                {section.contentType || "other"}
-                                              </Badge>
-                                              <Text fontSize="2xs" color="gray.500">
-                                                Attempts {section.attempts || 0}
-                                              </Text>
-                                              <Text fontSize="2xs" color="gray.500">
-                                                Time {section.totalTime || "00:00:00"}
-                                              </Text>
-                                              <Text fontSize="2xs" color="gray.500">
-                                                Last {formatDate(section.lastAccessed)}
-                                              </Text>
-                                            </HStack>
-                                          </Box>
-                                          <Box textAlign="right" flexShrink={0}>
-                                            <Text fontSize="2xs" color="gray.500">Score</Text>
-                                            <Text fontSize="xs" fontWeight="bold">{formatPercent(section.score)}</Text>
-                                          </Box>
-                                        </Flex>
-                                        <Progress mt={2} value={section.progress || 0} size="xs" colorScheme={section.progress >= 100 ? "green" : "blue"} borderRadius="full" />
-                                      </Box>
-                                    );
-                                  })}
-                                </Stack>
-                              ) : null}
-                            </Box>
-                          ))
-                        ) : (
-                          <Text fontSize="sm" color="gray.500">No module progress has been recorded.</Text>
-                        )}
-                      </Stack>
-                    </AccordionPanel>
-                  </AccordionItem>
-
-                  <AccordionItem borderWidth="1px" borderColor={borderColor} borderRadius="xl" overflow="hidden">
-                    <AccordionButton px={3.5} py={3} _hover={{ bg: mutedBg }}>
-                      <Flex flex="1" justify="space-between" align="center" gap={3}>
-                        <Box textAlign="left">
-                          <Text fontSize="sm" fontWeight="bold">Course creator quizzes</Text>
-                          <Text fontSize="xs" color="gray.500">
-                            Scores, questions, and the learner's selected options
-                          </Text>
-                        </Box>
-                        <HStack>
-                          <Badge colorScheme="purple" borderRadius="full">
-                            {manualQuestionCount} questions
-                          </Badge>
-                          <AccordionIcon />
-                        </HStack>
-                      </Flex>
-                    </AccordionButton>
-                    <AccordionPanel px={3} pb={3} pt={0}>
-                      {manualAnswerSections.length ? (
-                        <ManualQuizAnswerDetails sections={manualAnswerSections} />
-                      ) : (detail.manualQuizResults || []).length ? (
-                        <Stack spacing={2}>
-                          {(detail.manualQuizResults || []).map((quiz) => (
-                            <Flex
-                              key={quiz._id}
-                              bg={mutedBg}
-                              borderRadius="lg"
-                              px={3}
-                              py={2.5}
-                              justify="space-between"
-                              gap={3}
-                            >
-                              <Box minW={0}>
-                                <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>{quiz.title}</Text>
-                                <Text fontSize="xs" color="gray.500">
-                                  {quiz.moduleTitle || "Course level"} | Attempt #{quiz.attemptNumber} | {formatDate(quiz.submittedAt)}
-                                </Text>
-                              </Box>
-                              <Text fontSize="xs" fontWeight="bold" flexShrink={0}>
-                                {quiz.score}/{quiz.maxScore}
-                              </Text>
-                            </Flex>
-                          ))}
-                        </Stack>
-                      ) : (
-                        <Text fontSize="sm" color="gray.500">No course creator quiz attempts are available.</Text>
-                      )}
-                    </AccordionPanel>
-                  </AccordionItem>
-
-                  <AccordionItem borderWidth="1px" borderColor={borderColor} borderRadius="xl" overflow="hidden">
-                    <AccordionButton px={3.5} py={3} _hover={{ bg: mutedBg }}>
-                      <Flex flex="1" justify="space-between" align="center" gap={3}>
-                        <Box textAlign="left">
-                          <Text fontSize="sm" fontWeight="bold">SCORM activity & quiz answers</Text>
-                          <Text fontSize="xs" color="gray.500">
-                            Recorded SCORM questions, responses, results, and marks
-                          </Text>
-                        </Box>
-                        <HStack>
-                          <Badge colorScheme="teal" borderRadius="full">
-                            {scormQuestionCount} questions
-                          </Badge>
-                          <AccordionIcon />
-                        </HStack>
-                      </Flex>
-                    </AccordionButton>
-                    <AccordionPanel px={3} pb={3} pt={0}>
-                      <ScormQuizReviewContent
-                        sections={scormAnswerSections}
-                        mode="learner"
-                        compact
-                        emptyState="No SCORM quiz answers have been recorded for this learner and course."
-                        progressSummary={{
-                          progressPercent: detail.progressPercent,
-                          sectionsCompleted: detail.completedSections,
-                          totalSections: detail.totalSections,
-                        }}
-                      />
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Stack>
-              </Accordion>
-            </Stack>
-          ) : (
-            <Alert status="error" borderRadius="xl">
-              <AlertIcon />
-              Unable to load this learner result.
             </Alert>
           )}
         </DrawerBody>

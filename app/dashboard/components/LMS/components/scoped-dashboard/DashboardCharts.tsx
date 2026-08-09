@@ -64,7 +64,7 @@ function ChartCard({
     >
       <HStack align="flex-start" mb={4}>
         <Box color={themeColor} pt={1}>
-          <FiBarChart2 boxSize={4} />
+          <FiBarChart2 size={16} />
         </Box>
         <Box minW={0}>
           <Heading size="sm">{title}</Heading>

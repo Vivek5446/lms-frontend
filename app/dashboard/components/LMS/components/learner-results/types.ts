@@ -9,8 +9,6 @@ export type LearnerResultsFilters = {
   search: string;
   completionStatus: string;
   courseStatus: string;
-  scoreMin: string;
-  scoreMax: string;
   passFail: string;
   from: string;
   to: string;
@@ -173,8 +171,6 @@ export const EMPTY_LEARNER_RESULTS_FILTERS: LearnerResultsFilters = {
   search: "",
   completionStatus: "",
   courseStatus: "",
-  scoreMin: "",
-  scoreMax: "",
   passFail: "",
   from: "",
   to: "",

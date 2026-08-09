@@ -33,11 +33,6 @@ const LearnerProgressPage = observer(() => {
     PERMISSION_KEYS.VIEW_LEARNER_PROGRESS_RESULTS
   );
   const isLoading = auth.isLoading || !auth.sessionReady;
-  const pageBg = useColorModeValue("gray.50", "gray.900");
-  const heroBg = useColorModeValue(
-    "linear-gradient(135deg, #312E81 0%, #6D28D9 55%, #0F766E 125%)",
-    "linear-gradient(135deg, #111827 0%, #312E81 60%, #134E4A 125%)"
-  );
 
   useEffect(() => {
     if (!isLoading && !isAllowedRole) {
@@ -86,11 +81,11 @@ const LearnerProgressPage = observer(() => {
                 >
                   <FiArrowLeft size={18} />
                 </Box>
-                <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, #6269FF, #8A2BE2)" rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
+                <Box display={{ base: "none", md: "flex" }} p={{ base: 2.5, md: 3 }} bgGradient="linear(to-br, purple.500)" rounded="full" alignItems="center" justifyContent="center" boxShadow="0 4px 15px rgba(98,105,255,0.4)" border="1px solid" borderColor="rgba(255,255,255,0.2)">
                   <Icon as={ClipboardCheck} boxSize={{ base: 4, md: 5 }} color="white" />
                 </Box>
                 <Box>
-                  <Heading size={{ base: "sm", md: "lg" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
+                  <Heading size={{ base: "sm", md: "md" }} fontWeight="900" letterSpacing="tight" lineHeight="1.2">
                     <Box as="span" color={useColorModeValue("gray.900", "white")}>LEARNER </Box>
                     <Box as="span" bgGradient={useColorModeValue("linear(to-r, purple.500, purple.700)", "linear(to-r, purple.300, purple.500)")} bgClip="text">
                       PROGRESS
