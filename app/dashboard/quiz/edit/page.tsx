@@ -78,7 +78,7 @@ export default function EditQuizPage() {
     if (quizId) {
       fetchQuizDetails();
     }
-  }, [quizId, activeTab]);
+  }, [quizId]);
 
   const fetchQuizDetails = async () => {
     setIsFetching(true);

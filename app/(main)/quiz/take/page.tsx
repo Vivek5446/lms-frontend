@@ -140,13 +140,20 @@ export default function TakeQuizPage() {
     }
   }, [answers, timeLeft, gameState, quizId]);
 
-  const handleSubmitQuiz = useCallback(async () => {
+  const handleSubmitQuiz = useCallback(async (force: boolean = false) => {
     if (gameState === "SUBMITTING" || gameState === "COMPLETED") return;
 
-    // Check if all questions are answered
-    if (quizData && Object.keys(answers).length < quizData.questions.length && timeLeft !== 0) {
-      toast({ title: "Please answer all required questions.", status: "warning" });
-      return;
+    // Check if all REQUIRED questions are answered (skip this check on force/auto-submit)
+    if (!force && quizData && timeLeft !== 0) {
+      const requiredQuestions = quizData.questions.filter((q: any) => q.isRequired !== false);
+      const unansweredRequired = requiredQuestions.filter((q: any) => {
+        const ans = answers[q._id];
+        return !ans || (Array.isArray(ans) && ans.length === 0);
+      });
+      if (unansweredRequired.length > 0) {
+        toast({ title: "Please answer all required questions.", status: "warning" });
+        return;
+      }
     }
 
     setGameState("SUBMITTING");
@@ -218,7 +225,7 @@ export default function TakeQuizPage() {
     }
   }, [quizData, currentQuestionIndex]);
 
-  useDevToolsBlocker(handleSubmitQuiz);
+  useDevToolsBlocker(() => handleSubmitQuiz(true));
 
   // STRICT SECURITY MEASURES
   useEffect(() => {
@@ -231,7 +238,7 @@ export default function TakeQuizPage() {
         const maxAllowed = quizData.settings?.security?.maxTabSwitchesAllowed || 3;
         
         if (newCount > maxAllowed) {
-          handleSubmitQuiz();
+          handleSubmitQuiz(true);
         } else {
           toast({
             title: "Security Warning",
@@ -261,7 +268,7 @@ export default function TakeQuizPage() {
             duration: 7000,
             isClosable: true,
           });
-          handleSubmitQuiz();
+          handleSubmitQuiz(true);
         }
       }
     };
@@ -926,7 +933,7 @@ export default function TakeQuizPage() {
                       Next
                     </Button>
                   ) : (
-                    <Button bg={primaryColor} color="white" _hover={{ opacity: 0.85 }} size="md" px={10} onClick={handleSubmitQuiz} isLoading={gameState === "SUBMITTING"} ml="auto">
+                    <Button bg={primaryColor} color="white" _hover={{ opacity: 0.85 }} size="md" px={10} onClick={() => handleSubmitQuiz()} isLoading={gameState === "SUBMITTING"} ml="auto">
                       Submit
                     </Button>
                   )}
@@ -944,7 +951,7 @@ export default function TakeQuizPage() {
                     bg={primaryColor} 
                     color="white" 
                     _hover={{ opacity: 0.85, shadow: "md" }} 
-                    onClick={handleSubmitQuiz} 
+                    onClick={() => handleSubmitQuiz()} 
                     isLoading={gameState === "SUBMITTING"} 
                     rounded="md" 
                     px={10}
