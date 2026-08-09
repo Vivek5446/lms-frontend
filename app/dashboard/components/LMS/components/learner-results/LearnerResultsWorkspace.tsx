@@ -67,10 +67,12 @@ import {
 } from "@/app/dashboard/course/scorm/quizReviewTypes";
 import {
   EMPTY_LEARNER_RESULTS_FILTERS,
+  LearnerCourseDetail,
   LearnerResultDetail,
   LearnerResultOption,
   LearnerResultRow,
   LearnerResultsFilters,
+  LearnerUserResultRow,
 } from "./types";
 
 type Props = {
@@ -99,13 +101,24 @@ function statusMeta(status: string) {
       return { label: status === "passed" ? "Passed" : "Completed", color: "green" };
     case "failed":
       return { label: "Failed", color: "red" };
+    case "incomplete":
+    case "browsed":
     case "in_progress":
       return { label: "In progress", color: "blue" };
     case "not_available":
       return { label: "Not graded", color: "gray" };
+    case "not_attempted":
+    case "not attempted":
+      return { label: "Not started", color: "gray" };
     default:
       return { label: "Not started", color: "gray" };
   }
+}
+
+function formatPercent(value?: number | null) {
+  return value === null || value === undefined || Number.isNaN(Number(value))
+    ? "N/A"
+    : `${Math.round(Number(value))}%`;
 }
 
 function FilterSelect({
@@ -175,27 +188,6 @@ function SummaryCard({
         </Flex>
       </Flex>
     </Box>
-  );
-}
-
-function ResultProgress({ row }: { row: LearnerResultRow }) {
-  return (
-    <Stack spacing={1} minW={{ md: "130px" }}>
-      <HStack justify="space-between">
-        <Text fontSize="xs" fontWeight="semibold">
-          {Math.round(row.progressPercent || 0)}%
-        </Text>
-        <Text fontSize="xs" color="gray.500">
-          {row.completedSections}/{row.totalSections || 0}
-        </Text>
-      </HStack>
-      <Progress
-        value={row.progressPercent || 0}
-        size="xs"
-        colorScheme={row.progressPercent >= 100 ? "green" : row.progressPercent >= 50 ? "blue" : "orange"}
-        borderRadius="full"
-      />
-    </Stack>
   );
 }
 
@@ -406,6 +398,7 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
       fetchLearnerResultDetail,
       clearLearnerResultDetail,
     },
+    companyStore,
   } = stores;
   const [filters, setFilters] = useState<LearnerResultsFilters>(EMPTY_LEARNER_RESULTS_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<LearnerResultsFilters>(
@@ -421,23 +414,34 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
   const panelBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const mutedBg = useColorModeValue("gray.50", "gray.900");
+  const scopedCompanyId = role === "superadmin" ? companyStore.getActiveCompanyId() : "";
 
   const params = useMemo(
-    () => ({
-      ...Object.fromEntries(
-        Object.entries(appliedFilters).filter(([, value]) => Boolean(value))
-      ),
-      page: String(page),
-      limit: String(pageSize),
-      sortBy,
-      sortOrder,
-    }),
-    [appliedFilters, page, pageSize, sortBy, sortOrder]
+    () => {
+      const filteredParams = Object.fromEntries(
+        Object.entries(appliedFilters).filter(([key, value]) => Boolean(value) && key !== "companyId")
+      );
+      return {
+        ...filteredParams,
+        ...(role === "superadmin" && scopedCompanyId ? { companyId: scopedCompanyId } : {}),
+        page: String(page),
+        limit: String(pageSize),
+        sortBy,
+        sortOrder,
+      };
+    },
+    [appliedFilters, page, pageSize, role, scopedCompanyId, sortBy, sortOrder]
   );
 
   useEffect(() => {
     fetchLearnerResults(params).catch(() => undefined);
   }, [fetchLearnerResults, params]);
+
+  useEffect(() => {
+    if (role === "superadmin" && !companyStore.companies.data?.length) {
+      companyStore.getManagedCompanies().catch(() => undefined);
+    }
+  }, [companyStore, role]);
 
   const updateFilter = (key: keyof LearnerResultsFilters, value: string) => {
     setFilters((current) => ({
@@ -447,10 +451,13 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
     }));
   };
 
-  const openDetail = async (row: LearnerResultRow) => {
+  const openDetail = async (row: LearnerUserResultRow) => {
     clearLearnerResultDetail();
     onOpen();
-    await fetchLearnerResultDetail(row.enrollmentId).catch(() => undefined);
+    await fetchLearnerResultDetail(
+      row.userId,
+      role === "superadmin" && scopedCompanyId ? { companyId: scopedCompanyId } : {}
+    ).catch(() => undefined);
   };
 
   const closeDetail = () => {
@@ -519,14 +526,6 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
               value={filters.search}
               onChange={(event: any) => updateFilter("search", event.target.value)}
             />
-            {role === "superadmin" ? (
-              <FilterSelect
-                value={filters.companyId}
-                placeholder="All companies"
-                options={options.companies}
-                onChange={(value) => updateFilter("companyId", value)}
-              />
-            ) : null}
             {role !== "departmenthead" ? (
               <FilterSelect
                 value={filters.departmentId}
@@ -637,8 +636,10 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
               >
                 <option value="lastActivity">Last activity</option>
                 <option value="submissionDate">Submission date</option>
-                <option value="score">Score</option>
-                <option value="progress">Progress</option>
+                <option value="averageScore">Average score</option>
+                <option value="averageProgress">Average progress</option>
+                <option value="totalCourses">Total courses</option>
+                <option value="completedCourses">Completed courses</option>
                 <option value="completionDate">Completion date</option>
                 <option value="learnerName">Learner name</option>
               </Select>
@@ -694,16 +695,16 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
 
       <SimpleGrid columns={{ base: 2, md: 3, xl: 6 }} spacing={2.5} mb={4}>
         <SummaryCard
-          label="Learner courses"
-          value={summary?.totalResults || 0}
-          helper={`${summary?.pending || 0} pending`}
+          label="Learners"
+          value={summary?.totalUsers ?? summary?.totalResults ?? 0}
+          helper={`${summary?.totalCourses || 0} enrolled courses`}
           icon={Users}
           color="purple"
         />
         <SummaryCard
           label="Average progress"
           value={summary?.averageProgress === null || summary?.averageProgress === undefined ? "N/A" : `${Math.round(summary.averageProgress)}%`}
-          helper={`${summary?.completed || 0} completed`}
+          helper={`${summary?.completedCourses ?? summary?.completed ?? 0} completed courses`}
           icon={BarChart3}
           color="blue"
         />
@@ -717,7 +718,7 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
         <SummaryCard
           label="Passed"
           value={summary?.passed || 0}
-          helper={`${passRate}% of graded results`}
+          helper={`${passRate}% of graded courses`}
           icon={CheckCircle2}
           color="green"
         />
@@ -729,9 +730,9 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
           color="red"
         />
         <SummaryCard
-          label="Recent submissions"
-          value={summary?.recentSubmissions?.length || 0}
-          helper="Latest answer activity"
+          label="In progress"
+          value={summary?.inProgressCourses || 0}
+          helper={`${summary?.notStartedCourses || 0} not started`}
           icon={ClipboardCheck}
           color="orange"
         />
@@ -772,20 +773,14 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
                 <Tr>
                   <Th pl={0}>Learner</Th>
                   {role === "superadmin" ? <Th>Company</Th> : null}
-                  <Th>Course</Th>
-                  <Th>Progress</Th>
-                  <Th isNumeric>Score</Th>
-                  <Th>Manual quizzes</Th>
-                  <Th>Result</Th>
-                  <Th>Activity / submitted</Th>
+                  <Th>Courses</Th>
                   <Th pr={0} />
                 </Tr>
               </Thead>
               <Tbody>
                 {rows.map((row) => {
-                  const result = statusMeta(row.passStatus);
                   return (
-                    <Tr key={row.enrollmentId}>
+                    <Tr key={row.userId}>
                       <Td pl={0}>
                         <HStack>
                           <Avatar size="xs" name={row.learner.name} />
@@ -808,64 +803,15 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
                         </Td>
                       ) : null}
                       <Td>
-                        <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
-                          {row.course.title}
-                        </Text>
-                        <Text fontSize="xs" color="gray.500" noOfLines={1}>
+                        <HStack spacing={1.5} flexWrap="wrap">
+                          <Badge colorScheme="purple" borderRadius="full">{row.totalCourses} total</Badge>
+                          <Badge colorScheme="green" borderRadius="full">{row.completedCourses} completed</Badge>
+                          <Badge colorScheme="blue" borderRadius="full">{row.inProgressCourses} in progress</Badge>
+                          <Badge colorScheme="gray" borderRadius="full">{row.notStartedCourses} not started</Badge>
+                        </HStack>
+                        {/*
                           {row.batches.map((batch) => batch.name).join(", ") || "Direct assignment"} · {row.course.status}
-                        </Text>
-                      </Td>
-                      <Td><ResultProgress row={row} /></Td>
-                      <Td isNumeric fontWeight="semibold">
-                        {row.score === null ? "N/A" : `${Math.round(row.score)}%`}
-                      </Td>
-                      <Td>
-                        {(row.manualQuizResults || []).length ? (
-                          <Stack spacing={1} align="flex-start">
-                            {(row.manualQuizResults || []).slice(0, 2).map((quiz) => (
-                              <Box key={quiz._id}>
-                                <HStack spacing={1.5}>
-                                  <Badge colorScheme={quiz.type === "Module Quiz" ? "purple" : "teal"} borderRadius="full">
-                                    {quiz.type}
-                                  </Badge>
-                                  <Text fontSize="xs" fontWeight="semibold" noOfLines={1} maxW="150px">
-                                    {quiz.title}
-                                  </Text>
-                                </HStack>
-                                <Text fontSize="xs" color="gray.500">
-                                  {quiz.score}/{quiz.maxScore} marks ({Math.round(quiz.percentage)}%)
-                                </Text>
-                              </Box>
-                            ))}
-                            {(row.manualQuizResults || []).length > 2 ? (
-                              <Text fontSize="xs" color="purple.500">
-                                +{(row.manualQuizResults || []).length - 2} more in details
-                              </Text>
-                            ) : null}
-                          </Stack>
-                        ) : (
-                          <Text fontSize="xs" color="gray.400">No manual quiz submitted</Text>
-                        )}
-                      </Td>
-                      <Td>
-                        <Stack spacing={1} align="flex-start">
-                          <Badge colorScheme={result.color} borderRadius="full">
-                            {result.label}
-                          </Badge>
-                          <Badge
-                            colorScheme={row.status === "completed" ? "green" : row.status === "in_progress" ? "blue" : "gray"}
-                            variant="subtle"
-                            borderRadius="full"
-                          >
-                            {statusMeta(row.status).label}
-                          </Badge>
-                        </Stack>
-                      </Td>
-                      <Td>
-                        <Text fontSize="xs" whiteSpace="nowrap">{formatDate(row.lastActivity)}</Text>
-                        <Text fontSize="xs" color="gray.500" whiteSpace="nowrap">
-                          Submitted {formatDate(row.submissionDate)}
-                        </Text>
+                        */}
                       </Td>
                       <Td pr={0} textAlign="right">
                         <Button
@@ -886,31 +832,38 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
 
           <Stack display={{ base: "flex", md: "none" }} spacing={3}>
             {rows.map((row) => {
-              const result = statusMeta(row.passStatus);
               return (
-                <Box key={row.enrollmentId} borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={3}>
+                <Box key={row.userId} borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={3}>
                   <Flex justify="space-between" gap={3}>
                     <HStack minW={0}>
                       <Avatar size="sm" name={row.learner.name} />
                       <Box minW={0}>
                         <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>{row.learner.name}</Text>
-                        <Text fontSize="xs" color="gray.500" noOfLines={1}>{row.course.title}</Text>
+                        <Text fontSize="xs" color="gray.500" noOfLines={1}>
+                          {row.learner.email || row.learner.mobileNumber || "No contact details"}
+                        </Text>
                         <Text fontSize="xs" color="gray.400" noOfLines={1}>{row.learner.department}</Text>
                       </Box>
                     </HStack>
-                    <Badge colorScheme={result.color} borderRadius="full" alignSelf="flex-start">{result.label}</Badge>
+                    <Badge colorScheme={row.learner.isActive ? "green" : "gray"} borderRadius="full" alignSelf="flex-start">
+                      {row.learner.isActive ? "Active" : "Inactive"}
+                    </Badge>
                   </Flex>
-                  {(row.manualQuizResults || []).length ? (
-                    <Text mt={2} fontSize="xs" color="purple.600" noOfLines={2}>
-                      {(row.manualQuizResults || []).length} manual quiz result{(row.manualQuizResults || []).length === 1 ? "" : "s"}:{" "}
-                      {(row.manualQuizResults || []).map((quiz) => quiz.title).join(", ")}
-                    </Text>
-                  ) : null}
-                  <Box mt={3}><ResultProgress row={row} /></Box>
-                  <Flex justify="space-between" align="center" mt={3}>
+                  <HStack mt={3} spacing={1.5} flexWrap="wrap">
+                    <Badge colorScheme="purple" borderRadius="full">{row.totalCourses} total</Badge>
+                    <Badge colorScheme="green" borderRadius="full">{row.completedCourses} completed</Badge>
+                    <Badge colorScheme="blue" borderRadius="full">{row.inProgressCourses} in progress</Badge>
+                    <Badge colorScheme="gray" borderRadius="full">{row.notStartedCourses} not started</Badge>
+                  </HStack>
+                  <Flex justify="flex-end" align="center" mt={3}>
+                    {/*
                     <Text fontSize="xs" color="gray.500">
-                      Score {row.score === null ? "N/A" : `${Math.round(row.score)}%`} · {row.answerCount} answers
+                      Avg score {row.averageScore === null ? "N/A" : `${Math.round(row.averageScore || 0)}%`} | {row.answerCount} answers
                     </Text>
+                    */}
+                    {/*
+                      Score {row.score === null ? "N/A" : `${Math.round(row.score)}%`} · {row.answerCount} answers
+                    */}
                     <Button size="xs" variant="ghost" leftIcon={<Eye size={13} />} onClick={() => void openDetail(row)}>
                       Review
                     </Button>
@@ -922,7 +875,7 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
 
           <Flex justify="space-between" align="center" mt={4} gap={3} wrap="wrap">
             <Text fontSize="xs" color="gray.500">
-              {pagination?.total || 0} learner-course results
+              {pagination?.total || 0} learners
             </Text>
             <HStack>
               <Select
@@ -974,7 +927,7 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
         </Box>
       )}
 
-      <ResultDetailDrawer
+      <LearnerUserDetailDrawer
         detail={learnerResultDetail as LearnerResultDetail | null}
         isLoading={learnerResultDetailLoading}
         isOpen={isOpen}
@@ -983,6 +936,272 @@ const LearnerResultsWorkspace = observer(({ role, showHeader = true }: Props) =>
     </Box>
   );
 });
+
+function LearnerCourseAccordion({ course }: { course: LearnerCourseDetail }) {
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const mutedBg = useColorModeValue("gray.50", "gray.900");
+  const surfaceBg = useColorModeValue("white", "gray.800");
+  const courseStatus = statusMeta(course.status);
+  const result = statusMeta(course.passStatus);
+  const manualAnswerSections = selectAnswerSections(course.answerSections || [], "manual");
+  const scormAnswerSections = selectAnswerSections(course.answerSections || [], "scorm");
+  const manualQuestionCount = manualAnswerSections.reduce((total, section) => total + section.interactions.length, 0);
+  const scormQuestionCount = scormAnswerSections.reduce((total, section) => total + section.interactions.length, 0);
+
+  return (
+    <AccordionItem borderWidth="1px" borderColor={borderColor} borderRadius="xl" overflow="hidden">
+      <AccordionButton px={3.5} py={3} _hover={{ bg: mutedBg }}>
+        <Flex flex="1" justify="space-between" align="center" gap={3} minW={0}>
+          <Box textAlign="left" minW={0}>
+            <Text fontSize="sm" fontWeight="bold" noOfLines={1}>{course.course.title}</Text>
+            <Text fontSize="xs" color="gray.500" noOfLines={1}>
+              {course.batches.map((batch) => batch.name).join(", ") || "Direct assignment"} | {course.course.status}
+            </Text>
+          </Box>
+          <HStack flexShrink={0} spacing={1.5}>
+            <Badge colorScheme={courseStatus.color} borderRadius="full">{courseStatus.label}</Badge>
+            <Badge colorScheme={result.color} borderRadius="full">{result.label}</Badge>
+            <AccordionIcon />
+          </HStack>
+        </Flex>
+      </AccordionButton>
+      <AccordionPanel px={3} pb={3} pt={0}>
+        <Stack spacing={3}>
+          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={2.5}>
+            <SummaryCard label="Progress" value={`${Math.round(course.progressPercent)}%`} helper={`${course.completedSections}/${course.totalSections} sections`} icon={BarChart3} color="blue" />
+            <SummaryCard label="Score" value={course.score === null ? "N/A" : `${Math.round(course.score)}%`} helper={course.passThreshold === null ? "No pass threshold" : `Pass at ${Math.round(course.passThreshold)}%`} icon={Target} color="pink" />
+            <SummaryCard label="Attempts" value={course.attempts} helper={`${course.quizAttempts} quiz | ${course.scormAttempts} SCORM`} icon={ClipboardCheck} color="purple" />
+            <SummaryCard label="Time spent" value={course.timeSpent || "00:00:00"} helper={`Submitted ${formatDate(course.submissionDate)}`} icon={Users} color="teal" />
+          </SimpleGrid>
+
+          <Accordion allowMultiple>
+            <Stack spacing={2.5}>
+              <AccordionItem borderWidth="1px" borderColor={borderColor} borderRadius="lg" overflow="hidden">
+                <AccordionButton px={3.5} py={3} _hover={{ bg: mutedBg }}>
+                  <Flex flex="1" justify="space-between" align="center" gap={3}>
+                    <Box textAlign="left">
+                      <Text fontSize="sm" fontWeight="bold">Modules and sections</Text>
+                      <Text fontSize="xs" color="gray.500">Progress across {course.modules?.length || 0} modules</Text>
+                    </Box>
+                    <HStack>
+                      <Badge colorScheme="blue" borderRadius="full">{course.completedSections}/{course.totalSections}</Badge>
+                      <AccordionIcon />
+                    </HStack>
+                  </Flex>
+                </AccordionButton>
+                <AccordionPanel px={3} pb={3} pt={0}>
+                  <Stack spacing={2}>
+                    {(course.modules || []).length ? (
+                      course.modules?.map((module) => (
+                        <Box key={module.moduleId} bg={mutedBg} borderRadius="lg" px={3} py={2.5}>
+                          <Flex justify="space-between" gap={3} align="flex-start">
+                            <Box minW={0} flex="1">
+                              <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>{module.title}</Text>
+                              <HStack mt={1} spacing={2} flexWrap="wrap">
+                                <Badge colorScheme="blue" borderRadius="full">{module.sectionsCompleted}/{module.sectionCount} sections</Badge>
+                                <Badge colorScheme="purple" borderRadius="full">Score {formatPercent(module.score)}</Badge>
+                                <Badge colorScheme="gray" borderRadius="full">{module.totalTime || "00:00:00"}</Badge>
+                              </HStack>
+                            </Box>
+                            <Text fontSize="xs" fontWeight="bold" flexShrink={0}>{Math.round(module.progress || 0)}%</Text>
+                          </Flex>
+                          <Progress mt={2} value={module.progress || 0} size="xs" colorScheme="blue" borderRadius="full" />
+                          {(module.sections || []).length ? (
+                            <Stack mt={2.5} spacing={2}>
+                              {module.sections.map((section) => {
+                                const sectionResult = statusMeta(section.lessonStatus);
+                                return (
+                                  <Box key={section.sectionId} bg={surfaceBg} borderWidth="1px" borderColor={borderColor} borderRadius="md" px={2.5} py={2}>
+                                    <Flex justify="space-between" gap={3} align="flex-start">
+                                      <Box minW={0}>
+                                        <Text fontSize="xs" fontWeight="semibold" noOfLines={1}>{section.title}</Text>
+                                        <HStack mt={1} spacing={2} flexWrap="wrap">
+                                          <Badge colorScheme={sectionResult.color} borderRadius="full">{sectionResult.label}</Badge>
+                                          <Badge colorScheme="gray" borderRadius="full">{section.contentType || "other"}</Badge>
+                                          <Text fontSize="2xs" color="gray.500">Attempts {section.attempts || 0}</Text>
+                                          <Text fontSize="2xs" color="gray.500">Time {section.totalTime || "00:00:00"}</Text>
+                                          <Text fontSize="2xs" color="gray.500">Last {formatDate(section.lastAccessed)}</Text>
+                                        </HStack>
+                                      </Box>
+                                      <Box textAlign="right" flexShrink={0}>
+                                        <Text fontSize="2xs" color="gray.500">Score</Text>
+                                        <Text fontSize="xs" fontWeight="bold">{formatPercent(section.score)}</Text>
+                                      </Box>
+                                    </Flex>
+                                    <Progress mt={2} value={section.progress || 0} size="xs" colorScheme={section.progress >= 100 ? "green" : "blue"} borderRadius="full" />
+                                  </Box>
+                                );
+                              })}
+                            </Stack>
+                          ) : null}
+                        </Box>
+                      ))
+                    ) : (
+                      <Text fontSize="sm" color="gray.500">No module progress has been recorded.</Text>
+                    )}
+                  </Stack>
+                </AccordionPanel>
+              </AccordionItem>
+
+              <AccordionItem borderWidth="1px" borderColor={borderColor} borderRadius="lg" overflow="hidden">
+                <AccordionButton px={3.5} py={3} _hover={{ bg: mutedBg }}>
+                  <Flex flex="1" justify="space-between" align="center" gap={3}>
+                    <Box textAlign="left">
+                      <Text fontSize="sm" fontWeight="bold">Course creator quizzes</Text>
+                      <Text fontSize="xs" color="gray.500">Scores, submitted answers, and marked options</Text>
+                    </Box>
+                    <HStack>
+                      <Badge colorScheme="purple" borderRadius="full">{manualQuestionCount} questions</Badge>
+                      <AccordionIcon />
+                    </HStack>
+                  </Flex>
+                </AccordionButton>
+                <AccordionPanel px={3} pb={3} pt={0}>
+                  {manualAnswerSections.length ? (
+                    <ManualQuizAnswerDetails sections={manualAnswerSections} />
+                  ) : (course.manualQuizResults || []).length ? (
+                    <Stack spacing={2}>
+                      {(course.manualQuizResults || []).map((quiz) => (
+                        <Flex key={quiz._id} bg={mutedBg} borderRadius="lg" px={3} py={2.5} justify="space-between" gap={3}>
+                          <Box minW={0}>
+                            <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>{quiz.title}</Text>
+                            <Text fontSize="xs" color="gray.500">{quiz.moduleTitle || "Course level"} | Attempt #{quiz.attemptNumber} | {formatDate(quiz.submittedAt)}</Text>
+                          </Box>
+                          <Text fontSize="xs" fontWeight="bold" flexShrink={0}>{quiz.score}/{quiz.maxScore}</Text>
+                        </Flex>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Text fontSize="sm" color="gray.500">No course creator quiz attempts are available.</Text>
+                  )}
+                </AccordionPanel>
+              </AccordionItem>
+
+              <AccordionItem borderWidth="1px" borderColor={borderColor} borderRadius="lg" overflow="hidden">
+                <AccordionButton px={3.5} py={3} _hover={{ bg: mutedBg }}>
+                  <Flex flex="1" justify="space-between" align="center" gap={3}>
+                    <Box textAlign="left">
+                      <Text fontSize="sm" fontWeight="bold">SCORM activity and quiz answers</Text>
+                      <Text fontSize="xs" color="gray.500">Recorded SCORM responses, results, and marks</Text>
+                    </Box>
+                    <HStack>
+                      <Badge colorScheme="teal" borderRadius="full">{scormQuestionCount} questions</Badge>
+                      <AccordionIcon />
+                    </HStack>
+                  </Flex>
+                </AccordionButton>
+                <AccordionPanel px={3} pb={3} pt={0}>
+                  <ScormQuizReviewContent
+                    sections={scormAnswerSections}
+                    mode="learner"
+                    compact
+                    emptyState="No SCORM quiz answers have been recorded for this learner and course."
+                    progressSummary={{
+                      progressPercent: course.progressPercent,
+                      sectionsCompleted: course.completedSections,
+                      totalSections: course.totalSections,
+                    }}
+                  />
+                </AccordionPanel>
+              </AccordionItem>
+            </Stack>
+          </Accordion>
+        </Stack>
+      </AccordionPanel>
+    </AccordionItem>
+  );
+}
+
+function LearnerUserDetailDrawer({
+  detail,
+  isLoading,
+  isOpen,
+  onClose,
+}: {
+  detail: LearnerResultDetail | null;
+  isLoading: boolean;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const mutedBg = useColorModeValue("gray.50", "gray.900");
+
+  return (
+    <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xl">
+      <DrawerOverlay />
+      <DrawerContent>
+        <DrawerCloseButton />
+        <DrawerHeader borderBottomWidth="1px" borderColor={borderColor} pr={12}>
+          <Text fontSize="md">Learner progress detail</Text>
+          <Text fontSize="xs" color="gray.500" fontWeight="normal">
+            Enrolled courses, progress, quiz attempts, and SCORM tracking
+          </Text>
+        </DrawerHeader>
+        <DrawerBody py={5}>
+          {isLoading && !detail ? (
+            <Stack spacing={4}>
+              <Skeleton height="100px" borderRadius="xl" />
+              <Skeleton height="180px" borderRadius="xl" />
+              <Skeleton height="280px" borderRadius="xl" />
+            </Stack>
+          ) : detail ? (
+            <Stack spacing={5}>
+              <Box bg={mutedBg} borderRadius="xl" p={4}>
+                <Flex justify="space-between" gap={4} wrap="wrap">
+                  <HStack>
+                    <Avatar name={detail.learner.name} />
+                    <Box>
+                      <Text fontWeight="bold">{detail.learner.name}</Text>
+                      <Text fontSize="xs" color="gray.500">{detail.learner.email || "No email"}</Text>
+                      {detail.learner.mobileNumber ? (
+                        <Text fontSize="xs" color="gray.500">{detail.learner.mobileNumber}</Text>
+                      ) : null}
+                      <Text fontSize="xs" color="gray.500">
+                        {detail.company.name} | {detail.learner.department}
+                      </Text>
+                    </Box>
+                  </HStack>
+                  <HStack spacing={1.5} flexWrap="wrap" alignSelf="flex-start">
+                    <Badge colorScheme="purple" borderRadius="full">{detail.totalCourses} total</Badge>
+                    <Badge colorScheme="green" borderRadius="full">{detail.completedCourses} completed</Badge>
+                    <Badge colorScheme="blue" borderRadius="full">{detail.inProgressCourses} in progress</Badge>
+                    <Badge colorScheme="gray" borderRadius="full">{detail.notStartedCourses} not started</Badge>
+                  </HStack>
+                </Flex>
+              </Box>
+
+              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={2.5}>
+                <SummaryCard label="Courses" value={detail.totalCourses} helper={`${detail.completedCourses} completed`} icon={ClipboardCheck} color="purple" />
+                <SummaryCard label="Avg progress" value={formatPercent(detail.averageProgress)} helper={`${detail.inProgressCourses} in progress`} icon={BarChart3} color="blue" />
+                <SummaryCard label="Avg score" value={formatPercent(detail.averageScore)} helper={`${detail.passed} passed | ${detail.failed} failed`} icon={Target} color="pink" />
+                <SummaryCard label="Activity" value={detail.answerCount} helper={`Last ${formatDate(detail.lastActivity)}`} icon={Users} color="teal" />
+              </SimpleGrid>
+
+              {(detail.courses || []).length ? (
+                <Accordion allowMultiple>
+                  <Stack spacing={2.5}>
+                    {detail.courses.map((course) => (
+                      <LearnerCourseAccordion key={course.enrollmentId} course={course} />
+                    ))}
+                  </Stack>
+                </Accordion>
+              ) : (
+                <Box borderWidth="1px" borderColor={borderColor} borderRadius="xl" p={4} textAlign="center">
+                  <Text fontSize="sm" color="gray.500">No courses are enrolled for this learner yet.</Text>
+                </Box>
+              )}
+            </Stack>
+          ) : (
+            <Alert status="error" borderRadius="xl">
+              <AlertIcon />
+              Unable to load this learner detail.
+            </Alert>
+          )}
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
+  );
+}
 
 function ResultDetailDrawer({
   detail,
@@ -997,6 +1216,7 @@ function ResultDetailDrawer({
 }) {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const mutedBg = useColorModeValue("gray.50", "gray.900");
+  const surfaceBg = useColorModeValue("white", "gray.800");
   const result = detail ? statusMeta(detail.passStatus) : statusMeta("");
   const manualAnswerSections = selectAnswerSections(detail?.answerSections || [], "manual");
   const scormAnswerSections = selectAnswerSections(detail?.answerSections || [], "scorm");
@@ -1085,16 +1305,64 @@ function ResultDetailDrawer({
                         {(detail.modules || []).length ? (
                           detail.modules?.map((module) => (
                             <Box key={module.moduleId} bg={mutedBg} borderRadius="lg" px={3} py={2.5}>
-                              <Flex justify="space-between" gap={3}>
-                                <Box minW={0}>
+                              <Flex justify="space-between" gap={3} align="flex-start">
+                                <Box minW={0} flex="1">
                                   <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>{module.title}</Text>
-                                  <Text fontSize="xs" color="gray.500">
-                                    {module.sectionsCompleted}/{module.sectionCount} sections | {module.totalTime || "00:00:00"}
-                                  </Text>
+                                  <HStack mt={1} spacing={2} flexWrap="wrap">
+                                    <Badge colorScheme="blue" borderRadius="full">
+                                      {module.sectionsCompleted}/{module.sectionCount} sections
+                                    </Badge>
+                                    <Badge colorScheme="purple" borderRadius="full">
+                                      Score {formatPercent(module.score)}
+                                    </Badge>
+                                    <Badge colorScheme="gray" borderRadius="full">
+                                      {module.totalTime || "00:00:00"}
+                                    </Badge>
+                                  </HStack>
                                 </Box>
-                                <Text fontSize="xs" fontWeight="bold">{Math.round(module.progress || 0)}%</Text>
+                                <Text fontSize="xs" fontWeight="bold" flexShrink={0}>{Math.round(module.progress || 0)}%</Text>
                               </Flex>
-                              <Progress mt={1.5} value={module.progress || 0} size="xs" colorScheme="blue" borderRadius="full" />
+                              <Progress mt={2} value={module.progress || 0} size="xs" colorScheme="blue" borderRadius="full" />
+                              {(module.sections || []).length ? (
+                                <Stack mt={2.5} spacing={2}>
+                                  {module.sections.map((section) => {
+                                    const sectionResult = statusMeta(section.lessonStatus);
+                                    return (
+                                      <Box key={section.sectionId} bg={surfaceBg} borderWidth="1px" borderColor={borderColor} borderRadius="md" px={2.5} py={2}>
+                                        <Flex justify="space-between" gap={3} align="flex-start">
+                                          <Box minW={0}>
+                                            <Text fontSize="xs" fontWeight="semibold" noOfLines={1}>
+                                              {section.title}
+                                            </Text>
+                                            <HStack mt={1} spacing={2} flexWrap="wrap">
+                                              <Badge colorScheme={sectionResult.color} borderRadius="full">
+                                                {sectionResult.label}
+                                              </Badge>
+                                              <Badge colorScheme="gray" borderRadius="full">
+                                                {section.contentType || "other"}
+                                              </Badge>
+                                              <Text fontSize="2xs" color="gray.500">
+                                                Attempts {section.attempts || 0}
+                                              </Text>
+                                              <Text fontSize="2xs" color="gray.500">
+                                                Time {section.totalTime || "00:00:00"}
+                                              </Text>
+                                              <Text fontSize="2xs" color="gray.500">
+                                                Last {formatDate(section.lastAccessed)}
+                                              </Text>
+                                            </HStack>
+                                          </Box>
+                                          <Box textAlign="right" flexShrink={0}>
+                                            <Text fontSize="2xs" color="gray.500">Score</Text>
+                                            <Text fontSize="xs" fontWeight="bold">{formatPercent(section.score)}</Text>
+                                          </Box>
+                                        </Flex>
+                                        <Progress mt={2} value={section.progress || 0} size="xs" colorScheme={section.progress >= 100 ? "green" : "blue"} borderRadius="full" />
+                                      </Box>
+                                    );
+                                  })}
+                                </Stack>
+                              ) : null}
                             </Box>
                           ))
                         ) : (

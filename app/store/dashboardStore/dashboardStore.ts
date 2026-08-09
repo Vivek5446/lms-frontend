@@ -107,10 +107,10 @@ class DashboardStore {
     }
   };
 
-  fetchLearnerResultDetail = async (enrollmentId: string) => {
+  fetchLearnerResultDetail = async (userId: string, params: Record<string, string> = {}) => {
     this.learnerResultDetailLoading = true;
     try {
-      const { data } = await axios.get(`/dashboard/learner-results/${enrollmentId}`);
+      const { data } = await axios.get(`/dashboard/learner-results/users/${userId}`, { params });
       this.learnerResultDetail = data?.data || null;
       return this.learnerResultDetail;
     } catch (err: any) {

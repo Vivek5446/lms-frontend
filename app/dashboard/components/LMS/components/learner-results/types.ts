@@ -74,11 +74,39 @@ export type LearnerResultRow = {
   }>;
 };
 
+export type LearnerUserResultRow = {
+  _id: string;
+  userId: string;
+  learner: LearnerResultRow["learner"] & {
+    designation?: string;
+  };
+  company: LearnerResultRow["company"];
+  totalCourses: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  notStartedCourses: number;
+  averageProgress: number | null;
+  averageScore: number | null;
+  passed: number;
+  failed: number;
+  attempts: number;
+  answerCount: number;
+  lastActivity?: string | null;
+  submissionDate?: string | null;
+  completionDate?: string | null;
+  courses?: LearnerResultRow[];
+};
+
 export type LearnerResultsResponse = {
   scope?: Record<string, any>;
   summary: {
     totalResults: number;
+    totalUsers?: number;
+    totalCourses?: number;
     completed: number;
+    completedCourses?: number;
+    inProgressCourses?: number;
+    notStartedCourses?: number;
     pending: number;
     averageProgress: number | null;
     averageScore: number | null;
@@ -101,10 +129,10 @@ export type LearnerResultsResponse = {
     total: number;
     totalPages: number;
   };
-  results: LearnerResultRow[];
+  results: LearnerUserResultRow[];
 };
 
-export type LearnerResultDetail = LearnerResultRow & {
+export type LearnerCourseDetail = LearnerResultRow & {
   modules?: Array<{
     moduleId: string;
     title: string;
@@ -119,11 +147,20 @@ export type LearnerResultDetail = LearnerResultRow & {
       title: string;
       progress: number;
       score: number | null;
+      attempts: number;
       lessonStatus: string;
       totalTime: string;
+      lastAccessed?: string | null;
+      contentType?: "scorm" | "video" | "document" | "other";
       completedAt?: string | null;
     }>;
   }>;
+  answerSections?: ScormAnswerSectionRecord[];
+};
+
+export type LearnerResultDetail = LearnerUserResultRow & LearnerResultRow & {
+  courses: LearnerCourseDetail[];
+  modules?: LearnerCourseDetail["modules"];
   answerSections?: ScormAnswerSectionRecord[];
 };
 
