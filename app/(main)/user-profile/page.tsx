@@ -1224,16 +1224,27 @@ const ProfilePage: React.FC = observer(() => {
           {menuItems.map((m, i) => (
             <Flex key={m.key} onClick={m.onClick} _active={{ scale: 0.98, opacity: 0.8 }} transition="all 0.1s" w="100%" align="center" justify="space-between" py={3.5} px={4} cursor="pointer" borderBottom={i !== menuItems.length - 1 ? (isDark ? "1px solid rgba(255,255,255,0.04)" : "1px solid #F3F4F6") : "none"}>
                 <Flex align="center" gap={4}>
-                  <Flex align="center" justify="center" w={9} h={9} borderRadius="lg" bgGradient={[
-                      "linear(to-br, blue.400, blue.600)",
-                      "linear(to-br, pink.400, pink.600)",
-                      "linear(to-br, teal.400, teal.600)",
-                      "linear(to-br, orange.400, orange.600)",
-                      "linear(to-br, purple.400, purple.600)"
-                    ][i % 5]} color="white" boxShadow={isDark ? "none" : "0 3px 10px rgba(0,0,0,0.1)"}>
-                    <m.icon size={18} />
+                  <Flex align="center" justify="center" w={10} h={10} borderRadius="xl" bg={[
+                      isDark ? "rgba(59,130,246,0.15)" : "blue.50",
+                      isDark ? "rgba(239,68,68,0.15)" : "red.50",
+                      isDark ? "rgba(16,185,129,0.15)" : "green.50",
+                      isDark ? "rgba(245,158,11,0.15)" : "orange.50",
+                      isDark ? "rgba(168,85,247,0.15)" : "purple.50",
+                      isDark ? "rgba(20,184,166,0.15)" : "teal.50"
+                    ][i % 6]} color={[
+                      isDark ? "#60A5FA" : "blue.600",
+                      isDark ? "#F87171" : "red.600",
+                      isDark ? "#34D399" : "green.600",
+                      isDark ? "#FBBF24" : "orange.600",
+                      isDark ? "#C084FC" : "purple.600",
+                      isDark ? "#2DD4BF" : "teal.600"
+                    ][i % 6]}>
+                    <m.icon size={20} strokeWidth={2.5} />
                   </Flex>
-                  <Text fontSize="15px" fontWeight="700" color={isDark ? "white" : "gray.900"}>{m.label}</Text>
+                  <Box>
+                    <Text fontSize="15px" fontWeight="700" color={isDark ? "white" : "gray.900"} letterSpacing="-0.01em">{m.label}</Text>
+                    {m.desc && <Text fontSize="12px" fontWeight="500" color={isDark ? "whiteAlpha.600" : "gray.500"} mt={0.5}>{m.desc}</Text>}
+                  </Box>
                 </Flex>
                 
                 <Flex align="center" gap={2} ml="auto" flexShrink={0}>
