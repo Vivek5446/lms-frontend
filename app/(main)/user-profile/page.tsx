@@ -949,7 +949,7 @@ const ProfilePage: React.FC = observer(() => {
            </Flex>
         </Box>
 
-        <Grid templateColumns={{ base: "1fr", lg: "1fr 380px" }} gap={10} px={4} mt={8}>
+        <Grid templateColumns={{ base: "1fr", lg: "1fr 380px" }} gap={10} mt={8}>
           {/* Main Content Column */}
           <VStack spacing={10} align="stretch">
             {/* Stats row */}
@@ -1102,7 +1102,7 @@ const ProfilePage: React.FC = observer(() => {
       </Box>
 
       {/* ═══ MOBILE — Exact RideX App Theme ═══ */}
-      <Box display={{ base: "block", md: "none" }} minH="100vh" bg={isDark ? "#111318" : "#F9FAFB"} px={0} pb={12} fontFamily="'Inter', sans-serif">
+      <Box display={{ base: "block", md: "none" }} minH="100vh" bg={isDark ? "transparent" : "#F9FAFB"} px={0} pb={12} fontFamily="'Inter', sans-serif">
         {/* ── Header ── */}
         <Box px={4} pt={6} pb={4}>
           <Flex align="center" justify="space-between" position="relative">
@@ -1178,39 +1178,39 @@ const ProfilePage: React.FC = observer(() => {
         
         <Grid templateColumns="repeat(2, 1fr)" gap={3} mx={2} mb={6}>
           {/* Certs */}
-          <Flex direction="column" align="center" justify="center" bg={isDark ? "rgba(59, 130, 246, 0.1)" : "blue.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "rgba(59, 130, 246, 0.2)" : "blue.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(59, 130, 246, 0.1)"}>
+          <Flex direction="column" align="center" justify="center" bg={isDark ? "whiteAlpha.50" : "blue.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blue.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(59, 130, 246, 0.1)"}>
             <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bgGradient="linear(to-br, blue.400, blue.600)" color="white" boxShadow={isDark ? "none" : "0 4px 12px rgba(59,130,246,0.3)"} mb={3}>
               <Award size={24} strokeWidth={2.5} />
             </Flex>
-            <Text fontSize="24px" fontWeight="900" color={isDark ? "blue.100" : "blue.900"} lineHeight="1.1">{courseStore.isMyCertificatesLoading ? "—" : courseStore.myCertificates.length}</Text>
-            <Text fontSize="11px" fontWeight="800" color={isDark ? "blue.300" : "blue.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Total Certs</Text>
+            <Text fontSize="24px" fontWeight="900" color={isDark ? "white" : "blue.900"} lineHeight="1.1">{courseStore.isMyCertificatesLoading ? "—" : courseStore.myCertificates.length}</Text>
+            <Text fontSize="11px" fontWeight="800" color={isDark ? "#9CA3AF" : "blue.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Total Certs</Text>
           </Flex>
           
           {/* Quizzes */}
-          <Flex direction="column" align="center" justify="center" bg={isDark ? "rgba(16, 185, 129, 0.1)" : "green.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "rgba(16, 185, 129, 0.2)" : "green.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(16, 185, 129, 0.1)"}>
+          <Flex direction="column" align="center" justify="center" bg={isDark ? "whiteAlpha.50" : "green.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "green.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(16, 185, 129, 0.1)"}>
             <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bgGradient="linear(to-br, green.400, teal.500)" color="white" boxShadow={isDark ? "none" : "0 4px 12px rgba(16,185,129,0.3)"} mb={3}>
               <Edit2 size={24} strokeWidth={2.5} />
             </Flex>
-            <Text fontSize="24px" fontWeight="900" color={isDark ? "green.100" : "green.900"} lineHeight="1.1">{stores.quizStore.myAttempts.length}</Text>
-            <Text fontSize="11px" fontWeight="800" color={isDark ? "green.300" : "green.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Quizzes</Text>
+            <Text fontSize="24px" fontWeight="900" color={isDark ? "white" : "green.900"} lineHeight="1.1">{stores.quizStore.myAttempts.length}</Text>
+            <Text fontSize="11px" fontWeight="800" color={isDark ? "#9CA3AF" : "green.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Quizzes</Text>
           </Flex>
           
           {/* Saved */}
-          <Flex direction="column" align="center" justify="center" bg={isDark ? "rgba(168, 85, 247, 0.1)" : "purple.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "rgba(168, 85, 247, 0.2)" : "purple.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(168, 85, 247, 0.1)"}>
+          <Flex direction="column" align="center" justify="center" bg={isDark ? "whiteAlpha.50" : "purple.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "purple.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(168, 85, 247, 0.1)"}>
             <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bgGradient="linear(to-br, purple.400, purple.600)" color="white" boxShadow={isDark ? "none" : "0 4px 12px rgba(168,85,247,0.3)"} mb={3}>
               <Bookmark size={24} strokeWidth={2.5} />
             </Flex>
-            <Text fontSize="24px" fontWeight="900" color={isDark ? "purple.100" : "purple.900"} lineHeight="1.1">3</Text>
-            <Text fontSize="11px" fontWeight="800" color={isDark ? "purple.300" : "purple.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Saved</Text>
+            <Text fontSize="24px" fontWeight="900" color={isDark ? "white" : "purple.900"} lineHeight="1.1">3</Text>
+            <Text fontSize="11px" fontWeight="800" color={isDark ? "#9CA3AF" : "purple.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Saved</Text>
           </Flex>
           
           {/* Rating */}
-          <Flex direction="column" align="center" justify="center" bg={isDark ? "rgba(245, 158, 11, 0.1)" : "orange.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "rgba(245, 158, 11, 0.2)" : "orange.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(245, 158, 11, 0.1)"}>
+          <Flex direction="column" align="center" justify="center" bg={isDark ? "whiteAlpha.50" : "orange.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "orange.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(245, 158, 11, 0.1)"}>
             <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bgGradient="linear(to-br, orange.400, red.500)" color="white" boxShadow={isDark ? "none" : "0 4px 12px rgba(245,158,11,0.3)"} mb={3}>
               <Star size={24} strokeWidth={2.5} />
             </Flex>
-            <Text fontSize="24px" fontWeight="900" color={isDark ? "orange.100" : "orange.900"} lineHeight="1.1">4.8</Text>
-            <Text fontSize="11px" fontWeight="800" color={isDark ? "orange.300" : "orange.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Rating</Text>
+            <Text fontSize="24px" fontWeight="900" color={isDark ? "white" : "orange.900"} lineHeight="1.1">4.8</Text>
+            <Text fontSize="11px" fontWeight="800" color={isDark ? "#9CA3AF" : "orange.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Rating</Text>
           </Flex>
         </Grid>
 
@@ -1285,11 +1285,11 @@ const ProfilePage: React.FC = observer(() => {
       {/* ── Settings Drawer (Responsive 55vw Desktop) ── */}
       <Drawer isOpen={isSettingsOpen} placement="right" onClose={onSettingsClose} size="full">
         <DrawerOverlay bg="blackAlpha.400" backdropFilter="blur(5px)" />
-        <DrawerContent bg={isDark ? "#111318" : "#F9FAFB"} maxW={{ base: "100vw", md: "55vw" }} borderLeftRadius={{ base: "none", md: "2xl" }} overflow="hidden" borderLeft="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"}>
+        <DrawerContent bg={isDark ? "gray.900" : "#F9FAFB"} maxW={{ base: "100vw", md: "55vw" }} borderLeftRadius={{ base: "none", md: "2xl" }} overflow="hidden" borderLeft="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"}>
           <DrawerBody p={0} m={0}>
             <Box minH="100vh" fontFamily="'Inter', sans-serif" pb={12} overflowY="auto">
               {/* Header */}
-              <Box px={6} pt={8} pb={6} bg={isDark ? "whiteAlpha.50" : "white"} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} position="relative" zIndex={1} boxShadow={isDark ? "none" : "0 4px 20px rgba(0,0,0,0.02)"}>
+              <Box px={6} pt={8} pb={6} bg={isDark ? "transparent" : "white"} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} position="relative" zIndex={1} boxShadow={isDark ? "none" : "0 4px 20px rgba(0,0,0,0.02)"}>
                 <Flex align="center" gap={4} mb={2}>
                   <button onClick={onSettingsClose} style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", borderRadius: "50%", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s", flexShrink: 0 }}>
                     <ChevronRight size={18} style={{ transform: "rotate(180deg)" }} color={isDark ? "white" : "black"} />
