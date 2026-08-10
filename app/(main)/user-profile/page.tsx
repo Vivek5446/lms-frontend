@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { formatDateForInput } from "@/app/component/config/utils/dateUtils";
 import { genderOptions } from "@/app/config/constant";
@@ -27,6 +28,7 @@ import {
   ModalHeader,
   ModalOverlay,
   Spinner,
+  Switch,
   Text,
   useBreakpointValue,
   useColorMode,
@@ -38,6 +40,7 @@ import {
 import { motion } from "framer-motion";
 import {
   Award,
+  Bell,
   Bookmark,
   BookOpen,
   Calendar,
@@ -46,18 +49,35 @@ import {
   Download,
   Edit2,
   FileText,
+  Globe,
   HelpCircle,
+  Info,
   LogOut,
   Mail,
   MapPin,
   Moon,
+  Palette,
   Phone,
   Play,
+  Ruler,
+  Settings,
+  Shield,
   ShieldCheck,
   Sparkles,
   Sun,
+  Star,
   User as UserIcon,
-  Users
+  Users,
+  Volume2,
+  Building2,
+  IdCard,
+  CalendarCheck,
+  Cake,
+  UserCircle,
+  Home,
+  Building,
+  Globe2,
+  Quote
 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useRouter } from "next/navigation";
@@ -77,7 +97,7 @@ function splitName(full: string) {
 }
 
 function fmtDate(iso?: string) {
-  if (!iso) return "—";
+  if (!iso) return "N/A";
   return new Date(iso).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -155,6 +175,7 @@ const ProfilePage: React.FC = observer(() => {
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+  const { isOpen: isSettingsOpen, onOpen: onSettingsOpen, onClose: onSettingsClose } = useDisclosure();
   const [activeModal, setActiveModal] = useState<"certificates" | "bookmarks" | "teams" | "help" | "details" | null>(null);
 
   const user = stores.auth.user;
@@ -463,112 +484,6 @@ const ProfilePage: React.FC = observer(() => {
     },
   ];
 
-  // const renderCertificatesContent = (
-  //   <VStack spacing={3} align="stretch">
-  //     {certificateDownloadError ? (
-  //       <Box
-  //         borderRadius="2xl"
-  //         border="1px solid"
-  //         borderColor={isDark ? "red.900" : "red.100"}
-  //         bg={isDark ? "red.950" : "red.50"}
-  //         px={4}
-  //         py={3}
-  //       >
-  //         <Text fontSize="xs" fontWeight="bold" color={isDark ? "red.200" : "red.600"}>
-  //           Failed to download PDF
-  //         </Text>
-  //         <Text mt={1} fontSize="xs" color={isDark ? "red.100" : "red.500"}>
-  //           {certificateDownloadError}
-  //         </Text>
-  //       </Box>
-  //     ) : null}
-  //     {courseStore.isMyCertificatesLoading ? (
-  //       <Flex
-  //         minH="180px"
-  //         direction="column"
-  //         align="center"
-  //         justify="center"
-  //         gap={3}
-  //         className={`rounded-3xl border ${
-  //           isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
-  //         }`}
-  //       >
-  //         <Spinner color="orange.400" />
-  //         <Text fontSize="sm" fontWeight="semibold">
-  //           Loading your certificates...
-  //         </Text>
-  //       </Flex>
-  //     ) : courseStore.myCertificatesError ? (
-  //       <Box
-  //         className={`rounded-3xl border p-5 ${
-  //           isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
-  //         }`}
-  //       >
-  //         <Text fontSize="sm" fontWeight="bold">
-  //           Failed to load certificates
-  //         </Text>
-  //         <Text mt={1} fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>
-  //           {courseStore.myCertificatesError}
-  //         </Text>
-  //         <Button
-  //           mt={4}
-  //           size="sm"
-  //           borderRadius="xl"
-  //           colorScheme="orange"
-  //           onClick={() => void courseStore.fetchMyCertificates().catch(() => undefined)}
-  //         >
-  //           Retry
-  //         </Button>
-  //       </Box>
-  //     ) : courseStore.myCertificates.length === 0 ? (
-  //       <Box
-  //         className={`rounded-3xl border p-6 text-center ${
-  //           isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
-  //         }`}
-  //       >
-  //         <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-500/10 text-amber-500">
-  //           <Award className="h-7 w-7" />
-  //         </div>
-  //         <Text mt={4} fontSize="sm" fontWeight="bold">
-  //           No certificates earned yet
-  //         </Text>
-  //         <Text mt={2} fontSize="xs" color={isDark ? "gray.400" : "gray.500"}>
-  //           Certificates will appear here after you complete eligible courses and successfully earn them.
-  //         </Text>
-  //       </Box>
-  //     ) : (
-  //       courseStore.myCertificates.map((cert) => {
-  //         const isDownloading = courseStore.certificateDownloadCourseId === cert.courseId;
-
-  //         return (
-  //           <div
-  //             key={cert._id || cert.courseId}
-  //             className={`flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition-colors ${
-  //               isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
-  //             }`}
-  //           >
-  //             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-500">
-  //               <Award className="h-6 w-6" />
-  //             </div>
-  //             <div className="min-w-0 flex-1">
-  //               <div className="flex flex-wrap items-center gap-2">
-  //                 <h4 className="text-sm font-bold truncate">{cert.certificateName}</h4>
-  //                 <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-  //                   {String(cert.status || "issued").replace(/_/g, " ")}
-  //                 </span>
-  //               </div>
-  //               <p className={`mt-1 text-xs font-medium ${isDark ? "text-slate-200" : "text-slate-700"}`}>
-  //                 {cert.courseName}
-  //               </p>
-  //               <p className={`mt-1 text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-  //                 {cert.certificateNo ? `${cert.certificateNo} • ` : ""}
-  //                 Issued {fmtDate(cert.issuedAt || undefined)}
-  //               </p>
-  //             </div>
-  //             <Button
-  //               size="sm"
-  //               leftIcon={isDownloading ? undefined : <Download className="h-3.5 w-3.5" />}
-  //               colorScheme="orange"
   //               borderRadius="xl"
   //               fontSize="xs"
   //               isLoading={isDownloading}
@@ -594,7 +509,7 @@ const ProfilePage: React.FC = observer(() => {
   //           </span>
   //           <h4 className="mt-1 text-sm font-bold truncate">{cert.title}</h4>
   //           <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-  //             {cert.issuer} • Issued {cert.issueDate}
+  //             {cert.issuer} Ã¢â‚¬Â¢ Issued {cert.issueDate}
   //           </p>
   //         </div>
   //         <Button
@@ -971,633 +886,476 @@ const ProfilePage: React.FC = observer(() => {
       px={{ base: 4, sm: 6, md: "60px" }}
       transition="background 0.2s"
     >
-      <Box display={{ base: "none", md: "block" }}>
-        <Flex justify="space-between" align="center" mb={6}>
-          <Box>
-            <Heading
-              fontSize="24px"
-              fontWeight="800"
-              color={pageHeadingColor}
-              letterSpacing="-0.02em"
-            >
-              My Profile
-            </Heading >
-            <Text fontSize="13px" color={pageSubColor} mt="2px">
-              View and manage your personal details, achievements & preferences
-            </Text>
-          </Box>
-
-          <HStack spacing={3}>
-            <Button
-              leftIcon={
-                isDark ? (
-                  <Sun className="h-4 w-4 text-amber-400" />
-                ) : (
-                  <Moon className="h-4 w-4 text-slate-700" />
-                )
-              }
-              onClick={toggleColorMode}
-              size="sm"
-              px={4}
-              borderRadius="12px"
-              fontSize="13px"
-              fontWeight="600"
-              variant="outline"
-              borderColor={useColorModeValue("gray.200", "gray.700")}
-            >
-              {isDark ? "Light Mode" : "Dark Mode"}
-            </Button>
-            <Button
-              leftIcon={<FiEdit2 size={14} />}
-              onClick={handleOpenEdit}
-              size="sm"
-              px={5}
-              borderRadius="12px"
-              fontSize="13px"
-              fontWeight="600"
-              colorScheme="blue"
-            >
-              Edit Profile
-            </Button>
-          </HStack>
-        </Flex>
-
-        <Grid
-          templateColumns={{ base: "1fr", lg: "360px 1fr", xl: "380px 1fr" }}
-          gap={6}
-        >
-          <VStack spacing={6} align="stretch">
-            <Box
-              bg={cardBg}
-              position="relative"
-              overflow="hidden"
-              borderRadius="32px"
-              boxShadow="xl"
-              display="flex"
-              flexDirection="column"
-              alignItems="center"
-              justifyContent="center"
-              p={8}
-              border="1px solid"
-              borderColor={useColorModeValue("gray.100", "whiteAlpha.100")}
-              _before={{
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: "38%",
-                bgGradient: accentGradient,
-                opacity: 0.15,
-                zIndex: 0,
-              }}
-            >
-              <Box position="relative" zIndex={1} mb={4}>
-                <Box
-                  p="6px"
-                  borderRadius="full"
-                  bgGradient={accentGradient}
-                  boxShadow="0 10px 25px -5px rgba(59, 130, 246, 0.3)"
-                >
-                  <Avatar
-                    name={fullName}
-                    src={profileImageUrl}
-                    w="130px"
-                    h="130px"
-                    border="4px solid"
-                    borderColor={cardBg}
-                  />
-                </Box>
-                <Button
-                  position="absolute"
-                  bottom="10px"
-                  right="6px"
-                  minW="34px"
-                  h="34px"
-                  p={0}
-                  borderRadius="full"
-                  bg={useColorModeValue("white", "gray.800")}
-                  border="3px solid"
-                  borderColor={cardBg}
-                  boxShadow="lg"
-                  onClick={() => avatarInputRef.current?.click()}
-                  isDisabled={avatarUploading}
-                  aria-label="Update profile picture"
-                  _hover={{ transform: "translateY(-1px)" }}
-                >
-                  {avatarUploading ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <Camera className="h-4 w-4" />
-                  )}
-                </Button>
-              </Box>
-
-              <VStack spacing={1} zIndex={1} textTransform="capitalize">
-                <Text
-                  fontSize="22px"
-                  fontWeight="800"
-                  letterSpacing="-0.03em"
-                  color={useColorModeValue("gray.900", "white")}
-                >
-                  {form.title ? `${form.title} ${fullName}` : fullName}
-                </Text>
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-0.5 text-xs font-bold text-blue-600 dark:text-blue-400">
-                  <Sparkles className="h-3 w-3" /> {roleName || "Learner"}
-                </span>
-              </VStack>
-
-              <Divider my={5} opacity={0.6} />
-
-              <VStack spacing={2.5} w="full" align="center" zIndex={1}>
-                <HStack color="gray.500" fontSize="13px">
-                  <FiMail size={14} />
-                  <Text fontWeight="600" fontSize="sm">
-                    {s(user?.username)}
-                  </Text>
-                </HStack>
-                {location && (
-                  <HStack color="gray.500" fontSize="13px">
-                    <FiMapPin size={14} />
-                    <Text fontWeight="500" fontSize="xs">
-                      {location}
-                    </Text>
-                  </HStack>
-                )}
-              </VStack>
-            </Box>
-          </VStack>
-
-          <VStack spacing={6} align="stretch">
-            <Box
-              bg={glassBg}
-              backdropFilter="blur(10px)"
-              borderRadius="32px"
-              border="1px solid"
-              borderColor={useColorModeValue("gray.100", "whiteAlpha.100")}
-              boxShadow="xl"
-              p={7}
-            >
-              <Flex justify="space-between" align="center" mb={6}>
-                <HStack spacing={3}>
-                  <Icon as={MdOutlineVerified} color="blue.400" boxSize={6} />
-                  <Text fontSize="18px" fontWeight="700">
-                    My Profile Details
-                  </Text>
-                </HStack>
-                <Box w="8px" h="8px" borderRadius="full" bg="emerald.400" />
-              </Flex>
-
-              <Grid templateColumns="repeat(2, 1fr)" gap={5}>
-                {[
-                  {
-                    icon: FiBriefcase,
-                    label: "Department",
-                    value: s(user?.department),
-                    color: "purple.400",
-                  },
-                  {
-                    icon: FiHash,
-                    label: "Employee Code",
-                    value: s(user?.code),
-                    color: "red.400",
-                  },
-                  {
-                    icon: FiCalendar,
-                    label: "Joined Date",
-                    value: fmtDate(user?.joiningDate),
-                    color: "teal.400",
-                  },
-                  {
-                    icon: FiCalendar,
-                    label: "Date of Birth",
-                    value: fmtDate(form.dateOfBirth || user?.dateOfBirth),
-                    color: "pink.400",
-                  },
-                  {
-                    icon: FiUser,
-                    label: "Gender",
-                    value: genderLabel(form.gender || user?.gender),
-                    color: "cyan.400",
-                  },
-                  {
-                    icon: FiMapPin,
-                    label: "Address",
-                    value: form.address,
-                    color: "green.400",
-                  },
-                  {
-                    icon: FiMapPin,
-                    label: "City",
-                    value: form.city,
-                    color: "yellow.500",
-                  },
-                  {
-                    icon: FiMapPin,
-                    label: "Country",
-                    value: form.country,
-                    color: "orange.300",
-                  },
-                ].map((item, idx) => (
-                  <HStack
-                    key={idx}
-                    spacing={4}
-                    _hover={{ transform: "translateX(4px)" }}
-                    transition="0.2s"
+      {/* ═══ DESKTOP — Premium Professional Layout ═══ */}
+      <Box display={{ base: "none", md: "block" }} pb={16} fontFamily="'Inter', sans-serif">
+        {/* Cover & Profile Header */}
+        <Box mb={10} bg={cardBg} borderRadius="3xl" p={8} px={10} border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} boxShadow={isDark ? "none" : "0 10px 40px rgba(0,0,0,0.04)"} position="relative" overflow="hidden">
+           {/* Premium Aurora/Mesh Background Decoration */}
+           <Box position="absolute" top="-50%" left="-10%" w="50%" h="200%" bg="radial-gradient(ellipse at center, rgba(99,102,241,0.15) 0%, transparent 70%)" filter="blur(40px)" pointerEvents="none" />
+           <Box position="absolute" bottom="-50%" right="-10%" w="60%" h="200%" bg="radial-gradient(ellipse at center, rgba(16,185,129,0.1) 0%, transparent 70%)" filter="blur(50px)" pointerEvents="none" />
+           <Box position="absolute" top="0" right="0" w="100%" h="100%" bg={isDark ? "url('data:image/svg+xml;utf8,<svg width=\"20\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"2\" cy=\"2\" r=\"1\" fill=\"rgba(255,255,255,0.03)\"/></svg>')" : "url('data:image/svg+xml;utf8,<svg width=\"20\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"2\" cy=\"2\" r=\"1\" fill=\"rgba(0,0,0,0.03)\"/></svg>')"} pointerEvents="none" />
+           
+           <Flex justify="space-between" align="center" position="relative" zIndex={1}>
+             <Flex align="center" gap={10}>
+                {/* Glowing Avatar */}
+                <Box position="relative">
+                  <Box position="absolute" inset="-4px" bgGradient="linear(to-br, blue.400, purple.500)" borderRadius="full" filter="blur(10px)" opacity={0.5} />
+                  <Avatar name={fullName} src={profileImageUrl} w="130px" h="130px" bg="#E5E7EB" color="gray.500" border="4px solid" borderColor={cardBg} boxShadow="xl" position="relative" zIndex={1} />
+                  <button type="button" onClick={() => avatarInputRef.current?.click()}
+                    style={{ position: "absolute", bottom: 4, right: 4, width: 40, height: 40, borderRadius: "50%", background: isDark ? "#1F2937" : "white", border: "1px solid", borderColor: isDark ? "#374151" : "#E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 16px rgba(0,0,0,0.15)", transition: "all 0.2s", zIndex: 2 }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.1)"}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
                   >
-                    <Flex
-                      align="center"
-                      justify="center"
-                      p={2.5}
-                      borderRadius="14px"
-                      bg={useColorModeValue(
-                        `${item.color.split(".")[0]}.50`,
-                        "whiteAlpha.100",
-                      )}
-                    >
-                      <Icon as={item.icon} color={item.color} boxSize={5} />
+                    {avatarUploading ? <Spinner size="sm" color="#6B7280" /> : <Camera size={18} color={isDark ? "white" : "#4B5563"} />}
+                  </button>
+                </Box>
+                
+                <Box>
+                  <Flex align="center" gap={3} mb={3}>
+                    <Text fontSize="36px" fontWeight="900" color={pageHeadingColor} letterSpacing="-0.03em" lineHeight="1.1">
+                      {form.title ? `${form.title} ${fullName}` : fullName}
+                    </Text>
+                    <Flex align="center" justify="center" w={7} h={7} bg="linear-gradient(135deg, #10B981 0%, #059669 100%)" color="white" borderRadius="full" title="Verified User" boxShadow="0 4px 10px rgba(16,185,129,0.3)">
+                      <MdOutlineVerified size={16} />
                     </Flex>
-                    <VStack align="flex-start" spacing={0}>
-                      <Text
-                        fontSize="xs"
-                        fontWeight="bold"
-                        color="gray.400"
-                        textTransform="uppercase"
-                      >
+                  </Flex>
+                  <Flex align="center" gap={4} flexWrap="wrap">
+                    <Flex align="center" gap={2} bg={isDark ? "whiteAlpha.100" : "gray.50"} px={3} py={1.5} borderRadius="lg" border="1px solid" borderColor={isDark ? "whiteAlpha.200" : "blackAlpha.100"} transition="all 0.2s" _hover={{ bg: isDark ? "whiteAlpha.200" : "gray.100" }}>
+                      <Mail size={14} color={isDark ? "#9CA3AF" : "#6B7280"} />
+                      <Text fontSize="14px" fontWeight="600" color={pageSubColor}>{s(user?.username)}</Text>
+                    </Flex>
+                    {resolvedPhone && (
+                      <Flex align="center" gap={2} bg={isDark ? "whiteAlpha.100" : "gray.50"} px={3} py={1.5} borderRadius="lg" border="1px solid" borderColor={isDark ? "whiteAlpha.200" : "blackAlpha.100"} transition="all 0.2s" _hover={{ bg: isDark ? "whiteAlpha.200" : "gray.100" }}>
+                        <Phone size={14} color={isDark ? "#9CA3AF" : "#6B7280"} />
+                        <Text fontSize="14px" fontWeight="600" color={pageSubColor}>{resolvedPhone}</Text>
+                      </Flex>
+                    )}
+                  </Flex>
+                </Box>
+             </Flex>
+             
+             <VStack align="flex-end" spacing={4}>
+               {/* Unified Actions Pill */}
+               <Flex align="center" bg={isDark ? "rgba(255,255,255,0.03)" : "gray.50"} border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} p={1} borderRadius="2xl" boxShadow={isDark ? "none" : "0 2px 10px rgba(0,0,0,0.02)"}>
+                 <Button leftIcon={<Edit2 size={14} />} onClick={handleOpenEdit} variant="ghost" size="sm" borderRadius="xl" px={4} fontWeight="700" color={isDark ? "white" : "gray.900"} _hover={{ bg: isDark ? "whiteAlpha.100" : "white", shadow: isDark ? "none" : "sm" }} transition="all 0.2s">
+                   Edit Profile
+                 </Button>
+                 <Box w="1px" h="16px" bg={isDark ? "whiteAlpha.200" : "blackAlpha.100"} mx={1} />
+                 <Button onClick={onSettingsOpen} variant="ghost" size="sm" borderRadius="xl" px={3} color={pageSubColor} _hover={{ bg: isDark ? "whiteAlpha.100" : "white", color: pageHeadingColor, shadow: isDark ? "none" : "sm" }} transition="all 0.2s" display="flex" alignItems="center" justifyContent="center">
+                   <Settings size={16} />
+                 </Button>
+               </Flex>
+             </VStack>
+           </Flex>
+        </Box>
+
+        <Grid templateColumns={{ base: "1fr", lg: "1fr 380px" }} gap={10} px={4} mt={8}>
+          {/* Main Content Column */}
+          <VStack spacing={10} align="stretch">
+            {/* Stats row */}
+            <Grid templateColumns="repeat(4, 1fr)" gap={5}>
+              {[
+                { label: "Certificates", value: courseStore.isMyCertificatesLoading ? "—" : courseStore.myCertificates.length, icon: Award, bgDark: "linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.05) 100%)", bgLight: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)", iconBg: "rgba(59,130,246,0.2)", iconColor: "#2563EB" },
+                { label: "Quizzes", value: stores.quizStore.myAttempts.length, icon: Edit2, bgDark: "linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%)", bgLight: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)", iconBg: "rgba(16,185,129,0.2)", iconColor: "#059669" },
+                { label: "Bookmarks", value: 3, icon: Bookmark, bgDark: "linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(147,51,234,0.05) 100%)", bgLight: "linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)", iconBg: "rgba(168,85,247,0.2)", iconColor: "#9333EA" },
+                { label: "Avg Rating", value: "4.8", icon: Star, bgDark: "linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(217,119,6,0.05) 100%)", bgLight: "linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)", iconBg: "rgba(245,158,11,0.2)", iconColor: "#D97706" }
+              ].map((stat, i) => (
+                <Box key={i} bg={isDark ? stat.bgDark : stat.bgLight} p={6} borderRadius="3xl" position="relative" overflow="hidden" boxShadow={isDark ? "none" : "0 4px 15px rgba(0,0,0,0.02)"} transition="all 0.3s" _hover={{ transform: "translateY(-4px)", shadow: isDark ? "0 10px 30px rgba(0,0,0,0.2)" : "0 10px 30px rgba(0,0,0,0.08)" }}>
+                  <Box position="absolute" top="-10px" right="-10px" opacity={isDark ? 0.05 : 0.04} transform="rotate(-15deg)" pointerEvents="none">
+                    <stat.icon size={110} color={stat.iconColor} />
+                  </Box>
+                  <Flex justify="space-between" align="flex-start" position="relative" zIndex={1}>
+                    <Box mt={8}>
+                      <Text fontSize="34px" fontWeight="900" color={isDark ? "white" : "gray.900"} lineHeight="1" letterSpacing="-0.02em">{stat.value}</Text>
+                      <Text mt={2} fontSize="12px" fontWeight="700" color={isDark ? "whiteAlpha.700" : "gray.600"} textTransform="uppercase" letterSpacing="0.05em">{stat.label}</Text>
+                    </Box>
+                    <Flex align="center" justify="center" w={12} h={12} borderRadius="xl" bg={stat.iconBg}>
+                      <stat.icon size={22} color={stat.iconColor} />
+                    </Flex>
+                  </Flex>
+                </Box>
+              ))}
+            </Grid>
+
+            {/* Profile Details */}
+            <Box bg={cardBg} borderRadius="3xl" p={8} border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} boxShadow={isDark ? "none" : "0 10px 30px rgba(0,0,0,0.03)"}>
+              <Flex align="center" justify="space-between" mb={8} pb={6} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"}>
+                <Flex align="center" gap={4}>
+                  <Flex align="center" justify="center" w={12} h={12} borderRadius="xl" bg={isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.1)"} color={isDark ? "#60A5FA" : "#3B82F6"}>
+                    <UserIcon size={24} strokeWidth={2.5} />
+                  </Flex>
+                  <Box>
+                    <Text fontSize="22px" fontWeight="900" color={pageHeadingColor} letterSpacing="-0.02em" lineHeight="1.2">Personal Information</Text>
+                    <Text fontSize="13px" fontWeight="600" color={pageSubColor} mt={0.5}>Manage your basic profile details</Text>
+                  </Box>
+                </Flex>
+                <Button size="sm" variant="outline" color={isDark ? "gray.300" : "gray.600"} borderColor={isDark ? "whiteAlpha.200" : "gray.200"} _hover={{ bg: isDark ? "whiteAlpha.100" : "gray.50", color: isDark ? "white" : "black", transform: "translateY(-1px)", shadow: "sm" }} transition="all 0.2s" borderRadius="lg" leftIcon={<Edit2 size={14} />} onClick={handleOpenEdit} px={5} fontWeight="600">
+                  Edit
+                </Button>
+              </Flex>
+              <Grid templateColumns="repeat(2, 1fr)" gap={6}>
+                {[
+                  { icon: Building2, label: "Department", value: s(user?.department), color: "blue" },
+                  { icon: IdCard, label: "Employee Code", value: s(user?.code), color: "purple" },
+                  { icon: CalendarCheck, label: "Joined Date", value: fmtDate(user?.joiningDate), color: "green" },
+                  { icon: Cake, label: "Date of Birth", value: fmtDate(form.dateOfBirth || user?.dateOfBirth), color: "pink" },
+                  { icon: UserCircle, label: "Gender", value: genderLabel(form.gender || user?.gender), color: "orange" },
+                  { icon: Home, label: "Address", value: form.address, color: "cyan" },
+                  { icon: Building, label: "City", value: form.city, color: "red" },
+                  { icon: Globe2, label: "Country", value: form.country, color: "teal" },
+                ].map((item, idx) => (
+                  <Flex
+                    key={idx}
+                    align="center"
+                    gap={5}
+                    p={5}
+                    borderRadius="2xl"
+                    bg={isDark ? "whiteAlpha.50" : "white"}
+                    border="1px solid"
+                    borderColor={isDark ? "whiteAlpha.100" : `${item.color}.100`}
+                    boxShadow={isDark ? "none" : `0 4px 20px var(--chakra-colors-${item.color}-50)`}
+                    transition="all 0.3s"
+                    _hover={{ transform: "translateY(-4px)", shadow: isDark ? "0 10px 30px rgba(0,0,0,0.5)" : `0 10px 25px var(--chakra-colors-${item.color}-100)`, borderColor: isDark ? "whiteAlpha.300" : `${item.color}.200` }}
+                  >
+                    <Flex align="center" justify="center" w={14} h={14} borderRadius="xl" bg={isDark ? "whiteAlpha.100" : `${item.color}.50`} color={`var(--chakra-colors-${item.color}-500)`}>
+                      <item.icon size={24} />
+                    </Flex>
+                    <Box>
+                      <Text fontSize="11px" fontWeight="800" color={isDark ? "whiteAlpha.600" : `${item.color}.600`} textTransform="uppercase" letterSpacing="0.05em" mb={1}>
                         {item.label}
                       </Text>
-                      <Text fontWeight="600" fontSize="14px">
+                      <Text fontSize="16px" fontWeight="900" color={isDark ? "white" : "gray.900"}>
                         {item.value || "N/A"}
                       </Text>
-                    </VStack>
-                  </HStack>
+                    </Box>
+                  </Flex>
                 ))}
               </Grid>
-
               {form.bio && (
-                <Box
-                  mt={6}
-                  pt={4}
-                  borderTop="1px border"
-                  borderColor={useColorModeValue("gray.100", "gray.800")}
-                >
-                  <Text
-                    fontSize="xs"
-                    fontWeight="bold"
-                    color="gray.400"
-                    textTransform="uppercase"
-                    mb={2}
-                  >
-                    About Me
-                  </Text>
-                  <Box
-                    p={4}
-                    bg={useColorModeValue("gray.50", "whiteAlpha.50")}
-                    borderRadius="20px"
-                    borderLeft="4px solid"
-                    borderColor="blue.400"
-                  >
-                    <Text
-                      fontSize="13px"
-                      lineHeight="1.7"
-                      color={useColorModeValue("gray.700", "gray.300")}
-                    >
-                      {form.bio}
-                    </Text>
+                <Box mt={8} bg={isDark ? "whiteAlpha.50" : "rgba(99, 102, 241, 0.04)"} borderRadius="2xl" p={6} px={8} border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "rgba(99, 102, 241, 0.1)"} position="relative" overflow="hidden">
+                  <Box position="absolute" top={4} right={6} opacity={isDark ? 0.05 : 0.03} transform="rotate(10deg)">
+                    <Quote size={80} fill="currentColor" />
                   </Box>
+                  <Flex gap={3} align="center" mb={4} position="relative" zIndex={1}>
+                    <Flex align="center" justify="center" w={8} h={8} borderRadius="full" bg={isDark ? "whiteAlpha.200" : "rgba(99, 102, 241, 0.1)"} color={isDark ? "white" : "#4F46E5"}>
+                       <Quote size={14} strokeWidth={3} />
+                    </Flex>
+                    <Text fontSize="12px" fontWeight="800" color={isDark ? "whiteAlpha.600" : "#4F46E5"} textTransform="uppercase" letterSpacing="0.05em">
+                      About Me
+                    </Text>
+                  </Flex>
+                  <Text fontSize="16px" fontWeight="500" lineHeight="1.8" color={isDark ? "whiteAlpha.900" : "gray.800"} position="relative" zIndex={1} fontStyle="italic">
+                    "{form.bio}"
+                  </Text>
                 </Box>
               )}
             </Box>
+          </VStack>
 
-            <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-              <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
-                <Box
-                  onClick={() => setActiveModal("certificates")}
-                  cursor="pointer"
-                  p={5}
-                  bg={cardBg}
-                  borderRadius="28px"
-                  border="1px solid"
-                  borderColor={useColorModeValue("gray.100", "whiteAlpha.100")}
-                  boxShadow="md"
-                  className="group"
-                >
-                  <Flex align="center" justify="space-between">
-                    <div className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-500/10 text-amber-500">
-                      <Award className="h-6 w-6" />
-                    </div>
-                    <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-                      {courseStore.isMyCertificatesLoading ? "Loading" : `${courseStore.myCertificates.length} Certs`}
-                    </span>
+          {/* Sidebar Column */}
+          <VStack spacing={6} align="stretch">
+             {/* Premium Banner */}
+             <Box bg="linear-gradient(135deg, #F59E0B 0%, #D97706 100%)" borderRadius="3xl" p={8} color="white" position="relative" overflow="hidden" boxShadow={isDark ? "0 10px 30px rgba(0,0,0,0.5)" : "0 15px 35px rgba(245, 158, 11, 0.3)"}>
+                <Box position="absolute" top="-20px" right="-20px" opacity={0.15}><Sparkles size={120} /></Box>
+                <Flex align="center" gap={4} mb={4}>
+                  <Flex align="center" justify="center" bg="whiteAlpha.300" w={12} h={12} borderRadius="xl" backdropFilter="blur(10px)">
+                    <Award size={24} color="white" />
                   </Flex>
-                  <h3 className="mt-4 text-base font-bold group-hover:text-blue-600 transition-colors">
-                    Certificates
-                  </h3>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    View and download your earned PDF certificates
-                  </p>
-                </Box>
-              </motion.div>
+                  <Text fontSize="20px" fontWeight="900" letterSpacing="-0.02em">Premium Member</Text>
+                </Flex>
+                <Text fontSize="14px" fontWeight="500" color="whiteAlpha.900" mb={6} lineHeight="1.5">
+                  Unlock exclusive courses, priority support, and verified premium certificates.
+                </Text>
+                <Button size="lg" w="full" bg="white" color="orange.600" _hover={{ bg: "gray.50", transform: "translateY(-2px)", shadow: "lg" }} borderRadius="2xl" fontWeight="800" transition="all 0.2s">
+                  Upgrade Now
+                </Button>
+             </Box>
 
-              <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
-                <Box
-                  onClick={() => setActiveModal("bookmarks")}
-                  cursor="pointer"
-                  p={5}
-                  bg={cardBg}
-                  borderRadius="28px"
-                  border="1px solid"
-                  borderColor={useColorModeValue("gray.100", "whiteAlpha.100")}
-                  boxShadow="md"
-                  className="group"
-                >
-                  <Flex align="center" justify="space-between">
-                    <div className="grid h-11 w-11 place-items-center rounded-2xl bg-purple-500/10 text-purple-500">
-                      <Bookmark className="h-6 w-6" />
-                    </div>
-                    <span className="rounded-full bg-purple-500/10 px-2.5 py-0.5 text-xs font-bold text-purple-600 dark:text-purple-400">
-                      3 Saved
-                    </span>
-                  </Flex>
-                  <h3 className="mt-4 text-base font-bold group-hover:text-purple-600 transition-colors">
-                    Bookmarks
-                  </h3>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    Access saved courses & learning materials
-                  </p>
-                </Box>
-              </motion.div>
-
-              <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
-                <Box
-                  onClick={() => setActiveModal("teams")}
-                  cursor="pointer"
-                  p={5}
-                  bg={cardBg}
-                  borderRadius="28px"
-                  border="1px solid"
-                  borderColor={useColorModeValue("gray.100", "whiteAlpha.100")}
-                  boxShadow="md"
-                  className="group"
-                >
-                  <Flex align="center" justify="space-between">
-                    <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-500">
-                      <Users className="h-6 w-6" />
-                    </div>
-                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                      Team
-                    </span>
-                  </Flex>
-                  <h3 className="mt-4 text-base font-bold group-hover:text-emerald-600 transition-colors">
-                    Teams & Department
-                  </h3>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    Department colleagues and team leads
-                  </p>
-                </Box>
-              </motion.div>
-
-              <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
-                <Box
-                  onClick={() => setActiveModal("help")}
-                  cursor="pointer"
-                  p={5}
-                  bg={cardBg}
-                  borderRadius="28px"
-                  border="1px solid"
-                  borderColor={useColorModeValue("gray.100", "whiteAlpha.100")}
-                  boxShadow="md"
-                  className="group"
-                >
-                  <Flex align="center" justify="space-between">
-                    <div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-500/10 text-blue-500">
-                      <HelpCircle className="h-6 w-6" />
-                    </div>
-                    <span className="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-bold text-blue-600 dark:text-blue-400">
-                      Support
-                    </span>
-                  </Flex>
-                  <h3 className="mt-4 text-base font-bold group-hover:text-blue-600 transition-colors">
-                    Help & Support
-                  </h3>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    FAQs, guidebooks & contact support desk
-                  </p>
-                </Box>
-              </motion.div>
-            </Grid>
+             {/* Action Cards */}
+             <VStack spacing={4} align="stretch">
+               {[
+                 { id: "certificates", title: "Certificates", sub: "View and download PDF", icon: Award, color: "#3B82F6", bg: "rgba(59,130,246,0.15)", bgLight: "rgba(59,130,246,0.03)" },
+                 { id: "bookmarks", title: "Bookmarks", sub: "Saved learning materials", icon: Bookmark, color: "#F43F5E", bg: "rgba(244,63,94,0.15)", bgLight: "rgba(244,63,94,0.03)" },
+                 { id: "teams", title: "Teams & Dept", sub: "Colleagues and team leads", icon: Users, color: "#10B981", bg: "rgba(16,185,129,0.15)", bgLight: "rgba(16,185,129,0.03)" },
+                 { id: "help", title: "Help & Support", sub: "FAQs and contact support", icon: HelpCircle, color: "#F59E0B", bg: "rgba(245,158,11,0.15)", bgLight: "rgba(245,158,11,0.03)" },
+               ].map((action, i) => (
+                  <Box as={motion.button} key={i} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setActiveModal(action.id as any)} textAlign="left" w="100%" bg={isDark ? "whiteAlpha.50" : action.bgLight} border="1px solid" borderColor={isDark ? "whiteAlpha.100" : action.bg} borderRadius="2xl" p={5} boxShadow="none" transition="all 0.3s" _hover={{ bg: action.bg, borderColor: action.color, boxShadow: isDark ? `0 0 20px ${action.bg}` : `0 10px 25px ${action.bg}` }}>
+                    <Flex align="center" justify="space-between">
+                      <Flex align="center" gap={4}>
+                        <Flex align="center" justify="center" w={12} h={12} borderRadius="xl" bg={action.bg} boxShadow={isDark ? "none" : "inset 0 0 0 1px rgba(0,0,0,0.02)"}>
+                          <action.icon size={22} color={action.color} strokeWidth={2.5} />
+                        </Flex>
+                        <Box>
+                          <Text fontSize="16px" fontWeight="800" color={pageHeadingColor}>{action.title}</Text>
+                          <Text fontSize="13px" fontWeight="600" color={pageSubColor} mt={0.5}>{action.sub}</Text>
+                        </Box>
+                      </Flex>
+                      <Flex align="center" justify="center" w={8} h={8} borderRadius="full" bg={isDark ? "whiteAlpha.100" : "white"} border="1px solid" borderColor={isDark ? "whiteAlpha.200" : "gray.200"}>
+                         <ChevronRight size={16} color={isDark ? "white" : action.color} strokeWidth={3} />
+                      </Flex>
+                    </Flex>
+                  </Box>
+               ))}
+             </VStack>
           </VStack>
         </Grid>
       </Box>
 
-      <Box display={{ base: "block", md: "none" }} pb={{ base: 4, md: 0 }} mt={2}>
-        <div className="flex items-center justify-between pb-4">
-          <div>
-            <h1 className="text-xl font-black tracking-tight">My Profile</h1>
-            <p
-              className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
-            >
-              Manage your personal info & preferences
-            </p>
-          </div>
-        </div>
+      {/* ═══ MOBILE — Exact RideX App Theme ═══ */}
+      <Box display={{ base: "block", md: "none" }} minH="100vh" bg={isDark ? "#111318" : "#F9FAFB"} px={0} pb={12} fontFamily="'Inter', sans-serif">
+        {/* ── Header ── */}
+        <Box px={4} pt={6} pb={4}>
+          <Flex align="center" justify="space-between" position="relative">
+            <Link href="/">
+              <Flex as="button" align="center" justify="center" w={10} h={10} bg="transparent" borderRadius="full" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "#E5E7EB"} _active={{ scale: 0.95, bg: isDark ? "whiteAlpha.50" : "gray.50" }} transition="all 0.2s">
+                <ChevronRight size={20} style={{ transform: "rotate(180deg)" }} color={isDark ? "white" : "black"} />
+              </Flex>
+            </Link>
+            
+            <Text position="absolute" left="50%" transform="translateX(-50%)" fontSize="18px" fontWeight="800" color={isDark ? "white" : "black"} letterSpacing="-0.01em">
+              Profile
+            </Text>
+            
+            <Flex as="button" onClick={onSettingsOpen} align="center" justify="center" w={10} h={10} bg="transparent" borderRadius="full" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "#E5E7EB"} _active={{ scale: 0.95, bg: isDark ? "whiteAlpha.50" : "gray.50" }} transition="all 0.2s">
+              <Settings size={20} color={isDark ? "white" : "#111827"} />
+            </Flex>
+          </Flex>
+        </Box>
 
-        <div className="relative overflow-hidden rounded-3xl p-2">
-          <div className="pointer-events-none absolute inset-0" />
-          <div className="relative flex items-center gap-4">
-            <div className="relative shrink-0">
-              <Avatar
-                h={"90px"}
-                w={"90px"}
-                name={fullName}
-                src={profileImageUrl}
-                color="white"
-                className="ring-4 ring-white/30 shadow-lg"
-              />
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                aria-label="Update profile picture"
-                disabled={avatarUploading}
-                className={`absolute bottom-0 right-0 grid h-6 w-6 place-items-center rounded-full ring-4 ring-white/30 transition-transform active:scale-95 ${
-                  isDark ? "bg-slate-900 text-white" : "bg-white text-slate-700"
-                }`}
-              >
-                {avatarUploading ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <Camera className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="font-bold truncate leading-tight">
-                {form.title ? `${form.title} ${fullName}` : fullName}
-              </h2>
-              <p className="mt-1 font-semibold flex items-center gap-1 text-xs truncate">
-                <Mail className="h-3 w-3 shrink-0 opacity-80" />
-                <span className="truncate">
-                  {s(user?.username) || "No email"}
-                </span>
-              </p>
-              {/* <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold uppercase backdrop-blur mt-1">
-                <Sparkles className="h-3 w-3" /> {roleName || "Member"}
-              </span> */}
-            </div>
-          </div>
-        </div>
+        {/* ── Profile Card ── */}
+        <Box mx={2} mb={3} borderRadius="2xl" bg={isDark ? "#1E2028" : "white"} boxShadow={isDark ? "none" : "0 2px 10px rgba(0,0,0,0.03)"} border="1px solid" borderColor={isDark ? "#2D3040" : "#F3F4F6"}>
+          <Flex align="center" justify="space-between" p={4}>
+            <Flex align="center" gap={4}>
+              <Box position="relative">
+                <Box p="3px" borderRadius="full" bg="#F5C518" boxShadow="0 2px 10px rgba(245, 197, 24, 0.3)">
+                  <Avatar name={fullName} src={profileImageUrl} w="64px" h="64px" border="2px solid white" bg="#D1D5DB" color="white" fontWeight="bold" />
+                </Box>
+                <button type="button" onClick={() => avatarInputRef.current?.click()} aria-label="Change photo"
+                  style={{ position: "absolute", bottom: -2, right: -2, width: 22, height: 22, borderRadius: "50%", background: "white", border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+                  {avatarUploading ? <Spinner size="xs" color="#6B7280" /> : <Camera size={10} color="#6B7280" />}
+                </button>
+              </Box>
 
-        {false && (
-          <motion.div
-            whileTap={{ scale: 0.98 }}
-            onClick={toggleColorMode}
-            className={`mt-4 flex items-center justify-between rounded-3xl p-4 cursor-pointer transition-all ring-1 ${
-              isDark
-                ? "bg-slate-900/90 ring-slate-800"
-                : "bg-white ring-slate-200/80 shadow-sm"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`grid h-10 w-10 place-items-center rounded-2xl ${
-                  isDark
-                    ? "bg-amber-400/10 text-amber-400"
-                    : "bg-indigo-50 text-indigo-600"
-                }`}
-              >
-                {isDark ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-              </div>
-              <div>
-                <p className="text-sm font-bold">Theme Mode</p>
-                <p
-                  className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}
-                >
-                  {isDark ? "Dark Mode 🌙" : "Light Mode ☀️"}
-                </p>
-              </div>
-            </div>
-            <div
-              className={`flex h-6 w-11 items-center rounded-full p-1 transition-colors ${
-                isDark
-                  ? "bg-indigo-600 justify-end"
-                  : "bg-slate-300 justify-start"
-              }`}
-            >
-              <motion.div
-                layout
-                className="h-4 w-4 rounded-full bg-white shadow-md"
-              />
-            </div>
-          </motion.div>
-        )}
+              <Box>
+                <Text fontWeight="800" fontSize="16px" color={isDark ? "white" : "black"} letterSpacing="-0.01em">
+                  {form.title ? `${form.title} ${fullName}` : fullName}
+                </Text>
+                {resolvedPhone && <Text fontSize="12px" color={isDark ? "#9CA3AF" : "#6B7280"} mt="1px">{resolvedPhone}</Text>}
+                <Text fontSize="11px" color={isDark ? "#9CA3AF" : "#9CA3AF"}>{s(user?.username)}</Text>
+                
+                <Flex align="center" gap={1} mt={1}>
+                  <MdOutlineVerified size={12} color="#10B981" />
+                  <Text fontSize="11px" fontWeight="700" color="#10B981">Verified User</Text>
+                </Flex>
+              </Box>
+            </Flex>
+            <ChevronRight size={18} color={isDark ? "#6B7280" : "#D1D5DB"} />
+          </Flex>
+        </Box>
 
-       <div
-  className={`mt-3 grid grid-cols-3 gap-2 rounded-3xl border p-2 ${
-    isDark
-      ? "border-white/10 bg-white/[0.03] shadow-[0_4px_18px_rgba(0,0,0,0.18)]"
-      : "border-gray-200/80 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.06)]"
-  }`}
->
-  <button
-    type="button"
-    onClick={handleOpenEdit}
-    className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-center transition-all duration-200 hover:bg-current/5 active:scale-95 ${
-      isDark ? "text-blue-300" : "text-blue-600"
-    }`}
-  >
-    <Edit2 className="h-4 w-4" />
-    <span className="mt-2 text-[11px] font-bold">Edit</span>
-  </button>
+        {/* ── Premium Banner ── */}
+        <Box mx={2} mb={6} borderRadius="2xl" p="2px" bgGradient="linear(to-br, #F5C518, #F5A623, #FF6B6B)" boxShadow="0 4px 20px rgba(245, 197, 24, 0.25)">
+          <Flex bg={isDark ? "gray.900" : "white"} borderRadius="xl" p={3.5} align="center" justify="space-between">
+             <Flex align="center" gap={4}>
+               <Flex align="center" justify="center" w={11} h={11} borderRadius="xl" bgGradient="linear(to-br, #F5C518, #F5A623)" color="white" boxShadow="0 4px 10px rgba(245,197,24,0.4)">
+                 <Award size={22} strokeWidth={2.5} />
+               </Flex>
+               <Box>
+                 <Text fontSize="16px" fontWeight="900" bgGradient="linear(to-r, #F5A623, #F5C518)" bgClip="text" textTransform="uppercase" letterSpacing="0.02em">Pro Member</Text>
+                 <Text fontSize="11px" fontWeight="700" color={isDark ? "gray.400" : "gray.500"} mt={0.5}>Unlock premium features</Text>
+               </Box>
+             </Flex>
+             <button onClick={() => setActiveModal("certificates")} style={{ background: "linear-gradient(135deg, #F5C518, #F5A623)", color: "white", padding: "8px 16px", borderRadius: "100px", fontSize: "12px", fontWeight: "800", border: "none", cursor: "pointer", boxShadow: "0 4px 10px rgba(245,197,24,0.4)" }}>
+               Upgrade
+             </button>
+          </Flex>
+        </Box>
 
-  <button
-    type="button"
-    onClick={toggleColorMode}
-    className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-center transition-all duration-200 hover:bg-current/5 active:scale-95 ${
-      isDark ? "text-amber-300" : "text-amber-600"
-    }`}
-  >
-    {isDark ? (
-      <Sun className="h-[18px] w-[18px]" />
-    ) : (
-      <Moon className="h-[18px] w-[18px]" />
-    )}
+        {/* ── Account Overview ── */}
+        <Text px={3} mb={4} fontSize="12px" fontWeight="800" color={isDark ? "#9CA3AF" : "#4B5563"} textTransform="uppercase" letterSpacing="0.05em">
+          Account Overview
+        </Text>
+        
+        <Grid templateColumns="repeat(2, 1fr)" gap={3} mx={2} mb={6}>
+          {/* Certs */}
+          <Flex direction="column" align="center" justify="center" bg={isDark ? "rgba(59, 130, 246, 0.1)" : "blue.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "rgba(59, 130, 246, 0.2)" : "blue.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(59, 130, 246, 0.1)"}>
+            <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bgGradient="linear(to-br, blue.400, blue.600)" color="white" boxShadow={isDark ? "none" : "0 4px 12px rgba(59,130,246,0.3)"} mb={3}>
+              <Award size={24} strokeWidth={2.5} />
+            </Flex>
+            <Text fontSize="24px" fontWeight="900" color={isDark ? "blue.100" : "blue.900"} lineHeight="1.1">{courseStore.isMyCertificatesLoading ? "—" : courseStore.myCertificates.length}</Text>
+            <Text fontSize="11px" fontWeight="800" color={isDark ? "blue.300" : "blue.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Total Certs</Text>
+          </Flex>
+          
+          {/* Quizzes */}
+          <Flex direction="column" align="center" justify="center" bg={isDark ? "rgba(16, 185, 129, 0.1)" : "green.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "rgba(16, 185, 129, 0.2)" : "green.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(16, 185, 129, 0.1)"}>
+            <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bgGradient="linear(to-br, green.400, teal.500)" color="white" boxShadow={isDark ? "none" : "0 4px 12px rgba(16,185,129,0.3)"} mb={3}>
+              <Edit2 size={24} strokeWidth={2.5} />
+            </Flex>
+            <Text fontSize="24px" fontWeight="900" color={isDark ? "green.100" : "green.900"} lineHeight="1.1">{stores.quizStore.myAttempts.length}</Text>
+            <Text fontSize="11px" fontWeight="800" color={isDark ? "green.300" : "green.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Quizzes</Text>
+          </Flex>
+          
+          {/* Saved */}
+          <Flex direction="column" align="center" justify="center" bg={isDark ? "rgba(168, 85, 247, 0.1)" : "purple.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "rgba(168, 85, 247, 0.2)" : "purple.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(168, 85, 247, 0.1)"}>
+            <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bgGradient="linear(to-br, purple.400, purple.600)" color="white" boxShadow={isDark ? "none" : "0 4px 12px rgba(168,85,247,0.3)"} mb={3}>
+              <Bookmark size={24} strokeWidth={2.5} />
+            </Flex>
+            <Text fontSize="24px" fontWeight="900" color={isDark ? "purple.100" : "purple.900"} lineHeight="1.1">3</Text>
+            <Text fontSize="11px" fontWeight="800" color={isDark ? "purple.300" : "purple.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Saved</Text>
+          </Flex>
+          
+          {/* Rating */}
+          <Flex direction="column" align="center" justify="center" bg={isDark ? "rgba(245, 158, 11, 0.1)" : "orange.50"} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "rgba(245, 158, 11, 0.2)" : "orange.100"} boxShadow={isDark ? "none" : "0 4px 15px rgba(245, 158, 11, 0.1)"}>
+            <Flex align="center" justify="center" w={12} h={12} borderRadius="2xl" bgGradient="linear(to-br, orange.400, red.500)" color="white" boxShadow={isDark ? "none" : "0 4px 12px rgba(245,158,11,0.3)"} mb={3}>
+              <Star size={24} strokeWidth={2.5} />
+            </Flex>
+            <Text fontSize="24px" fontWeight="900" color={isDark ? "orange.100" : "orange.900"} lineHeight="1.1">4.8</Text>
+            <Text fontSize="11px" fontWeight="800" color={isDark ? "orange.300" : "orange.600"} textTransform="uppercase" letterSpacing="0.02em" mt={1}>Rating</Text>
+          </Flex>
+        </Grid>
 
-    <span className="mt-2 text-[11px] font-bold">Theme</span>
-  </button>
-
-  <button
-    type="button"
-    onClick={() => setActiveModal("details")}
-    className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-center transition-all duration-200 hover:bg-current/5 active:scale-95 ${
-      isDark ? "text-violet-300" : "text-violet-600"
-    }`}
-  >
-    <UserIcon className="h-[18px] w-[18px]" />
-    <span className="mt-2 text-[11px] font-bold">Details</span>
-  </button>
-</div>
-
-        <div className="mt-3" >
+        {/* ── Menu List ── */}
+        <Box px={3} mb={2}>
+          <Text fontSize="12px" fontWeight="800" color={isDark ? "gray.400" : "gray.500"} textTransform="uppercase" letterSpacing="0.05em">
+            Settings & More
+          </Text>
+        </Box>
+        <Box mx={2} bg={isDark ? "whiteAlpha.50" : "white"} borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} overflow="hidden" boxShadow={isDark ? "none" : "0 4px 20px rgba(0,0,0,0.02)"}>
           {menuItems.map((m, i) => (
-            <motion.button
-              key={m.key}
-              whileTap={{
-                backgroundColor: isDark
-                  ? "rgba(30, 41, 59, 0.6)"
-                  : "rgb(248, 250, 252)",
-              }}
-              onClick={m.onClick}
-              className={`flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors ${
-                i !== menuItems.length - 1
-                  ? isDark
-                    ? "border-b border-slate-800/80"
-                    : "border-b border-slate-100"
-                  : ""
-              }`}
-            >
-              <div
-                className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl border ${m.color}`}
-              >
-                <m.icon className="h-4.5 w-4.5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold">{m.label}</span>
+            <Flex key={m.key} onClick={m.onClick} _active={{ scale: 0.98, opacity: 0.8 }} transition="all 0.1s" w="100%" align="center" justify="space-between" py={3.5} px={4} cursor="pointer" borderBottom={i !== menuItems.length - 1 ? (isDark ? "1px solid rgba(255,255,255,0.04)" : "1px solid #F3F4F6") : "none"}>
+                <Flex align="center" gap={4}>
+                  <Flex align="center" justify="center" w={9} h={9} borderRadius="lg" bgGradient={[
+                      "linear(to-br, blue.400, blue.600)",
+                      "linear(to-br, pink.400, pink.600)",
+                      "linear(to-br, teal.400, teal.600)",
+                      "linear(to-br, orange.400, orange.600)",
+                      "linear(to-br, purple.400, purple.600)"
+                    ][i % 5]} color="white" boxShadow={isDark ? "none" : "0 3px 10px rgba(0,0,0,0.1)"}>
+                    <m.icon size={18} />
+                  </Flex>
+                  <Text fontSize="15px" fontWeight="700" color={isDark ? "white" : "gray.900"}>{m.label}</Text>
+                </Flex>
+                
+                <Flex align="center" gap={2} ml="auto" flexShrink={0}>
                   {m.badge && (
-                    <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-extrabold text-blue-600 dark:text-blue-400">
-                      {m.badge}
-                    </span>
+                     <span style={{ background: isDark ? "rgba(16,185,129,0.2)" : "#D1FAE5", color: isDark ? "#34D399" : "#10B981", borderRadius: 4, padding: "2px 8px", fontSize: "10px", fontWeight: "700" }}>
+                       {m.badge}
+                     </span>
                   )}
-                </div>
-                <p
-                  className={`mt-0.5 truncate text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}
-                >
-                  {m.desc}
-                </p>
-              </div>
-              <ChevronRight
-                className={`h-4 w-4 shrink-0 ${isDark ? "text-slate-600" : "text-slate-400"}`}
-              />
-            </motion.button>
+                  <ChevronRight size={16} color={isDark ? "gray.500" : "gray.400"} />
+                </Flex>
+            </Flex>
           ))}
-        </div>
+          
+          <Flex onClick={toggleColorMode} _active={{ scale: 0.98, opacity: 0.8 }} transition="all 0.1s" w="100%" align="center" justify="space-between" py={3.5} px={4} cursor="pointer" borderTop={isDark ? "1px solid rgba(255,255,255,0.04)" : "1px solid #F3F4F6"}>
+                <Flex align="center" gap={4}>
+                  <Flex align="center" justify="center" w={9} h={9} borderRadius="lg" bgGradient="linear(to-br, gray.600, gray.800)" color="white" boxShadow={isDark ? "none" : "0 3px 10px rgba(0,0,0,0.15)"}>
+                    {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                  </Flex>
+                  <Text fontSize="15px" fontWeight="700" color={isDark ? "white" : "gray.900"}>Theme Mode</Text>
+                </Flex>
+                
+                <Flex align="center" gap={2} ml="auto" flexShrink={0}>
+                  <Text fontSize="11px" fontWeight="600" color={isDark ? "gray.400" : "gray.500"}>{isDark ? "Dark" : "Light"}</Text>
+                  <ChevronRight size={16} color={isDark ? "gray.500" : "gray.400"} />
+                </Flex>
+          </Flex>
+        </Box>
 
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={handleLogout}
-          className={`mt-4 flex w-full items-center justify-center gap-2 rounded-3xl py-4 text-sm font-bold transition-colors ${
-            isDark
-              ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 ring-1 ring-red-500/20"
-              : "bg-red-50 text-red-600 hover:bg-red-100 ring-1 ring-red-100"
-          }`}
-        >
-          <LogOut className="h-4 w-4" /> Log out
-        </motion.button>
+        {/* ── Logout ── */}
+        <Box mx={2} mt={6}>
+          <Button onClick={handleLogout} w="100%" size="lg" borderRadius="xl" bg={isDark ? "rgba(239,68,68,0.1)" : "red.50"} color={isDark ? "red.400" : "red.600"} border="1px solid" borderColor={isDark ? "rgba(239,68,68,0.2)" : "red.100"} _hover={{ bg: isDark ? "rgba(239,68,68,0.2)" : "red.100" }} leftIcon={<LogOut size={18} />} fontWeight="700">
+            Sign Out
+          </Button>
+        </Box>
       </Box>
+
+
+      {/* ── Settings Drawer (Responsive 55vw Desktop) ── */}
+      <Drawer isOpen={isSettingsOpen} placement="right" onClose={onSettingsClose} size="full">
+        <DrawerOverlay bg="blackAlpha.400" backdropFilter="blur(5px)" />
+        <DrawerContent bg={isDark ? "#111318" : "#F9FAFB"} maxW={{ base: "100vw", md: "55vw" }} borderLeftRadius={{ base: "none", md: "2xl" }} overflow="hidden" borderLeft="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"}>
+          <DrawerBody p={0} m={0}>
+            <Box minH="100vh" fontFamily="'Inter', sans-serif" pb={12} overflowY="auto">
+              {/* Header */}
+              <Box px={6} pt={8} pb={6} bg={isDark ? "whiteAlpha.50" : "white"} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} position="relative" zIndex={1} boxShadow={isDark ? "none" : "0 4px 20px rgba(0,0,0,0.02)"}>
+                <Flex align="center" gap={4} mb={2}>
+                  <button onClick={onSettingsClose} style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", borderRadius: "50%", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s", flexShrink: 0 }}>
+                    <ChevronRight size={18} style={{ transform: "rotate(180deg)" }} color={isDark ? "white" : "black"} />
+                  </button>
+                  <Text fontSize="26px" fontWeight="900" letterSpacing="-0.02em" color={pageHeadingColor}>
+                    Settings
+                  </Text>
+                </Flex>
+                <Text fontSize="13px" color={pageSubColor} mt={2} fontWeight="500">
+                  Manage your preferences and account settings.
+                </Text>
+              </Box>
+
+              {/* Preferences Section */}
+              <Box px={6} mt={6}>
+                <Text mb={3} fontSize="12px" fontWeight="800" color={isDark ? "gray.400" : "gray.500"} textTransform="uppercase" letterSpacing="0.05em">
+                  Preferences
+                </Text>
+                <Box bg={isDark ? "whiteAlpha.50" : "white"} borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} overflow="hidden">
+                  <Flex align="center" gap={4} py={3.5} px={4} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.100"} _hover={{ bg: isDark ? "whiteAlpha.100" : "gray.50" }} transition="all 0.2s">
+                    <Flex align="center" justify="center" w={8} h={8} borderRadius="lg" bgGradient="linear(to-br, red.400, pink.500)" color="white"><Bell size={16} /></Flex>
+                    <Box flex={1}><Text fontSize="14px" fontWeight="700" color={isDark ? "white" : "gray.900"}>Notifications</Text></Box>
+                    <Switch colorScheme="red" defaultChecked />
+                  </Flex>
+                  <Flex align="center" gap={4} py={3.5} px={4} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.100"} _hover={{ bg: isDark ? "whiteAlpha.100" : "gray.50" }} transition="all 0.2s">
+                    <Flex align="center" justify="center" w={8} h={8} borderRadius="lg" bgGradient="linear(to-br, green.400, teal.500)" color="white"><Volume2 size={16} /></Flex>
+                    <Box flex={1}><Text fontSize="14px" fontWeight="700" color={isDark ? "white" : "gray.900"}>Sound</Text></Box>
+                    <Switch colorScheme="green" defaultChecked />
+                  </Flex>
+                  <Flex align="center" gap={4} py={3.5} px={4} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.100"} _hover={{ bg: isDark ? "whiteAlpha.100" : "gray.50" }} transition="all 0.2s">
+                    <Flex align="center" justify="center" w={8} h={8} borderRadius="lg" bgGradient="linear(to-br, purple.500, indigo.600)" color="white"><Moon size={16} /></Flex>
+                    <Box flex={1}><Text fontSize="14px" fontWeight="700" color={isDark ? "white" : "gray.900"}>Dark Mode</Text></Box>
+                    <Switch colorScheme="purple" isChecked={isDark} onChange={toggleColorMode} />
+                  </Flex>
+                  <Flex align="center" gap={4} py={3.5} px={4} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.100"} _hover={{ bg: isDark ? "whiteAlpha.100" : "gray.50" }} transition="all 0.2s" cursor="pointer">
+                    <Flex align="center" justify="center" w={8} h={8} borderRadius="lg" bgGradient="linear(to-br, orange.400, orange.600)" color="white"><Globe size={16} /></Flex>
+                    <Box flex={1}><Text fontSize="14px" fontWeight="700" color={isDark ? "white" : "gray.900"}>Language</Text></Box>
+                    <Text fontSize="13px" fontWeight="600" color={isDark ? "gray.400" : "gray.500"}>English</Text>
+                    <ChevronRight size={16} color={isDark ? "gray.500" : "gray.400"} />
+                  </Flex>
+                </Box>
+              </Box>
+
+              {/* Account Section */}
+              <Box px={6} mt={8}>
+                <Text mb={3} fontSize="12px" fontWeight="800" color={isDark ? "gray.400" : "gray.500"} textTransform="uppercase" letterSpacing="0.05em">
+                  Account Details
+                </Text>
+                <Box bg={isDark ? "whiteAlpha.50" : "white"} borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} overflow="hidden">
+                  <Flex as="button" w="100%" onClick={onSettingsClose} align="center" gap={4} py={3.5} px={4} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.100"} _hover={{ bg: isDark ? "whiteAlpha.100" : "gray.50" }} transition="all 0.2s">
+                    <Flex align="center" justify="center" w={8} h={8} borderRadius="lg" bgGradient="linear(to-br, blue.400, blue.600)" color="white"><UserIcon size={16} /></Flex>
+                    <Box flex={1} textAlign="left"><Text fontSize="14px" fontWeight="700" color={isDark ? "white" : "gray.900"}>Personal Information</Text></Box>
+                    <ChevronRight size={16} color={isDark ? "gray.500" : "gray.400"} />
+                  </Flex>
+                  <Flex as="button" w="100%" align="center" gap={4} py={3.5} px={4} borderBottom="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.100"} _hover={{ bg: isDark ? "whiteAlpha.100" : "gray.50" }} transition="all 0.2s">
+                    <Flex align="center" justify="center" w={8} h={8} borderRadius="lg" bgGradient="linear(to-br, teal.400, teal.600)" color="white"><Shield size={16} /></Flex>
+                    <Box flex={1} textAlign="left"><Text fontSize="14px" fontWeight="700" color={isDark ? "white" : "gray.900"}>Privacy & Security</Text></Box>
+                    <ChevronRight size={16} color={isDark ? "gray.500" : "gray.400"} />
+                  </Flex>
+                  <Flex as="button" w="100%" align="center" gap={4} py={3.5} px={4} _hover={{ bg: isDark ? "whiteAlpha.100" : "gray.50" }} transition="all 0.2s">
+                    <Flex align="center" justify="center" w={8} h={8} borderRadius="lg" bgGradient="linear(to-br, gray.400, gray.600)" color="white"><HelpCircle size={16} /></Flex>
+                    <Box flex={1} textAlign="left"><Text fontSize="14px" fontWeight="700" color={isDark ? "white" : "gray.900"}>Help & Support</Text></Box>
+                    <ChevronRight size={16} color={isDark ? "gray.500" : "gray.400"} />
+                  </Flex>
+                </Box>
+              </Box>
+
+              {/* Logout Button */}
+              <Box px={6} mt={8}>
+                <Button onClick={handleLogout} w="100%" size="lg" borderRadius="xl" bg={isDark ? "rgba(239,68,68,0.1)" : "red.50"} color={isDark ? "red.400" : "red.600"} border="1px solid" borderColor={isDark ? "rgba(239,68,68,0.2)" : "red.100"} _hover={{ bg: isDark ? "rgba(239,68,68,0.2)" : "red.100" }} leftIcon={<LogOut size={18} />}>
+                  Sign Out
+                </Button>
+              </Box>
+            </Box>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
 
       <EditProfileModal
         isOpen={isEditOpen}

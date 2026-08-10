@@ -13,6 +13,7 @@ import { themeStore } from "./themeStore/themeStore";
 import { userStore } from "./userStore/userStore";
 import { chatStore } from "./chatStore/chatStore";
 import { newsStore } from "./newsStore/newsStore";
+import { quizStore } from "./quizStore/quizStore";
 
 const stores = {
   auth : authStore,
@@ -29,6 +30,7 @@ const stores = {
   courseStore:courseStore,
   chatStore: chatStore,
   newsStore: newsStore,
+  quizStore: quizStore,
 };
 
 export default stores;
