@@ -158,14 +158,6 @@ export const sidebarFooterData: SidebarItem[] = [
     role: ["admin"],
     permissionKey: PERMISSION_KEYS.COMPANY_SETTINGS,
   },
-  {
-    id: 34,
-    name: "Settings",
-    icon: <FaCog />,
-    url: "/dashboard/profile",
-    role: ["admin", "superadmin", "patient", "doctor", "departmenthead"],
-    permissionKey: PERMISSION_KEYS.VIEW_PROFILE,
-  },
 ];
 
 const getSidebarDataByRole = (role: string[] = ["admin"], user?: any): SidebarItem[] => {

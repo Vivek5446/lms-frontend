@@ -33,7 +33,7 @@ import { observer } from 'mobx-react-lite';
 import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { FiBookOpen, FiGrid, FiHome, FiMenu, FiUser, FiBell, FiMessageCircle } from 'react-icons/fi';
+import { FiBookOpen, FiGrid, FiHome, FiMenu, FiUser, FiBell, FiMessageCircle, FiLogOut } from 'react-icons/fi';
 import UserProfileDrawer from './UserProfileDrawer';
 import { MobileFooterNav } from './component/MobileFooterNav';
 import { MobileMenuDrawer } from './component/MobileMoreMenu';
@@ -181,14 +181,11 @@ const Header: React.FC = observer(() => {
             {/* Center Section (Navigation) */}
             <Flex flex={{ base: "none", md: "auto" }} justify="center">
               <HStack
-                gap={1}
-              display={{ base: 'none', md: 'flex' }}
-              bg={colorMode === 'light' ? 'gray.50' : 'rgba(30, 41, 59, 0.5)'}
-              p={1}
-              borderRadius="full"
-              border="1px solid"
-              borderColor={colorMode === 'light' ? 'gray.200' : 'gray.700'}
-            >
+                gap={6}
+                display={{ base: 'none', md: 'flex' }}
+                bg="transparent"
+                p={0}
+              >
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
@@ -196,21 +193,35 @@ const Header: React.FC = observer(() => {
                     key={link.href}
                     as={NextLink}
                     href={link.href}
-                    px={4}
+                    px={2}
                     py={1.5}
-                    fontSize="sm"
-                    fontWeight="600"
-                    borderRadius="full"
-                    color={isActive ? (colorMode === 'light' ? 'brand.700' : 'white') : (colorMode === 'light' ? 'gray.600' : 'gray.400')}
-                    bg={isActive ? (colorMode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.1)') : 'transparent'}
-                    boxShadow={isActive ? (colorMode === 'light' ? '0 2px 10px rgba(0,0,0,0.05)' : 'inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 10px rgba(0,0,0,0.2)') : 'none'}
-                    border={isActive && colorMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid transparent'}
-                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                    fontSize="15px"
+                    fontWeight={isActive ? "700" : "500"}
+                    color={isActive ? (colorMode === 'light' ? 'gray.900' : 'white') : (colorMode === 'light' ? 'gray.500' : 'gray.400')}
+                    bg="transparent"
+                    transition="all 0.2s ease"
                     position="relative"
                     _hover={{
-                      color: isActive ? (colorMode === 'light' ? 'brand.700' : 'white') : (colorMode === 'light' ? 'brand.600' : 'white'),
-                      bg: isActive ? (colorMode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.15)') : (colorMode === 'light' ? 'gray.100' : 'rgba(255, 255, 255, 0.05)'),
+                      color: colorMode === 'light' ? 'brand.600' : 'blue.300',
                       textDecoration: 'none',
+                      _after: {
+                        transform: 'scaleX(1)',
+                        opacity: 1,
+                      }
+                    }}
+                    _after={{
+                      content: '""',
+                      position: 'absolute',
+                      bottom: '-4px',
+                      left: 0,
+                      width: '100%',
+                      height: '2px',
+                      bgGradient: colorMode === 'light' ? 'linear(to-r, brand.400, brand.600)' : 'linear(to-r, blue.400, blue.500)',
+                      borderRadius: 'full',
+                      transform: isActive ? 'scaleX(1)' : 'scaleX(0)',
+                      opacity: isActive ? 1 : 0,
+                      transformOrigin: 'center',
+                      transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease',
                     }}
                   >
                     {link.label}
@@ -302,20 +313,39 @@ const Header: React.FC = observer(() => {
                           />
                         </HStack>
                       </MenuButton>
-                      <MenuList borderRadius="2xl" p={2}>
-                        <Box px={3} py={2}>
-                          <Text fontWeight="bold" noOfLines={1}>{displayName}</Text>
-                          <Text fontSize="sm" color="gray.500" noOfLines={1}>{user?.username || ''}</Text>
+                      <MenuList borderRadius="2xl" p={0} overflow="hidden" border="1px solid" borderColor={colorMode === 'light' ? 'gray.100' : 'whiteAlpha.100'} boxShadow={colorMode === 'light' ? '0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01)' : '0 10px 25px -5px rgba(0,0,0,0.5)'} bg={colorMode === 'light' ? 'white' : 'gray.900'}>
+                        <Box px={4} py={3.5} borderBottom="1px solid" borderColor={colorMode === 'light' ? 'gray.100' : 'whiteAlpha.100'} bg={colorMode === 'light' ? 'gray.50' : 'whiteAlpha.50'}>
+                          <Text fontWeight="800" fontSize="15px" color={colorMode === 'light' ? 'gray.900' : 'white'} noOfLines={1}>{displayName}</Text>
+                          <Text fontSize="13px" fontWeight="500" color={colorMode === 'light' ? 'gray.500' : 'gray.400'} noOfLines={1}>{user?.username || ''}</Text>
                         </Box>
-                        <MenuItem borderRadius="xl" onClick={() => router.push('/user-profile')}>
-                          View profile
-                        </MenuItem>
-                        <MenuItem borderRadius="xl" as={NextLink} href={appHref}>
-                          {isLearner ? 'Go to learning' : 'Open dashboard'}
-                        </MenuItem>
-                        <MenuItem borderRadius="xl" color="red.500" onClick={handleLogout}>
-                          Logout
-                        </MenuItem>
+                        <Box p={2}>
+                          <MenuItem bg="transparent" _focus={{ bg: colorMode === 'light' ? 'gray.100' : 'whiteAlpha.100' }} borderRadius="xl" px={3} py={2} mb={1} onClick={() => router.push('/user-profile')} _hover={{ bg: colorMode === 'light' ? 'gray.100' : 'whiteAlpha.100' }} transition="all 0.2s">
+                            <Flex align="center" gap={3}>
+                              <Flex align="center" justify="center" w={8} h={8} borderRadius="md" bg={colorMode === 'light' ? 'blue.50' : 'rgba(59, 130, 246, 0.15)'} color={colorMode === 'light' ? 'blue.500' : 'blue.300'}>
+                                <Icon as={FiUser} boxSize={4} />
+                              </Flex>
+                              <Text fontWeight="600" fontSize="14px">View profile</Text>
+                            </Flex>
+                          </MenuItem>
+                          
+                          <MenuItem bg="transparent" _focus={{ bg: colorMode === 'light' ? 'gray.100' : 'whiteAlpha.100' }} borderRadius="xl" px={3} py={2} mb={1} as={NextLink} href={appHref} _hover={{ bg: colorMode === 'light' ? 'gray.100' : 'whiteAlpha.100' }} transition="all 0.2s">
+                            <Flex align="center" gap={3}>
+                              <Flex align="center" justify="center" w={8} h={8} borderRadius="md" bg={colorMode === 'light' ? 'purple.50' : 'rgba(168, 85, 247, 0.15)'} color={colorMode === 'light' ? 'purple.500' : 'purple.300'}>
+                                <Icon as={FiGrid} boxSize={4} />
+                              </Flex>
+                              <Text fontWeight="600" fontSize="14px">{isLearner ? 'Go to learning' : 'Open dashboard'}</Text>
+                            </Flex>
+                          </MenuItem>
+                          
+                          <MenuItem bg="transparent" _focus={{ bg: colorMode === 'light' ? 'red.50' : 'rgba(239, 68, 68, 0.15)' }} borderRadius="xl" px={3} py={2} onClick={handleLogout} _hover={{ bg: colorMode === 'light' ? 'red.50' : 'rgba(239, 68, 68, 0.15)' }} transition="all 0.2s">
+                            <Flex align="center" gap={3}>
+                              <Flex align="center" justify="center" w={8} h={8} borderRadius="md" bg={colorMode === 'light' ? 'red.50' : 'transparent'} color={colorMode === 'light' ? 'red.500' : 'red.400'}>
+                                <Icon as={FiLogOut} boxSize={4} />
+                              </Flex>
+                              <Text fontWeight="600" fontSize="14px" color={colorMode === 'light' ? 'red.600' : 'red.400'}>Logout</Text>
+                            </Flex>
+                          </MenuItem>
+                        </Box>
                       </MenuList>
                     </Menu>
                   </Box>
