@@ -65,12 +65,12 @@ export default function Contact() {
 
       <Container maxW="1200px" pt={{ base: 20, md: 32 }} pb={20} position="relative" zIndex="1">
         <SimpleGrid columns={{ base: 1, lg: 12 }} spacing={{ base: 10, lg: 0 }} shadow="2xl" borderRadius="3xl" overflow="hidden">
-          
+
           {/* --- LEFT SIDE --- */}
-          <Box 
-            gridColumn={{ lg: "span 5" }} 
-            bg="blue.700" 
-            p={{ base: 8, md: 16 }} 
+          <Box
+            gridColumn={{ lg: "span 5" }}
+            bg="blue.700"
+            p={{ base: 8, md: 16 }}
             color="white"
             position="relative"
             display="flex"
@@ -91,45 +91,45 @@ export default function Contact() {
               </Box>
 
               <VStack align="start" spacing={8}>
-                <ContactMethod 
-                  icon={FaHeadset} 
-                  title="Priority Support" 
-                  detail="support@craftlms.com" 
+                <ContactMethod
+                  icon={FaHeadset}
+                  title="Priority Support"
+                  detail="support@lms.com"
                   subDetail="Available 24/7 for Enterprise"
                 />
-                <ContactMethod 
-                  icon={FaPhoneAlt} 
-                  title="Learning Advisor" 
-                  detail="+91 22 4567 8900" 
+                <ContactMethod
+                  icon={FaPhoneAlt}
+                  title="Learning Advisor"
+                  detail="+91 22 4567 8900"
                   subDetail="Mon - Sat, 10 AM - 7 PM"
                 />
-                <ContactMethod 
-                  icon={FaGlobe} 
-                  title="Global Office" 
-                  detail="BKC Financial Hub" 
+                <ContactMethod
+                  icon={FaGlobe}
+                  title="Global Office"
+                  detail="BKC Financial Hub"
                   subDetail="Mumbai, MH 400051"
                 />
               </VStack>
 
               <Divider borderColor="whiteAlpha.300" />
             </Stack>
-            
+
             <Box mt={10} position="relative">
-              <Image 
-                src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&auto=format&fit=crop" 
-                alt="Corporate Training Room" 
+              <Image
+                src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&auto=format&fit=crop"
+                alt="Corporate Training Room"
                 borderRadius="2xl"
                 shadow="xl"
                 filter="brightness(0.9)"
               />
-              <Flex 
-                position="absolute" 
-                top="10px" 
-                right="10px" 
-                bg="whiteAlpha.200" 
-                backdropFilter="blur(5px)" 
-                p={3} 
-                borderRadius="full" 
+              <Flex
+                position="absolute"
+                top="10px"
+                right="10px"
+                bg="whiteAlpha.200"
+                backdropFilter="blur(5px)"
+                p={3}
+                borderRadius="full"
                 color="white"
               >
                 <Icon as={FaChalkboardTeacher} boxSize={5} />
@@ -139,9 +139,9 @@ export default function Contact() {
           </Box>
 
           {/* --- RIGHT SIDE --- */}
-          <Box 
-            gridColumn={{ lg: "span 7" }} 
-            bg={cardBg} 
+          <Box
+            gridColumn={{ lg: "span 7" }}
+            bg={cardBg}
             p={{ base: 8, md: 16 }}
           >
             <VStack align="start" spacing={8} mb={10}>
@@ -154,54 +154,54 @@ export default function Contact() {
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
                   <FormControl isRequired>
                     <FormLabel fontWeight="bold" fontSize="xs" color={textSecondary} textTransform="uppercase">Full Name</FormLabel>
-                    <Input 
-                      placeholder="Jane Smith" 
-                      h="55px" 
+                    <Input
+                      placeholder="Jane Smith"
+                      h="55px"
                       bg={inputBg}
-                      border="none" 
-                      _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }} 
+                      border="none"
+                      _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }}
                     />
                   </FormControl>
                   <FormControl isRequired>
                     <FormLabel fontWeight="bold" fontSize="xs" color={textSecondary} textTransform="uppercase">Work Email</FormLabel>
-                    <Input 
-                      type="email" 
-                      placeholder="jane@company.com" 
-                      h="55px" 
+                    <Input
+                      type="email"
+                      placeholder="jane@company.com"
+                      h="55px"
                       bg={inputBg}
-                      border="none" 
-                      _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }} 
+                      border="none"
+                      _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }}
                     />
                   </FormControl>
                 </SimpleGrid>
 
                 <FormControl>
                   <FormLabel fontWeight="bold" fontSize="xs" color={textSecondary} textTransform="uppercase">Inquiry Type</FormLabel>
-                  <Input 
-                    placeholder="e.g. Corporate Enrollment, Login Issue" 
-                    h="55px" 
+                  <Input
+                    placeholder="e.g. Corporate Enrollment, Login Issue"
+                    h="55px"
                     bg={inputBg}
-                    border="none" 
-                    _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }} 
+                    border="none"
+                    _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }}
                   />
                 </FormControl>
 
                 <FormControl isRequired>
                   <FormLabel fontWeight="bold" fontSize="xs" color={textSecondary} textTransform="uppercase">Your Message</FormLabel>
-                  <Textarea 
-                    placeholder="Describe your request in detail..." 
+                  <Textarea
+                    placeholder="Describe your request in detail..."
                     bg={inputBg}
-                    border="none" 
-                    rows={6} 
-                    _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }} 
+                    border="none"
+                    rows={6}
+                    _focus={{ bg: cardBg, ring: 2, ringColor: "blue.500" }}
                   />
                 </FormControl>
 
-                <Button 
-                  type="submit" 
-                  colorScheme="blue" 
-                  size="lg" 
-                  h="65px" 
+                <Button
+                  type="submit"
+                  colorScheme="blue"
+                  size="lg"
+                  h="65px"
                   w="full"
                   fontSize="md"
                   fontWeight="bold"
@@ -220,20 +220,20 @@ export default function Contact() {
 
         {/* --- BOTTOM --- */}
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8} mt={20}>
-          <QuickLinkCard 
-            icon={FaQuestionCircle} 
-            title="General FAQ" 
-            desc="Find quick answers about certifications and course access." 
+          <QuickLinkCard
+            icon={FaQuestionCircle}
+            title="General FAQ"
+            desc="Find quick answers about certifications and course access."
           />
-          <QuickLinkCard 
-            icon={FaMapMarkerAlt} 
-            title="Office Locations" 
-            desc="Visit our regional learning centers across India." 
+          <QuickLinkCard
+            icon={FaMapMarkerAlt}
+            title="Office Locations"
+            desc="Visit our regional learning centers across India."
           />
-          <QuickLinkCard 
-            icon={FaUser} 
-            title="Corporate Training" 
-            desc="Looking to train your team? Get a custom quote." 
+          <QuickLinkCard
+            icon={FaUser}
+            title="Corporate Training"
+            desc="Looking to train your team? Get a custom quote."
           />
         </SimpleGrid>
       </Container>
@@ -265,11 +265,11 @@ function QuickLinkCard({ icon, title, desc }: any) {
   const descColor = useColorModeValue("gray.500", "gray.400");
 
   return (
-    <HStack 
-      p={6} 
+    <HStack
+      p={6}
       bg={bg}
-      borderRadius="2xl" 
-      borderWidth="1px" 
+      borderRadius="2xl"
+      borderWidth="1px"
       borderColor={border}
       shadow="sm"
       _hover={{ transform: "translateY(-5px)", shadow: "md", borderColor: "blue.200" }}

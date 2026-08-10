@@ -18,14 +18,14 @@ import {
   Divider,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { 
-  FaGraduationCap, 
-  FaUsers, 
-  FaGlobe, 
-  FaAward, 
-  FaLightbulb, 
+import {
+  FaGraduationCap,
+  FaUsers,
+  FaGlobe,
+  FaAward,
+  FaLightbulb,
   FaChartLine,
-  FaArrowRight 
+  FaArrowRight
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import NextLink from 'next/link';
@@ -49,34 +49,34 @@ export default function About() {
 
       {/* --- HERO SECTION --- */}
       <Box position="relative" overflow="hidden" pt={24} pb={20} bg={heroBg}>
-        <Box 
-          position="absolute" 
-          top="-10%" 
-          right="-5%" 
-          w="500px" 
-          h="500px" 
-          bg="blue.50" 
-          filter="blur(100px)" 
-          rounded="full" 
+        <Box
+          position="absolute"
+          top="-10%"
+          right="-5%"
+          w="500px"
+          h="500px"
+          bg="blue.50"
+          filter="blur(100px)"
+          rounded="full"
           zIndex={0}
         />
         <Container maxW="1200px" position="relative" zIndex={1}>
           <Stack spacing={8} textAlign="center" align="center">
-            <Badge 
-              px={4} py={2} 
-              rounded="full" 
-              colorScheme="blue" 
-              textTransform="uppercase" 
+            <Badge
+              px={4} py={2}
+              rounded="full"
+              colorScheme="blue"
+              textTransform="uppercase"
               letterSpacing="widest"
               fontSize="xs"
               shadow="sm"
             >
-              The Craft LMS Story
+              The LMS Story
             </Badge>
-            <Heading 
-              as="h1" 
-              fontSize={{ base: '4xl', md: '6xl' }} 
-              fontWeight="900" 
+            <Heading
+              as="h1"
+              fontSize={{ base: '4xl', md: '6xl' }}
+              fontWeight="900"
               letterSpacing="-2px"
               lineHeight="1.1"
               color={textPrimary}
@@ -87,8 +87,8 @@ export default function About() {
               </Text>
             </Heading>
             <Text fontSize="xl" color={textSecondary} maxW="3xl" lineHeight="tall">
-              CRAFT isn't just a learning platform; it’s a career accelerator. We provide the 
-              BFSI sector with technical mastery, bridging the gap between traditional 
+              LMS isn't just a learning platform; it’s a career accelerator. We provide the
+              BFSI sector with technical mastery, bridging the gap between traditional
               banking and the future of Fintech.
             </Text>
             <HStack spacing={4}>
@@ -105,14 +105,14 @@ export default function About() {
 
       {/* --- STATS BAR --- */}
       <Container maxW="1100px" mt="-10">
-        <SimpleGrid 
-          columns={{ base: 2, md: 4 }} 
-          spacing={8} 
+        <SimpleGrid
+          columns={{ base: 2, md: 4 }}
+          spacing={8}
           bg={cardBg}
-          p={10} 
-          rounded="3xl" 
-          shadow="2xl" 
-          borderWidth="1px" 
+          p={10}
+          rounded="3xl"
+          shadow="2xl"
+          borderWidth="1px"
           borderColor={borderColor}
         >
           <StatItem count="15k+" label="Learners" />
@@ -126,37 +126,37 @@ export default function About() {
       <Container maxW="1200px" py={24}>
         <Flex direction={{ base: 'column', lg: 'row' }} gap={16} align="center">
           <Box flex="1">
-            <Image 
-              src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&auto=format&fit=crop" 
-              alt="Team Collaborating" 
-              rounded="3xl" 
+            <Image
+              src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&auto=format&fit=crop"
+              alt="Team Collaborating"
+              rounded="3xl"
               shadow="2xl"
             />
           </Box>
           <VStack flex="1" align="start" spacing={8}>
             <Heading size="2xl" letterSpacing="-1px" color={textPrimary}>
-              Why the Industry Trusts CRAFT
+              Why the Industry Trusts LMS
             </Heading>
             <Text color={textSecondary} fontSize="lg">
-              Our curriculum is built from the ground up by Chief Risk Officers, 
-              Compliance Leads, and Fintech Founders. We don't teach from textbooks; 
+              Our curriculum is built from the ground up by Chief Risk Officers,
+              Compliance Leads, and Fintech Founders. We don't teach from textbooks;
               we teach from real-world scenarios.
             </Text>
             <SimpleGrid columns={1} spacing={6} w="full">
-              <PillarItem 
-                icon={FaAward} 
-                title="Accredited Content" 
-                desc="All certifications are recognized by major NBFC and Banking institutions." 
+              <PillarItem
+                icon={FaAward}
+                title="Accredited Content"
+                desc="All certifications are recognized by major NBFC and Banking institutions."
               />
-              <PillarItem 
-                icon={FaLightbulb} 
-                title="Practical Case Studies" 
-                desc="Solve actual credit appraisal and risk management cases used in top firms." 
+              <PillarItem
+                icon={FaLightbulb}
+                title="Practical Case Studies"
+                desc="Solve actual credit appraisal and risk management cases used in top firms."
               />
-              <PillarItem 
-                icon={FaChartLine} 
-                title="Career Support" 
-                desc="Direct pipelines to recruitment for our top-performing certificate holders." 
+              <PillarItem
+                icon={FaChartLine}
+                title="Career Support"
+                desc="Direct pipelines to recruitment for our top-performing certificate holders."
               />
             </SimpleGrid>
           </VStack>
@@ -192,11 +192,11 @@ export default function About() {
 
       {/* --- CTA SECTION --- */}
       <Container maxW="1200px" py={24}>
-        <Box 
-          bg="blue.600" 
-          rounded="3xl" 
-          p={{ base: 10, md: 20 }} 
-          textAlign="center" 
+        <Box
+          bg="blue.600"
+          rounded="3xl"
+          p={{ base: 10, md: 20 }}
+          textAlign="center"
           color="white"
           position="relative"
           overflow="hidden"
@@ -205,7 +205,7 @@ export default function About() {
           <VStack spacing={8} position="relative" zIndex={1}>
             <Heading size="2xl">Ready to Start Your Learning Journey?</Heading>
             <Text fontSize="xl" opacity="0.9" maxW="2xl">
-              Join 15,000+ professionals who have already accelerated their banking careers 
+              Join 15,000+ professionals who have already accelerated their banking careers
               with our specialized certification programs.
             </Text>
             <Button size="lg" bg="white" color="blue.600" _hover={{ bg: 'gray.100' }} px={10} rounded="full">

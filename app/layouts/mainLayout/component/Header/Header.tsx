@@ -160,7 +160,7 @@ const Header: React.FC = observer(() => {
                 <Box transition="transform 0.4s ease" _hover={{ transform: 'scale(1.06) rotate(-2deg)' }}>
                   <Image
                     src="https://www.lmscert.com/Logo%20LMS%20-1-.svg"
-                    alt="CRAFT LMS Logo"
+                    alt="LMS Logo"
                     h={{ base: '28px', md: '36px' }}
                     objectFit="contain"
                   />
@@ -173,7 +173,7 @@ const Header: React.FC = observer(() => {
                   bgClip="text"
                   display={{ base: 'none', lg: 'block' }}
                 >
-                  CRAFT
+                  LMS
                 </Text>
               </ChakraLink>
             </Box>
