@@ -152,6 +152,18 @@ function getStartLearningLabel(
   return "No lesson asset";
 }
 
+function getLaunchContentLabel(launchSection?: CourseLaunchSection | null) {
+  if (!launchSection) {
+    return "LESSON";
+  }
+
+  if (launchSection.contentKind === "video" && launchSection.sourceType === "url") {
+    return "VIDEO URL";
+  }
+
+  return String(launchSection.contentKind || "lesson").toUpperCase();
+}
+
 function getSectionActionLabel(
   launchSection: CourseLaunchSection | null,
   status?: string | null,
@@ -1359,10 +1371,7 @@ export default function CourseDetails({
                       {currentLaunchSection ? (
                         <>
                           <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
-                            {String(
-                              currentLaunchSection.contentKind ||
-                                "lesson"
-                            ).toUpperCase()}
+                            {getLaunchContentLabel(currentLaunchSection)}
                           </span>
                           <span>
                             {Math.round(

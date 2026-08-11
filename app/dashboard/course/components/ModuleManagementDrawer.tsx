@@ -21,6 +21,7 @@ import {
   IconButton,
   Input,
   Progress,
+  Select,
   SimpleGrid,
   Stack,
   Switch,
@@ -57,9 +58,11 @@ import {
   CourseQuizInput,
   StoredFile,
   createEmptyModuleSection,
+  createExistingStoredFile,
   createEmptyQuiz,
   createStoredFile,
   createStudyMaterialFiles,
+  createUrlStoredFile,
   getFileKindLabel,
   inferModuleUploadKind,
   mapExistingQuiz,
@@ -143,14 +146,14 @@ export default function ModuleManagementDrawer({
           id: sec._id || `sec-${sIdx + 1}`,
           title: sec.title || "",
           description: sec.description || "",
-          contentFile: sec.content?.previewUrl
-            ? {
-                name: sec.content.fileName || "Existing Lesson Content",
-                file: null,
-                kind: sec.content.kind === "scorm" ? "scorm" : sec.content.kind === "video" ? "video" : "scorm",
-                previewUrl: sec.content.previewUrl,
-              }
-            : null,
+          contentType:
+            sec.content?.kind === "scorm" || sec.content?.kind === "zip"
+              ? "scorm_upload"
+              : sec.content?.sourceType === "url"
+                ? "video_url"
+                : "video_upload",
+          videoUrl: sec.content?.sourceType === "url" ? String(sec.content?.previewUrl || "") : "",
+          contentFile: createExistingStoredFile(sec.content, `Section ${sIdx + 1} content`),
           studyMaterials: Array.isArray(sec.studyMaterial)
             ? sec.studyMaterial.map((m: any, mIdx: number) => ({
                 id: m._id || `s-mat-${mIdx}`,
@@ -162,16 +165,6 @@ export default function ModuleManagementDrawer({
             : [],
         }))
       : [createEmptyModuleSection()];
-
-    const mappedModuleStudyMaterials: StoredFile[] = Array.isArray(mod.studyMaterial)
-      ? mod.studyMaterial.map((m: any, mIdx: number) => ({
-          id: m._id || `m-mat-${mIdx}`,
-          name: m.name || "PDF Document",
-          file: null,
-          kind: m.kind || "document",
-          previewUrl: m.previewUrl,
-        }))
-      : [];
 
     const moduleTitle = mod.title || "";
     const mappedQuiz = mapExistingQuiz(
@@ -186,7 +179,7 @@ export default function ModuleManagementDrawer({
       hasQuiz: Boolean(mod.assessments?.quizEnabled || mappedQuiz.questions.length > 0),
       hasTest: Boolean(mod.assessments?.testEnabled),
       quiz: mappedQuiz,
-      studyMaterials: mappedModuleStudyMaterials,
+      studyMaterials: [],
       sections: mappedSections,
     };
   };
@@ -279,16 +272,11 @@ export default function ModuleManagementDrawer({
   const handleSectionFileChange = (moduleId: string, sectionId: string, fileList: FileList | null) => {
     const file = fileList?.[0];
     if (!file) return;
+    const kind = inferModuleUploadKind(file);
     updateSection(moduleId, sectionId, {
-      contentFile: createStoredFile(file, inferModuleUploadKind(file)),
-    });
-  };
-
-  const handleModuleStudyMaterialChange = (moduleId: string, fileList: FileList | null) => {
-    if (!fileList?.length) return;
-    const currentForm = moduleForms[moduleId] || buildInitialForm();
-    updateModuleForm(moduleId, {
-      studyMaterials: [...currentForm.studyMaterials, ...createStudyMaterialFiles(fileList)],
+      contentType: kind === "scorm" || kind === "zip" ? "scorm_upload" : "video_upload",
+      videoUrl: "",
+      contentFile: createStoredFile(file, kind),
     });
   };
 
@@ -302,19 +290,24 @@ export default function ModuleManagementDrawer({
     });
   };
 
-  const removeModuleStudyMaterial = (moduleId: string, materialId: string) => {
-    const currentForm = moduleForms[moduleId] || buildInitialForm();
-    updateModuleForm(moduleId, {
-      studyMaterials: currentForm.studyMaterials.filter((mat) => mat.id !== materialId),
-    });
-  };
-
   const removeSectionStudyMaterial = (moduleId: string, sectionId: string, materialId: string) => {
     const currentForm = moduleForms[moduleId] || buildInitialForm();
     const targetSection = currentForm.sections.find((s) => s.id === sectionId);
     if (!targetSection) return;
     updateSection(moduleId, sectionId, {
       studyMaterials: targetSection.studyMaterials.filter((mat) => mat.id !== materialId),
+    });
+  };
+
+  const addSectionStudyMaterialUrl = (moduleId: string, sectionId: string) => {
+    const url = window.prompt("Document URL");
+    if (!url?.trim()) return;
+    const currentForm = moduleForms[moduleId] || buildInitialForm();
+    const targetSection = currentForm.sections.find((s) => s.id === sectionId);
+    const material = createUrlStoredFile(url, "document", "Document URL");
+    if (!targetSection || !material) return;
+    updateSection(moduleId, sectionId, {
+      studyMaterials: [...targetSection.studyMaterials, material],
     });
   };
 
@@ -344,12 +337,33 @@ export default function ModuleManagementDrawer({
       const sectionsPayload: any[] = [];
       formState.sections.forEach((sec, idx) => {
         let contentFileName = "";
+        let contentPayload: any = null;
         if (sec.contentFile?.file) {
           contentFileName = sec.contentFile.file.name;
           const ext = sec.contentFile.file.name.split(".").pop()?.toLowerCase() || "";
           const isScorm = ext === "zip";
           const fieldName = isScorm ? "scormZip" : "contentMedia";
           formData.append(fieldName, sec.contentFile.file);
+        } else if (sec.contentType === "video_url" && sec.videoUrl.trim()) {
+          contentPayload = {
+            name: sec.title || `Section ${idx + 1} video URL`,
+            kind: "video",
+            mimeType: "video/url",
+            extension: null,
+            sizeInBytes: 0,
+            previewUrl: sec.videoUrl.trim(),
+            sourceType: "url",
+          };
+        } else if (sec.contentFile?.previewUrl) {
+          contentPayload = {
+            name: sec.contentFile.name,
+            kind: sec.contentFile.kind,
+            mimeType: sec.contentFile.type || "application/octet-stream",
+            extension: sec.contentFile.extension || null,
+            sizeInBytes: sec.contentFile.size || 0,
+            previewUrl: sec.contentFile.previewUrl,
+            sourceType: sec.contentFile.sourceType || "upload",
+          };
         }
 
         const sectionStudyMaterials: any[] = [];
@@ -358,7 +372,15 @@ export default function ModuleManagementDrawer({
             formData.append("studyMaterial", mat.file);
             sectionStudyMaterials.push({ name: mat.name, fileName: mat.file.name, kind: mat.kind });
           } else if (mat.previewUrl) {
-            sectionStudyMaterials.push({ name: mat.name, previewUrl: mat.previewUrl, kind: mat.kind });
+            sectionStudyMaterials.push({
+              name: mat.name,
+              previewUrl: mat.previewUrl,
+              kind: mat.kind,
+              mimeType: mat.type || (mat.sourceType === "url" ? "application/url" : "application/octet-stream"),
+              extension: mat.extension || null,
+              sizeInBytes: mat.size || 0,
+              sourceType: mat.sourceType || (mat.isUrl ? "url" : "upload"),
+            });
           }
         });
 
@@ -367,19 +389,9 @@ export default function ModuleManagementDrawer({
           description: sec.description || "",
           order: idx + 1,
           contentFileName,
-          previewUrl: sec.contentFile?.previewUrl || null,
+          content: contentPayload,
           studyMaterials: sectionStudyMaterials,
         });
-      });
-
-      const moduleStudyMaterialsPayload: any[] = [];
-      formState.studyMaterials.forEach((mat) => {
-        if (mat.file) {
-          formData.append("studyMaterial", mat.file);
-          moduleStudyMaterialsPayload.push({ name: mat.name, fileName: mat.file.name, kind: mat.kind });
-        } else if (mat.previewUrl) {
-          moduleStudyMaterialsPayload.push({ name: mat.name, previewUrl: mat.previewUrl, kind: mat.kind });
-        }
       });
 
       const payload = {
@@ -390,7 +402,7 @@ export default function ModuleManagementDrawer({
         hasQuiz: formState.hasQuiz,
         hasTest: formState.hasTest,
         quiz: formState.hasQuiz ? summarizeQuiz(formState.quiz, `${formState.name || "Module"} quiz`) : null,
-        studyMaterials: moduleStudyMaterialsPayload,
+        studyMaterials: [],
         sections: sectionsPayload,
       };
 
@@ -682,114 +694,6 @@ export default function ModuleManagementDrawer({
             </Box>
           </Box>
 
-          {/* Module resources */}
-          <Box
-            p={{ base: 4, md: 5 }}
-            borderRadius="2xl"
-            border="1px solid"
-            borderColor={borderColor}
-            bg={cardBg}
-            boxShadow="sm"
-          >
-            <PanelHeader
-              icon={<FiFileText size={18} />}
-              eyebrow="Step 2"
-              title="Module study materials"
-              description="Attach module-level PDF notes, handouts, guides, or worksheets."
-            />
-
-            <UploadBox>
-              <input
-                type="file"
-                multiple
-                accept="application/pdf,.pdf"
-                onChange={(e) => {
-                  handleModuleStudyMaterialChange(key, e.target.files);
-                  e.target.value = "";
-                }}
-                style={{ display: "none" }}
-              />
-
-              <Flex
-                w={11}
-                h={11}
-                align="center"
-                justify="center"
-                borderRadius="xl"
-                bg="blue.50"
-                color="blue.600"
-                flexShrink={0}
-              >
-                <FiUploadCloud size={20} />
-              </Flex>
-
-              <Box flex={1} minW={0}>
-                <Text fontSize="sm" fontWeight="semibold" color={textColor}>
-                  Upload PDF study materials
-                </Text>
-                <Text fontSize="xs" color={mutedText} mt={0.5}>
-                  Click to select one or more PDF files.
-                </Text>
-              </Box>
-
-              <Badge
-                colorScheme={formState.studyMaterials.length > 0 ? "blue" : "gray"}
-                variant="subtle"
-                borderRadius="full"
-                px={3}
-                py={1}
-                flexShrink={0}
-              >
-                {formState.studyMaterials.length} attached
-              </Badge>
-            </UploadBox>
-
-            {formState.studyMaterials.length > 0 && (
-              <VStack align="stretch" spacing={2} mt={3}>
-                {formState.studyMaterials.map((mat) => (
-                  <Flex
-                    key={mat.id}
-                    align="center"
-                    justify="space-between"
-                    gap={3}
-                    p={3}
-                    bg={sectionBg}
-                    borderRadius="xl"
-                    border="1px solid"
-                    borderColor={borderColor}
-                  >
-                    <HStack spacing={3} minW={0}>
-                      <Flex
-                        w={8}
-                        h={8}
-                        align="center"
-                        justify="center"
-                        borderRadius="lg"
-                        bg="blue.50"
-                        color="blue.600"
-                        flexShrink={0}
-                      >
-                        <FiFileText size={15} />
-                      </Flex>
-                      <Text fontSize="xs" fontWeight="semibold" color={textColor} isTruncated>
-                        {mat.name}
-                      </Text>
-                    </HStack>
-                    <Button
-                      size="xs"
-                      colorScheme="red"
-                      variant="ghost"
-                      onClick={() => removeModuleStudyMaterial(key, mat.id)}
-                      flexShrink={0}
-                    >
-                      Remove
-                    </Button>
-                  </Flex>
-                ))}
-              </VStack>
-            )}
-          </Box>
-
           {/* Sections */}
           <Box
             p={{ base: 4, md: 5 }}
@@ -801,9 +705,9 @@ export default function ModuleManagementDrawer({
           >
             <PanelHeader
               icon={<FiLayers size={18} />}
-              eyebrow="Step 3"
+              eyebrow="Step 2"
               title={`Module sections (${formState.sections.length})`}
-              description="Build the module lesson by lesson using SCORM packages or MP4 videos."
+              description="Build each section with one primary source: uploaded video, video URL, or SCORM package."
               action={
                 <Button
                   size="sm"
@@ -899,12 +803,54 @@ export default function ModuleManagementDrawer({
 
                       <Box>
                         <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={1.5}>
-                          Primary Lesson Content
+                          Content Type
                         </Text>
+                        <Select
+                          value={section.contentType}
+                          onChange={(e) =>
+                            updateSection(key, section.id, {
+                              contentType: e.target.value as CourseModuleSectionInput["contentType"],
+                              contentFile: null,
+                              videoUrl: "",
+                            })
+                          }
+                          borderRadius="xl"
+                          h="44px"
+                          bg={cardBg}
+                          focusBorderColor="blue.400"
+                        >
+                          <option value="video_upload">Video Upload</option>
+                          <option value="video_url">Video URL</option>
+                          <option value="scorm_upload">SCORM Upload</option>
+                        </Select>
+                      </Box>
+                    </SimpleGrid>
+
+                    <Box mt={5}>
+                      <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={1.5}>
+                        Primary Lesson Content
+                      </Text>
+                      {section.contentType === "video_url" ? (
+                        <Input
+                          placeholder="https://example.com/video.mp4"
+                          value={section.videoUrl}
+                          onChange={(e) =>
+                            updateSection(key, section.id, { videoUrl: e.target.value, contentFile: null })
+                          }
+                          borderRadius="xl"
+                          h="44px"
+                          bg={cardBg}
+                          focusBorderColor="blue.400"
+                        />
+                      ) : (
                         <UploadBox compact>
                           <input
                             type="file"
-                            accept="video/mp4,video/*,.zip,.scorm,application/zip"
+                            accept={
+                              section.contentType === "scorm_upload"
+                                ? ".zip,.scorm,application/zip,application/x-zip-compressed"
+                                : "video/mp4,video/*"
+                            }
                             onChange={(e) =>
                               handleSectionFileChange(key, section.id, e.target.files)
                             }
@@ -921,7 +867,7 @@ export default function ModuleManagementDrawer({
                             color="blue.600"
                             flexShrink={0}
                           >
-                            {section.contentFile?.kind === "video" ? (
+                            {section.contentType === "video_upload" ? (
                               <FiVideo size={17} />
                             ) : (
                               <FiUploadCloud size={17} />
@@ -937,12 +883,14 @@ export default function ModuleManagementDrawer({
                             >
                               {section.contentFile
                                 ? section.contentFile.name
-                                : "Upload a SCORM ZIP or MP4 video"}
+                                : section.contentType === "scorm_upload"
+                                  ? "Upload one SCORM ZIP"
+                                  : "Upload one video file"}
                             </Text>
                             <Text fontSize="10px" color={section.contentFile ? "blue.500" : mutedText} mt={0.5}>
                               {section.contentFile
                                 ? `${getFileKindLabel(section.contentFile.kind)} lesson ready`
-                                : "One primary lesson file per section"}
+                                : "One primary lesson source per section"}
                             </Text>
                           </Box>
 
@@ -962,8 +910,8 @@ export default function ModuleManagementDrawer({
                             </Button>
                           )}
                         </UploadBox>
-                      </Box>
-                    </SimpleGrid>
+                      )}
+                    </Box>
 
                     <Box mt={5}>
                       <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={1.5}>
@@ -989,46 +937,57 @@ export default function ModuleManagementDrawer({
                           Section Study Materials
                         </Text>
                         <Text fontSize="10px" color={mutedText}>
-                          PDF files only
+                          Upload document or add URL
                         </Text>
                       </Flex>
 
-                      <UploadBox compact>
-                        <input
-                          type="file"
-                          multiple
-                          accept="application/pdf,.pdf"
-                          onChange={(e) => {
-                            handleSectionStudyMaterialChange(key, section.id, e.target.files);
-                            e.target.value = "";
-                          }}
-                          style={{ display: "none" }}
-                        />
+                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+                        <UploadBox compact>
+                          <input
+                            type="file"
+                            multiple
+                            accept="application/pdf,.pdf"
+                            onChange={(e) => {
+                              handleSectionStudyMaterialChange(key, section.id, e.target.files);
+                              e.target.value = "";
+                            }}
+                            style={{ display: "none" }}
+                          />
 
-                        <Flex
-                          w={9}
-                          h={9}
-                          align="center"
-                          justify="center"
-                          borderRadius="lg"
-                          bg="blue.50"
-                          color="blue.600"
-                          flexShrink={0}
+                          <Flex
+                            w={9}
+                            h={9}
+                            align="center"
+                            justify="center"
+                            borderRadius="lg"
+                            bg="blue.50"
+                            color="blue.600"
+                            flexShrink={0}
+                          >
+                            <FiFileText size={16} />
+                          </Flex>
+
+                          <Box flex={1} minW={0}>
+                            <Text fontSize="xs" fontWeight="semibold" color={textColor}>
+                              Upload document
+                            </Text>
+                            <Text fontSize="10px" color={mutedText} mt={0.5}>
+                              {section.studyMaterials.length > 0
+                                ? `${section.studyMaterials.length} material(s) attached`
+                                : "Notes, worksheets, or references"}
+                            </Text>
+                          </Box>
+                        </UploadBox>
+                        <Button
+                          variant="outline"
+                          borderRadius="xl"
+                          h="full"
+                          minH="58px"
+                          onClick={() => addSectionStudyMaterialUrl(key, section.id)}
                         >
-                          <FiFileText size={16} />
-                        </Flex>
-
-                        <Box flex={1} minW={0}>
-                          <Text fontSize="xs" fontWeight="semibold" color={textColor}>
-                            Add PDF resources
-                          </Text>
-                          <Text fontSize="10px" color={mutedText} mt={0.5}>
-                            {section.studyMaterials.length > 0
-                              ? `${section.studyMaterials.length} file(s) attached`
-                              : "Notes, worksheets, or reference documents"}
-                          </Text>
-                        </Box>
-                      </UploadBox>
+                          Add Document URL
+                        </Button>
+                      </SimpleGrid>
 
                       {section.studyMaterials.length > 0 && (
                         <VStack align="stretch" spacing={2} mt={2.5}>

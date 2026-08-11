@@ -9,6 +9,7 @@ export type CourseLaunchSection = {
   moduleTitle: string;
   sectionId: string;
   sectionTitle: string;
+  sourceType?: "upload" | "url";
 };
 
 const courseAssetWarmups = new Map<string, Promise<void>>();
@@ -66,6 +67,7 @@ export function buildLaunchSection(moduleRecord: any, sectionRecord: any) {
     moduleTitle: String(moduleRecord?.title || "").trim() || `Module ${Number(moduleRecord?.order || 0) || 1}`,
     sectionId: deriveSectionId(moduleRecord, sectionRecord),
     sectionTitle: String(sectionRecord?.title || "").trim() || `Section ${Number(sectionRecord?.order || 0) || 1}`,
+    sourceType: sectionRecord?.content?.sourceType === "url" ? "url" : "upload",
   } satisfies CourseLaunchSection;
 }
 

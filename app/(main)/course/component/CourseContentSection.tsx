@@ -58,9 +58,11 @@ function normalizeMaterials(materials: unknown) {
   return Array.isArray(materials) ? materials.filter(Boolean) : [];
 }
 
-function getSectionTypeLabel(contentKind?: string | null) {
+function getSectionTypeLabel(contentKind?: string | null, sourceType?: string | null) {
   const normalizedKind = String(contentKind || "").trim().toLowerCase();
+  const normalizedSourceType = String(sourceType || "").trim().toLowerCase();
 
+  if (normalizedKind === "video" && normalizedSourceType === "url") return "Video URL";
   if (normalizedKind === "video") return "Video";
   if (normalizedKind === "document") return "Document";
   if (normalizedKind === "scorm" || normalizedKind === "zip") return "SCORM";
@@ -617,7 +619,12 @@ export default function CourseContentSection({
                         )
                           .trim()
                           .toLowerCase();
-                        const contentTypeLabel = getSectionTypeLabel(contentKind);
+                        const sourceType = String(
+                          sectionRecord?.content?.sourceType || ""
+                        )
+                          .trim()
+                          .toLowerCase();
+                        const contentTypeLabel = getSectionTypeLabel(contentKind, sourceType);
                         const SectionIcon = getSectionIcon(
                           contentKind,
                           sectionProgressMeta.state === "completed",

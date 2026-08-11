@@ -45,7 +45,6 @@ export interface CourseMaterialGroup {
   id: string;
   index: number;
   title: string;
-  moduleMaterials: CourseMaterialRecord[];
   sections: CourseMaterialSectionGroup[];
 }
 
@@ -73,7 +72,6 @@ export function buildCourseMaterialGroups(course: any): CourseMaterialGroup[] {
 
   return modules
     .map((moduleRecord: any, moduleIndex: number) => {
-      const moduleMaterials = normalizeMaterials(moduleRecord?.studyMaterial);
       const sections = (Array.isArray(moduleRecord?.sections)
         ? moduleRecord.sections
         : []
@@ -89,7 +87,7 @@ export function buildCourseMaterialGroups(course: any): CourseMaterialGroup[] {
             sectionRecord.materials.length > 0
         );
 
-      if (!moduleMaterials.length && !sections.length) {
+      if (!sections.length) {
         return null;
       }
 
@@ -102,7 +100,6 @@ export function buildCourseMaterialGroups(course: any): CourseMaterialGroup[] {
         ),
         index: moduleIndex + 1,
         title: String(moduleRecord?.title || `Module ${moduleIndex + 1}`),
-        moduleMaterials,
         sections,
       } satisfies CourseMaterialGroup;
     })
@@ -113,7 +110,6 @@ export function countCourseMaterials(groups: CourseMaterialGroup[]) {
   return groups.reduce(
     (total, group) =>
       total +
-      group.moduleMaterials.length +
       group.sections.reduce(
         (sectionTotal, section) => sectionTotal + section.materials.length,
         0
@@ -304,12 +300,6 @@ function groupMatchesSearch(group: CourseMaterialGroup, normalizedQuery: string)
 
   if (group.title.toLowerCase().includes(normalizedQuery)) return true;
 
-  const moduleMaterialMatch = group.moduleMaterials.some((material) =>
-    getMaterialName(material).toLowerCase().includes(normalizedQuery)
-  );
-
-  if (moduleMaterialMatch) return true;
-
   return group.sections.some(
     (section) =>
       section.title.toLowerCase().includes(normalizedQuery) ||
@@ -436,7 +426,6 @@ export default function CourseMaterialsSection({
         {filteredGroups.length ? (
           filteredGroups.map((group) => {
             const moduleMaterialCount =
-              group.moduleMaterials.length +
               group.sections.reduce(
                 (total, section) => total + section.materials.length,
                 0
@@ -490,29 +479,6 @@ export default function CourseMaterialsSection({
                 >
                   <div className="min-h-0 overflow-hidden">
                     <div className="space-y-4 border-t border-border/75 p-2.5 sm:p-4">
-                      {group.moduleMaterials.length ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between gap-2 px-1">
-                            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground sm:text-[10px]">
-                              Module files
-                            </p>
-                            <span className="text-[10px] text-muted-foreground">
-                              {group.moduleMaterials.length}
-                            </span>
-                          </div>
-
-                          <div className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-2">
-                            {group.moduleMaterials.map((material, materialIndex) => (
-                              <MaterialCard
-                                key={`${group.id}-module-${materialIndex}`}
-                                material={material}
-                                helperText={`Module material · ${group.title}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-
                       {group.sections.map((sectionGroup) => (
                         <div
                           key={sectionGroup.id}

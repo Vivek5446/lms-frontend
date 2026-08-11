@@ -58,11 +58,13 @@ function joinClasses(
   return classes.filter(Boolean).join(" ");
 }
 
-function getSectionTypeLabel(contentKind?: string | null) {
+function getSectionTypeLabel(contentKind?: string | null, sourceType?: string | null) {
   const normalizedKind = String(contentKind || "")
     .trim()
     .toLowerCase();
+  const normalizedSourceType = String(sourceType || "").trim().toLowerCase();
 
+  if (normalizedKind === "video" && normalizedSourceType === "url") return "Video URL";
   if (normalizedKind === "video") return "Video";
   if (normalizedKind === "document") return "Document";
   if (normalizedKind === "scorm" || normalizedKind === "zip") {
@@ -496,6 +498,11 @@ export default function CourseCurriculumPanel({
                         )
                           .trim()
                           .toLowerCase();
+                        const sourceType = String(
+                          sectionRecord?.content?.sourceType || ""
+                        )
+                          .trim()
+                          .toLowerCase();
                         const SectionIcon = getSectionIcon(
                           kind,
                           progressMeta.state === "completed",
@@ -569,7 +576,7 @@ export default function CourseCurriculumPanel({
                                   {moduleIndex + 1}.{sectionIndex + 1}
                                 </span>
                                 <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-semibold text-muted-foreground">
-                                  {getSectionTypeLabel(kind)}
+                                  {getSectionTypeLabel(kind, sourceType)}
                                 </span>
                                 <span
                                   className={joinClasses(
