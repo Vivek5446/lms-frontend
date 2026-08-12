@@ -1,58 +1,49 @@
 "use client";
 
+import StatCard from "@/app/component/common/StatCard/StatCard";
 import {
+  Avatar,
   Badge,
   Box,
   Button,
   Divider,
   Flex,
   HStack,
+  Icon,
+  IconButton,
   Input,
   InputGroup,
   InputLeftElement,
+  SimpleGrid,
+  Skeleton,
+  SkeletonCircle,
+  Stack,
   Tab,
   TabList,
   Tabs,
   Text,
   Tooltip,
-  VStack,
-  Avatar,
-  Icon,
-  IconButton,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  SimpleGrid,
-  Stack,
   useBreakpointValue,
   useColorModeValue,
-  StackDivider,
-  Skeleton,
-  SkeletonCircle,
-  SkeletonText,
+  VStack
 } from "@chakra-ui/react";
 import {
-  FiBriefcase,
-  FiMapPin,
-  FiUser,
-  FiUsers,
-  FiMail,
-  FiShield,
-  FiTrendingUp,
+  FiAward,
   FiCheckCircle,
   FiClock,
-  FiAward,
+  FiEdit2,
+  FiEye,
+  FiMail,
+  FiMapPin,
   FiSearch,
+  FiShield,
+  FiTrash2,
+  FiTrendingUp,
   FiUpload,
   FiUserPlus,
-  FiEye,
-  FiTrash2,
-  FiEdit2,
-  FiLayers
+  FiUsers
 } from "react-icons/fi";
 import CustomTable from "../../../component/config/component/CustomTable/CustomTable";
-import StatCard from "@/app/component/common/StatCard/StatCard";
 
 const COLORS = ["blue", "purple", "orange", "green", "pink", "cyan", "teal", "red"];
 
@@ -218,15 +209,15 @@ const UsersTable = ({
       metaData: {
         component: (user: any) => (
           <VStack align="start" spacing={0.5}>
-            <HStack spacing={1} fontSize="sm">
+            {/* <HStack spacing={1} fontSize="sm">
               <Icon as={FiBriefcase} boxSize={3} color="purple.500" />
               <Text fontWeight="medium" color={useColorModeValue("gray.700", "gray.200")}>
                 {user.department || "--"}
               </Text>
-            </HStack>
+            </HStack> */}
             <HStack spacing={1}>
               <Icon as={FiMapPin} boxSize={3} color={muted} />
-              <Text fontSize="xs" color={muted}>
+              <Text>
                 {[user.city, user.state].filter(Boolean).join(", ") || "No location"}
               </Text>
             </HStack>
@@ -405,34 +396,34 @@ const UsersTable = ({
       },
     },
 
-    {
-      headerName: "Security",
-      key: "passwordStatus",
-      type: "component",
-      width: "120px",
-      metaData: {
-        component: (user: any) => (
-          <Tooltip
-            label="Phone number + OTP authentication"
-            hasArrow
-          >
-            <Badge
-              variant="solid"
-              colorScheme="green"
-              px={2.5}
-              py={1}
-              borderRadius="full"
-              fontSize="xs"
-            >
-              <HStack spacing={1}>
-                <Icon as={FiShield} boxSize={3} />
-                <Text>Phone OTP</Text>
-              </HStack>
-            </Badge>
-          </Tooltip>
-        ),
-      },
-    },
+    // {
+    //   headerName: "Security",
+    //   key: "passwordStatus",
+    //   type: "component",
+    //   width: "120px",
+    //   metaData: {
+    //     component: (user: any) => (
+    //       <Tooltip
+    //         label="Phone number + OTP authentication"
+    //         hasArrow
+    //       >
+    //         <Badge
+    //           variant="solid"
+    //           colorScheme="green"
+    //           px={2.5}
+    //           py={1}
+    //           borderRadius="full"
+    //           fontSize="xs"
+    //         >
+    //           <HStack spacing={1}>
+    //             <Icon as={FiShield} boxSize={3} />
+    //             <Text>Phone OTP</Text>
+    //           </HStack>
+    //         </Badge>
+    //       </Tooltip>
+    //     ),
+    //   },
+    // },
     {
       headerName: "Actions",
       key: "table-actions",
