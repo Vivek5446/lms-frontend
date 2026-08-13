@@ -42,9 +42,10 @@ import {
   mixHexColors,
   normalizeHexColor,
 } from "@/app/theme/theme";
-import { useColorMode, useTheme } from "@chakra-ui/react";
+import { useColorMode, useTheme, useToast } from "@chakra-ui/react";
 import {
   Award,
+  Bookmark,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -413,6 +414,7 @@ export default function CourseDetails({
 }: CourseDetailsProps) {
   const { colorMode } = useColorMode();
   const theme = useTheme();
+  const toast = useToast();
 
   const {
     auth: { user },
@@ -445,6 +447,42 @@ export default function CourseDetails({
   const courseId = String(
     course?._id || course?.courseId || ""
   ).trim();
+  const isBookmarkLoading = courseStore.bookmarkActionCourseIds.includes(courseId);
+  const handleToggleBookmark = async () => {
+    if (!courseId || isBookmarkLoading) {
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Sign in to save courses to your profile.",
+        status: "info",
+        duration: 3500,
+      });
+      if (typeof window !== "undefined") {
+        window.location.assign(`/login?redirect=${encodeURIComponent(`/course?courseId=${courseId}`)}`);
+      }
+      return;
+    }
+
+    const nextState = !Boolean(course?.isBookmarked);
+    try {
+      await courseStore.toggleBookmark(courseId, nextState);
+      toast({
+        title: nextState ? "Course saved" : "Bookmark removed",
+        status: "success",
+        duration: 2200,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Bookmark update failed",
+        description: error?.message || error?.error || "Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
+  };
   const totalSections = Number(
     course?.curriculum?.totalSections || 0
   );
@@ -1333,6 +1371,26 @@ export default function CourseDetails({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleBookmark}
+              disabled={isBookmarkLoading}
+              className={joinClasses(
+                "inline-flex h-10 items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-70",
+                course?.isBookmarked
+                  ? "border-rose-500 bg-rose-500 text-white shadow-[0_10px_22px_rgba(244,63,94,0.22)]"
+                  : "border-border bg-card text-foreground hover:bg-muted"
+              )}
+            >
+              <Bookmark
+                className={joinClasses(
+                  "h-4 w-4 transition-transform",
+                  course?.isBookmarked && "scale-110 fill-current"
+                )}
+              />
+              {course?.isBookmarked ? "Saved" : "Save"}
+            </button>
+
             {onEditCourse ? (
               <button
                 type="button"

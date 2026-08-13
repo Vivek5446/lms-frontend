@@ -154,12 +154,6 @@ function buildFormFromUser(user: any, personalInfo: any) {
   };
 }
 
-const dummyBookmarks = [
-  { title: "React 19 & Next.js Server Components", author: "Sarah Connor", category: "Development", pct: 45 },
-  { title: "Figma Advanced Component Design", author: "Alex Rivera", category: "Design", pct: 80 },
-  { title: "Data Driven Growth Marketing", author: "Michael Chang", category: "Marketing", pct: 15 },
-];
-
 const dummyTeamMembers = [
   { name: "Alex Lawson", role: "Frontend Lead", email: "alex@learnhub.io", status: "Active" },
   { name: "David Miller", role: "Backend Developer", email: "david@learnhub.io", status: "Active" },
@@ -201,6 +195,7 @@ const ProfilePage: React.FC = observer(() => {
   useEffect(() => {
     if (!user?._id) return;
     void courseStore.fetchMyCertificates().catch(() => undefined);
+    void courseStore.fetchBookmarks().catch(() => undefined);
   }, [courseStore, user?._id]);
 
   useEffect(() => {
@@ -208,6 +203,18 @@ const ProfilePage: React.FC = observer(() => {
     setCertificateDownloadError(null);
     void courseStore.fetchMyCertificates().catch(() => undefined);
   }, [activeModal, courseStore, user?._id]);
+
+  useEffect(() => {
+    if (activeModal !== "bookmarks" || !user?._id) return;
+    void courseStore.fetchBookmarks().catch((error) => {
+      toast({
+        title: "Unable to load bookmarks",
+        description: error?.message || error?.error || "Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    });
+  }, [activeModal, courseStore, toast, user?._id]);
 
   const fullName = `${form.firstName} ${form.lastName}`.trim() || s(user?.name) || "Learner";
   const location = [form.city, form.state, form.country].filter(Boolean).join(", ");
@@ -743,33 +750,121 @@ const ProfilePage: React.FC = observer(() => {
     )}
   </VStack>
 );
+  const bookmarkedCourses = courseStore.bookmarkedCourses || [];
+  const openBookmarkedCourse = (course: any) => {
+    const courseId = String(course?._id || course?.courseId || "").trim();
+    if (!courseId) return;
+    setActiveModal(null);
+    router.push(`/course?courseId=${courseId}`);
+  };
+  const removeBookmarkedCourse = async (course: any) => {
+    const courseId = String(course?._id || course?.courseId || "").trim();
+    if (!courseId) return;
+
+    try {
+      await courseStore.unbookmarkCourse(courseId);
+      toast({
+        title: "Bookmark removed",
+        status: "success",
+        duration: 2200,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Unable to remove bookmark",
+        description: error?.message || error?.error || "Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
+  };
+
   const renderBookmarksContent = (
     <VStack spacing={3} align="stretch">
-      {dummyBookmarks.map((bm, i) => (
+      {courseStore.isBookmarksLoading ? (
+        <HStack justify="center" py={8}>
+          <Spinner size="sm" />
+          <Text fontSize="sm" color={isDark ? "gray.400" : "gray.500"}>
+            Loading saved courses...
+          </Text>
+        </HStack>
+      ) : bookmarkedCourses.length === 0 ? (
         <div
-          key={i}
-          className={`flex items-center gap-3 p-3.5 rounded-2xl border ${
-            isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
+          className={`rounded-2xl border p-5 text-center ${
+            isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-50"
           }`}
         >
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-            <BookOpen className="h-6 w-6" />
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-rose-500/10 text-rose-500">
+            <Bookmark className="h-6 w-6" />
           </div>
-          <div className="min-w-0 flex-1">
-            <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-[9px] font-bold text-purple-600 dark:text-purple-400">
-              {bm.category}
-            </span>
-            <h4 className="mt-1 truncate text-xs font-bold">{bm.title}</h4>
-            <p className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{bm.author}</p>
-          </div>
+          <h4 className="mt-3 text-sm font-extrabold">No bookmarked courses yet</h4>
+          <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            Save courses from the catalog and they will appear here for quick access.
+          </p>
           <button
-            onClick={() => router.push("/course")}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 active:scale-95"
+            type="button"
+            onClick={() => {
+              setActiveModal(null);
+              router.push("/course");
+            }}
+            className="mt-4 inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white transition active:scale-95 dark:bg-slate-100 dark:text-slate-900"
           >
-            <Play className="h-4 w-4 fill-current ml-0.5" />
+            <BookOpen className="h-4 w-4" />
+            Explore courses
           </button>
         </div>
-      ))}
+      ) : (
+        bookmarkedCourses.map((course) => {
+          const courseId = String(course?._id || course?.courseId || "").trim();
+          const category = course?.taxonomy?.categories?.[0] || "General";
+          const progress = Math.max(0, Math.min(100, Math.round(Number(course?.progress || 0))));
+          const isRemoving = courseStore.bookmarkActionCourseIds.includes(courseId);
+
+          return (
+            <div
+              key={courseId || course.bookmarkId}
+              className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-200 ${
+                isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-slate-50 border-slate-200/80"
+              }`}
+            >
+              {course?.thumbnailUrl ? (
+                <img
+                  src={course.thumbnailUrl}
+                  alt={course.title}
+                  className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                />
+              ) : (
+                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-rose-500 to-indigo-600 text-white">
+                  <BookOpen className="h-6 w-6" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[9px] font-bold text-rose-600 dark:text-rose-300">
+                  {category}
+                </span>
+                <h4 className="mt-1 truncate text-xs font-bold">{course.title}</h4>
+                <p className={`truncate text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  {course?.instructor?.name || "Instructor"} {progress > 0 ? `- ${progress}% complete` : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={isRemoving}
+                onClick={() => void removeBookmarkedCourse(course)}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-rose-500/10 text-rose-600 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:text-rose-300"
+              >
+                {isRemoving ? <Spinner size="xs" color="currentColor" /> : <Bookmark className="h-4 w-4 fill-current" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => openBookmarkedCourse(course)}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 active:scale-95"
+              >
+                <Play className="h-4 w-4 fill-current ml-0.5" />
+              </button>
+            </div>
+          );
+        })
+      )}
     </VStack>
   );
 
@@ -957,7 +1052,7 @@ const ProfilePage: React.FC = observer(() => {
               {[
                 { label: "Certificates", value: courseStore.isMyCertificatesLoading ? "—" : courseStore.myCertificates.length, icon: Award, bgDark: "linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.05) 100%)", bgLight: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)", iconBg: "rgba(59,130,246,0.2)", iconColor: "#2563EB" },
                 { label: "Quizzes", value: stores.quizStore.myAttempts.length, icon: Edit2, bgDark: "linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%)", bgLight: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)", iconBg: "rgba(16,185,129,0.2)", iconColor: "#059669" },
-                { label: "Bookmarks", value: 3, icon: Bookmark, bgDark: "linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(147,51,234,0.05) 100%)", bgLight: "linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)", iconBg: "rgba(168,85,247,0.2)", iconColor: "#9333EA" },
+                { label: "Bookmarks", value: courseStore.isBookmarksLoading ? "—" : bookmarkedCourses.length, icon: Bookmark, bgDark: "linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(147,51,234,0.05) 100%)", bgLight: "linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)", iconBg: "rgba(168,85,247,0.2)", iconColor: "#9333EA" },
                 { label: "Avg Rating", value: "4.8", icon: Star, bgDark: "linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(217,119,6,0.05) 100%)", bgLight: "linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)", iconBg: "rgba(245,158,11,0.2)", iconColor: "#D97706" }
               ].map((stat, i) => (
                 <Box key={i} bg={isDark ? stat.bgDark : stat.bgLight} p={6} borderRadius="3xl" position="relative" overflow="hidden" boxShadow={isDark ? "none" : "0 4px 15px rgba(0,0,0,0.02)"} transition="all 0.3s" _hover={{ transform: "translateY(-4px)", shadow: isDark ? "0 10px 30px rgba(0,0,0,0.2)" : "0 10px 30px rgba(0,0,0,0.08)" }}>
