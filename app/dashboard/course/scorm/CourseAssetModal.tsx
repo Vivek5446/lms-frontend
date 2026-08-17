@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Download, ExternalLink, FileText, RotateCcw, Video, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LaunchContentKind } from "./sectionTracking";
+import { LaunchContentKind, useProtectedCourseAssetUrl } from "./sectionTracking";
 
 const VIDEO_PROGRESS_SYNC_INTERVAL_MS = 30000;
 
@@ -9,6 +9,9 @@ interface CourseAssetModalProps {
   assetUrl: string;
   assetKind: LaunchContentKind;
   title: string;
+  courseId?: string;
+  moduleId?: string;
+  sectionId?: string;
   displayMode?: "modal" | "inline";
   showHeader?: boolean;
   showCloseButton?: boolean;
@@ -25,6 +28,9 @@ export default function CourseAssetModal({
   assetUrl,
   assetKind,
   title,
+  courseId,
+  moduleId,
+  sectionId,
   displayMode = "modal",
   showHeader = true,
   showCloseButton = true,
@@ -44,6 +50,16 @@ export default function CourseAssetModal({
   const onOpenedRef = useRef(onOpened);
   const onCompletedRef = useRef(onCompleted);
   const onProgressUpdateRef = useRef(onProgressUpdate);
+  const {
+    assetUrl: protectedAssetUrl,
+    isLoading: isProtectedAssetLoading,
+    error: protectedAssetError,
+    reload: reloadProtectedAssetUrl,
+  } = useProtectedCourseAssetUrl(assetUrl, {
+    courseId,
+    moduleId,
+    sectionId,
+  });
   const [showStartOver, setShowStartOver] = useState(initialProgress >= 100);
   const isInline = displayMode === "inline";
 
@@ -60,6 +76,41 @@ export default function CourseAssetModal({
     lastUpdateRef.current = 0;
     setShowStartOver(initialProgress >= 100);
   }, [assetUrl, initialProgress]);
+
+  useEffect(() => {
+    if (assetKind !== "video" || !videoRef.current) {
+      return;
+    }
+
+    const video = videoRef.current;
+    const enforceNormalPlaybackRate = () => {
+      if (video.defaultPlaybackRate !== 1) {
+        video.defaultPlaybackRate = 1;
+      }
+
+      if (video.playbackRate !== 1) {
+        video.playbackRate = 1;
+      }
+    };
+    const preventRateShortcut = (event: KeyboardEvent) => {
+      if (["<", ">", ",", ".", "[", "]"].includes(event.key)) {
+        event.preventDefault();
+        event.stopPropagation();
+        enforceNormalPlaybackRate();
+      }
+    };
+
+    enforceNormalPlaybackRate();
+    video.addEventListener("ratechange", enforceNormalPlaybackRate);
+    video.addEventListener("loadedmetadata", enforceNormalPlaybackRate);
+    window.addEventListener("keydown", preventRateShortcut, true);
+
+    return () => {
+      video.removeEventListener("ratechange", enforceNormalPlaybackRate);
+      video.removeEventListener("loadedmetadata", enforceNormalPlaybackRate);
+      window.removeEventListener("keydown", preventRateShortcut, true);
+    };
+  }, [assetKind, protectedAssetUrl]);
 
   useEffect(() => {
     if (displayMode !== "modal") {
@@ -203,19 +254,64 @@ export default function CourseAssetModal({
   };
 
   const renderContent = () => {
+    if (isProtectedAssetLoading) {
+      return (
+        <div className="flex h-full w-full items-center justify-center bg-background p-6 text-center">
+          <div className="max-w-sm space-y-3">
+            <p className="text-sm font-semibold text-foreground">
+              Preparing secure lesson access...
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Your lesson asset is being authorized before playback starts.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!protectedAssetUrl) {
+      return (
+        <div className="flex h-full w-full items-center justify-center bg-background p-6 text-center">
+          <div className="max-w-sm space-y-4">
+            <p className="text-sm font-semibold text-foreground">
+              Lesson asset unavailable
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {protectedAssetError || "We could not authorize this lesson asset."}
+            </p>
+            <button
+              type="button"
+              onClick={reloadProtectedAssetUrl}
+              className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     if (assetKind === "video") {
       return (
-        <div className="relative flex-1 overflow-hidden bg-black">
+        <div
+          className="relative flex-1 overflow-hidden bg-black"
+          onContextMenu={(event) => event.preventDefault()}
+        >
           <video
             ref={videoRef}
-            src={assetUrl}
+            src={protectedAssetUrl}
             controls
             autoPlay
+            playsInline
+            controlsList="nodownload noplaybackrate noremoteplayback"
+            disablePictureInPicture
+            disableRemotePlayback
             className="h-full w-full object-contain"
             onLoadedMetadata={handleLoadedMetadata}
             onTimeUpdate={handleTimeUpdate}
             onPause={handlePause}
             onEnded={handleCompleted}
+            onContextMenu={(event) => event.preventDefault()}
           />
           {showStartOver && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-3 backdrop-blur-sm">
@@ -246,9 +342,10 @@ export default function CourseAssetModal({
     if (assetKind === "document") {
       return (
         <iframe
-          src={assetUrl}
+          src={protectedAssetUrl}
           title={title}
           className="h-full w-full bg-white"
+          referrerPolicy="no-referrer"
         />
       );
     }
@@ -267,21 +364,13 @@ export default function CourseAssetModal({
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
-              href={assetUrl}
+              href={protectedAssetUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
             >
               <ExternalLink className="h-4 w-4" />
               Open File
-            </a>
-            <a
-              href={assetUrl}
-              download
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
-            >
-              <Download className="h-4 w-4" />
-              Download
             </a>
           </div>
         </div>
@@ -355,31 +444,21 @@ export default function CourseAssetModal({
               </div>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
-              <a
-                href={assetUrl}
-                target="_blank"
-                rel="noreferrer"
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
-                  isInline
-                    ? "border-border bg-background text-foreground hover:bg-muted"
-                    : "border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Open</span>
-              </a>
-              <a
-                href={assetUrl}
-                download
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
-                  isInline
-                    ? "border-border bg-background text-foreground hover:bg-muted"
-                    : "border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <Download className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Download</span>
-              </a>
+              {assetKind !== "video" && protectedAssetUrl ? (
+                <a
+                  href={protectedAssetUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95 ${
+                    isInline
+                      ? "border-border bg-background text-foreground hover:bg-muted"
+                      : "border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Open</span>
+                </a>
+              ) : null}
               {showCloseButton ? (
                 <button
                   type="button"

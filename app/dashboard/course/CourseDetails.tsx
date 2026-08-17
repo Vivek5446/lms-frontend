@@ -27,7 +27,6 @@ import {
 } from "@/app/dashboard/course/scorm/quizReviewTypes";
 import type { CourseLaunchSection } from "@/app/dashboard/course/scorm/sectionTracking";
 import {
-  buildCourseAssetUrl,
   buildLaunchSection,
   deriveModuleId,
   deriveSectionId,
@@ -439,6 +438,9 @@ export default function CourseDetails({
       )
   );
   const isSelfSignupLearner = !Boolean(user?.createdBy);
+  const hidePreviewAvailableBadge = Boolean(
+    isAssignedCourseView || isSelfEnrolledCourseView
+  );
   const shouldUseDefaultLearnerTheme = Boolean(
     canSelfEnroll ||
       isSelfEnrolledCourseView ||
@@ -1244,6 +1246,7 @@ export default function CourseDetails({
         badge: totalMaterialCount || undefined,
         content: (
           <CourseMaterialsSection
+            courseId={courseId}
             materialGroups={materialGroups}
             initiallyExpandedModules={1}
           />
@@ -1545,9 +1548,7 @@ export default function CourseDetails({
                         courseTitle={
                           activeLaunchSection.sectionTitle
                         }
-                        courseUrl={buildCourseAssetUrl(
-                          activeLaunchSection.assetPath
-                        )}
+                        courseUrl={activeLaunchSection.assetPath}
                         moduleId={
                           activeLaunchSection.moduleId
                         }
@@ -1573,12 +1574,13 @@ export default function CourseDetails({
                         displayMode="inline"
                         showHeader={false}
                         showCloseButton={false}
+                        courseId={courseId}
+                        moduleId={activeLaunchSection.moduleId}
+                        sectionId={activeLaunchSection.sectionId}
                         assetKind={
                           activeLaunchSection.contentKind
                         }
-                        assetUrl={buildCourseAssetUrl(
-                          activeLaunchSection.assetPath
-                        )}
+                        assetUrl={activeLaunchSection.assetPath}
                         title={
                           activeLaunchSection.sectionTitle
                         }
@@ -1698,6 +1700,9 @@ export default function CourseDetails({
                 }
                 totalModuleCount={totalModuleCount}
                 totalLessonCount={totalLessonCount}
+                hidePreviewAvailableBadge={
+                  hidePreviewAvailableBadge
+                }
                 onLoadSections={loadSectionsForModule}
                 onLoadMoreModules={loadMoreModules}
                 onSelectSection={handleSelectSection}
@@ -1751,6 +1756,9 @@ export default function CourseDetails({
           activeSectionId={activeLaunchSection?.sectionId || null}
           totalModuleCount={totalModuleCount}
           totalLessonCount={totalLessonCount}
+          hidePreviewAvailableBadge={
+            hidePreviewAvailableBadge
+          }
           onLoadSections={loadSectionsForModule}
           onLoadMoreModules={loadMoreModules}
           onSelectSection={handleSelectSection}

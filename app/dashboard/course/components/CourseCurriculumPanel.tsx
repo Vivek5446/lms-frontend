@@ -33,6 +33,7 @@ interface CourseCurriculumPanelProps {
   courseQuizzes?: CourseQuizForLearner[];
   isAssignedCourseView: boolean;
   canSelfEnroll?: boolean;
+  hidePreviewAvailableBadge?: boolean;
   isLoadingModules?: boolean;
   hasMoreModules?: boolean;
   moduleProgressMap: ReadonlyMap<string, any>;
@@ -185,6 +186,7 @@ export default function CourseCurriculumPanel({
   courseQuizzes = [],
   isAssignedCourseView,
   canSelfEnroll = false,
+  hidePreviewAvailableBadge = false,
   isLoadingModules = false,
   hasMoreModules = false,
   moduleProgressMap,
@@ -406,7 +408,8 @@ export default function CourseCurriculumPanel({
                         {sectionCount} lesson
                         {sectionCount === 1 ? "" : "s"}
                       </span>
-                      {moduleRecord?.isFreePreview ? (
+                      {moduleRecord?.isFreePreview &&
+                      !hidePreviewAvailableBadge ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
                           Preview available
                         </span>

@@ -1,6 +1,10 @@
 "use client";
 
-import { buildCourseAssetUrl } from "@/app/dashboard/course/scorm/sectionTracking";
+import {
+  deriveModuleId,
+  deriveSectionId,
+  useProtectedCourseAssetUrl,
+} from "@/app/dashboard/course/scorm/sectionTracking";
 import {
   Archive,
   ChevronDown,
@@ -38,6 +42,8 @@ export interface CourseMaterialSectionGroup {
   id: string;
   title: string;
   label: string;
+  moduleId?: string;
+  sectionId?: string;
   materials: CourseMaterialRecord[];
 }
 
@@ -50,6 +56,7 @@ export interface CourseMaterialGroup {
 
 interface CourseMaterialsSectionProps {
   course?: any;
+  courseId?: string;
   materialGroups?: CourseMaterialGroup[];
   className?: string;
   initiallyExpandedModules?: number;
@@ -80,6 +87,8 @@ export function buildCourseMaterialGroups(course: any): CourseMaterialGroup[] {
           id: `${moduleIndex + 1}-${sectionIndex + 1}`,
           title: String(sectionRecord?.title || `Section ${sectionIndex + 1}`),
           label: `Section ${moduleIndex + 1}.${sectionIndex + 1}`,
+          moduleId: deriveModuleId(moduleRecord),
+          sectionId: deriveSectionId(moduleRecord, sectionRecord),
           materials: normalizeMaterials(sectionRecord?.studyMaterial),
         }))
         .filter(
@@ -127,11 +136,6 @@ function getRawMaterialPath(material: CourseMaterialRecord) {
       material?.file ||
       ""
   ).trim();
-}
-
-function getMaterialUrl(material: CourseMaterialRecord) {
-  const rawPath = getRawMaterialPath(material);
-  return rawPath ? buildCourseAssetUrl(rawPath) : "";
 }
 
 function getMaterialName(material: CourseMaterialRecord) {
@@ -223,10 +227,25 @@ function formatMaterialSize(material: CourseMaterialRecord) {
 interface MaterialCardProps {
   material: CourseMaterialRecord;
   helperText: string;
+  courseId?: string;
+  moduleId?: string;
+  sectionId?: string;
 }
 
-function MaterialCard({ material, helperText }: MaterialCardProps) {
-  const materialUrl = getMaterialUrl(material);
+function MaterialCard({
+  material,
+  helperText,
+  courseId,
+  moduleId,
+  sectionId,
+}: MaterialCardProps) {
+  const rawMaterialPath = getRawMaterialPath(material);
+  const { assetUrl: materialUrl, isLoading: isMaterialUrlLoading } =
+    useProtectedCourseAssetUrl(rawMaterialPath, {
+      courseId,
+      moduleId,
+      sectionId,
+    });
   const materialName = getMaterialName(material);
   const extension = getMaterialExtension(material).toUpperCase();
   const formattedSize = formatMaterialSize(material);
@@ -285,6 +304,10 @@ function MaterialCard({ material, helperText }: MaterialCardProps) {
               <span>Download</span>
             </a>
           </>
+        ) : isMaterialUrlLoading ? (
+          <span className="col-span-2 rounded-xl bg-muted px-3 py-2 text-center text-[10px] text-muted-foreground sm:ml-auto sm:text-[11px]">
+            Securing material link...
+          </span>
         ) : (
           <span className="col-span-2 rounded-xl bg-muted px-3 py-2 text-center text-[10px] text-muted-foreground sm:ml-auto sm:text-[11px]">
             Material link unavailable
@@ -311,6 +334,7 @@ function groupMatchesSearch(group: CourseMaterialGroup, normalizedQuery: string)
 
 export default function CourseMaterialsSection({
   course,
+  courseId,
   materialGroups,
   className,
   initiallyExpandedModules = 1,
@@ -504,6 +528,9 @@ export default function CourseMaterialsSection({
                               <MaterialCard
                                 key={`${sectionGroup.id}-${materialIndex}`}
                                 material={material}
+                                courseId={courseId || String(course?._id || course?.courseId || "")}
+                                moduleId={sectionGroup.moduleId}
+                                sectionId={sectionGroup.sectionId}
                                 helperText={`Lesson material · ${sectionGroup.title}`}
                               />
                             ))}

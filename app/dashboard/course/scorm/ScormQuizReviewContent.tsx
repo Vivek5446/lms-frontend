@@ -35,7 +35,7 @@ import {
   ScormInteractionReview,
   summarizeAnswerSections,
 } from "./quizReviewTypes";
-import { buildCourseAssetUrl } from "./sectionTracking";
+import { getProtectedCourseAssetUrl } from "./sectionTracking";
 
 type ScormQuizReviewContentProps = {
   sections: ScormAnswerSectionRecord[];
@@ -246,11 +246,59 @@ function AnswerBlock({
   );
 }
 
-function QuestionPromptAssets({ assetPaths = [] }: { assetPaths?: string[] }) {
+function QuestionPromptAssets({
+  assetPaths = [],
+  courseId,
+  moduleId,
+  sectionId,
+}: {
+  assetPaths?: string[];
+  courseId?: string;
+  moduleId?: string;
+  sectionId?: string;
+}) {
   const border = useColorModeValue("gray.200", "gray.700");
   const normalizedPaths = Array.from(
     new Set(assetPaths.map((assetPath) => String(assetPath || "").trim()).filter(Boolean))
   );
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const normalizedPathKey = normalizedPaths.join("||");
+
+  useEffect(() => {
+    if (!normalizedPaths.length) {
+      setResolvedUrls({});
+      return;
+    }
+
+    let isActive = true;
+
+    Promise.all(
+      normalizedPaths.map(async (assetPath) => [
+        assetPath,
+        await getProtectedCourseAssetUrl(assetPath, {
+          courseId,
+          moduleId,
+          sectionId,
+        }),
+      ] as const)
+    )
+      .then((entries) => {
+        if (!isActive) {
+          return;
+        }
+
+        setResolvedUrls(Object.fromEntries(entries));
+      })
+      .catch(() => {
+        if (isActive) {
+          setResolvedUrls({});
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [courseId, moduleId, normalizedPathKey, normalizedPaths, sectionId]);
 
   if (!normalizedPaths.length) {
     return null;
@@ -261,7 +309,7 @@ function QuestionPromptAssets({ assetPaths = [] }: { assetPaths?: string[] }) {
       {normalizedPaths.map((assetPath) => (
         <Box key={assetPath} borderWidth="1px" borderColor={border} borderRadius="xl" overflow="hidden">
           <Image
-            src={buildCourseAssetUrl(assetPath)}
+            src={resolvedUrls[assetPath] || undefined}
             alt="SCORM question prompt"
             width="100%"
             maxH="360px"
@@ -669,7 +717,12 @@ export default function ScormQuizReviewContent({
 
                                 <AccordionPanel px={useCompactLayout ? 2.5 : 4} pb={useCompactLayout ? 2.5 : 4} pt={0}>
                                   <Stack spacing={3}>
-                                    <QuestionPromptAssets assetPaths={interaction.questionAssetPaths} />
+                                    <QuestionPromptAssets
+                                      assetPaths={interaction.questionAssetPaths}
+                                      courseId={section.courseId}
+                                      moduleId={section.moduleId}
+                                      sectionId={section.sectionId}
+                                    />
 
                                     <Grid
                                       templateColumns={{

@@ -32,6 +32,7 @@ interface CourseContentSectionProps {
   courseQuizzes?: CourseQuizForLearner[];
   isAssignedCourseView: boolean;
   canSelfEnroll?: boolean;
+  hidePreviewAvailableBadge?: boolean;
   isLoadingModules?: boolean;
   hasMoreModules?: boolean;
   moduleProgressMap: ReadonlyMap<string, any>;
@@ -255,6 +256,7 @@ export default function CourseContentSection({
   courseQuizzes = [],
   isAssignedCourseView,
   canSelfEnroll = false,
+  hidePreviewAvailableBadge = false,
   isLoadingModules = false,
   hasMoreModules = false,
   moduleProgressMap,
@@ -495,7 +497,7 @@ export default function CourseContentSection({
                         {moduleProgressMeta.label}
                       </span>
                     ) : null}
-                    {moduleRecord?.isFreePreview ? (
+                    {moduleRecord?.isFreePreview && !hidePreviewAvailableBadge ? (
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 sm:text-[10px]">
                         Preview available
                       </span>
