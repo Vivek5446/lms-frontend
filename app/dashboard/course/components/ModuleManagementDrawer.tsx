@@ -18,6 +18,7 @@ import {
   Flex,
   HStack,
   Heading,
+  Image,
   IconButton,
   Input,
   Progress,
@@ -40,6 +41,7 @@ import {
   FiClipboard,
   FiFileText,
   FiInfo,
+  FiImage,
   FiLayers,
   FiLoader,
   FiLock,
@@ -79,6 +81,7 @@ interface ModuleManagementDrawerProps {
 interface FullModuleFormState {
   name: string;
   description: string;
+  thumbnail: StoredFile | null;
   isFreePreview: boolean;
   hasQuiz: boolean;
   hasTest: boolean;
@@ -132,6 +135,7 @@ export default function ModuleManagementDrawer({
       return {
         name: "",
         description: "",
+        thumbnail: null,
         isFreePreview: isCourseFree,
         hasQuiz: false,
         hasTest: false,
@@ -175,6 +179,17 @@ export default function ModuleManagementDrawer({
     return {
       name: mod.title || "",
       description: mod.summary || "",
+      thumbnail: mod.thumbnailUrl
+        ? createExistingStoredFile(
+            {
+              name: "Module thumbnail",
+              kind: "image",
+              mimeType: "image/*",
+              previewUrl: mod.thumbnailUrl,
+            },
+            "Module thumbnail"
+          )
+        : null,
       isFreePreview: Boolean(mod.isFreePreview),
       hasQuiz: Boolean(mod.assessments?.quizEnabled || mappedQuiz.questions.length > 0),
       hasTest: Boolean(mod.assessments?.testEnabled),
@@ -280,6 +295,15 @@ export default function ModuleManagementDrawer({
     });
   };
 
+  const handleModuleThumbnailChange = (moduleId: string, fileList: FileList | null) => {
+    const file = fileList?.[0];
+    if (!file) return;
+
+    updateModuleForm(moduleId, {
+      thumbnail: createStoredFile(file, "image", URL.createObjectURL(file)),
+    });
+  };
+
   const handleSectionStudyMaterialChange = (moduleId: string, sectionId: string, fileList: FileList | null) => {
     if (!fileList?.length) return;
     const currentForm = moduleForms[moduleId] || buildInitialForm();
@@ -333,6 +357,10 @@ export default function ModuleManagementDrawer({
 
     try {
       const formData = new FormData();
+
+      if (formState.thumbnail?.file) {
+        formData.append("moduleThumbnail", formState.thumbnail.file);
+      }
 
       const sectionsPayload: any[] = [];
       formState.sections.forEach((sec, idx) => {
@@ -398,6 +426,7 @@ export default function ModuleManagementDrawer({
         moduleId: isNew ? undefined : targetModuleId,
         name: formState.name,
         description: formState.description,
+        thumbnailUrl: formState.thumbnail?.file ? "" : formState.thumbnail?.previewUrl || "",
         isFreePreview: formState.isFreePreview,
         hasQuiz: formState.hasQuiz,
         hasTest: formState.hasTest,
@@ -676,6 +705,76 @@ export default function ModuleManagementDrawer({
 </Box>
               
             </SimpleGrid>
+
+            <Box mt={5}>
+              <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={1.5}>
+                Module Thumbnail
+              </Text>
+              <UploadBox compact>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleModuleThumbnailChange(key, e.target.files)}
+                  style={{ display: "none" }}
+                />
+
+                <Flex
+                  w="64px"
+                  h="44px"
+                  align="center"
+                  justify="center"
+                  flexShrink={0}
+                  borderRadius="lg"
+                  overflow="hidden"
+                  bg="blue.50"
+                  color="blue.600"
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  {formState.thumbnail?.previewUrl ? (
+                    <Image
+                      src={formState.thumbnail.previewUrl}
+                      alt={formState.thumbnail.name || "Module thumbnail"}
+                      w="full"
+                      h="full"
+                      objectFit="cover"
+                    />
+                  ) : (
+                    <FiImage size={18} />
+                  )}
+                </Flex>
+
+                <Box flex={1} minW={0}>
+                  <Text
+                    fontSize="xs"
+                    fontWeight={formState.thumbnail ? "semibold" : "normal"}
+                    color={formState.thumbnail ? textColor : mutedText}
+                    isTruncated
+                  >
+                    {formState.thumbnail?.name || "Add an optional module thumbnail"}
+                  </Text>
+                  <Text fontSize="10px" color={formState.thumbnail ? "blue.500" : mutedText} mt={0.5}>
+                    {formState.thumbnail ? "Thumbnail ready" : "Used in the course player after learners start this module"}
+                  </Text>
+                </Box>
+
+                {formState.thumbnail && (
+                  <Button
+                    size="xs"
+                    colorScheme="red"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      updateModuleForm(key, { thumbnail: null });
+                    }}
+                    flexShrink={0}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </UploadBox>
+            </Box>
 
             <Box mt={5}>
               <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={1.5}>

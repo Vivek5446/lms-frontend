@@ -1053,6 +1053,73 @@ export default function CourseDetails({
   const currentSectionLabel =
     currentLaunchSection?.sectionTitle ||
     "Choose a lesson to begin";
+  const courseThumbnailUrl = String(course?.thumbnailUrl || "").trim();
+  const hasStartedCourse = useMemo(() => {
+    if (!isAssignedCourseView) {
+      return false;
+    }
+
+    if (Number(course?.progress || 0) > 0) {
+      return true;
+    }
+
+    return progressModules.some((moduleRecord: any) => {
+      if (Number(moduleRecord?.progress || 0) > 0 || moduleRecord?.lastAccessed) {
+        return true;
+      }
+
+      return (moduleRecord?.sections || []).some((sectionRecord: any) => {
+        return (
+          Number(sectionRecord?.progress || 0) > 0 ||
+          Boolean(sectionRecord?.lastAccessed) ||
+          String(sectionRecord?.lessonStatus || "").toLowerCase() !== "not_attempted"
+        );
+      });
+    });
+  }, [course?.progress, isAssignedCourseView, progressModules]);
+  const previewThumbnailUrl = useMemo(() => {
+    if (!hasStartedCourse) {
+      return courseThumbnailUrl;
+    }
+
+    const inProgressModules = progressModules
+      .filter((moduleRecord: any) => {
+        const status = String(moduleRecord?.lessonStatus || "").toLowerCase();
+        const progress = Number(moduleRecord?.progress || 0);
+        return (
+          (progress > 0 && progress < 100) ||
+          (status && status !== "not_attempted" && status !== "completed" && status !== "passed")
+        );
+      })
+      .sort((left: any, right: any) => {
+        const leftTime = left?.lastAccessed ? new Date(left.lastAccessed).getTime() : 0;
+        const rightTime = right?.lastAccessed ? new Date(right.lastAccessed).getTime() : 0;
+        return rightTime - leftTime;
+      });
+    const latestAccessedModule = progressModules
+      .filter((moduleRecord: any) => Boolean(moduleRecord?.lastAccessed))
+      .sort((left: any, right: any) => {
+        const leftTime = left?.lastAccessed ? new Date(left.lastAccessed).getTime() : 0;
+        const rightTime = right?.lastAccessed ? new Date(right.lastAccessed).getTime() : 0;
+        return rightTime - leftTime;
+      })[0];
+    const currentModuleId =
+      String(inProgressModules[0]?.moduleId || currentLaunchSection?.moduleId || latestAccessedModule?.moduleId || "").trim();
+    const progressModule = progressModules.find(
+      (moduleRecord: any) => String(moduleRecord?.moduleId || "").trim() === currentModuleId
+    );
+    const loadedModule = modules.find(
+      (moduleRecord: any) => deriveModuleId(moduleRecord) === currentModuleId
+    );
+
+    return String(progressModule?.thumbnailUrl || loadedModule?.thumbnailUrl || courseThumbnailUrl || "").trim();
+  }, [
+    courseThumbnailUrl,
+    currentLaunchSection?.moduleId,
+    hasStartedCourse,
+    modules,
+    progressModules,
+  ]);
 
   const courseThemeStyle = useMemo(() => {
     const brandScale = (theme.colors?.brand || {}) as Record<
@@ -1495,15 +1562,28 @@ export default function CourseDetails({
                   <div className="aspect-video w-full">
                     {!activeLaunchSection ? (
                       <div className="relative flex h-full flex-col items-center justify-center overflow-hidden px-6 text-center">
-                        {course?.thumbnailUrl ? (
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
+                        {previewThumbnailUrl ? (
                           <img
-                            src={course.thumbnailUrl}
-                            alt={String(course?.title || "Course")}
+                            src={previewThumbnailUrl}
+                            alt={String(hasStartedCourse ? currentModuleLabel : course?.title || "Course")}
                             className="absolute inset-0 h-full w-full object-cover"
+                            onError={(event) => {
+                              const imageElement = event.currentTarget;
+                              if (
+                                imageElement.dataset.fallbackApplied !== "true" &&
+                                courseThumbnailUrl &&
+                                imageElement.src !== courseThumbnailUrl
+                              ) {
+                                imageElement.dataset.fallbackApplied = "true";
+                                imageElement.src = courseThumbnailUrl;
+                                return;
+                              }
+
+                              imageElement.style.display = "none";
+                            }}
                           />
-                        ) : (
-                          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
-                        )}
+                        ) : null}
                         <div className="absolute inset-0 bg-slate-950/50" />
                         <div className="relative z-10 max-w-xl">
                           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">

@@ -73,6 +73,7 @@ export interface CourseModuleInput {
   id: string;
   name: string;
   description: string;
+  thumbnail: StoredFile | null;
   sections: CourseModuleSectionInput[];
   studyMaterials: StoredFile[];
   hasQuiz: boolean;
@@ -338,6 +339,7 @@ export function createEmptyModule(): CourseModuleInput {
     id: moduleId,
     name: "",
     description: "",
+    thumbnail: null,
     sections: [createEmptyModuleSection()],
     studyMaterials: [],
     hasQuiz: false,
@@ -647,6 +649,17 @@ export function courseToFormState(course: any): CourseFormState {
         id: String(module?.moduleId || module?.id || createClientId()),
         name: String(module?.title || ""),
         description: String(module?.summary || ""),
+        thumbnail: module?.thumbnailUrl
+          ? createExistingStoredFile(
+              {
+                name: "Module thumbnail",
+                kind: "image",
+                mimeType: "image/*",
+                previewUrl: module.thumbnailUrl,
+              },
+              "Module thumbnail"
+            )
+          : null,
         sections: (Array.isArray(module?.sections) && module.sections.length ? module.sections : [{}]).map(
           (section: any, sectionIndex: number) => ({
             id: String(section?.sectionId || section?.id || createClientId()),
@@ -740,6 +753,7 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
         order: index + 1,
         title: module.name.trim(),
         summary: module.description.trim(),
+        thumbnailUrl: module.thumbnail?.previewUrl || "",
         sectionCount: module.sections.length,
         studyMaterial: [],
         sections: module.sections.map((section, sectionIndex) => ({

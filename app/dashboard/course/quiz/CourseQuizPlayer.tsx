@@ -564,7 +564,7 @@ export default function CourseQuizPlayer({
                         bg={questionBadgeBg}
                         color={questionBadgeText}
                       >
-                        <Sparkles size={17} />
+                        <Sparkles size={16} />
                       </Flex>
                       <Box>
                         <Text
@@ -575,9 +575,6 @@ export default function CourseQuizPlayer({
                           letterSpacing="0.1em"
                         >
                           Question {currentIndex + 1} of {quiz.questions.length}
-                        </Text>
-                        <Text color={textColor} fontSize="sm" fontWeight="900">
-                          {currentQuestion.marks} mark{currentQuestion.marks === 1 ? "" : "s"}
                         </Text>
                       </Box>
                     </HStack>

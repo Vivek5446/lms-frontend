@@ -339,6 +339,7 @@ export interface MyCourseSectionProgressItem {
 export interface MyCourseModuleProgressItem {
   moduleId: string;
   title: string;
+  thumbnailUrl?: string;
   progress: number;
   score: number | null;
   attempts: number;
@@ -492,6 +493,7 @@ export interface CourseModuleListItem {
   moduleId?: string;
   title: string;
   summary?: string;
+  thumbnailUrl?: string;
   order: number;
   sectionCount: number;
   studyMaterial?: any[];
@@ -1962,6 +1964,7 @@ class CourseStoreClass {
             recalculateModuleProgress({
               moduleId: normalizedModuleId,
               title: String(visibleModule?.title || sectionProgress?.moduleTitle || "Module"),
+              thumbnailUrl: String(visibleModule?.thumbnailUrl || sectionProgress?.moduleThumbnailUrl || ""),
               progress: 0,
               score: null,
               attempts: 0,

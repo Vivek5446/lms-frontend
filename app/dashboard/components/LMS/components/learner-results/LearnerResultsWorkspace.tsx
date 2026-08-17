@@ -1162,11 +1162,11 @@ function LearnerCourseAccordion({ course }: { course: LearnerCourseDetail }) {
       </AccordionButton>
       <AccordionPanel px={3} pb={3} pt={0}>
         <Stack spacing={3}>
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={2.5}>
+          <SimpleGrid columns={{ base: 2, md: 3 }} spacing={2.5}>
             <SummaryCard label="Progress" value={`${Math.round(course.progressPercent)}%`} helper={`${course.completedSections}/${course.totalSections} sections`} icon={BarChart3} color="blue" />
             <SummaryCard label="Score" value={course.score === null ? "N/A" : `${Math.round(course.score)}%`} helper={course.passThreshold === null ? "No pass threshold" : `Pass at ${Math.round(course.passThreshold)}%`} icon={Target} color="pink" />
             <SummaryCard label="Attempts" value={course.attempts} helper={`${course.quizAttempts} quiz | ${course.scormAttempts} SCORM`} icon={ClipboardCheck} color="purple" />
-            <SummaryCard label="Time spent" value={course.timeSpent || "00:00:00"} helper={`Submitted ${formatDate(course.submissionDate)}`} icon={Users} color="teal" />
+            {/* <SummaryCard label="Time spent" value={course.timeSpent || "00:00:00"} helper={`Submitted ${formatDate(course.submissionDate)}`} icon={Users} color="teal" /> */}
           </SimpleGrid>
 
           <Accordion allowMultiple>
