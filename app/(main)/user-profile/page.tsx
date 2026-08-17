@@ -9,7 +9,6 @@ import {
   Avatar,
   Box,
   Button,
-  Divider,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
@@ -18,9 +17,7 @@ import {
   DrawerOverlay,
   Flex,
   Grid,
-  Heading,
   HStack,
-  Icon,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -35,7 +32,7 @@ import {
   useColorModeValue,
   useDisclosure,
   useToast,
-  VStack,
+  VStack
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import {
@@ -43,46 +40,42 @@ import {
   Bell,
   Bookmark,
   BookOpen,
+  Building,
+  Building2,
+  Cake,
   Calendar,
+  CalendarCheck,
   Camera,
   ChevronRight,
   Download,
   Edit2,
   FileText,
   Globe,
+  Globe2,
   HelpCircle,
-  Info,
+  Home,
+  IdCard,
   LogOut,
   Mail,
   MapPin,
   Moon,
-  Palette,
   Phone,
   Play,
-  Ruler,
+  Quote,
   Settings,
   Shield,
   ShieldCheck,
   Sparkles,
-  Sun,
   Star,
+  Sun,
+  UserCircle,
   User as UserIcon,
   Users,
-  Volume2,
-  Building2,
-  IdCard,
-  CalendarCheck,
-  Cake,
-  UserCircle,
-  Home,
-  Building,
-  Globe2,
-  Quote
+  Volume2
 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import { FiBriefcase, FiCalendar, FiEdit2, FiHash, FiMail, FiMapPin, FiUser } from "react-icons/fi";
 import { MdOutlineVerified } from "react-icons/md";
 import EditProfileModal from "./component/EditProfileModal";
 
