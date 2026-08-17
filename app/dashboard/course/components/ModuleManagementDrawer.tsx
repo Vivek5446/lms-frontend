@@ -58,8 +58,8 @@ import {
   CourseQuizInput,
   StoredFile,
   createEmptyModuleSection,
-  createExistingStoredFile,
   createEmptyQuiz,
+  createExistingStoredFile,
   createStoredFile,
   createStudyMaterialFiles,
   createUrlStoredFile,
@@ -1231,7 +1231,7 @@ return (
         zIndex={20}
         bg={headerBg}
         color="white"
-        py={{ base: 4, md: 4 }}
+        py={{ base: 4, md: 3 }}
         px={{ base: 4, md: 7, xl: 10 }}
         borderBottomWidth="1px"
         borderColor="whiteAlpha.200"
@@ -1240,8 +1240,8 @@ return (
         <Flex align="center" justify="space-between" gap={4}>
           <HStack spacing={{ base: 3, md: 4 }} minW={0}>
             <Flex
-              w={{ base: 10, md: 12 }}
-              h={{ base: 10, md: 12 }}
+              w={{ base: 8, md: 10 }}
+              h={{ base: 8, md: 10 }}
               align="center"
               justify="center"
               borderRadius="2xl"
@@ -1251,7 +1251,7 @@ return (
               borderColor="whiteAlpha.200"
               flexShrink={0}
             >
-              <FiPackage size={22} />
+              <FiPackage size={18} />
             </Flex>
 
             <Box minW={0}>
