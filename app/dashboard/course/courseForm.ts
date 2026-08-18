@@ -16,8 +16,10 @@ export interface StoredFile {
   extension: string;
   kind: StoredFileKind;
   previewUrl?: string;
+  sourceType?: "upload" | "url";
   file?: File | null;
   isExisting?: boolean;
+  isUrl?: boolean;
 }
 
 export interface CourseBasicInfo {
@@ -41,6 +43,8 @@ export interface CourseModuleSectionInput {
   id: string;
   title: string;
   description: string;
+  contentType: "video_upload" | "video_url" | "scorm_upload";
+  videoUrl: string;
   contentFile: StoredFile | null;
   studyMaterials: StoredFile[];
 }
@@ -69,6 +73,7 @@ export interface CourseModuleInput {
   id: string;
   name: string;
   description: string;
+  thumbnail: StoredFile | null;
   sections: CourseModuleSectionInput[];
   studyMaterials: StoredFile[];
   hasQuiz: boolean;
@@ -202,7 +207,40 @@ export function createStoredFile(file: File, kind: StoredFileKind, previewUrl?: 
     extension: getFileExtension(file.name),
     kind,
     previewUrl,
+    sourceType: "upload",
     file,
+  };
+}
+
+function getUrlHost(value: string) {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "") || "URL";
+  } catch {
+    return "URL";
+  }
+}
+
+export function createUrlStoredFile(
+  url: string,
+  kind: StoredFileKind,
+  fallbackName: string,
+): StoredFile | null {
+  const previewUrl = String(url || "").trim();
+  if (!previewUrl) {
+    return null;
+  }
+
+  return {
+    id: createClientId(),
+    name: fallbackName || getUrlHost(previewUrl),
+    size: 0,
+    type: kind === "video" ? "video/url" : "application/url",
+    extension: "",
+    kind,
+    previewUrl,
+    sourceType: "url",
+    file: null,
+    isUrl: true,
   };
 }
 
@@ -251,8 +289,10 @@ export function createExistingStoredFile(asset: any, fallbackName = "Existing fi
     extension: String(asset?.extension || getFileExtension(name) || "").toLowerCase(),
     kind: inferStoredFileKindFromAsset(asset),
     previewUrl,
+    sourceType: asset?.sourceType === "url" ? "url" : "upload",
     file: null,
     isExisting: true,
+    isUrl: asset?.sourceType === "url",
   };
 }
 
@@ -285,6 +325,8 @@ export function createEmptyModuleSection(): CourseModuleSectionInput {
     id: createClientId(),
     title: "",
     description: "",
+    contentType: "video_upload",
+    videoUrl: "",
     contentFile: null,
     studyMaterials: [],
   };
@@ -297,6 +339,7 @@ export function createEmptyModule(): CourseModuleInput {
     id: moduleId,
     name: "",
     description: "",
+    thumbnail: null,
     sections: [createEmptyModuleSection()],
     studyMaterials: [],
     hasQuiz: false,
@@ -353,6 +396,7 @@ function summarizeFile(file: StoredFile | null) {
     extension: file.extension || null,
     sizeInBytes: file.size,
     previewUrl: file.previewUrl ?? null,
+    sourceType: file.sourceType || (file.isUrl ? "url" : "upload"),
   };
 }
 
@@ -471,12 +515,6 @@ export function collectCourseUploadFiles(courseForm: CourseFormState) {
   const studyMaterialFiles: File[] = [];
 
   courseForm.structure.modules.forEach((module) => {
-    module.studyMaterials.forEach((material) => {
-      if (material.file) {
-        studyMaterialFiles.push(material.file);
-      }
-    });
-
     module.sections.forEach((section) => {
       if (section.contentFile?.file) {
         if (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip") {
@@ -504,6 +542,19 @@ export function collectCourseUploadFiles(courseForm: CourseFormState) {
       studyMaterialFiles.length +
       (courseForm.basicInfo.thumbnail?.file ? 1 : 0),
   };
+}
+
+function getExistingSectionContentType(content: any): CourseModuleSectionInput["contentType"] {
+  const kind = String(content?.kind || "").trim().toLowerCase();
+  if (kind === "scorm" || kind === "zip") {
+    return "scorm_upload";
+  }
+
+  if (content?.sourceType === "url") {
+    return "video_url";
+  }
+
+  return "video_upload";
 }
 
 function mapExistingStudyMaterials(materials: any, fallbackPrefix: string) {
@@ -598,11 +649,27 @@ export function courseToFormState(course: any): CourseFormState {
         id: String(module?.moduleId || module?.id || createClientId()),
         name: String(module?.title || ""),
         description: String(module?.summary || ""),
+        thumbnail: module?.thumbnailUrl
+          ? createExistingStoredFile(
+              {
+                name: "Module thumbnail",
+                kind: "image",
+                mimeType: "image/*",
+                previewUrl: module.thumbnailUrl,
+              },
+              "Module thumbnail"
+            )
+          : null,
         sections: (Array.isArray(module?.sections) && module.sections.length ? module.sections : [{}]).map(
           (section: any, sectionIndex: number) => ({
             id: String(section?.sectionId || section?.id || createClientId()),
             title: String(section?.title || ""),
             description: String(section?.description || ""),
+            contentType: getExistingSectionContentType(section?.content),
+            videoUrl:
+              section?.content?.sourceType === "url"
+                ? String(section?.content?.previewUrl || "")
+                : "",
             contentFile: createExistingStoredFile(section?.content, `Section ${sectionIndex + 1} content`),
             studyMaterials: mapExistingStudyMaterials(section?.studyMaterial, `Section ${sectionIndex + 1} material`),
           })
@@ -686,13 +753,23 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
         order: index + 1,
         title: module.name.trim(),
         summary: module.description.trim(),
+        thumbnailUrl: module.thumbnail?.previewUrl || "",
         sectionCount: module.sections.length,
-        studyMaterial: module.studyMaterials.map((material) => summarizeFile(material)),
+        studyMaterial: [],
         sections: module.sections.map((section, sectionIndex) => ({
           order: sectionIndex + 1,
           title: section.title.trim(),
           description: section.description.trim(),
-          content: summarizeFile(section.contentFile),
+          content:
+            section.contentType === "video_url"
+              ? summarizeFile(
+                  createUrlStoredFile(
+                    section.videoUrl,
+                    "video",
+                    section.title.trim() || `Section ${sectionIndex + 1} video URL`,
+                  )
+                )
+              : summarizeFile(section.contentFile),
           studyMaterial: section.studyMaterials.map((material) => summarizeFile(material)),
         })),
         assessments: {

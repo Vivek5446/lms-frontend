@@ -25,8 +25,7 @@ import {
   FiTarget,
 } from 'react-icons/fi';
 import type { ReactNode } from 'react';
-import { toJS } from 'mobx';
-import { LEVELS } from '@/app/dashboard/course/courseForm';
+import CourseBookmarkButton from './CourseBookmarkButton';
 
 const MotionBox = motion(Box);
 
@@ -49,6 +48,10 @@ interface CourseCardProps {
   primaryBadgeLabel?: string;
   secondaryBadgeLabel?: string | null;
   topRightBadge?: ReactNode;
+  showBookmark?: boolean;
+  isBookmarked?: boolean;
+  isBookmarkLoading?: boolean;
+  onToggleBookmark?: () => void;
 }
 
 const getCardTheme = (title: string = '') => {
@@ -78,6 +81,10 @@ export const CourseCard = ({
   // primaryBadgeLabel = 'Public',
   // secondaryBadgeLabel = course?.courseType === 'scorm' ? 'SCORM' : 'Standard',
   topRightBadge,
+  showBookmark = false,
+  isBookmarked,
+  isBookmarkLoading = false,
+  onToggleBookmark,
 }: CourseCardProps) => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.100', 'gray.700');
@@ -90,14 +97,10 @@ export const CourseCard = ({
   const theme = getCardTheme(course?.title);
 
   const level = course?.taxonomy?.level || 'Beginner';
-  const category = (course?.taxonomy?.categories[0] || [])[0] || '';
-
-  console.log('course',toJS(course))
-
   return (
     <MotionBox
       role="group"
-      whileHover={{ y: -6 }}
+      whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       bg={cardBg}
@@ -106,7 +109,7 @@ export const CourseCard = ({
       borderRadius="2xl"
       overflow="hidden"
       boxShadow="sm"
-      _hover={{ boxShadow: '2xl' }}
+      _hover={{ boxShadow: 'xl' }}
       display="flex"
       flexDirection="column"
       height="100%"
@@ -130,7 +133,7 @@ export const CourseCard = ({
             w="full"
             h="full"
             objectFit="cover"
-            transition="transform 0.5s ease"
+            transition="all 0.5s ease"
             _groupHover={{ transform: 'scale(1.04)' }}
           />
         ) : (
@@ -188,15 +191,26 @@ export const CourseCard = ({
           ) : null} */}
         </HStack>
 
+        {showBookmark && onToggleBookmark ? (
+          <Box position="absolute" top={3} right={3} zIndex={2}>
+            <CourseBookmarkButton
+              size="sm"
+              isBookmarked={Boolean(isBookmarked ?? course?.isBookmarked)}
+              isLoading={isBookmarkLoading}
+              onToggle={onToggleBookmark}
+            />
+          </Box>
+        ) : null}
+
         {topRightBadge ? (
-          <Box position="absolute" top={3} right={3} zIndex={1}>
+          <Box position="absolute" top={3} right={showBookmark ? 14 : 3} zIndex={1}>
             {topRightBadge}
           </Box>
         ) : enrolled ? (
           <Badge
             position="absolute"
             top={3}
-            right={3}
+            right={showBookmark ? 14 : 3}
             zIndex={1}
             bg="purple.500"
             color="white"

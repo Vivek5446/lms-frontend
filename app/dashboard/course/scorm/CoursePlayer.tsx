@@ -16,7 +16,7 @@ import { memo, RefObject, useCallback, useEffect, useMemo, useRef, useState } fr
 import { FiMaximize2, FiMinimize2, FiRefreshCw, FiX } from "react-icons/fi";
 import { ScormAnswerSectionRecord } from "./quizReviewTypes";
 import { buildScorm12InitialState, createScorm12Api, ScormTrackingPayload } from "./scorm12";
-import { preloadCourseAsset } from "./sectionTracking";
+import { preloadCourseAsset, useProtectedCourseAssetUrl } from "./sectionTracking";
 
 const ScormQuizReviewContent = dynamic(() => import("./ScormQuizReviewContent"), {
   ssr: false,
@@ -94,15 +94,6 @@ export default function CoursePlayer({
 }: CoursePlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const initialConfigRef = useRef({
-    courseUrl,
-    courseId,
-    moduleId,
-    sectionId,
-    userId,
-    learnerName,
-    initialProgress,
-  });
   const iframeSrcRef = useRef("about:blank");
   const hasAttachedIframeSrcRef = useRef(false);
   const apiRef = useRef<ReturnType<typeof createScorm12Api> | null>(null);
@@ -118,6 +109,16 @@ export default function CoursePlayer({
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isQuizReviewOpen, setIsQuizReviewOpen] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const {
+    assetUrl: protectedCourseUrl,
+    isLoading: isProtectedCourseUrlLoading,
+    error: protectedCourseUrlError,
+    reload: reloadProtectedCourseUrl,
+  } = useProtectedCourseAssetUrl(courseUrl, {
+    courseId,
+    moduleId,
+    sectionId,
+  });
 
   const visibleAnswerSections = useMemo(() => {
     if (!sectionId) {
@@ -300,6 +301,16 @@ export default function CoursePlayer({
   }, []);
 
   useEffect(() => {
+    if (!protectedCourseUrl) {
+      if (protectedCourseUrlError) {
+        setPlayerError(protectedCourseUrlError);
+        setIsBootstrapping(false);
+        setIsFrameLoading(false);
+      }
+
+      return;
+    }
+
     let isActive = true;
 
     const bootstrapPlayer = async () => {
@@ -309,7 +320,15 @@ export default function CoursePlayer({
       setPlayerError(null);
       setSyncError(null);
       hasPersistedOnExitRef.current = false;
-      const initialConfig = initialConfigRef.current;
+      const initialConfig = {
+        courseUrl: protectedCourseUrl,
+        courseId,
+        moduleId,
+        sectionId,
+        userId,
+        learnerName,
+        initialProgress,
+      };
       const trackingEnabled = Boolean(initialConfig.userId && initialConfig.courseId);
       trackingEnabledRef.current = trackingEnabled;
       void preloadCourseAsset(initialConfig.courseUrl).catch(() => undefined);
@@ -449,7 +468,17 @@ export default function CoursePlayer({
       detachApiFromWindow(iframeRef.current?.contentWindow);
       detachApiFromWindow(window);
     };
-  }, []);
+  }, [
+    courseId,
+    initialProgress,
+    learnerName,
+    loadAttempt,
+    moduleId,
+    protectedCourseUrl,
+    protectedCourseUrlError,
+    sectionId,
+    userId,
+  ]);
 
   useEffect(() => {
     const handlePageHide = () => {
@@ -537,25 +566,13 @@ export default function CoursePlayer({
   }, []);
 
   const handleRetry = useCallback(() => {
-    const iframeElement = iframeRef.current;
-    if (!iframeElement || !apiRef.current) {
-      setPlayerError("Close this player and reopen the lesson to retry initialization.");
-      return;
-    }
-
     setPlayerError(null);
     setSyncError(null);
     setHasSlowLoad(false);
     setIsFrameLoading(true);
     setLoadAttempt((attempt) => attempt + 1);
-    void preloadCourseAsset(courseUrl, { force: true }).catch(() => undefined);
-
-    const separator = courseUrl.includes("?") ? "&" : "?";
-    iframeSrcRef.current = `${courseUrl}${separator}scorm_retry=${Date.now()}`;
-    hasAttachedIframeSrcRef.current = true;
-    attachApiToWindow(window);
-    iframeElement.src = iframeSrcRef.current;
-  }, [courseUrl]);
+    reloadProtectedCourseUrl();
+  }, [reloadProtectedCourseUrl]);
 
   const handleClosePlayer = useCallback(() => {
     setIsQuizReviewOpen(false);
@@ -580,7 +597,11 @@ export default function CoursePlayer({
     await document.exitFullscreen();
   };
 
-  const showOverlay = isBootstrapping || isFrameLoading || Boolean(playerError);
+  const showOverlay =
+    isProtectedCourseUrlLoading ||
+    isBootstrapping ||
+    isFrameLoading ||
+    Boolean(playerError);
   const isInline = displayMode === "inline";
 
   return (
@@ -767,7 +788,11 @@ export default function CoursePlayer({
                     <div className="scorm-spinner h-9 w-9 rounded-full border-[3px] border-white/20 border-t-white" />
                     <div className="max-w-md">
                       <p className="text-sm font-semibold">
-                        {isBootstrapping ? "Restoring your lesson progress..." : "Starting the lesson..."}
+                        {isProtectedCourseUrlLoading
+                          ? "Authorizing lesson access..."
+                          : isBootstrapping
+                            ? "Restoring your lesson progress..."
+                            : "Starting the lesson..."}
                       </p>
                       <p
                         className={`mt-2 text-xs leading-5 ${

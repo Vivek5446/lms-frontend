@@ -5,33 +5,27 @@ import {
   AlertIcon,
   Box,
   Button,
-  Flex,
   HStack,
-  Heading,
-  Icon,
-  Input,
-  Spinner,
+  SimpleGrid,
+  Skeleton,
   Tag,
   TagCloseButton,
   TagLabel,
   Text,
   VStack,
-  Skeleton,
-  SimpleGrid,
   useColorModeValue,
-  useToast,
+  useToast
 } from "@chakra-ui/react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
-import { FiBriefcase, FiSettings } from "react-icons/fi";
+import PageTitle from "../../component/common/PageTitle/PageTitle";
 import PermissionGate from "../../component/common/PermissionGate";
+import CustomInput from "../../component/config/component/customInput/CustomInput";
 import { getApiErrorMessage } from "../../config/utils/apiError";
 import { PERMISSION_KEYS, hasPermission } from "../../config/utils/permissions";
 import { readFileAsBase64 } from "../../config/utils/utils";
 import stores from "../../store/stores";
 import CompanyForm from "../admins/component/CompanyForm";
-import PageTitle from "../../component/common/PageTitle/PageTitle";
-import CustomInput from "../../component/config/component/customInput/CustomInput";
 
 const isRealFile = (value: unknown): value is File => typeof File !== "undefined" && value instanceof File;
 

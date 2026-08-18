@@ -28,6 +28,7 @@ import {
   Text,
   useColorModeValue,
   useDisclosure,
+  useToast,
   useToken
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
@@ -79,6 +80,7 @@ const hiddenScrollbarCss = {
 
 const CoursesPage = observer(function CoursesPage() {
   const router = useRouter();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -140,6 +142,12 @@ const CoursesPage = observer(function CoursesPage() {
       stores.courseStore.fetchMyCourses().catch(() => undefined);
     }
   }, [isLearner]);
+
+  useEffect(() => {
+    if (stores.auth.user) {
+      stores.courseStore.fetchBookmarks().catch(() => undefined);
+    }
+  }, [stores.auth.user?._id]);
 
   useEffect(() => {
     setSearchQuery(initialSearch);
@@ -289,6 +297,41 @@ const CoursesPage = observer(function CoursesPage() {
     setCategoryFilter("all");
     setLanguageFilter("all");
     setSortBy("latest");
+  };
+
+  const handleToggleBookmark = async (course: any) => {
+    const courseId = String(course?._id || course?.courseId || "").trim();
+    if (!courseId) {
+      return;
+    }
+
+    if (!stores.auth.user) {
+      toast({
+        title: "Sign in required",
+        description: "Sign in to save courses to your profile.",
+        status: "info",
+        duration: 3500,
+      });
+      router.push(`/login?redirect=${encodeURIComponent("/course")}`);
+      return;
+    }
+
+    const nextState = !Boolean(course?.isBookmarked);
+    try {
+      await stores.courseStore.toggleBookmark(courseId, nextState);
+      toast({
+        title: nextState ? "Course saved" : "Bookmark removed",
+        status: "success",
+        duration: 2200,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Bookmark update failed",
+        description: error?.message || error?.error || "Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
   };
 
   const scrollToCatalog = () => {
@@ -710,6 +753,10 @@ const CoursesPage = observer(function CoursesPage() {
                     }}
                     primaryBadgeLabel="Private"
                     secondaryBadgeLabel={null}
+                    showBookmark={Boolean(stores.auth.user)}
+                    isBookmarked={Boolean(course.isBookmarked)}
+                    isBookmarkLoading={stores.courseStore.bookmarkActionCourseIds.includes(String(course.courseId))}
+                    onToggleBookmark={() => handleToggleBookmark(course)}
                     onClick={() => router.push(`/course?courseId=${course.courseId}`)}
                   />
                 </Box>
@@ -989,6 +1036,10 @@ const CoursesPage = observer(function CoursesPage() {
                         <CourseCard
                           course={course}
                           enrolled={enrolledCourseIds.has(String(course._id))}
+                          showBookmark={true}
+                          isBookmarked={Boolean(course.isBookmarked)}
+                          isBookmarkLoading={stores.courseStore.bookmarkActionCourseIds.includes(String(course._id))}
+                          onToggleBookmark={() => handleToggleBookmark(course)}
                           onClick={() => setSelectedPreviewCourse(course)}
                         />
                       </Box>

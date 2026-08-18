@@ -17,6 +17,7 @@ import {
   createEmptyModuleSection,
   createStoredFile,
   createStudyMaterialFiles,
+  createUrlStoredFile,
   getFileKindLabel,
   inferModuleUploadKind,
 } from "../courseForm";
@@ -52,7 +53,7 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
         module.sections.forEach((section) => {
           if (section.title.trim()) count += 1;
           if (section.description.trim()) count += 1;
-          if (section.contentFile) count += 1;
+          if (section.contentType === "video_url" ? section.videoUrl.trim() : section.contentFile) count += 1;
         });
 
         return count;
@@ -139,6 +140,8 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
     }
 
     updateSection(moduleId, sectionId, {
+      contentType: inferModuleUploadKind(file) === "scorm" || inferModuleUploadKind(file) === "zip" ? "scorm_upload" : "video_upload",
+      videoUrl: "",
       contentFile: createStoredFile(file, inferModuleUploadKind(file)),
     });
   };
@@ -147,18 +150,6 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
     updateModule(moduleId, {
       quiz,
       hasQuiz: quiz.questions.length > 0 || value.modules.find((module) => module.id === moduleId)?.hasQuiz || false,
-    });
-  };
-
-  const handleModuleStudyMaterialChange = (moduleId: string, fileList: FileList | null) => {
-    if (!fileList?.length) {
-      return;
-    }
-
-    const nextFiles = createStudyMaterialFiles(fileList);
-    const targetModule = value.modules.find((module) => module.id === moduleId);
-    updateModule(moduleId, {
-      studyMaterials: [...(targetModule?.studyMaterials || []), ...nextFiles],
     });
   };
 
@@ -175,19 +166,30 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
     });
   };
 
-  const removeModuleStudyMaterial = (moduleId: string, materialId: string) => {
-    const targetModule = value.modules.find((module) => module.id === moduleId);
-    updateModule(moduleId, {
-      studyMaterials: (targetModule?.studyMaterials || []).filter((material) => material.id !== materialId),
-    });
-  };
-
   const removeSectionStudyMaterial = (moduleId: string, sectionId: string, materialId: string) => {
     const targetModule = value.modules.find((module) => module.id === moduleId);
     const targetSection = targetModule?.sections.find((section) => section.id === sectionId);
 
     updateSection(moduleId, sectionId, {
       studyMaterials: (targetSection?.studyMaterials || []).filter((material) => material.id !== materialId),
+    });
+  };
+
+  const addSectionStudyMaterialUrl = (moduleId: string, sectionId: string) => {
+    const url = window.prompt("Document URL");
+    if (!url?.trim()) {
+      return;
+    }
+
+    const targetModule = value.modules.find((module) => module.id === moduleId);
+    const targetSection = targetModule?.sections.find((section) => section.id === sectionId);
+    const material = createUrlStoredFile(url, "document", "Document URL");
+    if (!targetSection || !material) {
+      return;
+    }
+
+    updateSection(moduleId, sectionId, {
+      studyMaterials: [...(targetSection.studyMaterials || []), material],
     });
   };
 
@@ -238,7 +240,7 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
             </div>
           </FormField>
           <div className="rounded-xl bg-background border border-border p-4 text-sm text-muted-foreground">
-            Each section can have a primary SCORM package or MP4 lesson, and you can attach PDF study materials at the module or section level.
+            Each section can have one primary source: uploaded video, video URL, or SCORM package. Study materials belong to sections.
           </div>
         </div>
 
@@ -334,58 +336,6 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
                             />
                           </FormField>
 
-                          <FormField label="Module Study Material" helper="Attach one or more PDFs learners can open or download">
-                            <div className="space-y-3">
-                              <label className="border-2 border-dashed border-border rounded-xl p-3 flex items-center gap-3 hover:border-step-2/50 transition-colors cursor-pointer">
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept="application/pdf,.pdf"
-                                  multiple
-                                  onChange={(event) => {
-                                    handleModuleStudyMaterialChange(module.id, event.target.files);
-                                    event.currentTarget.value = "";
-                                  }}
-                                />
-                                <FileText className="w-5 h-5 text-muted-foreground" />
-                                <div className="flex-1 min-w-0">
-                                  <span className="block text-sm text-muted-foreground">
-                                    Add PDF notes, handouts, or worksheets
-                                  </span>
-                                  <span className="block text-xs text-muted-foreground mt-1">
-                                    {module.studyMaterials.length > 0
-                                      ? `${module.studyMaterials.length} PDF file${module.studyMaterials.length === 1 ? "" : "s"} attached`
-                                      : "No module study material yet"}
-                                  </span>
-                                </div>
-                              </label>
-
-                              {module.studyMaterials.length > 0 ? (
-                                <div className="space-y-2">
-                                  {module.studyMaterials.map((material) => (
-                                    <div
-                                      key={material.id}
-                                      className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
-                                    >
-                                      <FileText className="w-4 h-4 text-step-2" />
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm text-foreground truncate">{material.name}</p>
-                                        <p className="text-xs text-muted-foreground">{getFileKindLabel(material.kind)}</p>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => removeModuleStudyMaterial(module.id, material.id)}
-                                        className="text-xs text-destructive hover:underline"
-                                      >
-                                        Remove
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : null}
-                            </div>
-                          </FormField>
-
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <div>
@@ -433,43 +383,70 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
                                         className="bg-card border-border rounded-xl h-11"
                                       />
                                     </FormField>
-                                    <FormField label="Primary Lesson Content" helper="Upload one SCORM package or one MP4 video">
-                                      <label className="border-2 border-dashed border-border rounded-xl p-3 flex items-center gap-3 hover:border-step-2/50 transition-colors cursor-pointer">
-                                        <input
-                                          type="file"
-                                          className="hidden"
-                                          accept="video/mp4,video/*,.zip,.scorm,application/zip,application/x-zip-compressed"
-                                          onChange={(event) => handleSectionFileChange(module.id, section.id, event.target.files)}
+                                    <FormField label="Content Type" helper="Choose exactly one primary source for this section">
+                                      <select
+                                        value={section.contentType}
+                                        onChange={(event) => {
+                                          const contentType = event.target.value as CourseModuleSectionInput["contentType"];
+                                          updateSection(module.id, section.id, {
+                                            contentType,
+                                            contentFile: null,
+                                            videoUrl: "",
+                                          });
+                                        }}
+                                        className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground"
+                                      >
+                                        <option value="video_upload">Video Upload</option>
+                                        <option value="video_url">Video URL</option>
+                                        <option value="scorm_upload">SCORM Upload</option>
+                                      </select>
+                                    </FormField>
+                                    <FormField label="Primary Lesson Content" helper="Only the selected content input is saved">
+                                      {section.contentType === "video_url" ? (
+                                        <Input
+                                          value={section.videoUrl}
+                                          onChange={(event) => updateSection(module.id, section.id, { videoUrl: event.target.value, contentFile: null })}
+                                          placeholder="https://example.com/video.mp4"
+                                          className="bg-card border-border rounded-xl h-11"
                                         />
-                                        {section.contentFile?.kind === "video" ? (
-                                          <Video className="w-5 h-5 text-muted-foreground" />
-                                        ) : (
-                                          <Upload className="w-5 h-5 text-muted-foreground" />
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                          <span className="block text-sm text-muted-foreground truncate">
-                                            {section.contentFile ? section.contentFile.name : "Drop a SCORM package or click to upload an MP4"}
-                                          </span>
-                                          {section.contentFile && (
-                                            <span className="block text-xs text-step-2 mt-1">
-                                              {getFileKindLabel(section.contentFile.kind)} lesson ready
-                                            </span>
+                                      ) : (
+                                        <label className="border-2 border-dashed border-border rounded-xl p-3 flex items-center gap-3 hover:border-step-2/50 transition-colors cursor-pointer">
+                                          <input
+                                            type="file"
+                                            className="hidden"
+                                            accept={section.contentType === "scorm_upload" ? ".zip,.scorm,application/zip,application/x-zip-compressed" : "video/mp4,video/*"}
+                                            onChange={(event) => handleSectionFileChange(module.id, section.id, event.target.files)}
+                                          />
+                                          {section.contentType === "video_upload" ? (
+                                            <Video className="w-5 h-5 text-muted-foreground" />
+                                          ) : (
+                                            <Upload className="w-5 h-5 text-muted-foreground" />
                                           )}
-                                        </div>
-                                        {section.contentFile && (
-                                          <button
-                                            type="button"
-                                            onClick={(event) => {
-                                              event.preventDefault();
-                                              event.stopPropagation();
-                                              updateSection(module.id, section.id, { contentFile: null });
-                                            }}
-                                            className="text-xs text-destructive hover:underline"
-                                          >
-                                            Remove
-                                          </button>
-                                        )}
-                                      </label>
+                                          <div className="flex-1 min-w-0">
+                                            <span className="block text-sm text-muted-foreground truncate">
+                                              {section.contentFile ? section.contentFile.name : section.contentType === "scorm_upload" ? "Upload one SCORM ZIP" : "Upload one video file"}
+                                            </span>
+                                            {section.contentFile && (
+                                              <span className="block text-xs text-step-2 mt-1">
+                                                {getFileKindLabel(section.contentFile.kind)} lesson ready
+                                              </span>
+                                            )}
+                                          </div>
+                                          {section.contentFile && (
+                                            <button
+                                              type="button"
+                                              onClick={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                updateSection(module.id, section.id, { contentFile: null });
+                                              }}
+                                              className="text-xs text-destructive hover:underline"
+                                            >
+                                              Remove
+                                            </button>
+                                          )}
+                                        </label>
+                                      )}
                                     </FormField>
                                   </div>
 
@@ -482,31 +459,36 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
                                     />
                                   </FormField>
 
-                                  <FormField label="Section Study Material" helper="Attach PDF reading material for this section">
+                                  <FormField label="Section Study Material" helper="Attach PDF reading material or add one or more document URLs">
                                     <div className="space-y-3">
-                                      <label className="border-2 border-dashed border-border rounded-xl p-3 flex items-center gap-3 hover:border-step-2/50 transition-colors cursor-pointer">
-                                        <input
-                                          type="file"
-                                          className="hidden"
-                                          accept="application/pdf,.pdf"
-                                          multiple
-                                          onChange={(event) => {
-                                            handleSectionStudyMaterialChange(module.id, section.id, event.target.files);
-                                            event.currentTarget.value = "";
-                                          }}
-                                        />
-                                        <FileText className="w-5 h-5 text-muted-foreground" />
-                                        <div className="flex-1 min-w-0">
-                                          <span className="block text-sm text-muted-foreground">
-                                            Add PDF study materials
-                                          </span>
-                                          <span className="block text-xs text-muted-foreground mt-1">
-                                            {section.studyMaterials.length > 0
-                                              ? `${section.studyMaterials.length} PDF file${section.studyMaterials.length === 1 ? "" : "s"} attached`
-                                              : "No section study material yet"}
-                                          </span>
-                                        </div>
-                                      </label>
+                                      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                                        <label className="border-2 border-dashed border-border rounded-xl p-3 flex items-center gap-3 hover:border-step-2/50 transition-colors cursor-pointer">
+                                          <input
+                                            type="file"
+                                            className="hidden"
+                                            accept="application/pdf,.pdf"
+                                            multiple
+                                            onChange={(event) => {
+                                              handleSectionStudyMaterialChange(module.id, section.id, event.target.files);
+                                              event.currentTarget.value = "";
+                                            }}
+                                          />
+                                          <FileText className="w-5 h-5 text-muted-foreground" />
+                                          <div className="flex-1 min-w-0">
+                                            <span className="block text-sm text-muted-foreground">
+                                              Upload document
+                                            </span>
+                                            <span className="block text-xs text-muted-foreground mt-1">
+                                              {section.studyMaterials.length > 0
+                                                ? `${section.studyMaterials.length} material${section.studyMaterials.length === 1 ? "" : "s"} attached`
+                                                : "No section study material yet"}
+                                            </span>
+                                          </div>
+                                        </label>
+                                        <Button type="button" variant="outline" className="rounded-xl" onClick={() => addSectionStudyMaterialUrl(module.id, section.id)}>
+                                          Add Document URL
+                                        </Button>
+                                      </div>
 
                                       {section.studyMaterials.length > 0 ? (
                                         <div className="space-y-2">

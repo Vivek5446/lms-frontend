@@ -33,6 +33,7 @@ interface CourseCurriculumPanelProps {
   courseQuizzes?: CourseQuizForLearner[];
   isAssignedCourseView: boolean;
   canSelfEnroll?: boolean;
+  hidePreviewAvailableBadge?: boolean;
   isLoadingModules?: boolean;
   hasMoreModules?: boolean;
   moduleProgressMap: ReadonlyMap<string, any>;
@@ -58,11 +59,13 @@ function joinClasses(
   return classes.filter(Boolean).join(" ");
 }
 
-function getSectionTypeLabel(contentKind?: string | null) {
+function getSectionTypeLabel(contentKind?: string | null, sourceType?: string | null) {
   const normalizedKind = String(contentKind || "")
     .trim()
     .toLowerCase();
+  const normalizedSourceType = String(sourceType || "").trim().toLowerCase();
 
+  if (normalizedKind === "video" && normalizedSourceType === "url") return "Video URL";
   if (normalizedKind === "video") return "Video";
   if (normalizedKind === "document") return "Document";
   if (normalizedKind === "scorm" || normalizedKind === "zip") {
@@ -183,6 +186,7 @@ export default function CourseCurriculumPanel({
   courseQuizzes = [],
   isAssignedCourseView,
   canSelfEnroll = false,
+  hidePreviewAvailableBadge = false,
   isLoadingModules = false,
   hasMoreModules = false,
   moduleProgressMap,
@@ -404,7 +408,8 @@ export default function CourseCurriculumPanel({
                         {sectionCount} lesson
                         {sectionCount === 1 ? "" : "s"}
                       </span>
-                      {moduleRecord?.isFreePreview ? (
+                      {moduleRecord?.isFreePreview &&
+                      !hidePreviewAvailableBadge ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
                           Preview available
                         </span>
@@ -496,6 +501,11 @@ export default function CourseCurriculumPanel({
                         )
                           .trim()
                           .toLowerCase();
+                        const sourceType = String(
+                          sectionRecord?.content?.sourceType || ""
+                        )
+                          .trim()
+                          .toLowerCase();
                         const SectionIcon = getSectionIcon(
                           kind,
                           progressMeta.state === "completed",
@@ -569,7 +579,7 @@ export default function CourseCurriculumPanel({
                                   {moduleIndex + 1}.{sectionIndex + 1}
                                 </span>
                                 <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-semibold text-muted-foreground">
-                                  {getSectionTypeLabel(kind)}
+                                  {getSectionTypeLabel(kind, sourceType)}
                                 </span>
                                 <span
                                   className={joinClasses(

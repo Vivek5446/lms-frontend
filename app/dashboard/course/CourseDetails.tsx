@@ -27,7 +27,6 @@ import {
 } from "@/app/dashboard/course/scorm/quizReviewTypes";
 import type { CourseLaunchSection } from "@/app/dashboard/course/scorm/sectionTracking";
 import {
-  buildCourseAssetUrl,
   buildLaunchSection,
   deriveModuleId,
   deriveSectionId,
@@ -42,9 +41,10 @@ import {
   mixHexColors,
   normalizeHexColor,
 } from "@/app/theme/theme";
-import { useColorMode, useTheme } from "@chakra-ui/react";
+import { useColorMode, useTheme, useToast } from "@chakra-ui/react";
 import {
   Award,
+  Bookmark,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -150,6 +150,18 @@ function getStartLearningLabel(
   }
 
   return "No lesson asset";
+}
+
+function getLaunchContentLabel(launchSection?: CourseLaunchSection | null) {
+  if (!launchSection) {
+    return "LESSON";
+  }
+
+  if (launchSection.contentKind === "video" && launchSection.sourceType === "url") {
+    return "VIDEO URL";
+  }
+
+  return String(launchSection.contentKind || "lesson").toUpperCase();
 }
 
 function getSectionActionLabel(
@@ -401,6 +413,7 @@ export default function CourseDetails({
 }: CourseDetailsProps) {
   const { colorMode } = useColorMode();
   const theme = useTheme();
+  const toast = useToast();
 
   const {
     auth: { user },
@@ -425,6 +438,9 @@ export default function CourseDetails({
       )
   );
   const isSelfSignupLearner = !Boolean(user?.createdBy);
+  const hidePreviewAvailableBadge = Boolean(
+    isAssignedCourseView || isSelfEnrolledCourseView
+  );
   const shouldUseDefaultLearnerTheme = Boolean(
     canSelfEnroll ||
       isSelfEnrolledCourseView ||
@@ -433,6 +449,42 @@ export default function CourseDetails({
   const courseId = String(
     course?._id || course?.courseId || ""
   ).trim();
+  const isBookmarkLoading = courseStore.bookmarkActionCourseIds.includes(courseId);
+  const handleToggleBookmark = async () => {
+    if (!courseId || isBookmarkLoading) {
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Sign in to save courses to your profile.",
+        status: "info",
+        duration: 3500,
+      });
+      if (typeof window !== "undefined") {
+        window.location.assign(`/login?redirect=${encodeURIComponent(`/course?courseId=${courseId}`)}`);
+      }
+      return;
+    }
+
+    const nextState = !Boolean(course?.isBookmarked);
+    try {
+      await courseStore.toggleBookmark(courseId, nextState);
+      toast({
+        title: nextState ? "Course saved" : "Bookmark removed",
+        status: "success",
+        duration: 2200,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Bookmark update failed",
+        description: error?.message || error?.error || "Please try again.",
+        status: "error",
+        duration: 4000,
+      });
+    }
+  };
   const totalSections = Number(
     course?.curriculum?.totalSections || 0
   );
@@ -1001,6 +1053,73 @@ export default function CourseDetails({
   const currentSectionLabel =
     currentLaunchSection?.sectionTitle ||
     "Choose a lesson to begin";
+  const courseThumbnailUrl = String(course?.thumbnailUrl || "").trim();
+  const hasStartedCourse = useMemo(() => {
+    if (!isAssignedCourseView) {
+      return false;
+    }
+
+    if (Number(course?.progress || 0) > 0) {
+      return true;
+    }
+
+    return progressModules.some((moduleRecord: any) => {
+      if (Number(moduleRecord?.progress || 0) > 0 || moduleRecord?.lastAccessed) {
+        return true;
+      }
+
+      return (moduleRecord?.sections || []).some((sectionRecord: any) => {
+        return (
+          Number(sectionRecord?.progress || 0) > 0 ||
+          Boolean(sectionRecord?.lastAccessed) ||
+          String(sectionRecord?.lessonStatus || "").toLowerCase() !== "not_attempted"
+        );
+      });
+    });
+  }, [course?.progress, isAssignedCourseView, progressModules]);
+  const previewThumbnailUrl = useMemo(() => {
+    if (!hasStartedCourse) {
+      return courseThumbnailUrl;
+    }
+
+    const inProgressModules = progressModules
+      .filter((moduleRecord: any) => {
+        const status = String(moduleRecord?.lessonStatus || "").toLowerCase();
+        const progress = Number(moduleRecord?.progress || 0);
+        return (
+          (progress > 0 && progress < 100) ||
+          (status && status !== "not_attempted" && status !== "completed" && status !== "passed")
+        );
+      })
+      .sort((left: any, right: any) => {
+        const leftTime = left?.lastAccessed ? new Date(left.lastAccessed).getTime() : 0;
+        const rightTime = right?.lastAccessed ? new Date(right.lastAccessed).getTime() : 0;
+        return rightTime - leftTime;
+      });
+    const latestAccessedModule = progressModules
+      .filter((moduleRecord: any) => Boolean(moduleRecord?.lastAccessed))
+      .sort((left: any, right: any) => {
+        const leftTime = left?.lastAccessed ? new Date(left.lastAccessed).getTime() : 0;
+        const rightTime = right?.lastAccessed ? new Date(right.lastAccessed).getTime() : 0;
+        return rightTime - leftTime;
+      })[0];
+    const currentModuleId =
+      String(inProgressModules[0]?.moduleId || currentLaunchSection?.moduleId || latestAccessedModule?.moduleId || "").trim();
+    const progressModule = progressModules.find(
+      (moduleRecord: any) => String(moduleRecord?.moduleId || "").trim() === currentModuleId
+    );
+    const loadedModule = modules.find(
+      (moduleRecord: any) => deriveModuleId(moduleRecord) === currentModuleId
+    );
+
+    return String(progressModule?.thumbnailUrl || loadedModule?.thumbnailUrl || courseThumbnailUrl || "").trim();
+  }, [
+    courseThumbnailUrl,
+    currentLaunchSection?.moduleId,
+    hasStartedCourse,
+    modules,
+    progressModules,
+  ]);
 
   const courseThemeStyle = useMemo(() => {
     const brandScale = (theme.colors?.brand || {}) as Record<
@@ -1194,6 +1313,7 @@ export default function CourseDetails({
         badge: totalMaterialCount || undefined,
         content: (
           <CourseMaterialsSection
+            courseId={courseId}
             materialGroups={materialGroups}
             initiallyExpandedModules={1}
           />
@@ -1321,6 +1441,26 @@ export default function CourseDetails({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleBookmark}
+              disabled={isBookmarkLoading}
+              className={joinClasses(
+                "inline-flex h-10 items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-70",
+                course?.isBookmarked
+                  ? "border-rose-500 bg-rose-500 text-white shadow-[0_10px_22px_rgba(244,63,94,0.22)]"
+                  : "border-border bg-card text-foreground hover:bg-muted"
+              )}
+            >
+              <Bookmark
+                className={joinClasses(
+                  "h-4 w-4 transition-transform",
+                  course?.isBookmarked && "scale-110 fill-current"
+                )}
+              />
+              {course?.isBookmarked ? "Saved" : "Save"}
+            </button>
+
             {onEditCourse ? (
               <button
                 type="button"
@@ -1359,10 +1499,7 @@ export default function CourseDetails({
                       {currentLaunchSection ? (
                         <>
                           <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
-                            {String(
-                              currentLaunchSection.contentKind ||
-                                "lesson"
-                            ).toUpperCase()}
+                            {getLaunchContentLabel(currentLaunchSection)}
                           </span>
                           <span>
                             {Math.round(
@@ -1425,15 +1562,28 @@ export default function CourseDetails({
                   <div className="aspect-video w-full">
                     {!activeLaunchSection ? (
                       <div className="relative flex h-full flex-col items-center justify-center overflow-hidden px-6 text-center">
-                        {course?.thumbnailUrl ? (
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
+                        {previewThumbnailUrl ? (
                           <img
-                            src={course.thumbnailUrl}
-                            alt={String(course?.title || "Course")}
+                            src={previewThumbnailUrl}
+                            alt={String(hasStartedCourse ? currentModuleLabel : course?.title || "Course")}
                             className="absolute inset-0 h-full w-full object-cover"
+                            onError={(event) => {
+                              const imageElement = event.currentTarget;
+                              if (
+                                imageElement.dataset.fallbackApplied !== "true" &&
+                                courseThumbnailUrl &&
+                                imageElement.src !== courseThumbnailUrl
+                              ) {
+                                imageElement.dataset.fallbackApplied = "true";
+                                imageElement.src = courseThumbnailUrl;
+                                return;
+                              }
+
+                              imageElement.style.display = "none";
+                            }}
                           />
-                        ) : (
-                          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
-                        )}
+                        ) : null}
                         <div className="absolute inset-0 bg-slate-950/50" />
                         <div className="relative z-10 max-w-xl">
                           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
@@ -1478,9 +1628,7 @@ export default function CourseDetails({
                         courseTitle={
                           activeLaunchSection.sectionTitle
                         }
-                        courseUrl={buildCourseAssetUrl(
-                          activeLaunchSection.assetPath
-                        )}
+                        courseUrl={activeLaunchSection.assetPath}
                         moduleId={
                           activeLaunchSection.moduleId
                         }
@@ -1506,12 +1654,13 @@ export default function CourseDetails({
                         displayMode="inline"
                         showHeader={false}
                         showCloseButton={false}
+                        courseId={courseId}
+                        moduleId={activeLaunchSection.moduleId}
+                        sectionId={activeLaunchSection.sectionId}
                         assetKind={
                           activeLaunchSection.contentKind
                         }
-                        assetUrl={buildCourseAssetUrl(
-                          activeLaunchSection.assetPath
-                        )}
+                        assetUrl={activeLaunchSection.assetPath}
                         title={
                           activeLaunchSection.sectionTitle
                         }
@@ -1631,6 +1780,9 @@ export default function CourseDetails({
                 }
                 totalModuleCount={totalModuleCount}
                 totalLessonCount={totalLessonCount}
+                hidePreviewAvailableBadge={
+                  hidePreviewAvailableBadge
+                }
                 onLoadSections={loadSectionsForModule}
                 onLoadMoreModules={loadMoreModules}
                 onSelectSection={handleSelectSection}
@@ -1684,6 +1836,9 @@ export default function CourseDetails({
           activeSectionId={activeLaunchSection?.sectionId || null}
           totalModuleCount={totalModuleCount}
           totalLessonCount={totalLessonCount}
+          hidePreviewAvailableBadge={
+            hidePreviewAvailableBadge
+          }
           onLoadSections={loadSectionsForModule}
           onLoadMoreModules={loadMoreModules}
           onSelectSection={handleSelectSection}

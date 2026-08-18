@@ -136,6 +136,9 @@ const MyCoursesBoard = observer(
     useEffect(() => {
       courseStore.fetchMyCourses().catch(() => undefined);
       courseStore.fetchPublicCourses().catch(() => undefined);
+      if (stores.auth.user) {
+        courseStore.fetchBookmarks().catch(() => undefined);
+      }
     }, []);
 
     const courses = courseStore.myCourses || [];

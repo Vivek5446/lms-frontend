@@ -142,6 +142,9 @@ export interface CourseListItem {
   price?: number;
   courseType?: "standard" | "scorm";
   enrollmentCount?: number;
+  isBookmarked?: boolean;
+  bookmarkId?: string;
+  bookmarkedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -305,6 +308,17 @@ export interface MyCourseItem {
   assessment?: CourseAssessmentConfig;
   assessmentSummary?: CourseAssessmentSummary;
   certificate?: CourseCertificateSummary;
+  isBookmarked?: boolean;
+  bookmarkId?: string;
+  bookmarkedAt?: string;
+}
+
+export interface BookmarkedCourseItem extends PublicCourseItem {
+  courseId?: string;
+  bookmarkId: string;
+  bookmarkedAt?: string;
+  progress?: number;
+  status: string;
 }
 
 export interface MyCourseSectionProgressItem {
@@ -325,6 +339,7 @@ export interface MyCourseSectionProgressItem {
 export interface MyCourseModuleProgressItem {
   moduleId: string;
   title: string;
+  thumbnailUrl?: string;
   progress: number;
   score: number | null;
   attempts: number;
@@ -478,6 +493,7 @@ export interface CourseModuleListItem {
   moduleId?: string;
   title: string;
   summary?: string;
+  thumbnailUrl?: string;
   order: number;
   sectionCount: number;
   studyMaterial?: any[];
@@ -702,6 +718,10 @@ function mergeUniquePublicCourses(items: PublicCourseItem[]) {
   return Array.from(uniqueItems.values());
 }
 
+function getCourseRecordId(course: any) {
+  return String(course?._id || course?.courseId || "").trim();
+}
+
 class CourseStoreClass {
   courses: CourseListItem[] = [];
   categories: CourseCategoryItem[] = [];
@@ -722,6 +742,7 @@ class CourseStoreClass {
   accessibleCourses: AccessibleCourseItem[] = [];
   assignedCourseAccesses: AssignedCourseAccessItem[] = [];
   myCourses: MyCourseItem[] = [];
+  bookmarkedCourses: BookmarkedCourseItem[] = [];
   myCertificates: EarnedCertificateListItem[] = [];
   courseAssignmentAudit: CourseAssignmentAuditItem[] = [];
   currentCourse: MyCourseDetailItem | null = null;
@@ -740,6 +761,7 @@ class CourseStoreClass {
   isAccessLoading: boolean = false;
   isAssignedCoursesLoading: boolean = false;
   isMyCoursesLoading: boolean = false;
+  isBookmarksLoading: boolean = false;
   isMyCertificatesLoading: boolean = false;
   isMyCourseDetailLoading: boolean = false;
   isCourseQuizzesLoading: boolean = false;
@@ -750,12 +772,14 @@ class CourseStoreClass {
   publishingCourseId: string | null = null;
   isAccessSubmitting: boolean = false;
   enrollmentCourseId: string | null = null;
+  bookmarkActionCourseIds: string[] = [];
   isAssignmentSubmitting: boolean = false;
   submissionProgress: number = 0;
   submissionStage: string = "";
   submissionDetail: string = "";
   error: string | null = null;
   accessError: string | null = null;
+  bookmarksError: string | null = null;
   myCertificatesError: string | null = null;
   draftCourseCode: string = "";
   currentPublicCourseParams: Record<string, unknown> = {};
@@ -1010,7 +1034,7 @@ class CourseStoreClass {
         params: options.includeCurriculum ? { includeCurriculum: true } : undefined,
       });
       runInAction(() => {
-        this.currentCourse = data.data;
+        this.currentCourse = data.data ? this.withKnownBookmarkState(data.data) : data.data;
         this.modules = Array.isArray(data.data?.curriculum?.modules) ? data.data.curriculum.modules : [];
         this.nextModuleCursor = null;
         this.hasMoreModules = false;
@@ -1306,13 +1330,224 @@ class CourseStoreClass {
     }
   };
 
+  private setBookmarkActionLoading(courseId: string, loading: boolean) {
+    const normalizedCourseId = String(courseId || "").trim();
+    if (!normalizedCourseId) {
+      return;
+    }
+
+    if (loading) {
+      if (!this.bookmarkActionCourseIds.includes(normalizedCourseId)) {
+        this.bookmarkActionCourseIds = [...this.bookmarkActionCourseIds, normalizedCourseId];
+      }
+      return;
+    }
+
+    this.bookmarkActionCourseIds = this.bookmarkActionCourseIds.filter((id) => id !== normalizedCourseId);
+  }
+
+  private applyBookmarkStateToCollections(options: {
+    courseId: string;
+    isBookmarked: boolean;
+    bookmarkId?: string;
+    bookmarkedAt?: string;
+  }) {
+    const normalizedCourseId = String(options.courseId || "").trim();
+    if (!normalizedCourseId) {
+      return;
+    }
+
+    const applyState = <T extends Record<string, any>>(course: T): T => {
+      if (getCourseRecordId(course) !== normalizedCourseId) {
+        return course;
+      }
+
+      return {
+        ...course,
+        isBookmarked: options.isBookmarked,
+        bookmarkId: options.isBookmarked ? options.bookmarkId || (course as any)?.bookmarkId : undefined,
+        bookmarkedAt: options.isBookmarked ? options.bookmarkedAt || (course as any)?.bookmarkedAt : undefined,
+      };
+    };
+
+    this.publicCourses = this.publicCourses.map(applyState);
+    this.myCourses = this.myCourses.map(applyState);
+    this.accessibleCourses = this.accessibleCourses.map(applyState);
+
+    if (this.currentCourse && getCourseRecordId(this.currentCourse) === normalizedCourseId) {
+      this.currentCourse = applyState(this.currentCourse);
+    }
+
+    if (!options.isBookmarked) {
+      this.bookmarkedCourses = this.bookmarkedCourses.filter(
+        (course) => getCourseRecordId(course) !== normalizedCourseId
+      );
+      return;
+    }
+
+    this.bookmarkedCourses = this.bookmarkedCourses.map(applyState);
+  }
+
+  private findCourseSnapshot(courseId: string) {
+    const normalizedCourseId = String(courseId || "").trim();
+    return (
+      this.publicCourses.find((course) => getCourseRecordId(course) === normalizedCourseId) ||
+      this.myCourses.find((course) => getCourseRecordId(course) === normalizedCourseId) ||
+      this.bookmarkedCourses.find((course) => getCourseRecordId(course) === normalizedCourseId) ||
+      (this.currentCourse && getCourseRecordId(this.currentCourse) === normalizedCourseId ? this.currentCourse : null)
+    );
+  }
+
+  private isKnownBookmarkedCourse(courseId: string) {
+    const normalizedCourseId = String(courseId || "").trim();
+    return Boolean(
+      normalizedCourseId &&
+      this.bookmarkedCourses.some((course) => getCourseRecordId(course) === normalizedCourseId)
+    );
+  }
+
+  private withKnownBookmarkState<T extends Record<string, any>>(course: T): T {
+    const courseId = getCourseRecordId(course);
+    if (!courseId) {
+      return course;
+    }
+
+    return {
+      ...course,
+      isBookmarked: Boolean(course?.isBookmarked || this.isKnownBookmarkedCourse(courseId)),
+    };
+  }
+
+  fetchBookmarks = async () => {
+    this.isBookmarksLoading = true;
+    this.bookmarksError = null;
+    try {
+      const { data } = await axios.get("/bookmarks");
+      const bookmarks = Array.isArray(data.data) ? data.data : [];
+      const bookmarkedIds = new Set(bookmarks.map((course: any) => getCourseRecordId(course)).filter(Boolean));
+
+      runInAction(() => {
+        this.bookmarkedCourses = bookmarks;
+        this.publicCourses = this.publicCourses.map((course) => ({
+          ...course,
+          isBookmarked: bookmarkedIds.has(getCourseRecordId(course)),
+        }));
+        this.myCourses = this.myCourses.map((course) => ({
+          ...course,
+          isBookmarked: bookmarkedIds.has(getCourseRecordId(course)),
+        }));
+        if (this.currentCourse) {
+          this.currentCourse = {
+            ...this.currentCourse,
+            isBookmarked: bookmarkedIds.has(getCourseRecordId(this.currentCourse)),
+          };
+        }
+      });
+
+      return bookmarks;
+    } catch (err: any) {
+      runInAction(() => {
+        this.bookmarksError =
+          err?.response?.data?.message || err?.response?.data?.error || "Failed to fetch bookmarks";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.isBookmarksLoading = false;
+      });
+    }
+  };
+
+  bookmarkCourse = async (courseId: string) => {
+    const normalizedCourseId = String(courseId || "").trim();
+    if (!normalizedCourseId) {
+      return Promise.reject({ message: "Course is required" });
+    }
+
+    this.setBookmarkActionLoading(normalizedCourseId, true);
+    this.bookmarksError = null;
+    try {
+      const { data } = await axios.post(`/bookmarks/${normalizedCourseId}`);
+      const bookmarkData = data?.data || {};
+      runInAction(() => {
+        const snapshot = this.findCourseSnapshot(normalizedCourseId);
+        if (snapshot && !this.bookmarkedCourses.some((course) => getCourseRecordId(course) === normalizedCourseId)) {
+          this.bookmarkedCourses = [
+            {
+              ...(snapshot as any),
+              courseId: normalizedCourseId,
+              _id: normalizedCourseId,
+              bookmarkId: bookmarkData.bookmarkId,
+              isBookmarked: true,
+              bookmarkedAt: new Date().toISOString(),
+            },
+            ...this.bookmarkedCourses,
+          ];
+        }
+        this.applyBookmarkStateToCollections({
+          courseId: normalizedCourseId,
+          isBookmarked: true,
+          bookmarkId: bookmarkData.bookmarkId,
+          bookmarkedAt: new Date().toISOString(),
+        });
+      });
+      return data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.bookmarksError =
+          err?.response?.data?.message || err?.response?.data?.error || "Unable to bookmark this course";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.setBookmarkActionLoading(normalizedCourseId, false);
+      });
+    }
+  };
+
+  unbookmarkCourse = async (courseId: string) => {
+    const normalizedCourseId = String(courseId || "").trim();
+    if (!normalizedCourseId) {
+      return Promise.reject({ message: "Course is required" });
+    }
+
+    this.setBookmarkActionLoading(normalizedCourseId, true);
+    this.bookmarksError = null;
+    try {
+      const { data } = await axios.delete(`/bookmarks/${normalizedCourseId}`);
+      runInAction(() => {
+        this.applyBookmarkStateToCollections({
+          courseId: normalizedCourseId,
+          isBookmarked: false,
+        });
+      });
+      return data;
+    } catch (err: any) {
+      runInAction(() => {
+        this.bookmarksError =
+          err?.response?.data?.message || err?.response?.data?.error || "Unable to remove this bookmark";
+      });
+      return Promise.reject(err?.response?.data || err);
+    } finally {
+      runInAction(() => {
+        this.setBookmarkActionLoading(normalizedCourseId, false);
+      });
+    }
+  };
+
+  toggleBookmark = async (courseId: string, nextState?: boolean) => {
+    const snapshot = this.findCourseSnapshot(courseId);
+    const shouldBookmark = typeof nextState === "boolean" ? nextState : !Boolean((snapshot as any)?.isBookmarked);
+    return shouldBookmark ? this.bookmarkCourse(courseId) : this.unbookmarkCourse(courseId);
+  };
+
   fetchMyCourses = async () => {
     this.isMyCoursesLoading = true;
     this.accessError = null;
     try {
       const { data } = await axios.get("/my-courses");
       runInAction(() => {
-        this.myCourses = data.data || [];
+        this.myCourses = (data.data || []).map((course: MyCourseItem) => this.withKnownBookmarkState(course));
       });
       return data.data || [];
     } catch (err: any) {
@@ -1370,7 +1605,7 @@ class CourseStoreClass {
     try {
       const { data } = await axios.get(`/my-courses/${courseId}`);
       runInAction(() => {
-        this.currentCourse = data.data || null;
+        this.currentCourse = data.data ? this.withKnownBookmarkState(data.data) : null;
       });
       return data.data || null;
     } catch (err: any) {
@@ -1729,6 +1964,7 @@ class CourseStoreClass {
             recalculateModuleProgress({
               moduleId: normalizedModuleId,
               title: String(visibleModule?.title || sectionProgress?.moduleTitle || "Module"),
+              thumbnailUrl: String(visibleModule?.thumbnailUrl || sectionProgress?.moduleThumbnailUrl || ""),
               progress: 0,
               score: null,
               attempts: 0,

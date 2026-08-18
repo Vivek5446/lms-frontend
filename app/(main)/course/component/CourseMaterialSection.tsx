@@ -1,6 +1,10 @@
 "use client";
 
-import { buildCourseAssetUrl } from "@/app/dashboard/course/scorm/sectionTracking";
+import {
+  deriveModuleId,
+  deriveSectionId,
+  useProtectedCourseAssetUrl,
+} from "@/app/dashboard/course/scorm/sectionTracking";
 import {
   Archive,
   ChevronDown,
@@ -38,6 +42,8 @@ export interface CourseMaterialSectionGroup {
   id: string;
   title: string;
   label: string;
+  moduleId?: string;
+  sectionId?: string;
   materials: CourseMaterialRecord[];
 }
 
@@ -45,12 +51,12 @@ export interface CourseMaterialGroup {
   id: string;
   index: number;
   title: string;
-  moduleMaterials: CourseMaterialRecord[];
   sections: CourseMaterialSectionGroup[];
 }
 
 interface CourseMaterialsSectionProps {
   course?: any;
+  courseId?: string;
   materialGroups?: CourseMaterialGroup[];
   className?: string;
   initiallyExpandedModules?: number;
@@ -73,7 +79,6 @@ export function buildCourseMaterialGroups(course: any): CourseMaterialGroup[] {
 
   return modules
     .map((moduleRecord: any, moduleIndex: number) => {
-      const moduleMaterials = normalizeMaterials(moduleRecord?.studyMaterial);
       const sections = (Array.isArray(moduleRecord?.sections)
         ? moduleRecord.sections
         : []
@@ -82,6 +87,8 @@ export function buildCourseMaterialGroups(course: any): CourseMaterialGroup[] {
           id: `${moduleIndex + 1}-${sectionIndex + 1}`,
           title: String(sectionRecord?.title || `Section ${sectionIndex + 1}`),
           label: `Section ${moduleIndex + 1}.${sectionIndex + 1}`,
+          moduleId: deriveModuleId(moduleRecord),
+          sectionId: deriveSectionId(moduleRecord, sectionRecord),
           materials: normalizeMaterials(sectionRecord?.studyMaterial),
         }))
         .filter(
@@ -89,7 +96,7 @@ export function buildCourseMaterialGroups(course: any): CourseMaterialGroup[] {
             sectionRecord.materials.length > 0
         );
 
-      if (!moduleMaterials.length && !sections.length) {
+      if (!sections.length) {
         return null;
       }
 
@@ -102,7 +109,6 @@ export function buildCourseMaterialGroups(course: any): CourseMaterialGroup[] {
         ),
         index: moduleIndex + 1,
         title: String(moduleRecord?.title || `Module ${moduleIndex + 1}`),
-        moduleMaterials,
         sections,
       } satisfies CourseMaterialGroup;
     })
@@ -113,7 +119,6 @@ export function countCourseMaterials(groups: CourseMaterialGroup[]) {
   return groups.reduce(
     (total, group) =>
       total +
-      group.moduleMaterials.length +
       group.sections.reduce(
         (sectionTotal, section) => sectionTotal + section.materials.length,
         0
@@ -131,11 +136,6 @@ function getRawMaterialPath(material: CourseMaterialRecord) {
       material?.file ||
       ""
   ).trim();
-}
-
-function getMaterialUrl(material: CourseMaterialRecord) {
-  const rawPath = getRawMaterialPath(material);
-  return rawPath ? buildCourseAssetUrl(rawPath) : "";
 }
 
 function getMaterialName(material: CourseMaterialRecord) {
@@ -227,10 +227,25 @@ function formatMaterialSize(material: CourseMaterialRecord) {
 interface MaterialCardProps {
   material: CourseMaterialRecord;
   helperText: string;
+  courseId?: string;
+  moduleId?: string;
+  sectionId?: string;
 }
 
-function MaterialCard({ material, helperText }: MaterialCardProps) {
-  const materialUrl = getMaterialUrl(material);
+function MaterialCard({
+  material,
+  helperText,
+  courseId,
+  moduleId,
+  sectionId,
+}: MaterialCardProps) {
+  const rawMaterialPath = getRawMaterialPath(material);
+  const { assetUrl: materialUrl, isLoading: isMaterialUrlLoading } =
+    useProtectedCourseAssetUrl(rawMaterialPath, {
+      courseId,
+      moduleId,
+      sectionId,
+    });
   const materialName = getMaterialName(material);
   const extension = getMaterialExtension(material).toUpperCase();
   const formattedSize = formatMaterialSize(material);
@@ -289,6 +304,10 @@ function MaterialCard({ material, helperText }: MaterialCardProps) {
               <span>Download</span>
             </a>
           </>
+        ) : isMaterialUrlLoading ? (
+          <span className="col-span-2 rounded-xl bg-muted px-3 py-2 text-center text-[10px] text-muted-foreground sm:ml-auto sm:text-[11px]">
+            Securing material link...
+          </span>
         ) : (
           <span className="col-span-2 rounded-xl bg-muted px-3 py-2 text-center text-[10px] text-muted-foreground sm:ml-auto sm:text-[11px]">
             Material link unavailable
@@ -304,12 +323,6 @@ function groupMatchesSearch(group: CourseMaterialGroup, normalizedQuery: string)
 
   if (group.title.toLowerCase().includes(normalizedQuery)) return true;
 
-  const moduleMaterialMatch = group.moduleMaterials.some((material) =>
-    getMaterialName(material).toLowerCase().includes(normalizedQuery)
-  );
-
-  if (moduleMaterialMatch) return true;
-
   return group.sections.some(
     (section) =>
       section.title.toLowerCase().includes(normalizedQuery) ||
@@ -321,6 +334,7 @@ function groupMatchesSearch(group: CourseMaterialGroup, normalizedQuery: string)
 
 export default function CourseMaterialsSection({
   course,
+  courseId,
   materialGroups,
   className,
   initiallyExpandedModules = 1,
@@ -436,7 +450,6 @@ export default function CourseMaterialsSection({
         {filteredGroups.length ? (
           filteredGroups.map((group) => {
             const moduleMaterialCount =
-              group.moduleMaterials.length +
               group.sections.reduce(
                 (total, section) => total + section.materials.length,
                 0
@@ -490,29 +503,6 @@ export default function CourseMaterialsSection({
                 >
                   <div className="min-h-0 overflow-hidden">
                     <div className="space-y-4 border-t border-border/75 p-2.5 sm:p-4">
-                      {group.moduleMaterials.length ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between gap-2 px-1">
-                            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground sm:text-[10px]">
-                              Module files
-                            </p>
-                            <span className="text-[10px] text-muted-foreground">
-                              {group.moduleMaterials.length}
-                            </span>
-                          </div>
-
-                          <div className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-2">
-                            {group.moduleMaterials.map((material, materialIndex) => (
-                              <MaterialCard
-                                key={`${group.id}-module-${materialIndex}`}
-                                material={material}
-                                helperText={`Module material · ${group.title}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-
                       {group.sections.map((sectionGroup) => (
                         <div
                           key={sectionGroup.id}
@@ -538,6 +528,9 @@ export default function CourseMaterialsSection({
                               <MaterialCard
                                 key={`${sectionGroup.id}-${materialIndex}`}
                                 material={material}
+                                courseId={courseId || String(course?._id || course?.courseId || "")}
+                                moduleId={sectionGroup.moduleId}
+                                sectionId={sectionGroup.sectionId}
                                 helperText={`Lesson material · ${sectionGroup.title}`}
                               />
                             ))}

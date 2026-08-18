@@ -31,16 +31,41 @@ function buildUpstreamUrl(request: NextRequest, pathSegments: string[]) {
 
 async function proxyCourseAsset(request: NextRequest, pathSegments: string[]) {
   const upstreamUrl = buildUpstreamUrl(request, pathSegments);
+  const forwardedHeaderNames = [
+    "sec-fetch-dest",
+    "sec-fetch-mode",
+    "sec-fetch-site",
+    "sec-fetch-user",
+    "referer",
+    "origin",
+    "user-agent",
+  ];
+  const forwardedHeaders = new Headers({
+    accept: request.headers.get("accept") || "*/*",
+  });
+
+  for (const headerName of forwardedHeaderNames) {
+    const headerValue = request.headers.get(headerName);
+    if (headerValue) {
+      forwardedHeaders.set(headerName, headerValue);
+    }
+  }
+
+  if (request.headers.get("range")) {
+    forwardedHeaders.set("range", request.headers.get("range") as string);
+  }
+
+  if (request.headers.get("if-none-match")) {
+    forwardedHeaders.set("if-none-match", request.headers.get("if-none-match") as string);
+  }
+
+  if (request.headers.get("if-modified-since")) {
+    forwardedHeaders.set("if-modified-since", request.headers.get("if-modified-since") as string);
+  }
+
   const upstreamResponse = await fetch(upstreamUrl, {
     method: request.method,
-    headers: {
-      accept: request.headers.get("accept") || "*/*",
-      ...(request.headers.get("range") ? { range: request.headers.get("range") as string } : {}),
-      ...(request.headers.get("if-none-match") ? { "if-none-match": request.headers.get("if-none-match") as string } : {}),
-      ...(request.headers.get("if-modified-since")
-        ? { "if-modified-since": request.headers.get("if-modified-since") as string }
-        : {}),
-    },
+    headers: forwardedHeaders,
     cache: "no-store",
   });
 
@@ -67,7 +92,7 @@ async function proxyCourseAsset(request: NextRequest, pathSegments: string[]) {
   }
 
   if (!headers.has("cache-control")) {
-    headers.set("cache-control", "public, max-age=604800, stale-while-revalidate=2592000");
+    headers.set("cache-control", "private, no-store");
   }
 
   return new NextResponse(request.method === "HEAD" ? null : upstreamResponse.body, {
