@@ -27,15 +27,25 @@ const HeaderNavbar = observer(() => {
     >
       {isLargerThan1020 ? (
         <>
+          {/* <HeaderLanguageSwitch /> */}
           <HeaderThemeSwitch />
+          {/* <HeaderChatMessage />
+          <HeaderNotification />
+          <CartContainer /> */}
           <HeaderNotification />
           <HeaderProfile />
         </>
       ) : (
-        <>
-          <HeaderThemeSwitch />
-          <HeaderNotification />
-        </>
+        <IconButton
+          aria-label="Open navigation"
+          fontSize="lg"
+          size="sm"
+          _hover={{ color: useColorModeValue("brand.500", "brand.200"), bg: useColorModeValue("brand.50", "gray.700") }}
+          _active={{ bg: useColorModeValue("brand.100", "gray.800") }}
+          onClick={() => setOpenMobileSideDrawer(true)}
+          borderRadius="xl"
+          icon={<FaBars />}
+        />
       )}
     </Flex>
   );
