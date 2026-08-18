@@ -88,10 +88,10 @@ const SearchBar = () => {
           placeholder={isCompact ? "Search..." : "Search dashboard..."}
           bg={useColorModeValue("blackAlpha.100", "whiteAlpha.50")}
           border="1px solid transparent"
-          _focus={{ 
-            bg: useColorModeValue("blackAlpha.200", "whiteAlpha.100"), 
-            borderColor: "transparent", 
-            boxShadow: "none" 
+          _focus={{
+            bg: useColorModeValue("blackAlpha.200", "whiteAlpha.100"),
+            borderColor: "transparent",
+            boxShadow: "none"
           }}
           _hover={{ bg: useColorModeValue("blackAlpha.200", "whiteAlpha.100") }}
           borderRadius="12px"
