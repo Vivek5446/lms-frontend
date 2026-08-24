@@ -28,7 +28,7 @@ import {
   Trophy,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface CourseQuizPlayerProps {
   quiz: CourseQuizForLearner;
@@ -37,6 +37,7 @@ interface CourseQuizPlayerProps {
   onClose: () => void;
   onSubmit: (
     answers: Array<{ questionId: string; selectedOptionId: string }>,
+    metadata: { submissionId: string; startedAt: string; durationSeconds: number },
   ) => Promise<any>;
 }
 
@@ -55,6 +56,13 @@ export default function CourseQuizPlayer({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState(quiz.attempt || null);
+  const submitInFlightRef = useRef(false);
+  const attemptStartedAtRef = useRef(Date.now());
+  const submissionIdRef = useRef(
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
 
   useEffect(() => {
     const previousAnswers = quiz.attempt?.answers || [];
@@ -69,6 +77,11 @@ export default function CourseQuizPlayer({
     );
     setCurrentIndex(0);
     setResult(quiz.attempt || null);
+    attemptStartedAtRef.current = Date.now();
+    submissionIdRef.current =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }, [quiz.quizId, quiz.attempt?._id]);
 
   const brandScale = (theme.colors?.brand || {}) as Record<number, string>;
@@ -99,14 +112,32 @@ export default function CourseQuizPlayer({
   const questionBadgeBg = useColorModeValue(brand50, "whiteAlpha.100");
   const questionBadgeText = useColorModeValue(brand700, "white");
 
-  const answeredCount = quiz.questions.filter(
+  const displayQuestions = useMemo(() => {
+    if (!result?.answers?.length) {
+      return quiz.questions;
+    }
+
+    const currentQuestionMap = new Map(quiz.questions.map((question) => [question.questionId, question]));
+    return result.answers.map((answer, index) => {
+      const currentQuestion = currentQuestionMap.get(answer.questionId);
+      return {
+        questionId: answer.questionId,
+        sn: index + 1,
+        question: answer.question || currentQuestion?.question || `Question ${index + 1}`,
+        marks: Number(answer.maxMarks || currentQuestion?.marks || 0),
+        options: answer.options?.length ? answer.options : currentQuestion?.options || [],
+      };
+    });
+  }, [quiz.questions, result?.answers]);
+
+  const answeredCount = displayQuestions.filter(
     (question) => answers[question.questionId],
   ).length;
-  const unansweredCount = Math.max(quiz.questions.length - answeredCount, 0);
-  const progressPercent = quiz.questions.length
-    ? Math.round((answeredCount / quiz.questions.length) * 100)
+  const unansweredCount = Math.max(displayQuestions.length - answeredCount, 0);
+  const progressPercent = displayQuestions.length
+    ? Math.round((answeredCount / displayQuestions.length) * 100)
     : 0;
-  const currentQuestion = quiz.questions[currentIndex];
+  const currentQuestion = displayQuestions[currentIndex];
   const currentAnswerId = currentQuestion
     ? answers[currentQuestion.questionId]
     : "";
@@ -129,12 +160,27 @@ export default function CourseQuizPlayer({
     }));
   };
 
+  const beginRetake = () => {
+    setAnswers({});
+    setCurrentIndex(0);
+    setResult(null);
+    attemptStartedAtRef.current = Date.now();
+    submissionIdRef.current =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  };
+
   const goToNextQuestion = () => {
-    setCurrentIndex((index) => Math.min(quiz.questions.length - 1, index + 1));
+    setCurrentIndex((index) => Math.min(displayQuestions.length - 1, index + 1));
   };
 
   const submitQuiz = async () => {
-    const unansweredIndex = quiz.questions.findIndex(
+    if (submitInFlightRef.current || isSubmitting || result) {
+      return;
+    }
+
+    const unansweredIndex = displayQuestions.findIndex(
       (question) => !answers[question.questionId],
     );
 
@@ -150,13 +196,30 @@ export default function CourseQuizPlayer({
       return;
     }
 
-    const payload = quiz.questions.map((question) => ({
+    const payload = displayQuestions.map((question) => ({
       questionId: question.questionId,
       selectedOptionId: answers[question.questionId],
     }));
 
-    const response = await onSubmit(payload);
-    setResult(response?.attempt || null);
+    submitInFlightRef.current = true;
+    try {
+      const response = await onSubmit(payload, {
+        submissionId: submissionIdRef.current,
+        startedAt: new Date(attemptStartedAtRef.current).toISOString(),
+        durationSeconds: Math.max(0, Math.floor((Date.now() - attemptStartedAtRef.current) / 1000)),
+      });
+      setResult(response?.attempt || null);
+    } catch (error: any) {
+      toast({
+        title: "Quiz submission failed",
+        description: error?.message || error?.error || "Your answers were not submitted. Please try again.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+    } finally {
+      submitInFlightRef.current = false;
+    }
   };
 
   return (
@@ -264,7 +327,7 @@ export default function CourseQuizPlayer({
                   {quiz.totalMarks} point{quiz.totalMarks === 1 ? "" : "s"}
                 </Badge>
                 <Text fontSize="xs" color={textMuted} fontWeight="700">
-                  {quiz.questions.length} questions
+                  {displayQuestions.length} questions
                 </Text>
               </HStack>
 
@@ -312,7 +375,7 @@ export default function CourseQuizPlayer({
             >
               {isCompleted
                 ? "Complete"
-                : `${answeredCount}/${quiz.questions.length}`}
+                : `${answeredCount}/${displayQuestions.length}`}
             </Text>
           </Flex>
 
@@ -331,7 +394,7 @@ export default function CourseQuizPlayer({
                 },
               }}
             >
-              {quiz.questions.map((question, index) => {
+              {displayQuestions.map((question, index) => {
                 const isCurrent = index === currentIndex;
                 const isAnswered = Boolean(answers[question.questionId]);
 
@@ -437,6 +500,7 @@ export default function CourseQuizPlayer({
                     <Trophy size={17} />
                     <Text fontSize="sm" color={textColor} fontWeight="900">
                       Attempt #{result.attemptNumber}
+                      {Number(quiz.attemptCount || 0) > 1 ? ` · Latest of ${quiz.attemptCount}` : ""}
                     </Text>
                   </HStack>
                 </Flex>
@@ -478,7 +542,7 @@ export default function CourseQuizPlayer({
               </SimpleGrid>
 
               <Stack spacing={2.5}>
-                {quiz.questions.map((question, index) => {
+                {displayQuestions.map((question, index) => {
                   const review = answerReviewMap.get(question.questionId);
 
                   return (
@@ -574,7 +638,7 @@ export default function CourseQuizPlayer({
                           textTransform="uppercase"
                           letterSpacing="0.1em"
                         >
-                          Question {currentIndex + 1} of {quiz.questions.length}
+                          Question {currentIndex + 1} of {displayQuestions.length}
                         </Text>
                       </Box>
                     </HStack>
@@ -726,14 +790,14 @@ export default function CourseQuizPlayer({
               px={{ base: 3, md: 4 }}
               borderRadius="full"
               leftIcon={<ArrowLeft size={15} />}
-              isDisabled={isCompleted || currentIndex <= 0}
-              onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}
+              isDisabled={!isCompleted && currentIndex <= 0}
+              onClick={isCompleted ? beginRetake : () => setCurrentIndex((index) => Math.max(0, index - 1))}
             >
               <Box as="span" display={{ base: "none", sm: "inline" }}>
-                Previous
+                {isCompleted ? "Retake quiz" : "Previous"}
               </Box>
               <Box as="span" display={{ base: "inline", sm: "none" }}>
-                Back
+                {isCompleted ? "Retake" : "Back"}
               </Box>
             </Button>
 
@@ -750,7 +814,7 @@ export default function CourseQuizPlayer({
               </Text>
             )}
 
-            {!isCompleted && currentIndex < quiz.questions.length - 1 ? (
+            {!isCompleted && currentIndex < displayQuestions.length - 1 ? (
               <Button
                 colorScheme="brand"
                 size={{ base: "sm", md: "md" }}

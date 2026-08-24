@@ -400,6 +400,20 @@ function summarizeFile(file: StoredFile | null) {
   };
 }
 
+function summarizeCourseThumbnail(file: StoredFile | null) {
+  const thumbnail = summarizeFile(file);
+  if (!thumbnail) {
+    return null;
+  }
+
+  // Object URLs only exist in the current browser tab. The actual File is
+  // uploaded separately and the backend persists the resulting Cloudinary URL.
+  return {
+    ...thumbnail,
+    previewUrl: file?.file ? null : thumbnail.previewUrl,
+  };
+}
+
 function parseQuizMarks(value: string) {
   const parsedValue = parseNumericValue(value);
   return parsedValue !== null && parsedValue >= 0 ? parsedValue : 1;
@@ -515,6 +529,12 @@ export function collectCourseUploadFiles(courseForm: CourseFormState) {
   const studyMaterialFiles: File[] = [];
 
   courseForm.structure.modules.forEach((module) => {
+    module.studyMaterials.forEach((material) => {
+      if (material.file) {
+        studyMaterialFiles.push(material.file);
+      }
+    });
+
     module.sections.forEach((section) => {
       if (section.contentFile?.file) {
         if (section.contentFile.kind === "scorm" || section.contentFile.kind === "zip") {
@@ -738,7 +758,7 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
         passingPercentage,
       },
       media: {
-        thumbnail: summarizeFile(courseForm.basicInfo.thumbnail),
+        thumbnail: summarizeCourseThumbnail(courseForm.basicInfo.thumbnail),
       },
     },
     curriculum: {
@@ -750,13 +770,15 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
           ? summarizeQuiz(courseForm.structure.finalQuiz, "Final course quiz")
           : null,
       modules: courseForm.structure.modules.map((module, index) => ({
+        moduleId: module.id,
         order: index + 1,
         title: module.name.trim(),
         summary: module.description.trim(),
         thumbnailUrl: module.thumbnail?.previewUrl || "",
         sectionCount: module.sections.length,
-        studyMaterial: [],
+        studyMaterial: module.studyMaterials.map((material) => summarizeFile(material)),
         sections: module.sections.map((section, sectionIndex) => ({
+          sectionId: section.id,
           order: sectionIndex + 1,
           title: section.title.trim(),
           description: section.description.trim(),

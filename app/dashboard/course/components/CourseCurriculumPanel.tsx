@@ -166,7 +166,7 @@ function CurriculumQuizRow({
               ? "Locked"
               : completed
                 ? `${percentage}%`
-                : "Pending"}
+                : "Start Quiz"}
           </span>
         </span>
         <span className="mt-0.5 block text-[10px] text-muted-foreground">

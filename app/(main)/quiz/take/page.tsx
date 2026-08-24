@@ -96,7 +96,7 @@ export default function TakeQuizPage() {
         setQuizData(data);
 
         // Determine initial game state based on settings
-        if (data.settings?.password) {
+        if (data.settings?.requiresPassword) {
           setGameState("LOCKED");
         } else {
           setGameState("PRE_START");
@@ -111,7 +111,9 @@ export default function TakeQuizPage() {
             const remainingSeconds = Math.floor((parsed.endTime - Date.now()) / 1000);
             setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
           }
-          setGameState("ACTIVE");
+          if (!data.settings?.requiresPassword) {
+            setGameState("ACTIVE");
+          }
         }
       } catch (error: any) {
         toast({ title: "Failed to load quiz", status: "error" });
@@ -170,12 +172,35 @@ export default function TakeQuizPage() {
 
       const response = await axios.post(`/quiz/${quizId}/submit`, {
         answers: formattedAnswers,
+        password: passwordInput,
         timeTakenSeconds: quizData?.settings?.timerType === "OVERALL" 
           ? (quizData.settings.overallTimeLimitMinutes * 60) - (timeLeft || 0) 
           : 0
       });
 
       sessionStorage.removeItem(`quiz_progress_${quizId}`);
+      if (Array.isArray(response.data.data?.reviewQuestions)) {
+        const reviewMap = new Map(
+          response.data.data.reviewQuestions.map((question: any) => [String(question.questionId), question]),
+        );
+        setQuizData((current: any) => ({
+          ...current,
+          questions: (current?.questions || []).map((question: any) => {
+            const reviewQuestion: any = reviewMap.get(String(question._id));
+            const answerMap = new Map<string, any>(
+              (reviewQuestion?.answers || []).map((answer: any) => [String(answer.optionId), answer]),
+            );
+            return {
+              ...question,
+              explanation: reviewQuestion?.explanation || "",
+              answers: (question.answers || []).map((answer: any) => ({
+                ...answer,
+                ...(answerMap.get(String(answer._id)) || {}),
+              })),
+            };
+          }),
+        }));
+      }
       setResultData(response.data.data);
       setGameState("COMPLETED");
     } catch (error: any) {
@@ -350,12 +375,13 @@ export default function TakeQuizPage() {
     setAnswers(prev => ({ ...prev, [questionId]: [fileName] }));
   };
 
-  const handleUnlock = () => {
-    if (passwordInput === quizData?.settings?.password) {
+  const handleUnlock = async () => {
+    try {
+      await axios.post(`/quiz/${quizId}/verify-password`, { password: passwordInput });
       setGameState("PRE_START");
       setPasswordError("");
-    } else {
-      setPasswordError("Incorrect password");
+    } catch (error: any) {
+      setPasswordError(error?.response?.data?.message || "Incorrect password");
     }
   };
 
@@ -1074,7 +1100,7 @@ export default function TakeQuizPage() {
                     <Box bg={isRating ? useColorModeValue("blue.50", "rgba(66, 153, 225, 0.1)") : (isCorrect ? useColorModeValue("green.50", "rgba(72, 187, 120, 0.1)") : useColorModeValue("red.50", "rgba(245, 101, 101, 0.1)"))} p={4} display="flex" alignItems="center" gap={3} borderBottomWidth="1px" borderColor={isRating ? "blue.200" : (isCorrect ? "green.200" : "red.200")}>
                        <Icon as={isRating ? FiCheckCircle : (isCorrect ? FiCheckCircle : FiXCircle)} color={isRating ? "blue.500" : (isCorrect ? "green.500" : "red.500")} boxSize={6} />
                        <Heading size="sm" color={isRating ? useColorModeValue("blue.800", "blue.200") : (isCorrect ? useColorModeValue("green.800", "green.200") : useColorModeValue("red.800", "red.200"))}>
-                         Question {index + 1} - {isRating ? "Feedback / Unscored" : (isCorrect ? "Correct" : "Incorrect")} ({isRating ? 0 : (result?.pointsAwarded || 0)} / {isRating ? 0 : (question.points || 1)} Points)
+                         Question {index + 1} - {isRating ? "Feedback / Unscored" : (isCorrect ? "Correct" : "Incorrect")} ({isRating ? 0 : (result?.pointsEarned || 0)} / {isRating ? 0 : (question.points || 1)} Points)
                        </Heading>
                     </Box>
                     <Box p={6}>

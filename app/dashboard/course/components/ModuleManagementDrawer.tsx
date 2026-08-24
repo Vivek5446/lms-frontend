@@ -194,7 +194,13 @@ export default function ModuleManagementDrawer({
       hasQuiz: Boolean(mod.assessments?.quizEnabled || mappedQuiz.questions.length > 0),
       hasTest: Boolean(mod.assessments?.testEnabled),
       quiz: mappedQuiz,
-      studyMaterials: [],
+      studyMaterials: Array.isArray(mod.studyMaterial)
+        ? mod.studyMaterial
+            .map((material: any, materialIndex: number) =>
+              createExistingStoredFile(material, `Module material ${materialIndex + 1}`)
+            )
+            .filter(Boolean) as StoredFile[]
+        : [],
       sections: mappedSections,
     };
   };
@@ -304,6 +310,32 @@ export default function ModuleManagementDrawer({
     });
   };
 
+  const handleModuleStudyMaterialChange = (moduleId: string, fileList: FileList | null) => {
+    if (!fileList?.length) return;
+    const currentForm = moduleForms[moduleId] || buildInitialForm();
+    updateModuleForm(moduleId, {
+      studyMaterials: [...currentForm.studyMaterials, ...createStudyMaterialFiles(fileList)],
+    });
+  };
+
+  const removeModuleStudyMaterial = (moduleId: string, materialId: string) => {
+    const currentForm = moduleForms[moduleId] || buildInitialForm();
+    updateModuleForm(moduleId, {
+      studyMaterials: currentForm.studyMaterials.filter((material) => material.id !== materialId),
+    });
+  };
+
+  const addModuleStudyMaterialUrl = (moduleId: string) => {
+    const url = window.prompt("Document URL");
+    if (!url?.trim()) return;
+    const currentForm = moduleForms[moduleId] || buildInitialForm();
+    const material = createUrlStoredFile(url, "document", "Document URL");
+    if (!material) return;
+    updateModuleForm(moduleId, {
+      studyMaterials: [...currentForm.studyMaterials, material],
+    });
+  };
+
   const handleSectionStudyMaterialChange = (moduleId: string, sectionId: string, fileList: FileList | null) => {
     if (!fileList?.length) return;
     const currentForm = moduleForms[moduleId] || buildInitialForm();
@@ -362,6 +394,29 @@ export default function ModuleManagementDrawer({
         formData.append("moduleThumbnail", formState.thumbnail.file);
       }
 
+      const moduleStudyMaterials: any[] = [];
+      formState.studyMaterials.forEach((material) => {
+        if (material.file) {
+          formData.append("studyMaterial", material.file);
+          moduleStudyMaterials.push({
+            name: material.name,
+            fileName: material.file.name,
+            kind: material.kind,
+            sourceType: "upload",
+          });
+        } else if (material.previewUrl) {
+          moduleStudyMaterials.push({
+            name: material.name,
+            previewUrl: material.previewUrl,
+            kind: material.kind,
+            mimeType: material.type || (material.sourceType === "url" ? "application/url" : "application/octet-stream"),
+            extension: material.extension || null,
+            sizeInBytes: material.size || 0,
+            sourceType: material.sourceType || (material.isUrl ? "url" : "upload"),
+          });
+        }
+      });
+
       const sectionsPayload: any[] = [];
       formState.sections.forEach((sec, idx) => {
         let contentFileName = "";
@@ -413,6 +468,7 @@ export default function ModuleManagementDrawer({
         });
 
         sectionsPayload.push({
+          sectionId: sec.id,
           title: sec.title || `Section ${idx + 1}`,
           description: sec.description || "",
           order: idx + 1,
@@ -431,7 +487,7 @@ export default function ModuleManagementDrawer({
         hasQuiz: formState.hasQuiz,
         hasTest: formState.hasTest,
         quiz: formState.hasQuiz ? summarizeQuiz(formState.quiz, `${formState.name || "Module"} quiz`) : null,
-        studyMaterials: [],
+        studyMaterials: moduleStudyMaterials,
         sections: sectionsPayload,
       };
 
@@ -790,6 +846,68 @@ export default function ModuleManagementDrawer({
                 resize="vertical"
                 focusBorderColor="blue.400"
               />
+            </Box>
+
+            <Box mt={5}>
+              <Flex align={{ base: "stretch", sm: "center" }} justify="space-between" direction={{ base: "column", sm: "row" }} gap={2} mb={2}>
+                <Box>
+                  <Text fontSize="xs" fontWeight="semibold" color={textColor}>
+                    Module Study Materials
+                  </Text>
+                  <Text fontSize="xs" color={mutedText} mt={0.5}>
+                    Files and document URLs attached directly to this module.
+                  </Text>
+                </Box>
+                <Button size="xs" variant="outline" leftIcon={<FiPlus />} onClick={() => addModuleStudyMaterialUrl(key)}>
+                  Add Document URL
+                </Button>
+              </Flex>
+
+              <Box
+                as="label"
+                display="flex"
+                alignItems="center"
+                gap={3}
+                border="1px dashed"
+                borderColor={borderColor}
+                borderRadius="xl"
+                bg={bg}
+                px={4}
+                py={3}
+                cursor="pointer"
+              >
+                <input
+                  type="file"
+                  hidden
+                  accept="application/pdf,.pdf"
+                  multiple
+                  onChange={(event) => {
+                    handleModuleStudyMaterialChange(key, event.target.files);
+                    event.currentTarget.value = "";
+                  }}
+                />
+                <FiFileText />
+                <Text fontSize="xs" color={mutedText}>
+                  Upload module document
+                </Text>
+              </Box>
+
+              {formState.studyMaterials.length > 0 && (
+                <VStack align="stretch" spacing={2} mt={3}>
+                  {formState.studyMaterials.map((material) => (
+                    <Flex key={material.id} align="center" gap={3} border="1px solid" borderColor={borderColor} borderRadius="lg" px={3} py={2}>
+                      <FiFileText />
+                      <Box minW={0} flex={1}>
+                        <Text fontSize="xs" color={textColor} isTruncated>{material.name}</Text>
+                        <Text fontSize="10px" color={mutedText}>{getFileKindLabel(material.kind)}</Text>
+                      </Box>
+                      <Button size="xs" colorScheme="red" variant="ghost" onClick={() => removeModuleStudyMaterial(key, material.id)}>
+                        Remove
+                      </Button>
+                    </Flex>
+                  ))}
+                </VStack>
+              )}
             </Box>
           </Box>
 

@@ -764,35 +764,249 @@ export const FolderExplorer = observer(function FolderExplorer({
         submitLabel="Update Folder"
       />
 
-      <AlertDialog
-        isOpen={Boolean(publishTarget)}
-        leastDestructiveRef={cancelPublishRef}
-        onClose={() => setPublishTarget(null)}
-        isCentered
+    <AlertDialog
+  isOpen={Boolean(publishTarget)}
+  leastDestructiveRef={cancelPublishRef}
+  onClose={() => setPublishTarget(null)}
+  isCentered
+>
+  <AlertDialogOverlay
+    backdropFilter="blur(2px)"
+  />
+
+  <AlertDialogContent
+    mx={4}
+    maxW="420px"
+    borderRadius="24px"
+    overflow="hidden"
+    boxShadow="0 24px 70px rgba(0, 0, 0, 0.2)"
+    border="1px solid"
+    borderColor="gray.100"
+  >
+    {/* Playful header */}
+    <Box
+      position="relative"
+      bg="green.50"
+      px={6}
+      pt={5}
+      pb={4}
+      overflow="hidden"
+    >
+      {/* Decorative bubbles */}
+      <Box
+        position="absolute"
+        w="90px"
+        h="90px"
+        borderRadius="full"
+        bg="green.100"
+        top="-45px"
+        right="-20px"
+        opacity={0.7}
+      />
+
+      <Box
+        position="absolute"
+        w="42px"
+        h="42px"
+        borderRadius="full"
+        border="8px solid"
+        borderColor="green.100"
+        bottom="-20px"
+        right="80px"
+      />
+
+      <Flex
+        position="relative"
+        align="center"
+        gap={4}
       >
-        <AlertDialogOverlay />
-        <AlertDialogContent borderRadius="2xl">
-          <AlertDialogHeader fontSize="lg" fontWeight="bold">
-            Publish course?
+        {/* Icon */}
+        <Flex
+          w="54px"
+          h="54px"
+          flexShrink={0}
+          align="center"
+          justify="center"
+          borderRadius="18px"
+          bg="green.500"
+          color="white"
+          boxShadow="0 8px 20px rgba(72, 187, 120, 0.28)"
+          transform="rotate(-4deg)"
+        >
+          <Icon
+            viewBox="0 0 24 24"
+            boxSize={6}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 16V4" />
+            <path d="m7 9 5-5 5 5" />
+            <path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />
+          </Icon>
+        </Flex>
+
+        <Box>
+          <Text
+            fontSize="xs"
+            fontWeight="700"
+            color="green.600"
+            textTransform="uppercase"
+            letterSpacing="0.08em"
+            mb={1}
+          >
+            Almost there
+          </Text>
+
+          <AlertDialogHeader
+            p={0}
+            fontSize="xl"
+            fontWeight="800"
+            lineHeight="1.2"
+            letterSpacing="-0.025em"
+            color="gray.800"
+          >
+            Ready to publish?
           </AlertDialogHeader>
-          <AlertDialogBody>
-            {publishTarget?.title || "This course"} will become available based on its visibility settings. Please confirm before publishing.
-          </AlertDialogBody>
-          <AlertDialogFooter>
-            <Button ref={cancelPublishRef} onClick={() => setPublishTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme="green"
-              ml={3}
-              onClick={handleConfirmPublish}
-              isLoading={courseStore.publishingCourseId === publishTarget?._id}
-            >
-              Publish
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </Box>
+      </Flex>
+    </Box>
+
+    {/* Content */}
+    <AlertDialogBody px={6} pt={5} pb={4}>
+      {/* Course card */}
+      <Flex
+        align="center"
+        gap={3}
+        p={3}
+        borderRadius="14px"
+        bg="gray.50"
+        border="1px solid"
+        borderColor="gray.100"
+      >
+        <Flex
+          w="36px"
+          h="36px"
+          flexShrink={0}
+          borderRadius="10px"
+          align="center"
+          justify="center"
+          bg="white"
+          border="1px solid"
+          borderColor="gray.200"
+        >
+          <Icon
+            viewBox="0 0 24 24"
+            boxSize={4}
+            color="green.500"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+          </Icon>
+        </Flex>
+
+        <Box minW={0}>
+          <Text
+            fontSize="xs"
+            color="gray.500"
+            fontWeight="600"
+            mb={0.5}
+          >
+            Course
+          </Text>
+
+          <Text
+            fontSize="sm"
+            fontWeight="700"
+            color="gray.800"
+            noOfLines={1}
+          >
+            {publishTarget?.title || "This course"}
+          </Text>
+        </Box>
+
+        <Box
+          ml="auto"
+          px={2.5}
+          py={1}
+          bg="green.100"
+          color="green.700"
+          borderRadius="full"
+          fontSize="10px"
+          fontWeight="700"
+          flexShrink={0}
+        >
+          READY
+        </Box>
+      </Flex>
+
+      <Text
+        mt={4}
+        fontSize="sm"
+        color="gray.600"
+        lineHeight="1.6"
+      >
+        Once published, this course will become available according to
+        its visibility settings.
+      </Text>
+    </AlertDialogBody>
+
+    {/* Footer */}
+    <AlertDialogFooter
+      px={6}
+      pt={2}
+      pb={6}
+      gap={3}
+    >
+      <Button
+        ref={cancelPublishRef}
+        onClick={() => setPublishTarget(null)}
+        variant="ghost"
+        flex={1}
+        h="44px"
+        borderRadius="12px"
+        fontWeight="600"
+        color="gray.600"
+        _hover={{
+          bg: "gray.100",
+        }}
+      >
+        Cancel
+      </Button>
+
+      <Button
+        colorScheme="green"
+        onClick={handleConfirmPublish}
+        isLoading={
+          courseStore.publishingCourseId === publishTarget?._id
+        }
+        flex={1.4}
+        h="44px"
+        borderRadius="12px"
+        fontWeight="700"
+        boxShadow="0 6px 14px rgba(72, 187, 120, 0.22)"
+        _hover={{
+          transform: "translateY(-1px)",
+          boxShadow: "0 8px 18px rgba(72, 187, 120, 0.28)",
+        }}
+        _active={{
+          transform: "translateY(0)",
+        }}
+        transition="all 0.18s ease"
+      >
+        Publish course
+      </Button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+
     </div>
   );
 });

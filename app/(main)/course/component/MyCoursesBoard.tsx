@@ -630,12 +630,13 @@ const MyCoursesBoard = observer(
                 displayMode="drawer"
                 isSubmitting={courseStore.isQuizSubmitting}
                 onClose={() => setActiveQuiz(null)}
-                onSubmit={async (answers) => {
+                onSubmit={async (answers, metadata) => {
                   const activeCourseId = activeCourse._id;
                   const response = await courseStore.submitCourseQuiz(
                     activeCourseId,
                     activeQuiz.quizId,
                     answers,
+                    metadata,
                   );
                   await Promise.all([
                     courseStore.fetchMyCourseDetail(activeCourseId),

@@ -20,6 +20,7 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
   const totalStudyMaterials = modules.reduce((count, module) => {
     return (
       count +
+      module.studyMaterials.length +
       module.sections.reduce((sectionCount, section) => sectionCount + section.studyMaterials.length, 0)
     );
   }, 0);
@@ -183,6 +184,15 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
                     <Badge className="bg-step-3/10 text-step-3 border-0 text-xs">Test</Badge>
                   )}
                 </div>
+                {module.studyMaterials.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {module.studyMaterials.map((material) => (
+                      <Badge key={material.id} className="bg-primary/10 text-primary border-0 text-xs">
+                        Module {material.sourceType === "url" ? "Document URL" : "PDF"}: {material.name}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="space-y-2">
                   {module.sections.length === 0 ? (
                     <div className="text-xs text-muted-foreground">No sections added yet.</div>

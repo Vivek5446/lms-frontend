@@ -1,10 +1,9 @@
 "use client";
 
 import {
-  deriveModuleId,
-  deriveSectionId,
   useProtectedCourseAssetUrl,
 } from "@/app/dashboard/course/scorm/sectionTracking";
+import CourseAssetModal from "@/app/dashboard/course/scorm/CourseAssetModal";
 import {
   Archive,
   ChevronDown,
@@ -20,39 +19,23 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import {
+  buildCourseMaterialGroups,
+  countCourseMaterials,
+  CourseMaterialGroup,
+  CourseMaterialRecord,
+} from "./courseMaterialGroups";
 
-export interface CourseMaterialRecord {
-  name?: string;
-  title?: string;
-  fileName?: string;
-  previewUrl?: string;
-  assetPath?: string;
-  path?: string;
-  url?: string;
-  file?: string;
-  mimeType?: string;
-  type?: string;
-  size?: number | string;
-  sizeBytes?: number;
-  fileSize?: number | string;
-  [key: string]: unknown;
-}
-
-export interface CourseMaterialSectionGroup {
-  id: string;
-  title: string;
-  label: string;
-  moduleId?: string;
-  sectionId?: string;
-  materials: CourseMaterialRecord[];
-}
-
-export interface CourseMaterialGroup {
-  id: string;
-  index: number;
-  title: string;
-  sections: CourseMaterialSectionGroup[];
-}
+export {
+  buildCourseMaterialGroups,
+  countCourseMaterials,
+  hasCourseMaterials,
+} from "./courseMaterialGroups";
+export type {
+  CourseMaterialGroup,
+  CourseMaterialRecord,
+  CourseMaterialSectionGroup,
+} from "./courseMaterialGroups";
 
 interface CourseMaterialsSectionProps {
   course?: any;
@@ -60,72 +43,13 @@ interface CourseMaterialsSectionProps {
   materialGroups?: CourseMaterialGroup[];
   className?: string;
   initiallyExpandedModules?: number;
+  isLoading?: boolean;
 }
 
 function joinClasses(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-function normalizeMaterials(materials: unknown): CourseMaterialRecord[] {
-  return Array.isArray(materials)
-    ? materials.filter(Boolean) as CourseMaterialRecord[]
-    : [];
-}
-
-export function buildCourseMaterialGroups(course: any): CourseMaterialGroup[] {
-  const modules = Array.isArray(course?.curriculum?.modules)
-    ? course.curriculum.modules
-    : [];
-
-  return modules
-    .map((moduleRecord: any, moduleIndex: number) => {
-      const sections = (Array.isArray(moduleRecord?.sections)
-        ? moduleRecord.sections
-        : []
-      )
-        .map((sectionRecord: any, sectionIndex: number) => ({
-          id: `${moduleIndex + 1}-${sectionIndex + 1}`,
-          title: String(sectionRecord?.title || `Section ${sectionIndex + 1}`),
-          label: `Section ${moduleIndex + 1}.${sectionIndex + 1}`,
-          moduleId: deriveModuleId(moduleRecord),
-          sectionId: deriveSectionId(moduleRecord, sectionRecord),
-          materials: normalizeMaterials(sectionRecord?.studyMaterial),
-        }))
-        .filter(
-          (sectionRecord: CourseMaterialSectionGroup) =>
-            sectionRecord.materials.length > 0
-        );
-
-      if (!sections.length) {
-        return null;
-      }
-
-      return {
-        id: String(
-          moduleRecord?.moduleId ||
-            moduleRecord?.id ||
-            moduleRecord?._id ||
-            moduleIndex + 1
-        ),
-        index: moduleIndex + 1,
-        title: String(moduleRecord?.title || `Module ${moduleIndex + 1}`),
-        sections,
-      } satisfies CourseMaterialGroup;
-    })
-    .filter(Boolean) as CourseMaterialGroup[];
-}
-
-export function countCourseMaterials(groups: CourseMaterialGroup[]) {
-  return groups.reduce(
-    (total, group) =>
-      total +
-      group.sections.reduce(
-        (sectionTotal, section) => sectionTotal + section.materials.length,
-        0
-      ),
-    0
-  );
-}
 
 function getRawMaterialPath(material: CourseMaterialRecord) {
   return String(
@@ -230,6 +154,18 @@ interface MaterialCardProps {
   courseId?: string;
   moduleId?: string;
   sectionId?: string;
+  onOpenUploadedDocument: (document: OpenDocumentState) => void;
+}
+
+interface OpenDocumentState {
+  assetPath: string;
+  title: string;
+  moduleId?: string;
+  sectionId?: string;
+}
+
+function isExternalMaterialUrl(material: CourseMaterialRecord) {
+  return material.sourceType === "url" || material.isUrl === true;
 }
 
 function MaterialCard({
@@ -238,6 +174,7 @@ function MaterialCard({
   courseId,
   moduleId,
   sectionId,
+  onOpenUploadedDocument,
 }: MaterialCardProps) {
   const rawMaterialPath = getRawMaterialPath(material);
   const { assetUrl: materialUrl, isLoading: isMaterialUrlLoading } =
@@ -250,6 +187,7 @@ function MaterialCard({
   const extension = getMaterialExtension(material).toUpperCase();
   const formattedSize = formatMaterialSize(material);
   const MaterialIcon = getMaterialIcon(material);
+  const isExternalUrl = isExternalMaterialUrl(material);
 
   return (
     <article className="group min-w-0 max-w-full overflow-hidden rounded-2xl border border-border bg-card p-2.5 transition duration-200 hover:border-primary/25 hover:shadow-sm sm:p-3">
@@ -285,15 +223,31 @@ function MaterialCard({
       <div className="mt-2.5 grid grid-cols-2 gap-2 sm:ml-[3.5rem] sm:flex sm:justify-end">
         {materialUrl ? (
           <>
-            <a
-              href={materialUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 text-[11px] font-semibold text-foreground transition hover:border-primary/25 hover:bg-primary/5 hover:text-primary sm:h-9 sm:flex-none sm:rounded-full sm:text-xs"
-            >
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-              <span>Open</span>
-            </a>
+            {isExternalUrl ? (
+              <a
+                href={materialUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 text-[11px] font-semibold text-foreground transition hover:border-primary/25 hover:bg-primary/5 hover:text-primary sm:h-9 sm:flex-none sm:rounded-full sm:text-xs"
+              >
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                <span>Open</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onOpenUploadedDocument({
+                  assetPath: rawMaterialPath,
+                  title: materialName,
+                  moduleId,
+                  sectionId,
+                })}
+                className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 text-[11px] font-semibold text-foreground transition hover:border-primary/25 hover:bg-primary/5 hover:text-primary sm:h-9 sm:flex-none sm:rounded-full sm:text-xs"
+              >
+                <FileText className="h-3.5 w-3.5 shrink-0" />
+                <span>Open</span>
+              </button>
+            )}
 
             <a
               href={materialUrl}
@@ -338,6 +292,7 @@ export default function CourseMaterialsSection({
   materialGroups,
   className,
   initiallyExpandedModules = 1,
+  isLoading = false,
 }: CourseMaterialsSectionProps) {
   const groups = useMemo(
     () => materialGroups ?? buildCourseMaterialGroups(course),
@@ -345,6 +300,7 @@ export default function CourseMaterialsSection({
   );
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [openDocument, setOpenDocument] = useState<OpenDocumentState | null>(null);
   const [expandedModuleIds, setExpandedModuleIds] = useState<Set<string>>(
     () => new Set(groups.slice(0, initiallyExpandedModules).map((group) => group.id))
   );
@@ -391,10 +347,12 @@ export default function CourseMaterialsSection({
             <Archive className="h-5 w-5" />
           </span>
           <h3 className="mt-3 text-sm font-semibold text-foreground">
-            No materials yet
+            {isLoading ? "Loading materials" : "No materials yet"}
           </h3>
           <p className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground sm:text-sm">
-            No study materials are attached to this course yet.
+            {isLoading
+              ? "Checking module and section resources..."
+              : "No study materials are attached to this course yet."}
           </p>
         </div>
       </div>
@@ -531,7 +489,12 @@ export default function CourseMaterialsSection({
                                 courseId={courseId || String(course?._id || course?.courseId || "")}
                                 moduleId={sectionGroup.moduleId}
                                 sectionId={sectionGroup.sectionId}
-                                helperText={`Lesson material · ${sectionGroup.title}`}
+                                onOpenUploadedDocument={setOpenDocument}
+                                helperText={
+                                  sectionGroup.scope === "module"
+                                    ? `Module material · ${group.title}`
+                                    : `Lesson material · ${sectionGroup.title}`
+                                }
                               />
                             ))}
                           </div>
@@ -562,6 +525,18 @@ export default function CourseMaterialsSection({
           </div>
         )}
       </div>
+
+      {openDocument ? (
+        <CourseAssetModal
+          assetUrl={openDocument.assetPath}
+          assetKind="document"
+          title={openDocument.title}
+          courseId={courseId || String(course?._id || course?.courseId || "")}
+          moduleId={openDocument.moduleId}
+          sectionId={openDocument.sectionId}
+          onBack={() => setOpenDocument(null)}
+        />
+      ) : null}
     </div>
   );
 }

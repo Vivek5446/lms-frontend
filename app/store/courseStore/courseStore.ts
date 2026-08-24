@@ -443,12 +443,14 @@ export interface CourseQuizQuestion {
 export interface CourseQuizAttemptAnswer {
   questionId: string;
   question: string;
+  options?: Array<{ optionId: string; label: string; text: string }>;
   selectedOptionId: string;
   selectedOptionLabel: string;
   selectedAnswerText: string;
   correctOptionId: string;
   correctOptionLabel: string;
   correctAnswerText: string;
+  explanation?: string;
   isCorrect: boolean;
   marksAwarded: number;
   maxMarks: number;
@@ -468,7 +470,11 @@ export interface CourseQuizAttempt {
   incorrectCount: number;
   questionCount: number;
   attemptNumber: number;
+  passingPercentage?: number;
+  isPassed?: boolean;
+  startedAt?: string | null;
   submittedAt?: string | null;
+  durationSeconds?: number;
   answers: CourseQuizAttemptAnswer[];
 }
 
@@ -486,6 +492,17 @@ export interface CourseQuizForLearner {
   unlockProgress?: number;
   questions: CourseQuizQuestion[];
   attempt?: CourseQuizAttempt | null;
+  attemptCount?: number;
+  attemptHistory?: Array<{
+    _id: string;
+    attemptNumber: number;
+    score: number;
+    maxScore: number;
+    percentage: number;
+    isPassed: boolean;
+    submittedAt?: string | null;
+    durationSeconds?: number;
+  }>;
 }
 
 export interface CourseModuleListItem {
@@ -561,17 +578,15 @@ function deriveEnrollmentStatusFromLessonStatus(
   progress: number
 ): MyCourseItem["status"] {
   const normalizedValue = String(lessonStatus || "").trim().toLowerCase();
-  if (progress >= 100) {
-    return "completed";
-  }
-
   if (isCompletedLessonStatus(normalizedValue)) {
     return "completed";
   }
 
-  if (progress > 0 || normalizedValue === "incomplete" || normalizedValue === "failed" || normalizedValue === "browsed") {
+  if (normalizedValue === "incomplete" || normalizedValue === "failed" || normalizedValue === "browsed") {
     return "in_progress";
   }
+
+  if (progress > 0) return "in_progress";
 
   return "not_started";
 }
@@ -1860,11 +1875,15 @@ class CourseStoreClass {
   submitCourseQuiz = async (
     courseId: string,
     quizId: string,
-    answers: Array<{ questionId: string; selectedOptionId: string }>
+    answers: Array<{ questionId: string; selectedOptionId: string }>,
+    metadata?: { submissionId: string; startedAt: string; durationSeconds: number },
   ) => {
     this.isQuizSubmitting = true;
     try {
-      const { data } = await axios.post(`/course/${courseId}/quizzes/${quizId}/submit`, { answers });
+      const { data } = await axios.post(`/course/${courseId}/quizzes/${quizId}/submit`, {
+        answers,
+        ...(metadata || {}),
+      });
       await this.fetchCourseQuizzes(courseId).catch(() => undefined);
       return data.data;
     } catch (err: any) {

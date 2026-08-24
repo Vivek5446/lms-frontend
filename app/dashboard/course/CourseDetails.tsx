@@ -501,6 +501,8 @@ export default function CourseDetails({
     useState(false);
   const [isLoadingModules, setIsLoadingModules] =
     useState(false);
+  const [isLoadingMaterials, setIsLoadingMaterials] =
+    useState(false);
   const [sectionLoadingByModule, setSectionLoadingByModule] =
     useState<Record<string, boolean>>({});
   const [sectionLoadedByModule, setSectionLoadedByModule] =
@@ -976,10 +978,12 @@ export default function CourseDetails({
     () => summarizeAnswerSections(learnerAnswers),
     [learnerAnswers]
   );
+  const quizActivity = useMemo(
+    () => courseQuizzes.filter((quiz) => Boolean(quiz.attempt)),
+    [courseQuizzes]
+  );
   const showQuizReview = Boolean(
-    isAssignedCourseView ||
-      learnerAnswers.length > 0 ||
-      courseQuizzes.length > 0
+    learnerAnswers.length > 0 || quizActivity.length > 0
   );
   const previewLaunchSection =
     firstPlayableLaunchSection || nextLaunchSection;
@@ -1194,9 +1198,23 @@ export default function CourseDetails({
 
   const handleTabChange = useCallback(
     (tabId: CourseDetailsTabId) => {
-      void tabId;
+      if (tabId !== "materials") {
+        return;
+      }
+
+      const moduleIdsToLoad = modules
+        .map((moduleRecord) => deriveModuleId(moduleRecord))
+        .filter((moduleId) => moduleId && !sectionLoadedByModule[moduleId]);
+      if (!moduleIdsToLoad.length) {
+        return;
+      }
+
+      setIsLoadingMaterials(true);
+      void Promise.all(
+        moduleIdsToLoad.map((moduleId) => loadSectionsForModule(moduleId))
+      ).finally(() => setIsLoadingMaterials(false));
     },
-    []
+    [loadSectionsForModule, modules, sectionLoadedByModule]
   );
 
   const handleSelectSection = useCallback(
@@ -1316,6 +1334,7 @@ export default function CourseDetails({
             courseId={courseId}
             materialGroups={materialGroups}
             initiallyExpandedModules={1}
+            isLoading={isLoadingMaterials}
           />
         ),
       },
@@ -1328,7 +1347,7 @@ export default function CourseDetails({
         icon: Award,
         badge:
           answerSummary.totalQuestions ||
-          courseQuizzes.length ||
+          quizActivity.length ||
           undefined,
         hidden: !showQuizReview,
         content: (
@@ -1337,14 +1356,13 @@ export default function CourseDetails({
             isLearnerAnswersLoading={
               isLearnerAnswersLoading
             }
-            courseQuizzes={courseQuizzes}
+            courseQuizzes={quizActivity}
             isCourseQuizzesLoading={
               isCourseQuizzesLoading
             }
             courseProgress={progressLabel}
             sectionsCompleted={sectionsCompleted}
             totalSections={totalSections}
-            onTakeQuiz={onTakeQuiz}
             defaultView="overview"
           />
         ),
@@ -1363,11 +1381,13 @@ export default function CourseDetails({
       isCertificateDownloading,
       isCourseQuizzesLoading,
       isLearnerAnswersLoading,
+      isLoadingMaterials,
       learnerAnswers,
       learningOutcomes,
       materialGroups,
       onDownloadCertificate,
       onTakeQuiz,
+      quizActivity,
       progressLabel,
       sectionsCompleted,
       showQuizReview,

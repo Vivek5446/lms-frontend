@@ -10,6 +10,7 @@ import {
   DrawerOverlay,
 } from "@chakra-ui/react";
 import axios from "axios";
+import { AUTH_TOKEN, BACKEND_URL } from "@/app/config/utils/variables";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { memo, RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -196,20 +197,19 @@ export default function CoursePlayer({
     const endpoint = mode === "finish" ? "/scorm/finish" : "/scorm/commit";
 
     try {
-      if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-        const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-        if (navigator.sendBeacon(endpoint, blob)) {
-          scheduleUiRefresh(payload, mode);
-          return true;
-        }
-      }
-
       if (typeof fetch === "function") {
-        void fetch(endpoint, {
+        const token = typeof window !== "undefined" && AUTH_TOKEN
+          ? window.localStorage.getItem(AUTH_TOKEN)
+          : null;
+        const requestUrl = BACKEND_URL
+          ? `${BACKEND_URL.replace(/\/$/, "")}${endpoint}`
+          : endpoint;
+        void fetch(requestUrl, {
           method: "POST",
           body: JSON.stringify(payload),
           headers: {
             "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           credentials: "include",
           keepalive: true,

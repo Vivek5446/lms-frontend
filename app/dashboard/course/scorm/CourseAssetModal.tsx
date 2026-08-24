@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Download, ExternalLink, FileText, RotateCcw, Video, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { LaunchContentKind, useProtectedCourseAssetUrl } from "./sectionTracking";
 
 const VIDEO_PROGRESS_SYNC_INTERVAL_MS = 30000;
@@ -50,6 +51,7 @@ export default function CourseAssetModal({
   const onOpenedRef = useRef(onOpened);
   const onCompletedRef = useRef(onCompleted);
   const onProgressUpdateRef = useRef(onProgressUpdate);
+  const onBackRef = useRef(onBack);
   const {
     assetUrl: protectedAssetUrl,
     isLoading: isProtectedAssetLoading,
@@ -61,13 +63,36 @@ export default function CourseAssetModal({
     sectionId,
   });
   const [showStartOver, setShowStartOver] = useState(initialProgress >= 100);
+  const [isPortalMounted, setIsPortalMounted] = useState(false);
   const isInline = displayMode === "inline";
+
+  useEffect(() => {
+    setIsPortalMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isInline) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onBackRef.current();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isInline]);
 
   useEffect(() => {
     onOpenedRef.current = onOpened;
     onCompletedRef.current = onCompleted;
     onProgressUpdateRef.current = onProgressUpdate;
-  }, [onOpened, onCompleted, onProgressUpdate]);
+    onBackRef.current = onBack;
+  }, [onBack, onOpened, onCompleted, onProgressUpdate]);
 
   useEffect(() => {
     hasTrackedOpenRef.current = false;
@@ -378,12 +403,12 @@ export default function CourseAssetModal({
     );
   };
 
-  return (
+  const viewer = (
     <div
       className={
         isInline
           ? "h-full"
-          : "fixed inset-0 z-[1400] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          : "fixed inset-0 z-[2000] flex items-stretch justify-end bg-black/60 backdrop-blur-sm"
       }
       onClick={(event) => {
         if (!isInline && event.target === event.currentTarget) {
@@ -392,15 +417,15 @@ export default function CourseAssetModal({
       }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.98, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.98, y: 10 }}
+        initial={isInline ? { opacity: 0, scale: 0.98, y: 10 } : { x: "100%" }}
+        animate={isInline ? { opacity: 1, scale: 1, y: 0 } : { x: 0 }}
+        exit={isInline ? { opacity: 0, scale: 0.98, y: 10 } : { x: "100%" }}
         transition={{ duration: 0.25, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
         className={`flex flex-col overflow-hidden ${
           isInline
             ? "h-full w-full rounded-[1.5rem] border border-border bg-background shadow-none"
-            : "h-[100dvh] w-screen rounded-none border border-white/5 bg-slate-950 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.8)] sm:h-auto sm:max-w-5xl sm:w-full sm:rounded-xl"
+            : "h-[100dvh] w-screen max-w-5xl rounded-none border-l border-white/5 bg-slate-950 shadow-[-24px_0_60px_-15px_rgba(0,0,0,0.8)] sm:w-[min(92vw,64rem)]"
         }`}
       >
         {showHeader ? (
@@ -487,4 +512,9 @@ export default function CourseAssetModal({
       </motion.div>
     </div>
   );
+
+  if (isInline) return viewer;
+  if (!isPortalMounted) return null;
+
+  return createPortal(viewer, document.body);
 }

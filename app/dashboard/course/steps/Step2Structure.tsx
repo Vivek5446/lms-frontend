@@ -175,6 +175,46 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
     });
   };
 
+  const handleModuleStudyMaterialChange = (moduleId: string, fileList: FileList | null) => {
+    if (!fileList?.length) {
+      return;
+    }
+
+    const targetModule = value.modules.find((module) => module.id === moduleId);
+    updateModule(moduleId, {
+      studyMaterials: [
+        ...(targetModule?.studyMaterials || []),
+        ...createStudyMaterialFiles(fileList),
+      ],
+    });
+  };
+
+  const removeModuleStudyMaterial = (moduleId: string, materialId: string) => {
+    const targetModule = value.modules.find((module) => module.id === moduleId);
+    updateModule(moduleId, {
+      studyMaterials: (targetModule?.studyMaterials || []).filter(
+        (material) => material.id !== materialId
+      ),
+    });
+  };
+
+  const addModuleStudyMaterialUrl = (moduleId: string) => {
+    const url = window.prompt("Document URL");
+    if (!url?.trim()) {
+      return;
+    }
+
+    const targetModule = value.modules.find((module) => module.id === moduleId);
+    const material = createUrlStoredFile(url, "document", "Document URL");
+    if (!targetModule || !material) {
+      return;
+    }
+
+    updateModule(moduleId, {
+      studyMaterials: [...(targetModule.studyMaterials || []), material],
+    });
+  };
+
   const addSectionStudyMaterialUrl = (moduleId: string, sectionId: string) => {
     const url = window.prompt("Document URL");
     if (!url?.trim()) {
@@ -334,6 +374,58 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
                               placeholder="Summarize what this module covers."
                               className="bg-background border-border rounded-xl resize-none min-h-[80px]"
                             />
+                          </FormField>
+
+                          <FormField label="Module Study Materials" helper="Attach documents directly to this module or add document URLs">
+                            <div className="space-y-3">
+                              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                                <label className="border-2 border-dashed border-border rounded-xl p-3 flex items-center gap-3 hover:border-step-2/50 transition-colors cursor-pointer">
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="application/pdf,.pdf"
+                                    multiple
+                                    onChange={(event) => {
+                                      handleModuleStudyMaterialChange(module.id, event.target.files);
+                                      event.currentTarget.value = "";
+                                    }}
+                                  />
+                                  <FileText className="w-5 h-5 text-muted-foreground" />
+                                  <div className="flex-1 min-w-0">
+                                    <span className="block text-sm text-muted-foreground">Upload document</span>
+                                    <span className="block text-xs text-muted-foreground mt-1">
+                                      {module.studyMaterials.length > 0
+                                        ? `${module.studyMaterials.length} module material${module.studyMaterials.length === 1 ? "" : "s"} attached`
+                                        : "No module study material yet"}
+                                    </span>
+                                  </div>
+                                </label>
+                                <Button type="button" variant="outline" className="rounded-xl" onClick={() => addModuleStudyMaterialUrl(module.id)}>
+                                  Add Document URL
+                                </Button>
+                              </div>
+
+                              {module.studyMaterials.length > 0 ? (
+                                <div className="space-y-2">
+                                  {module.studyMaterials.map((material) => (
+                                    <div key={material.id} className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2">
+                                      <FileText className="w-4 h-4 text-step-2" />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-foreground truncate">{material.name}</p>
+                                        <p className="text-xs text-muted-foreground">{getFileKindLabel(material.kind)}</p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeModuleStudyMaterial(module.id, material.id)}
+                                        className="text-xs text-destructive hover:underline"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
                           </FormField>
 
                           <div className="space-y-3">

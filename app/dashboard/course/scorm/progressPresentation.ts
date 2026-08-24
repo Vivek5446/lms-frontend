@@ -18,13 +18,16 @@ export function getLearningProgressState(status?: string | null, progress?: numb
   const normalizedStatus = String(status || "").trim().toLowerCase();
   const safeProgress = clampLearningProgress(progress);
 
-  if (COMPLETED_STATUSES.has(normalizedStatus) || safeProgress >= 100) {
+  if (COMPLETED_STATUSES.has(normalizedStatus)) {
     return "completed";
   }
 
-  if (ACTIVE_STATUSES.has(normalizedStatus) || safeProgress > 0) {
+  if (ACTIVE_STATUSES.has(normalizedStatus)) {
     return "in_progress";
   }
+
+  if (safeProgress >= 100) return "completed";
+  if (safeProgress > 0) return "in_progress";
 
   return "not_started";
 }
