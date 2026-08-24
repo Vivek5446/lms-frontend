@@ -654,7 +654,7 @@ export default function CourseCurriculumPanel({
           {finalQuizzes.length > 0 ? (
             <section className="rounded-[1.35rem] border border-border bg-background p-3">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                Final quiz
+                Final Course Quiz
               </p>
               <div className="space-y-2">
                 {finalQuizzes.map((quiz) => (

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ChevronUp, FileText, FolderTree, Layers, Plus, Rocket, Trash2, Upload, Video } from "lucide-react";
+import { Award, ChevronDown, ChevronUp, FileText, FolderTree, Layers, Plus, Rocket, Trash2, Upload, Video } from "lucide-react";
 import { useEffect, useState } from "react";
 import CourseQuizBuilder from "../components/CourseQuizBuilder";
 import {
@@ -259,39 +259,10 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
               className="bg-background border-border rounded-xl h-11 max-w-xs"
             />
           </FormField>
-          <FormField label="Quiz Strategy" tooltip="Choose how quizzes are structured">
-            <div className="grid grid-cols-2 gap-3 mt-1">
-              {(["per-module", "final"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => onChange({ ...value, quizMode: mode })}
-                  className={`p-4 rounded-xl border-2 text-sm font-medium transition-all text-left ${
-                    value.quizMode === mode
-                      ? "border-step-2 bg-step-2/10 text-foreground"
-                      : "border-border bg-card text-muted-foreground hover:border-step-2/30"
-                  }`}
-                >
-                  {mode === "per-module" ? "Quiz per Module" : "Final Quiz Only"}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {mode === "per-module" ? "Assess after each module" : "One assessment at the end"}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </FormField>
           <div className="rounded-xl bg-background border border-border p-4 text-sm text-muted-foreground">
             Each section can have one primary source: uploaded video, video URL, or SCORM package. Study materials belong to sections.
           </div>
         </div>
-
-        {value.quizMode === "final" ? (
-          <CourseQuizBuilder
-            quiz={value.finalQuiz}
-            onChange={(finalQuiz) => onChange({ ...value, finalQuiz })}
-            title="Final course quiz"
-            helper="This quiz appears after the learner finishes the course content. Upload the sample Excel format or build it manually here."
-          />
-        ) : null}
 
         <div className="space-y-4">
           <AnimatePresence>
@@ -612,28 +583,26 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
                             )}
                           </div>
 
-                          {value.quizMode === "per-module" && (
-                            <div className="space-y-4">
-                              <div className="flex items-center gap-6">
-                                <div className="flex items-center gap-2">
-                                  <Switch checked={module.hasQuiz} onCheckedChange={(hasQuiz) => updateModule(module.id, { hasQuiz })} />
-                                  <span className="text-sm text-foreground">Module has quiz</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Switch checked={module.hasTest} onCheckedChange={(hasTest) => updateModule(module.id, { hasTest })} />
-                                  <span className="text-sm text-foreground">Module has test</span>
-                                </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-2">
+                                <Switch checked={module.hasQuiz} onCheckedChange={(hasQuiz) => updateModule(module.id, { hasQuiz })} />
+                                <span className="text-sm text-foreground">Module has quiz</span>
                               </div>
-                              {module.hasQuiz ? (
-                                <CourseQuizBuilder
-                                  quiz={module.quiz}
-                                  onChange={(quiz) => updateModuleQuiz(module.id, quiz)}
-                                  title={`${module.name || `Module ${moduleIndex + 1}`} quiz`}
-                                  helper="Attach a checkpoint quiz to this module. Learners will see the questions shuffled when they take it."
-                                />
-                              ) : null}
+                              <div className="flex items-center gap-2">
+                                <Switch checked={module.hasTest} onCheckedChange={(hasTest) => updateModule(module.id, { hasTest })} />
+                                <span className="text-sm text-foreground">Module has test</span>
+                              </div>
                             </div>
-                          )}
+                            {module.hasQuiz ? (
+                              <CourseQuizBuilder
+                                quiz={module.quiz}
+                                onChange={(quiz) => updateModuleQuiz(module.id, quiz)}
+                                title={`${module.name || `Module ${moduleIndex + 1}`} quiz`}
+                                helper="Attach a checkpoint quiz to this module. Learners will see the questions shuffled when they take it."
+                              />
+                            ) : null}
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -643,6 +612,47 @@ export default function Step2Structure({ value, onChange, onProgressChange }: St
             })}
           </AnimatePresence>
         </div>
+
+        <section
+          id="final-course-quiz-settings"
+          className="overflow-hidden rounded-2xl border-2 border-violet-300 bg-violet-50/60 shadow-sm dark:border-violet-800 dark:bg-violet-950/20"
+        >
+          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-600 text-white">
+                <Award className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold text-foreground">Final Course Quiz / Whole Course Quiz</h3>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Add one assessment for the entire course. This works together with any enabled module quizzes.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center justify-between gap-3 rounded-xl border border-violet-200 bg-background px-4 py-3 dark:border-violet-800">
+              <span className="text-sm font-semibold text-foreground">
+                {value.finalQuizEnabled ? "Final quiz enabled" : "Enable final quiz"}
+              </span>
+              <Switch
+                checked={value.finalQuizEnabled}
+                onCheckedChange={(finalQuizEnabled) => onChange({ ...value, finalQuizEnabled })}
+                aria-label="Enable Final Course Quiz"
+              />
+            </div>
+          </div>
+
+          {value.finalQuizEnabled ? (
+            <div className="border-t border-violet-200 bg-card p-4 dark:border-violet-800 sm:p-5">
+              <CourseQuizBuilder
+                quiz={value.finalQuiz}
+                onChange={(finalQuiz) => onChange({ ...value, finalQuiz })}
+                title="Final Course Quiz questions"
+                helper="Add, edit, delete, or import questions using the existing quiz builder. Learners see this quiz after all modules."
+              />
+            </div>
+          ) : null}
+        </section>
 
         <div className="rounded-2xl border border-blue-200 bg-blue-50/75 p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
           <div className="flex items-start gap-3">

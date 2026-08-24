@@ -4,7 +4,7 @@ export const LANGUAGES = ["English", "Spanish", "French", "German", "Hindi", "Ar
 export const CATEGORIES = ["Technology", "Business", "Design", "Marketing", "HR", "Compliance", "Leadership"];
 export const LEVELS = ["Beginner", "Intermediate", "Advanced", "Expert"];
 
-export type QuizMode = "per-module" | "final";
+export type QuizMode = "per-module" | "final" | "mixed";
 export type StoredFileKind = "image" | "video" | "document" | "scorm" | "zip" | "spreadsheet" | "other";
 export type CorrectQuizOption = "Option-1" | "Option-2" | "Option-3" | "Option-4";
 
@@ -84,6 +84,7 @@ export interface CourseModuleInput {
 export interface CourseStructureState {
   quizMode: QuizMode;
   passingPercentage: string;
+  finalQuizEnabled: boolean;
   finalQuiz: CourseQuizInput;
   modules: CourseModuleInput[];
 }
@@ -368,6 +369,7 @@ export const initialCourseFormState: CourseFormState = {
   structure: {
     quizMode: "per-module",
     passingPercentage: "50",
+    finalQuizEnabled: false,
     finalQuiz: createEmptyQuiz("Final course quiz"),
     modules: [],
   },
@@ -464,10 +466,10 @@ export function summarizeQuiz(quiz: CourseQuizInput, fallbackTitle: string) {
 }
 
 export function calculateCourseQuizTotalMarks(courseForm: CourseFormState) {
-  const quizzes =
-    courseForm.structure.quizMode === "final"
-      ? [courseForm.structure.finalQuiz]
-      : courseForm.structure.modules.filter((module) => module.hasQuiz).map((module) => module.quiz);
+  const quizzes = [
+    ...courseForm.structure.modules.filter((module) => module.hasQuiz).map((module) => module.quiz),
+    ...(courseForm.structure.finalQuizEnabled ? [courseForm.structure.finalQuiz] : []),
+  ];
 
   return quizzes.reduce((total, quiz) => {
     return (
@@ -627,7 +629,11 @@ export function mapExistingQuiz(quiz: any, fallbackTitle: string): CourseQuizInp
 export function courseToFormState(course: any): CourseFormState {
   const curriculum = course?.curriculum || {};
   const modules = Array.isArray(curriculum.modules) ? curriculum.modules : [];
-  const quizMode: QuizMode = curriculum.quizStrategy === "final" ? "final" : "per-module";
+  const quizMode: QuizMode = curriculum.quizStrategy === "final"
+    ? "final"
+    : curriculum.quizStrategy === "mixed"
+      ? "mixed"
+      : "per-module";
 
   return {
     basicInfo: {
@@ -664,6 +670,7 @@ export function courseToFormState(course: any): CourseFormState {
     structure: {
       quizMode,
       passingPercentage: String(course?.assessment?.passingPercentage ?? "50"),
+      finalQuizEnabled: Boolean(curriculum.finalQuiz?.questions?.length),
       finalQuiz: mapExistingQuiz(curriculum.finalQuiz, "Final course quiz"),
       modules: modules.map((module: any, moduleIndex: number) => ({
         id: String(module?.moduleId || module?.id || createClientId()),
@@ -722,6 +729,14 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
   const totalMarks = quizTotalMarks > 0 ? quizTotalMarks : null;
   const passingPercentage = parseNumericValue(courseForm.structure.passingPercentage) ?? 50;
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
+  const hasModuleQuizzes = courseForm.structure.modules.some(
+    (module) => module.hasQuiz && module.quiz.questions.length > 0
+  );
+  const hasFinalQuiz = courseForm.structure.finalQuizEnabled &&
+    courseForm.structure.finalQuiz.questions.length > 0;
+  const quizStrategy: QuizMode = hasFinalQuiz
+    ? hasModuleQuizzes ? "mixed" : "final"
+    : "per-module";
 
   return {
     action,
@@ -762,11 +777,11 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
       },
     },
     curriculum: {
-      quizStrategy: courseForm.structure.quizMode,
+      quizStrategy,
       totalModules: courseForm.structure.modules.length,
       totalSections,
       finalQuiz:
-        courseForm.structure.quizMode === "final"
+        hasFinalQuiz
           ? summarizeQuiz(courseForm.structure.finalQuiz, "Final course quiz")
           : null,
       modules: courseForm.structure.modules.map((module, index) => ({
@@ -798,7 +813,7 @@ export function buildCoursePayload(courseForm: CourseFormState, action: "draft" 
           quizEnabled: module.hasQuiz,
           testEnabled: module.hasTest,
           quiz:
-            courseForm.structure.quizMode === "per-module" && module.hasQuiz
+            module.hasQuiz
               ? summarizeQuiz(module.quiz, `${module.name.trim() || `Module ${index + 1}`} quiz`)
               : null,
         },

@@ -35,10 +35,10 @@ export default function Step8Review({
 }: Step8ReviewProps) {
   const totalSections = courseForm.structure.modules.reduce((count, module) => count + module.sections.length, 0);
   const learningOutcomeCount = courseForm.basicInfo.learningOutcomes.filter((item) => item.trim()).length;
+  const moduleQuizCount = courseForm.structure.modules.filter((module) => module.hasQuiz).length;
   const quizQuestionCount =
-    courseForm.structure.quizMode === "final"
-      ? courseForm.structure.finalQuiz.questions.length
-      : courseForm.structure.modules.reduce((count, module) => count + (module.hasQuiz ? module.quiz.questions.length : 0), 0);
+    courseForm.structure.modules.reduce((count, module) => count + (module.hasQuiz ? module.quiz.questions.length : 0), 0) +
+    (courseForm.structure.finalQuizEnabled ? courseForm.structure.finalQuiz.questions.length : 0);
 
   const sections = [
     {
@@ -77,8 +77,8 @@ export default function Step8Review({
       label: "Course Structure",
       status: `${courseForm.structure.modules.length} module${courseForm.structure.modules.length === 1 ? "" : "s"} - ${totalSections} section${
         totalSections === 1 ? "" : "s"
-      } - ${
-        courseForm.structure.quizMode === "per-module" ? "Quiz per module" : "Final quiz"
+      } - ${moduleQuizCount} module quiz${moduleQuizCount === 1 ? "" : "zes"}${
+        courseForm.structure.finalQuizEnabled ? " + final quiz" : ""
       }`,
       colorClass: "text-step-2",
       bgClass: "bg-step-2/15",

@@ -30,9 +30,8 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
     : "Open access";
   const assessmentLabel = `${courseForm.structure.passingPercentage || 50}% pass`;
   const quizCount =
-    courseForm.structure.quizMode === "final"
-      ? courseForm.structure.finalQuiz.questions.length
-      : modules.reduce((count, module) => count + (module.hasQuiz ? module.quiz.questions.length : 0), 0);
+    modules.reduce((count, module) => count + (module.hasQuiz ? module.quiz.questions.length : 0), 0) +
+    (courseForm.structure.finalQuizEnabled ? courseForm.structure.finalQuiz.questions.length : 0);
 
   useEffect(() => {
     onProgressChange?.(100);
@@ -175,12 +174,12 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
                       <p className="text-xs text-muted-foreground mt-1">{module.description}</p>
                     )}
                   </div>
-                  {courseForm.structure.quizMode === "per-module" && module.hasQuiz && (
+                  {module.hasQuiz && (
                     <Badge className="bg-step-2/10 text-step-2 border-0 text-xs">
                       Quiz: {module.quiz.questions.length} Qs
                     </Badge>
                   )}
-                  {courseForm.structure.quizMode === "per-module" && module.hasTest && (
+                  {module.hasTest && (
                     <Badge className="bg-step-3/10 text-step-3 border-0 text-xs">Test</Badge>
                   )}
                 </div>
@@ -233,7 +232,7 @@ export default function Step7Preview({ courseForm, onProgressChange }: Step7Prev
               </div>
             ))
           )}
-          {courseForm.structure.quizMode === "final" && courseForm.structure.finalQuiz.questions.length > 0 ? (
+          {courseForm.structure.finalQuizEnabled && courseForm.structure.finalQuiz.questions.length > 0 ? (
             <div className="p-4 bg-background rounded-xl border border-step-2/20">
               <p className="text-sm font-medium text-foreground">Final course quiz</p>
               <p className="text-xs text-muted-foreground mt-1">
