@@ -4,6 +4,7 @@ import {
   Avatar,
   Badge,
   Box,
+  Button,
   Flex,
   Grid,
   Heading,
@@ -14,6 +15,7 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
+import Link from "next/link";
 import {
   AlertTriangle,
   Building2,
@@ -33,11 +35,13 @@ function Panel({
   subtitle,
   icon,
   children,
+  href,
 }: {
   title: string;
   subtitle: string;
   icon: React.ElementType;
   children: React.ReactNode;
+  href?: string;
 }) {
   const bg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -71,17 +75,20 @@ function Panel({
             {subtitle}
           </Text>
         </Box>
-        <Flex
-          align="center"
-          justify="center"
-          boxSize="38px"
-          borderRadius="xl"
-          bg={useColorModeValue("purple.50", "purple.900")}
-          color={useColorModeValue("purple.600", "purple.300")}
-          flexShrink={0}
-        >
-          <Icon as={icon} boxSize={5} />
-        </Flex>
+        <HStack>
+          {href ? <Button as={Link} href={href} size="xs" variant="ghost" colorScheme="purple">View details</Button> : null}
+          <Flex
+            align="center"
+            justify="center"
+            boxSize="38px"
+            borderRadius="xl"
+            bg={useColorModeValue("purple.50", "purple.900")}
+            color={useColorModeValue("purple.600", "purple.300")}
+            flexShrink={0}
+          >
+            <Icon as={icon} boxSize={5} />
+          </Flex>
+        </HStack>
       </Flex>
       {children}
     </Box>
@@ -108,10 +115,14 @@ export function DashboardInsights({ highlights }: DashboardInsightsProps) {
   const lowEngagementCompanies = highlights.lowEngagementCompanies || [];
   const expiringBatches = highlights.expiringBatches || [];
   const expiringEnrollments = highlights.expiringEnrollments || [];
+  const topPerformingCompanies = highlights.topPerformingCompanies || [];
+  const companiesNeedingAttention = highlights.companiesNeedingAttention || [];
+  const topCourses = highlights.topCourses || [];
+  const coursesNeedingAttention = highlights.coursesNeedingAttention || [];
 
   return (
     <Grid templateColumns={{ base: "1fr", xl: "repeat(2, minmax(0, 1fr))" }} gap={4}>
-      <Panel title="Recent portal activity" subtitle="Latest companies, users, courses, and batches" icon={Clock3}>
+      <Panel title="Recent portal activity" subtitle="Latest companies, users, courses, batches, and certificates" icon={Clock3}>
         <Stack spacing={2}>
           {activity.length ? (
             activity.slice(0, 6).map((item) => (
@@ -168,7 +179,7 @@ export function DashboardInsights({ highlights }: DashboardInsightsProps) {
         </Stack>
       </Panel>
 
-      <Panel title="Recently added users" subtitle="Newest accounts in the selected scope" icon={UserRound}>
+      <Panel title="Recently added users" subtitle="Newest accounts in the selected scope" icon={UserRound} href="/dashboard/users">
         <Stack spacing={2}>
           {recentUsers.length ? (
             recentUsers.slice(0, 6).map((user) => (
@@ -206,7 +217,7 @@ export function DashboardInsights({ highlights }: DashboardInsightsProps) {
         </Stack>
       </Panel>
 
-      <Panel title="Engagement watchlist" subtitle="Learners and companies without recent progress activity" icon={AlertTriangle}>
+      <Panel title="Engagement watchlist" subtitle="Learners and companies without recent progress activity" icon={AlertTriangle} href="/dashboard/learner-progress">
         <Stack spacing={4}>
           <Box>
             <Text fontSize="xs" color="gray.500" fontWeight="bold" textTransform="uppercase" mb={2}>
@@ -242,7 +253,7 @@ export function DashboardInsights({ highlights }: DashboardInsightsProps) {
         </Stack>
       </Panel>
 
-      <Panel title="Expiring soon" subtitle="Batches and course access ending within 30 days" icon={CalendarClock}>
+      <Panel title="Expiring soon" subtitle="Batches and course access ending within 30 days" icon={CalendarClock} href="/dashboard/batches">
         <Stack spacing={3}>
           {expiringBatches.map((batch) => (
             <Flex
@@ -295,6 +306,51 @@ export function DashboardInsights({ highlights }: DashboardInsightsProps) {
             </Text>
           ) : null}
         </Stack>
+      </Panel>
+
+      <Panel title="Company performance" subtitle="Highest and lowest completion rates with real enrollments" icon={Building2} href="/dashboard/admins">
+        <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
+          <Box>
+            <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" mb={2}>Performing well</Text>
+            <Stack spacing={2}>
+              {topPerformingCompanies.slice(0, 4).map((company) => (
+                <Flex key={company.companyId} justify="space-between" gap={3} p={3} bg={surface} borderRadius="xl">
+                  <Box minW={0}><Text fontSize="sm" fontWeight="700" noOfLines={1}>{company.name}</Text><Text fontSize="xs" color="gray.500">{company.enrollments} enrollments</Text></Box>
+                  <Badge colorScheme="green" borderRadius="full">{company.completionRate ?? 0}%</Badge>
+                </Flex>
+              ))}
+            </Stack>
+          </Box>
+          <Box>
+            <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" mb={2}>Needs attention</Text>
+            <Stack spacing={2}>
+              {companiesNeedingAttention.slice(0, 4).map((company) => (
+                <Flex key={company.companyId} justify="space-between" gap={3} p={3} bg={surface} borderRadius="xl">
+                  <Box minW={0}><Text fontSize="sm" fontWeight="700" noOfLines={1}>{company.name}</Text><Text fontSize="xs" color="gray.500">{company.averageProgress ?? 0}% avg progress</Text></Box>
+                  <Badge colorScheme="orange" borderRadius="full">{company.completionRate ?? 0}%</Badge>
+                </Flex>
+              ))}
+            </Stack>
+          </Box>
+        </Grid>
+      </Panel>
+
+      <Panel title="Course performance" subtitle="Most engaged courses and those with incomplete learning" icon={GraduationCap} href="/dashboard/course">
+        <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
+          {[{ label: "Most engaged", items: topCourses, scheme: "teal" }, { label: "Needs attention", items: coursesNeedingAttention, scheme: "orange" }].map((group) => (
+            <Box key={group.label}>
+              <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" mb={2}>{group.label}</Text>
+              <Stack spacing={3}>
+                {group.items.slice(0, 4).map((course) => (
+                  <Box key={course._id}>
+                    <Flex justify="space-between" gap={3}><Text fontSize="sm" fontWeight="700" noOfLines={1}>{course.title}</Text><Text fontSize="xs" fontWeight="bold">{course.completionRate ?? 0}%</Text></Flex>
+                    <Progress value={course.averageProgress || 0} size="sm" borderRadius="full" colorScheme={group.scheme} mt={1} />
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+          ))}
+        </Grid>
       </Panel>
     </Grid>
   );

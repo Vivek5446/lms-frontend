@@ -4,6 +4,7 @@ import {
   Avatar,
   Badge,
   Box,
+  Button,
   Flex,
   Grid,
   Heading,
@@ -20,6 +21,7 @@ import {
   Tr,
   useColorModeValue,
 } from "@chakra-ui/react";
+import Link from "next/link";
 import { FiActivity, FiAlertTriangle, FiAward, FiCalendar, FiUsers } from "react-icons/fi";
 import { ScopedDashboardSummary } from "./types";
 
@@ -38,10 +40,14 @@ function Panel({
   title,
   icon,
   children,
+  href,
+  primaryThemeColor = "#6269FF",
 }: {
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  href?: string;
+  primaryThemeColor?: string;
 }) {
   const bg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -56,10 +62,17 @@ function Panel({
       boxShadow="sm"
       minW={0}
     >
-      <HStack mb={4}>
-        <Box color="purple.500">{icon}</Box>
-        <Heading size="sm">{title}</Heading>
-      </HStack>
+      <Flex mb={4} justify="space-between" align="center" gap={3}>
+        <HStack>
+          <Box color={primaryThemeColor}>{icon}</Box>
+          <Heading size="sm">{title}</Heading>
+        </HStack>
+        {href ? (
+          <Button as={Link} href={href} size="xs" variant="ghost" color={primaryThemeColor}>
+            View details
+          </Button>
+        ) : null}
+      </Flex>
       {children}
     </Box>
   );
@@ -77,8 +90,10 @@ function EmptyState({ children }: { children: React.ReactNode }) {
 
 export function DashboardInsights({
   highlights,
+  primaryThemeColor = "#6269FF",
 }: {
   highlights: ScopedDashboardSummary["highlights"];
+  primaryThemeColor?: string;
 }) {
   const borderColor = useColorModeValue("gray.100", "gray.700");
   const learnerProgress = highlights?.learnerProgress || [];
@@ -88,10 +103,13 @@ export function DashboardInsights({
   const expiringEnrollments = highlights?.expiringEnrollments || [];
   const expiringBatches = highlights?.expiringBatches || [];
   const batchProgress = highlights?.batchProgress || [];
+  const mostEngagedCourses = highlights?.mostEngagedCourses || [];
+  const coursesNeedingAttention = highlights?.coursesNeedingAttention || [];
+  const recentlyActiveLearners = highlights?.recentlyActiveLearners || [];
 
   return (
     <Stack spacing={4}>
-      <Panel title="Learner progress" icon={<FiUsers />}>
+      <Panel title="Learner progress" icon={<FiUsers />} href="/dashboard/learner-progress" primaryThemeColor={primaryThemeColor}>
         {learnerProgress.length ? (
           <TableContainer>
             <Table size="sm">
@@ -152,7 +170,7 @@ export function DashboardInsights({
       </Panel>
 
       <Grid templateColumns={{ base: "1fr", xl: "repeat(3, minmax(0, 1fr))" }} gap={4}>
-        <Panel title="Learners at risk" icon={<FiAlertTriangle />}>
+        <Panel title="Learners at risk" icon={<FiAlertTriangle />} href="/dashboard/learner-progress" primaryThemeColor={primaryThemeColor}>
           {lowEngagement.length ? (
             <Stack spacing={3}>
               {lowEngagement.slice(0, 5).map((learner: any, index: number) => (
@@ -183,7 +201,7 @@ export function DashboardInsights({
           )}
         </Panel>
 
-        <Panel title="Top performers" icon={<FiAward />}>
+        <Panel title="Top performers" icon={<FiAward />} href="/dashboard/learner-progress" primaryThemeColor={primaryThemeColor}>
           {topLearners.length ? (
             <Stack spacing={3}>
               {topLearners.slice(0, 5).map((learner: any, index: number) => (
@@ -214,7 +232,7 @@ export function DashboardInsights({
           )}
         </Panel>
 
-        <Panel title="Upcoming deadlines" icon={<FiCalendar />}>
+        <Panel title="Upcoming deadlines" icon={<FiCalendar />} href="/dashboard/batches" primaryThemeColor={primaryThemeColor}>
           {expiringEnrollments.length || expiringBatches.length ? (
             <Stack spacing={3}>
               {expiringEnrollments.slice(0, 3).map((item: any) => (
@@ -244,8 +262,59 @@ export function DashboardInsights({
         </Panel>
       </Grid>
 
+      <Grid templateColumns={{ base: "1fr", xl: "repeat(3, minmax(0, 1fr))" }} gap={4}>
+        <Panel title="Most engaged courses" icon={<FiAward />} href="/dashboard/course" primaryThemeColor={primaryThemeColor}>
+          {mostEngagedCourses.length ? (
+            <Stack spacing={3}>
+              {mostEngagedCourses.slice(0, 5).map((course: any) => (
+                <Box key={course._id}>
+                  <Flex justify="space-between" gap={3} mb={1}>
+                    <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>{course.title}</Text>
+                    <Text fontSize="xs" fontWeight="bold">{course.averageProgress || 0}%</Text>
+                  </Flex>
+                  <Progress value={course.averageProgress || 0} size="sm" borderRadius="full" colorScheme="teal" />
+                  <Text mt={1} fontSize="xs" color="gray.500">{course.enrollmentCount || 0} enrollments · {course.completionRate || 0}% complete</Text>
+                </Box>
+              ))}
+            </Stack>
+          ) : <EmptyState>Course engagement appears after learners start assigned courses.</EmptyState>}
+        </Panel>
+
+        <Panel title="Courses needing attention" icon={<FiAlertTriangle />} href="/dashboard/course" primaryThemeColor={primaryThemeColor}>
+          {coursesNeedingAttention.length ? (
+            <Stack spacing={3}>
+              {coursesNeedingAttention.slice(0, 5).map((course: any) => (
+                <Flex key={course._id} justify="space-between" gap={3} pb={2} borderBottomWidth="1px" borderColor={borderColor}>
+                  <Box minW={0}>
+                    <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>{course.title}</Text>
+                    <Text fontSize="xs" color="gray.500">{course.averageProgress || 0}% average progress</Text>
+                  </Box>
+                  <Badge colorScheme={course.completionRate < 40 ? "red" : "orange"} borderRadius="full">{course.completionRate || 0}%</Badge>
+                </Flex>
+              ))}
+            </Stack>
+          ) : <EmptyState>No enrolled courses currently need attention.</EmptyState>}
+        </Panel>
+
+        <Panel title="Recently active learners" icon={<FiActivity />} href="/dashboard/learner-progress" primaryThemeColor={primaryThemeColor}>
+          {recentlyActiveLearners.length ? (
+            <Stack spacing={3}>
+              {recentlyActiveLearners.slice(0, 5).map((learner: any) => (
+                <Flex key={learner._id} justify="space-between" gap={3}>
+                  <Box minW={0}>
+                    <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>{learner.name}</Text>
+                    <Text fontSize="xs" color="gray.500">{formatDate(learner.lastActivity)}</Text>
+                  </Box>
+                  <Badge colorScheme="green" borderRadius="full">{learner.progress || 0}%</Badge>
+                </Flex>
+              ))}
+            </Stack>
+          ) : <EmptyState>No learner activity was recorded in the last 30 days.</EmptyState>}
+        </Panel>
+      </Grid>
+
       <Grid templateColumns={{ base: "1fr", xl: "repeat(2, minmax(0, 1fr))" }} gap={4}>
-        <Panel title="Recent activity" icon={<FiActivity />}>
+        <Panel title="Recent activity" icon={<FiActivity />} primaryThemeColor={primaryThemeColor}>
           {recentActivity.length ? (
             <Stack spacing={3}>
               {recentActivity.slice(0, 6).map((item: any, index: number) => (
@@ -276,7 +345,7 @@ export function DashboardInsights({
           )}
         </Panel>
 
-        <Panel title="Batch progress" icon={<FiUsers />}>
+        <Panel title="Batch progress" icon={<FiUsers />} href="/dashboard/batches/reports" primaryThemeColor={primaryThemeColor}>
           {batchProgress.length ? (
             <Stack spacing={4}>
               {batchProgress.slice(0, 6).map((batch: any) => (

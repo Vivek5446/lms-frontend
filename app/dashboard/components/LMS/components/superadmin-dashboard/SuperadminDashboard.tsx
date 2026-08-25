@@ -23,6 +23,7 @@ import {
 import {
   Activity,
   AlertCircle,
+  Award,
   BookOpen,
   Building2,
   CheckCircle2,
@@ -59,12 +60,14 @@ const emptyFilters: DashboardFiltersValue = {
 };
 
 const statDefinitions = [
-  { key: "totalCompanies", label: "Companies", detailKey: "activeCompanies", detail: "active", icon: Building2, color: "purple" },
-  { key: "totalUsers", label: "Users", detailKey: "activeUsers", detail: "active", icon: Users, color: "blue" },
-  { key: "totalCourses", label: "Courses", detailKey: "publishedCourses", detail: "published", icon: BookOpen, color: "teal" },
-  { key: "totalBatches", label: "Batches", detailKey: "activeBatches", detail: "active", icon: GraduationCap, color: "orange" },
-  { key: "completionRate", label: "Completion", suffix: "%", detailKey: "completedEnrollments", detail: "completed", icon: CheckCircle2, color: "green" },
-  { key: "averageQuizScore", label: "Quiz average", suffix: "%", detailKey: "quizAttempts", detail: "attempts", icon: ClipboardCheck, color: "pink" },
+  { key: "totalCompanies", label: "Companies", detailKey: "activeCompanies", detail: "active", icon: Building2, color: "purple", href: "/dashboard/admins" },
+  { key: "learners", label: "Learners", detailKey: "recentlyActiveLearners", detail: "active in 30 days", icon: Users, color: "blue", href: "/dashboard/users" },
+  { key: "totalCourses", label: "Courses", detailKey: "publishedCourses", detail: "published", icon: BookOpen, color: "teal", href: "/dashboard/course" },
+  { key: "totalEnrollments", label: "Enrollments", detailKey: "inProgressEnrollments", detail: "in progress", icon: GraduationCap, color: "purple", href: "/dashboard/learner-progress" },
+  { key: "completionRate", label: "Completion", suffix: "%", detailKey: "completedEnrollments", detail: "completed", icon: CheckCircle2, color: "green", href: "/dashboard/learner-progress" },
+  { key: "quizPassRate", label: "Quiz pass rate", suffix: "%", detailKey: "quizAttempts", detail: "attempts", icon: ClipboardCheck, color: "pink", href: "/dashboard/quiz" },
+  { key: "certificatesIssued", label: "Certificates", detailKey: "certificatesIssued", detail: "issued", icon: Award, color: "teal", href: "/dashboard/learner-progress" },
+  { key: "activeBatches", label: "Active batches", detailKey: "totalBatches", detail: "total", icon: GraduationCap, color: "orange", href: "/dashboard/batches" },
 ] as const;
 
 function asNumber(value: number | null | undefined) {
@@ -196,8 +199,8 @@ export function SuperadminDashboard({
           </Alert>
         ) : null}
 
-        <SimpleGrid columns={{ base: 2, md: 3, xl: 6 }} spacing={4}>
-          {statDefinitions.map((definition) => {
+        <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={4}>
+          {statDefinitions.map((definition, index) => {
             const value = asNumber(stats[definition.key]);
             const detailValue = asNumber(stats[definition.detailKey]);
             return (
@@ -208,6 +211,8 @@ export function SuperadminDashboard({
                   helper={`${detailValue === null ? "N/A" : detailValue.toLocaleString()} ${definition.detail}`}
                   icon={definition.icon}
                   colorScheme={definition.color}
+                  href={definition.href}
+                  animationDelay={index * 0.035}
                 />
               </Skeleton>
             );

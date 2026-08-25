@@ -8,6 +8,7 @@ import {
   Select,
   Text,
   useColorModeValue,
+  usePrefersReducedMotion,
   Icon,
 } from "@chakra-ui/react";
 import {
@@ -140,6 +141,8 @@ export function AnalyticsCharts({ charts, availability }: AnalyticsChartsProps) 
   const textColor = useColorModeValue("#334155", "#CBD5E1");
   const gridColor = useColorModeValue("rgba(148,163,184,0.16)", "rgba(148,163,184,0.12)");
   const [distribution, setDistribution] = useState<"roles" | "courses" | "batches">("roles");
+  const [companyMetric, setCompanyMetric] = useState<"learners" | "enrollments" | "completion">("learners");
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const trendData = useMemo(
     () => ({
@@ -168,12 +171,17 @@ export function AnalyticsCharts({ charts, availability }: AnalyticsChartsProps) 
     [charts.completionTrend, charts.userGrowth]
   );
 
+  const companyEntries = companyMetric === "learners"
+    ? charts.learnersByCompany || charts.companyUserDistribution || []
+    : companyMetric === "enrollments"
+      ? charts.enrollmentsByCompany || []
+      : charts.completionByCompany || [];
   const companyData = {
-    labels: (charts.companyUserDistribution || []).map((entry) => entry.label),
+    labels: companyEntries.map((entry) => entry.label),
     datasets: [
       {
-        label: "Users",
-        data: (charts.companyUserDistribution || []).map((entry) => entry.value),
+        label: companyMetric === "completion" ? "Completion %" : companyMetric === "enrollments" ? "Enrollments" : "Learners",
+        data: companyEntries.map((entry) => entry.value),
         backgroundColor: "#2563EB",
         borderRadius: 7,
       },
@@ -214,6 +222,7 @@ export function AnalyticsCharts({ charts, availability }: AnalyticsChartsProps) 
   const axisOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: prefersReducedMotion ? false : { duration: 500 },
     plugins: {
       legend: {
         labels: { color: textColor, usePointStyle: true, boxWidth: 8 },
@@ -238,8 +247,22 @@ export function AnalyticsCharts({ charts, availability }: AnalyticsChartsProps) 
         <Line data={trendData} options={axisOptions} />
       </ChartCard>
 
-      <ChartCard title="Company user distribution" subtitle="Largest organizations by filtered user count" icon={BarChart3}>
-        {hasData(charts.companyUserDistribution) ? (
+      <ChartCard title="Company performance" subtitle="Compare learners, enrollments, and completion by company" icon={BarChart3}>
+        <Select
+          size="xs"
+          width="140px"
+          position="absolute"
+          top={-10}
+          right={0}
+          zIndex={2}
+          value={companyMetric}
+          onChange={(event) => setCompanyMetric(event.target.value as typeof companyMetric)}
+        >
+          <option value="learners">Learners</option>
+          <option value="enrollments">Enrollments</option>
+          <option value="completion">Completion %</option>
+        </Select>
+        {hasData(companyEntries) ? (
           <Bar
             data={companyData}
             options={{
@@ -295,7 +318,7 @@ export function AnalyticsCharts({ charts, availability }: AnalyticsChartsProps) 
         )}
       </ChartCard>
 
-      <ChartCard title="Assessment performance" subtitle="Quiz attempts grouped by achieved percentage" icon={Target}>
+      <ChartCard title="Assessment performance" subtitle="Quiz submissions measured against each course pass threshold" icon={Target}>
         {availability.quizPerformance && hasData(quizEntries) ? (
           <Bar
             data={quizData}

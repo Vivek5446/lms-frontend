@@ -223,6 +223,16 @@ export function DashboardFilters({
         />
       )}
 
+      {role === "admin" ? (
+        <FilterField
+          label="Learner"
+          value={value.userId}
+          options={options?.users || []}
+          placeholder="All learners"
+          onChange={(nextValue) => update("userId", nextValue)}
+        />
+      ) : null}
+
       <FilterField
         label="Course"
         value={value.courseId}

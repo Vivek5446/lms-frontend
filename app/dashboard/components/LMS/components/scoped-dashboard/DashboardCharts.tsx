@@ -7,6 +7,7 @@ import {
   HStack,
   Text,
   useColorModeValue,
+  usePrefersReducedMotion,
 } from "@chakra-ui/react";
 import {
   ArcElement,
@@ -116,6 +117,7 @@ export function DashboardCharts({
 
   const textColor = useColorModeValue("#475569", "#CBD5E1");
   const gridColor = useColorModeValue("rgba(148,163,184,.16)", "rgba(148,163,184,.12)");
+  const prefersReducedMotion = usePrefersReducedMotion();
   const completion = charts?.enrollmentsByStatus || [];
   const progress = charts?.progressDistribution || [];
   const completionTrend = charts?.completionTrend || [];
@@ -128,6 +130,7 @@ export function DashboardCharts({
   const baseOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: prefersReducedMotion ? false : { duration: 500 },
     plugins: {
       legend: {
         position: "bottom" as const,
@@ -277,7 +280,7 @@ export function DashboardCharts({
       {quiz.some((entry) => entry.value > 0) ? (
         <ChartCard
           title="Assessment performance"
-          subtitle="Quiz attempts grouped into score bands"
+          subtitle="Quiz submissions measured against each course pass threshold"
           entries={quiz}
           themeColor={themeColor}
         >

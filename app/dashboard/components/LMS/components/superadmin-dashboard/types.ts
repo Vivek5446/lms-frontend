@@ -8,6 +8,16 @@ export type FilterOption = {
   value: string;
 };
 
+export type CompanyPerformance = {
+  companyId: string;
+  name: string;
+  learners: number;
+  activeLearners: number;
+  enrollments: number;
+  completionRate: number | null;
+  averageProgress: number | null;
+};
+
 export type DashboardFiltersValue = {
   from: string;
   to: string;
@@ -38,6 +48,9 @@ export type SuperadminDashboardSummary = {
     batchesByStatus?: ChartEntry[];
     enrollmentsByStatus?: ChartEntry[];
     companyUserDistribution?: ChartEntry[];
+    learnersByCompany?: ChartEntry[];
+    enrollmentsByCompany?: ChartEntry[];
+    completionByCompany?: ChartEntry[];
     quizPerformance?: ChartEntry[];
     userGrowth?: ChartEntry[];
     completionTrend?: ChartEntry[];
@@ -48,6 +61,16 @@ export type SuperadminDashboardSummary = {
       title: string;
       status: string;
       enrollmentCount: number;
+      completedEnrollments?: number;
+      completionRate?: number;
+      averageProgress?: number;
+    }>;
+    coursesNeedingAttention?: Array<{
+      _id: string;
+      title: string;
+      enrollmentCount: number;
+      completionRate: number;
+      averageProgress: number;
     }>;
     recentUsers?: Array<{
       _id: string;
@@ -86,6 +109,9 @@ export type SuperadminDashboardSummary = {
       activeLearners: number;
       engagementRate: number;
     }>;
+    companyPerformance?: CompanyPerformance[];
+    topPerformingCompanies?: CompanyPerformance[];
+    companiesNeedingAttention?: CompanyPerformance[];
     expiringBatches?: Array<{
       _id: string;
       name: string;

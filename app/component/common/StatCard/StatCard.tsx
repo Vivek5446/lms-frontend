@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Box,
   Flex,
@@ -7,7 +9,10 @@ import {
   StatNumber,
   Text,
   useColorModeValue,
+  usePrefersReducedMotion,
 } from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { IconType } from "react-icons";
 
 export type StatCardProps = {
@@ -16,7 +21,11 @@ export type StatCardProps = {
   helper?: string;
   icon: IconType | React.ElementType;
   colorScheme?: string;
+  href?: string;
+  animationDelay?: number;
 };
+
+const MotionBox = motion(Box);
 
 export default function StatCard({
   label,
@@ -24,7 +33,11 @@ export default function StatCard({
   helper,
   icon,
   colorScheme = "blue",
+  href,
+  animationDelay = 0,
 }: StatCardProps) {
+  const router = useRouter();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const cardBg = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "whiteAlpha.200");
   const labelColor = useColorModeValue("gray.500", "gray.400");
@@ -49,7 +62,10 @@ export default function StatCard({
   const helperBg = useColorModeValue("gray.50", "whiteAlpha.50");
 
   return (
-    <Box
+    <MotionBox
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, delay: prefersReducedMotion ? 0 : animationDelay }}
       position="relative"
       overflow="hidden"
       minW={0}
@@ -63,7 +79,17 @@ export default function StatCard({
         "0 2px 10px rgba(15, 23, 42, 0.05)",
         "0 2px 10px rgba(0, 0, 0, 0.18)"
       )}
-      transition="all 0.2s ease"
+      cursor={href ? "pointer" : "default"}
+      role={href ? "link" : undefined}
+      tabIndex={href ? 0 : undefined}
+      aria-label={href ? `${label}: ${value}. Open details` : undefined}
+      onClick={href ? () => router.push(href) : undefined}
+      onKeyDown={href ? (event: React.KeyboardEvent) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(href);
+        }
+      } : undefined}
       _hover={{
         transform: "translateY(-2px)",
         borderColor: useColorModeValue(
@@ -187,6 +213,6 @@ export default function StatCard({
           />
         </Flex>
       </Flex>
-    </Box>
+    </MotionBox>
   );
 }

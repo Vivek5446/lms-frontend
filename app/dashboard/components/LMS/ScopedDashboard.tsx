@@ -30,6 +30,7 @@ import { useEffect, useState } from "react";
 import {
   FiActivity,
   FiAlertCircle,
+  FiAward,
   FiBookOpen,
   FiBriefcase,
   FiCheckCircle,
@@ -45,6 +46,7 @@ import {
 import { DailyRegistrationChart } from "./components/scoped-dashboard/DailyRegistrationChart";
 import { DashboardCharts } from "./components/scoped-dashboard/DashboardCharts";
 import { DashboardFilters } from "./components/scoped-dashboard/DashboardFilters";
+import { DashboardInsights } from "./components/scoped-dashboard/DashboardInsights";
 import { RevenueAnalytics } from "./components/scoped-dashboard/RevenueAnalytics";
 import {
   EMPTY_SCOPED_FILTERS,
@@ -149,18 +151,20 @@ const ScopedDashboard = observer(() => {
   const statCards: StatCardProps[] = isAdmin
     ? [
         {
-          label: "Company users",
-          value: stats.totalUsers || 0,
-          helper: `${stats.activeUsers || 0} active`,
+          label: "Total learners",
+          value: stats.learners || 0,
+          helper: `${stats.activeUsers || 0} active accounts`,
           icon: FiUsers,
           colorScheme: "purple",
+          href: "/dashboard/users",
         },
         {
-          label: "Departments",
-          value: stats.totalDepartments || 0,
-          helper: "Company structure",
-          icon: FiLayers,
+          label: "Active learners",
+          value: stats.recentlyActiveLearners || 0,
+          helper: "Learning activity in 30 days",
+          icon: FiActivity,
           colorScheme: "blue",
+          href: "/dashboard/learner-progress",
         },
         {
           label: "Courses",
@@ -168,20 +172,23 @@ const ScopedDashboard = observer(() => {
           helper: `${stats.publishedCourses || 0} published`,
           icon: FiBookOpen,
           colorScheme: "teal",
+          href: "/dashboard/course",
+        },
+        {
+          label: "Enrollments",
+          value: stats.totalEnrollments || 0,
+          helper: `${stats.inProgressEnrollments || 0} in progress · ${stats.notStartedEnrollments || 0} not started`,
+          icon: FiGrid,
+          colorScheme: "purple",
+          href: "/dashboard/learner-progress",
         },
         {
           label: "Completion rate",
           value: completionRate,
-          helper: `${stats.completedEnrollments || 0} completions`,
+          helper: `${stats.completedEnrollments || 0} completed`,
           icon: FiCheckCircle,
           colorScheme: "green",
-        },
-        {
-          label: "Average progress",
-          value: averageProgress,
-          helper: `${stats.totalEnrollments || 0} enrollments`,
-          icon: FiTrendingUp,
-          colorScheme: "purple",
+          href: "/dashboard/learner-progress",
         },
         {
           label: "Active batches",
@@ -189,13 +196,23 @@ const ScopedDashboard = observer(() => {
           helper: `${stats.totalBatches || 0} total batches`,
           icon: FiGrid,
           colorScheme: "orange",
+          href: "/dashboard/batches",
         },
         {
-          label: "Quiz average",
-          value: averageQuizScore,
-          helper: `${stats.quizAttempts || 0} attempts`,
+          label: "Quiz pass rate",
+          value: typeof stats.quizPassRate === "number" ? `${stats.quizPassRate}%` : "No data",
+          helper: `${averageQuizScore} avg · ${stats.quizAttempts || 0} attempts`,
           icon: FiTarget,
           colorScheme: "pink",
+          href: "/dashboard/quiz",
+        },
+        {
+          label: "Certificates issued",
+          value: stats.certificatesIssued || 0,
+          helper: "Verified completion awards",
+          icon: FiAward,
+          colorScheme: "teal",
+          href: "/dashboard/learner-progress",
         },
         {
           label: "Needs attention",
@@ -203,6 +220,7 @@ const ScopedDashboard = observer(() => {
           helper: `${stats.pendingCompletions || 0} pending`,
           icon: FiAlertCircle,
           colorScheme: "red",
+          href: "/dashboard/learner-progress",
         },
       ]
     : [
@@ -510,8 +528,8 @@ const ScopedDashboard = observer(() => {
                 }}
                 spacing={{ base: 3, md: 4 }}
               >
-                {statCards.map((card) => (
-                  <StatCard key={card.label} {...card} />
+                {statCards.map((card, index) => (
+                  <StatCard key={card.label} {...card} animationDelay={index * 0.035} />
                 ))}
               </SimpleGrid>
 
@@ -519,11 +537,16 @@ const ScopedDashboard = observer(() => {
               <DashboardCharts
                 role={role as "admin" | "departmenthead"}
                 charts={scoped.charts}
+                primaryThemeColor={companyThemeColor}
                 />
               <DailyRegistrationChart
                 role={role as "admin" | "departmenthead"}
                 charts={scoped.charts}
                 isLoading={scopedSummaryLoading}
+                primaryThemeColor={companyThemeColor}
+              />
+              <DashboardInsights
+                highlights={scoped.highlights}
                 primaryThemeColor={companyThemeColor}
               />
             </Stack>
@@ -548,8 +571,8 @@ const ScopedDashboard = observer(() => {
           }}
           spacing={{ base: 3, md: 4 }}
         >
-          {statCards.map((card) => (
-            <StatCard key={card.label} {...card} />
+          {statCards.map((card, index) => (
+            <StatCard key={card.label} {...card} animationDelay={index * 0.035} />
           ))}
         </SimpleGrid>
 
@@ -563,6 +586,11 @@ const ScopedDashboard = observer(() => {
         <DashboardCharts
           role={role as "admin" | "departmenthead"}
           charts={scoped.charts}
+          primaryThemeColor={companyThemeColor}
+        />
+        <DashboardInsights
+          highlights={scoped.highlights}
+          primaryThemeColor={companyThemeColor}
         />
       </Stack>
     )}
