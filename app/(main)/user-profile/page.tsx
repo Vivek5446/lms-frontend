@@ -1068,7 +1068,7 @@ const ProfilePage: React.FC = observer(() => {
           <VStack align="stretch" spacing={3}>
             <Box borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.200"} bg={cardBg} p={4} boxShadow={isDark ? "none" : "0 8px 24px rgba(15,23,42,.05)"}>
               <Grid templateColumns="auto minmax(0,1fr) auto" alignItems="center" gap={3}>
-                <Flex w={11} h={11} align="center" justify="center" borderRadius="xl" color="white" style={{ background: themedAccentGradient }}><Award size={20} /></Flex>
+                <Flex w={10} h={10} align="center" justify="center" borderRadius="xl" color="white" style={{ background: themedAccentGradient }}><Award size={20} /></Flex>
                 <Box minW={0}><Text fontSize="sm" fontWeight="900" color={pageHeadingColor}>Premium member</Text><Text noOfLines={1} fontSize="11px" color={pageSubColor}>Exclusive courses and verified certificates</Text></Box>
                 <Button size="xs" borderRadius="full" color="white" style={{ background: themedAccentStrong }} onClick={() => toast({ title: "Premium access", description: "Your current plan details will appear here soon.", status: "info", duration: 2500 })}>View</Button>
               </Grid>
@@ -1076,7 +1076,7 @@ const ProfilePage: React.FC = observer(() => {
             <Text px={1} pt={2} fontSize="10px" fontWeight="800" color={pageSubColor} textTransform="uppercase">Settings & more</Text>
             {menuItems.map((item) => (
               <Flex as="button" type="button" key={item.key} onClick={item.onClick} w="full" align="center" textAlign="left" gap={3.5} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.200"} bg={cardBg} boxShadow={isDark ? "none" : "0 5px 18px rgba(15,23,42,.04)"} transition="all .2s" _hover={{ transform: "translateY(-2px)", borderColor: themedAccent }} _active={{ transform: "scale(.99)" }}>
-                <Flex flexShrink={0} w={11} h={11} align="center" justify="center" borderRadius="xl" style={{ background: themedAccentSoftBg, color: themedAccent }}><item.icon size={19} /></Flex>
+                <Flex flexShrink={0} w={10} h={10} align="center" justify="center" borderRadius="xl" style={{ background: themedAccentSoftBg, color: themedAccent }}><item.icon size={19} /></Flex>
                 <Box minW={0} flex={1}><Text noOfLines={1} fontSize="sm" fontWeight="800" color={pageHeadingColor}>{item.label}</Text><Text noOfLines={1} fontSize="11px" color={pageSubColor}>{item.desc}</Text></Box>
                 {item.badge ? <Text flexShrink={0} px={2} py={0.5} borderRadius="full" fontSize="9px" fontWeight="800" style={{ background: themedAccentSoftBg, color: themedAccent }}>{item.badge}</Text> : null}
                 <ChevronRight size={15} color={isDark ? "#718096" : "#A0AEC0"} />
@@ -1425,7 +1425,7 @@ const ProfilePage: React.FC = observer(() => {
           {menuItems.map((m, i) => (
             <Flex key={m.key} onClick={m.onClick} _active={{ scale: 0.98, opacity: 0.8 }} transition="all 0.1s" w="100%" align="center" justify="space-between" py={3.5} px={4} cursor="pointer" borderBottom={i !== menuItems.length - 1 ? (isDark ? "1px solid rgba(255,255,255,0.04)" : "1px solid #F3F4F6") : "none"}>
                 <Flex align="center" gap={4}>
-                  <Flex align="center" justify="center" w={10} h={10} borderRadius="xl" bg={[
+                  <Flex align="center" justify="center" w={102} h={10} borderRadius="xl" bg={[
                       isDark ? "rgba(59,130,246,0.15)" : "blue.50",
                       isDark ? "rgba(239,68,68,0.15)" : "red.50",
                       isDark ? "rgba(16,185,129,0.15)" : "green.50",
