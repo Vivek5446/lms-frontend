@@ -30,6 +30,7 @@ import CourseList from "./CourseList";
 import CourseDetails from "./CourseDetails";
 import AssignCourseModal from "./components/AssignCourseModal";
 import CourseUsersModal from "./components/CourseUsersModal";
+import DeleteCourseModal from "./components/DeleteCourseModal";
 import FolderExplorer from "./components/FolderExplorer";
 import ModuleManagementDrawer from "./components/ModuleManagementDrawer";
 import {
@@ -49,6 +50,11 @@ import {
 const MotionButton = motion.button;
 
 type CatalogSort = "latest" | "popularity" | "price_asc" | "price_desc" | "title_az";
+
+type PendingCourseDelete = {
+  course: CourseListItem;
+  onDeleted?: () => void | Promise<void>;
+};
 
 function formatCurrency(value?: number | null) {
   const numericValue = Number(value);
@@ -113,6 +119,7 @@ function CoursePage() {
   const [sortBy, setSortBy] = useState<CatalogSort>("latest");
   const [selectedFolderForCreation, setSelectedFolderForCreation] = useState<string | undefined>(undefined);
   const [drawerCourse, setDrawerCourse] = useState<CourseListItem | null>(null);
+  const [deleteCourseTarget, setDeleteCourseTarget] = useState<PendingCourseDelete | null>(null);
   const folderExplorerReloadRef = useRef<(() => void) | null>(null);
 
   const pageBg = useColorModeValue("#F8FAFC", "#0F172A");
@@ -193,6 +200,15 @@ function CoursePage() {
   const handleOpenEdit = (course: CourseListItem) => {
     setActiveCourse(course);
     setView("edit");
+  };
+
+  const handleOpenDeleteCourse = (course: CourseListItem, onDeleted?: () => void | Promise<void>) => {
+    setDeleteCourseTarget({ course, onDeleted });
+  };
+
+  const handleConfirmDeleteCourse = async (course: CourseListItem) => {
+    await courseStore.deleteCourse(course._id);
+    await deleteCourseTarget?.onDeleted?.();
   };
 
   const availableCategories = useMemo(() => {
@@ -833,11 +849,7 @@ function CoursePage() {
                             <MotionButton
                               whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.98 }}
-                              onClick={async () => {
-                                if (confirm("Delete this course?")) {
-                                  await courseStore.deleteCourse(course._id);
-                                }
-                              }}
+                              onClick={() => handleOpenDeleteCourse(course)}
                               style={{
                                 borderRadius: 12,
                                 border: `1px solid ${borderColor}`,
@@ -1055,15 +1067,7 @@ function CoursePage() {
               onOpenEdit={handleOpenEdit}
               onOpenModulesDrawer={(course) => setDrawerCourse(course)}
               onCreateCourse={handleOpenCreate}
-              onDeleteCourse={async (courseId) => {
-                if (window.confirm("Are you sure you want to delete this course?")) {
-                  try {
-                    await courseStore.deleteCourse(courseId);
-                  } catch (err: any) {
-                    alert(err.message || "Failed to delete course");
-                  }
-                }
-              }}
+              onDeleteCourse={handleOpenDeleteCourse}
               onViewCourseUsers={(course) => {
                 setCourseUsersModal({ courseId: course._id, courseTitle: course.title });
               }}
@@ -1099,6 +1103,13 @@ function CoursePage() {
           }}
         />
       )}
+
+      <DeleteCourseModal
+        isOpen={Boolean(deleteCourseTarget)}
+        course={deleteCourseTarget?.course || null}
+        onClose={() => setDeleteCourseTarget(null)}
+        onConfirm={handleConfirmDeleteCourse}
+      />
     </PermissionGate>
   );
 }

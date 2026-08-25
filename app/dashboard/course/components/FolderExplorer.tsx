@@ -62,7 +62,7 @@ interface FolderExplorerProps {
   onOpenEdit: (course: CourseListItem) => void;
   onOpenModulesDrawer?: (course: CourseListItem) => void;
   onCreateCourse: (folderId?: string) => void;
-  onDeleteCourse?: (courseId: string) => void | Promise<void>;
+  onDeleteCourse?: any;
   onViewCourseUsers?: (course: CourseListItem) => void;
   onRegisterReload?: (reload: () => void) => void;
 }

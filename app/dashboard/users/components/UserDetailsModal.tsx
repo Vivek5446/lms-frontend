@@ -1,34 +1,33 @@
 "use client";
 
 import {
+  Avatar,
   Badge,
   Box,
-  Divider,
-  Flex,
-  HStack,
   Drawer,
   DrawerBody,
   DrawerContent,
   DrawerOverlay,
+  Flex,
+  HStack,
+  Icon,
+  IconButton,
   SimpleGrid,
   Text,
-  VStack,
-  IconButton,
-  Icon,
-  Avatar,
-  useColorModeValue,
   useBreakpointValue,
+  useColorModeValue,
+  VStack
 } from "@chakra-ui/react";
 import {
   ArrowLeft,
-  User,
-  Phone,
+  Award,
   Briefcase,
   Building2,
-  MapPin,
   Calendar,
   Layers,
-  Award,
+  MapPin,
+  Phone,
+  User,
 } from "lucide-react";
 
 const getUserStatusMeta = (user: any) => {
