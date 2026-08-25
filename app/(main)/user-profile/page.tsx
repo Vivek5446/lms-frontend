@@ -1008,7 +1008,7 @@ const ProfilePage: React.FC = observer(() => {
         <Flex
           position={{ base: "sticky", md: "static" }} top={0} zIndex={20}
           align="center" justify="space-between" py={{ base: 3, md: 1 }} mb={{ base: 3, md: 7 }}
-          bg={glassBg} backdropFilter="blur(16px)"
+          // bg={glassBg} backdropFilter="blur(16px)"
           borderBottom={{ base: "1px solid", md: "none" }} borderColor={isDark ? "whiteAlpha.100" : "gray.100"}
         >
           <Link href="/">

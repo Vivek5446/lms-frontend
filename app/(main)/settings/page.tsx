@@ -118,7 +118,7 @@ const SettingsPage = observer(() => {
 
   return (
     <Box minH="100vh" bg={pageBg} px={{ base: 4, sm: 6 }} py={{ base: 3, md: 8 }}>
-      <Box maxW="760px" mx="auto" pb={{ base: 12, md: 16 }}>
+      <Box maxW="760px" mx="auto" pb={{ base: 4, md: 16 }}>
         <Grid position={{ base: "sticky", md: "static" }} top={0} zIndex={20} templateColumns="40px minmax(0,1fr) 40px" alignItems="center" gap={3} py={3} mb={{ base: 3, md: 7 }} bg={isDark ? "rgba(23,25,35,.88)" : "rgba(255,255,255,.88)"} backdropFilter="blur(16px)">
           <Link href="/user-profile" aria-label="Back to profile">
             <Flex as="span" w={10} h={10} align="center" justify="center" borderRadius="full" border="1px solid" borderColor={borderColor} bg={cardBg}>
@@ -153,7 +153,26 @@ const SettingsPage = observer(() => {
                     <Grid key={row.key} templateColumns="auto minmax(0,1fr) auto" alignItems="center" gap={3.5} p={3}>
                       <Flex w={10} h={10} align="center" justify="center" borderRadius="xl" bg={mutedBg} color={mutedColor}><row.icon size={17} /></Flex>
                       <Box minW={0}><Text noOfLines={1} fontSize="sm" fontWeight="800" color={headingColor}>{row.label}</Text><Text noOfLines={1} fontSize="11px" color={mutedColor}>{row.description}</Text></Box>
-                      <Switch aria-label={row.label} isChecked={checked} onChange={onChange} colorScheme="brand" />
+                      <Switch
+                        aria-label={row.label}
+                        isChecked={checked}
+                        onChange={onChange}
+                        sx={{
+                          "& .chakra-switch__track": {
+                            bg: isDark ? "whiteAlpha.300" : "gray.200",
+                            border: "1px solid",
+                            borderColor: isDark ? "whiteAlpha.300" : "gray.300",
+                            _checked: {
+                              bg: isDark ? "brand.300" : "brand.500",
+                              borderColor: isDark ? "brand.200" : "brand.500",
+                            },
+                          },
+                          "& .chakra-switch__thumb": {
+                            bg: "white",
+                            boxShadow: isDark ? "0 1px 4px rgba(0,0,0,.55)" : "sm",
+                          },
+                        }}
+                      />
                     </Grid>
                   );
                 })}
