@@ -1027,7 +1027,7 @@ const ProfilePage: React.FC = observer(() => {
 
         <Grid templateColumns={{ base: "1fr", lg: "minmax(0,1.65fr) minmax(300px,1fr)" }} gap={{ base: 4, md: 6 }}>
           <VStack align="stretch" spacing={{ base: 4, md: 6 }}>
-            <Box position="relative" overflow="hidden" borderRadius={{ base: "2xl", md: "3xl" }} p={{ base: 5, sm: 7, md: 8 }} color="white" style={{ background: themedAccentGradient }} boxShadow={isDark ? "none" : "0 16px 38px rgba(15,23,42,.12)"}>
+            <Box position="relative" overflow="hidden" borderRadius={{ base: "2xl", md: "3xl" }} p={{ base: 5, sm: 7, md: 8 }} boxShadow={isDark ? "none" : "0 16px 38px rgba(15,23,42,.12)"}>
               <Sparkles size={170} style={{ position: "absolute", right: -40, top: -45, opacity: .08, pointerEvents: "none" }} />
               <Grid position="relative" templateColumns="auto minmax(0,1fr)" gap={{ base: 4, md: 6 }} alignItems="center">
                 <Box position="relative">
@@ -1048,7 +1048,7 @@ const ProfilePage: React.FC = observer(() => {
                   <Flex mt={3} display="inline-flex" align="center" gap={1.5} px={2.5} py={1} borderRadius="full" bg="whiteAlpha.200" fontSize="10px" fontWeight="800" textTransform="uppercase"><Award size={12} /> Verified learner</Flex>
                 </Box>
               </Grid>
-              <Grid position="relative" mt={{ base: 5, md: 7 }} templateColumns="repeat(3, 1fr)" gap={2.5}>
+              {/* <Grid position="relative" mt={{ base: 5, md: 7 }} templateColumns="repeat(3, 1fr)" gap={2.5}>
                 {[
                   { label: "Certificates", value: certificateCountLabel, icon: Award },
                   { label: "Bookmarks", value: courseStore.isBookmarksLoading ? "..." : String(bookmarkedCourses.length), icon: Bookmark },
@@ -1059,8 +1059,8 @@ const ProfilePage: React.FC = observer(() => {
                     <Text mt={1} noOfLines={1} fontSize="10px" fontWeight="800" opacity={0.68} textTransform="uppercase">{stat.label}</Text>
                   </Box>
                 ))}
-              </Grid>
-              <Button display={{ base: "flex", sm: "none" }} mt={4} w="full" onClick={handleOpenEdit} leftIcon={<Edit2 size={15} />} borderRadius="xl" bg="whiteAlpha.200" color="white" _hover={{ bg: "whiteAlpha.300" }}>Edit profile</Button>
+              </Grid> */}
+              <Button display={{ base: "flex", sm: "none" }} mt={4} variant={'outline'} w="full" onClick={handleOpenEdit} leftIcon={<Edit2 size={15} />} borderRadius="2xl" color={themedAccentGradient} >Edit profile</Button>
             </Box>
 
           </VStack>
