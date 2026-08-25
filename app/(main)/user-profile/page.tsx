@@ -162,7 +162,7 @@ const ProfilePage: React.FC = observer(() => {
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  const { isOpen: isSettingsOpen, onOpen: onSettingsOpen, onClose: onSettingsClose } = useDisclosure();
+  const { isOpen: isSettingsOpen, onClose: onSettingsClose } = useDisclosure();
   const [activeModal, setActiveModal] = useState<"certificates" | "bookmarks" | "teams" | "help" | "details" | null>(null);
 
   const user = stores.auth.user;
@@ -453,7 +453,7 @@ const ProfilePage: React.FC = observer(() => {
       key: "bookmarks",
       icon: Bookmark,
       label: "Bookmarks",
-      badge: "3",
+      badge: courseStore.isBookmarksLoading ? "..." : String(courseStore.bookmarkedCourses?.length || 0),
       color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
       desc: "Saved courses & resources",
       onClick: () => setActiveModal("bookmarks"),
@@ -1003,8 +1003,92 @@ const ProfilePage: React.FC = observer(() => {
       px={{ base: 4, sm: 6, md: "60px" }}
       transition="background 0.2s"
     >
+      {/* Reference-inspired layout; existing stores, handlers and dialogs stay intact. */}
+      <Box maxW="1180px" mx="auto" pb={{ base: 10, md: 16 }}>
+        <Flex
+          position={{ base: "sticky", md: "static" }} top={0} zIndex={20}
+          align="center" justify="space-between" py={{ base: 3, md: 1 }} mb={{ base: 3, md: 7 }}
+          bg={glassBg} backdropFilter="blur(16px)"
+          borderBottom={{ base: "1px solid", md: "none" }} borderColor={isDark ? "whiteAlpha.100" : "gray.100"}
+        >
+          <Link href="/">
+            <Flex as="span" align="center" justify="center" w={10} h={10} borderRadius="full" border="1px solid" borderColor={isDark ? "whiteAlpha.200" : "gray.200"} bg={cardBg}>
+              <ChevronRight size={18} style={{ transform: "rotate(180deg)" }} />
+            </Flex>
+          </Link>
+          <Text position={{ base: "absolute", md: "static" }} left={{ base: "50%", md: "auto" }} transform={{ base: "translateX(-50%)", md: "none" }} fontSize={{ base: "md", md: "2xl" }} fontWeight="900" color={pageHeadingColor}>Profile</Text>
+          <Flex gap={2}>
+            <Button display={{ base: "none", sm: "inline-flex" }} leftIcon={<Edit2 size={15} />} onClick={handleOpenEdit} variant="outline" size="sm" borderRadius="full">Edit profile</Button>
+            <Flex as="button" type="button" aria-label="Open settings" onClick={() => router.push("/settings")} align="center" justify="center" w={10} h={10} borderRadius="full" border="1px solid" borderColor={isDark ? "whiteAlpha.200" : "gray.200"} bg={cardBg}>
+              <Settings size={18} />
+            </Flex>
+          </Flex>
+        </Flex>
+
+        <Grid templateColumns={{ base: "1fr", lg: "minmax(0,1.65fr) minmax(300px,1fr)" }} gap={{ base: 4, md: 6 }}>
+          <VStack align="stretch" spacing={{ base: 4, md: 6 }}>
+            <Box position="relative" overflow="hidden" borderRadius={{ base: "2xl", md: "3xl" }} p={{ base: 5, sm: 7, md: 8 }} color="white" style={{ background: themedAccentGradient }} boxShadow={isDark ? "none" : "0 16px 38px rgba(15,23,42,.12)"}>
+              <Sparkles size={170} style={{ position: "absolute", right: -40, top: -45, opacity: .08, pointerEvents: "none" }} />
+              <Grid position="relative" templateColumns="auto minmax(0,1fr)" gap={{ base: 4, md: 6 }} alignItems="center">
+                <Box position="relative">
+                  <Box p="3px" borderRadius="full" bg="whiteAlpha.500" boxShadow="lg">
+                    <Avatar name={fullName} src={profileImageUrl} w={{ base: "72px", md: "96px" }} h={{ base: "72px", md: "96px" }} border="2px solid white" bg="gray.300" color="gray.700" />
+                  </Box>
+                  <Flex as="button" type="button" aria-label="Change profile photo" onClick={() => avatarInputRef.current?.click()} position="absolute" right={-1} bottom={-1} w={8} h={8} align="center" justify="center" borderRadius="full" bg={cardBg} color={pageHeadingColor} border="1px solid" borderColor={isDark ? "gray.600" : "gray.200"} boxShadow="md">
+                    {avatarUploading ? <Spinner size="xs" /> : <Camera size={14} />}
+                  </Flex>
+                </Box>
+                <Box minW={0}>
+                  <Flex align="center" gap={2} minW={0}>
+                    <Text noOfLines={1} fontSize={{ base: "lg", md: "2xl" }} fontWeight="900">{form.title ? `${form.title} ${fullName}` : fullName}</Text>
+                    <MdOutlineVerified size={18} style={{ flexShrink: 0 }} />
+                  </Flex>
+                  <Text noOfLines={1} mt={1} fontSize={{ base: "xs", md: "sm" }} fontWeight="600" opacity={0.78}>{roleName || "Learner"}</Text>
+                  <Text noOfLines={1} mt={1} fontSize="xs" opacity={0.68}>{location || s(user?.username)}</Text>
+                  <Flex mt={3} display="inline-flex" align="center" gap={1.5} px={2.5} py={1} borderRadius="full" bg="whiteAlpha.200" fontSize="10px" fontWeight="800" textTransform="uppercase"><Award size={12} /> Verified learner</Flex>
+                </Box>
+              </Grid>
+              <Grid position="relative" mt={{ base: 5, md: 7 }} templateColumns="repeat(3, 1fr)" gap={2.5}>
+                {[
+                  { label: "Certificates", value: certificateCountLabel, icon: Award },
+                  { label: "Bookmarks", value: courseStore.isBookmarksLoading ? "..." : String(bookmarkedCourses.length), icon: Bookmark },
+                  { label: "Quizzes", value: String(stores.quizStore.myAttempts.length), icon: Edit2 },
+                ].map((stat) => (
+                  <Box key={stat.label} borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.200" bg="whiteAlpha.100" px={{ base: 3, md: 4 }} py={3} backdropFilter="blur(8px)">
+                    <stat.icon size={16} /><Text mt={1.5} fontSize={{ base: "lg", md: "xl" }} fontWeight="900" lineHeight={1}>{stat.value}</Text>
+                    <Text mt={1} noOfLines={1} fontSize="10px" fontWeight="800" opacity={0.68} textTransform="uppercase">{stat.label}</Text>
+                  </Box>
+                ))}
+              </Grid>
+              <Button display={{ base: "flex", sm: "none" }} mt={4} w="full" onClick={handleOpenEdit} leftIcon={<Edit2 size={15} />} borderRadius="xl" bg="whiteAlpha.200" color="white" _hover={{ bg: "whiteAlpha.300" }}>Edit profile</Button>
+            </Box>
+
+          </VStack>
+
+          <VStack align="stretch" spacing={3}>
+            <Box borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.200"} bg={cardBg} p={4} boxShadow={isDark ? "none" : "0 8px 24px rgba(15,23,42,.05)"}>
+              <Grid templateColumns="auto minmax(0,1fr) auto" alignItems="center" gap={3}>
+                <Flex w={11} h={11} align="center" justify="center" borderRadius="xl" color="white" style={{ background: themedAccentGradient }}><Award size={20} /></Flex>
+                <Box minW={0}><Text fontSize="sm" fontWeight="900" color={pageHeadingColor}>Premium member</Text><Text noOfLines={1} fontSize="11px" color={pageSubColor}>Exclusive courses and verified certificates</Text></Box>
+                <Button size="xs" borderRadius="full" color="white" style={{ background: themedAccentStrong }} onClick={() => toast({ title: "Premium access", description: "Your current plan details will appear here soon.", status: "info", duration: 2500 })}>View</Button>
+              </Grid>
+            </Box>
+            <Text px={1} pt={2} fontSize="10px" fontWeight="800" color={pageSubColor} textTransform="uppercase">Settings & more</Text>
+            {menuItems.map((item) => (
+              <Flex as="button" type="button" key={item.key} onClick={item.onClick} w="full" align="center" textAlign="left" gap={3.5} p={4} borderRadius="2xl" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "gray.200"} bg={cardBg} boxShadow={isDark ? "none" : "0 5px 18px rgba(15,23,42,.04)"} transition="all .2s" _hover={{ transform: "translateY(-2px)", borderColor: themedAccent }} _active={{ transform: "scale(.99)" }}>
+                <Flex flexShrink={0} w={11} h={11} align="center" justify="center" borderRadius="xl" style={{ background: themedAccentSoftBg, color: themedAccent }}><item.icon size={19} /></Flex>
+                <Box minW={0} flex={1}><Text noOfLines={1} fontSize="sm" fontWeight="800" color={pageHeadingColor}>{item.label}</Text><Text noOfLines={1} fontSize="11px" color={pageSubColor}>{item.desc}</Text></Box>
+                {item.badge ? <Text flexShrink={0} px={2} py={0.5} borderRadius="full" fontSize="9px" fontWeight="800" style={{ background: themedAccentSoftBg, color: themedAccent }}>{item.badge}</Text> : null}
+                <ChevronRight size={15} color={isDark ? "#718096" : "#A0AEC0"} />
+              </Flex>
+            ))}
+            <Button mt={2} onClick={handleLogout} w="full" size="lg" borderRadius="xl" colorScheme="red" variant="outline" leftIcon={<LogOut size={17} />}>Sign out</Button>
+          </VStack>
+        </Grid>
+      </Box>
+
       {/* ═══ DESKTOP — Premium Professional Layout ═══ */}
-      <Box display={{ base: "none", md: "block" }} pb={16} fontFamily="'Inter', sans-serif">
+      <Box display="none" pb={16} fontFamily="'Inter', sans-serif">
         {/* Cover & Profile Header */}
         <Box mb={10} bg={cardBg} borderRadius="3xl" p={8} px={10} border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "blackAlpha.50"} boxShadow={isDark ? "none" : "0 10px 40px rgba(0,0,0,0.04)"} position="relative" overflow="hidden">
            {/* Premium Aurora/Mesh Background Decoration */}
@@ -1058,7 +1142,7 @@ const ProfilePage: React.FC = observer(() => {
                    Edit Profile
                  </Button>
                  <Box w="1px" h="16px" bg={isDark ? "whiteAlpha.200" : "blackAlpha.100"} mx={1} />
-                 <Button onClick={onSettingsOpen} variant="ghost" size="sm" borderRadius="xl" px={3} color={pageSubColor} _hover={{ bg: isDark ? "whiteAlpha.100" : "white", color: pageHeadingColor, shadow: isDark ? "none" : "sm" }} transition="all 0.2s" display="flex" alignItems="center" justifyContent="center">
+                 <Button onClick={() => router.push("/settings")} variant="ghost" size="sm" borderRadius="xl" px={3} color={pageSubColor} _hover={{ bg: isDark ? "whiteAlpha.100" : "white", color: pageHeadingColor, shadow: isDark ? "none" : "sm" }} transition="all 0.2s" display="flex" alignItems="center" justifyContent="center">
                    <Settings size={16} />
                  </Button>
                </Flex>
@@ -1219,7 +1303,7 @@ const ProfilePage: React.FC = observer(() => {
       </Box>
 
       {/* ═══ MOBILE — Exact RideX App Theme ═══ */}
-      <Box display={{ base: "block", md: "none" }} minH="100vh" bg={isDark ? "transparent" : "#F9FAFB"} px={0} pb={12} fontFamily="'Inter', sans-serif">
+      <Box display="none" minH="100vh" bg={isDark ? "transparent" : "#F9FAFB"} px={0} pb={12} fontFamily="'Inter', sans-serif">
         {/* ── Header ── */}
         <Box px={4} pt={6} pb={4}>
           <Flex align="center" justify="space-between" position="relative">
@@ -1233,7 +1317,7 @@ const ProfilePage: React.FC = observer(() => {
               Profile
             </Text>
             
-            <Flex as="button" onClick={onSettingsOpen} align="center" justify="center" w={10} h={10} bg="transparent" borderRadius="full" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "#E5E7EB"} _active={{ scale: 0.95, bg: isDark ? "whiteAlpha.50" : "gray.50" }} transition="all 0.2s">
+            <Flex as="button" onClick={() => router.push("/settings")} align="center" justify="center" w={10} h={10} bg="transparent" borderRadius="full" border="1px solid" borderColor={isDark ? "whiteAlpha.100" : "#E5E7EB"} _active={{ scale: 0.95, bg: isDark ? "whiteAlpha.50" : "gray.50" }} transition="all 0.2s">
               <Settings size={20} color={isDark ? "white" : "#111827"} />
             </Flex>
           </Flex>
